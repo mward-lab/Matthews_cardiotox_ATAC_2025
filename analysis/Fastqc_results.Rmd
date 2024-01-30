@@ -38,7 +38,7 @@ library(RColorBrewer)
 # library(gprofiler2)
 # library(qvalue)
 ```
-
+## Total Sequences
 This code takes the multiqc fastqc output file and:
 splits by rows to trimmed and non trimmed, then separates the trimmed file names into catagories I want, then adds back in the non trimmed data rows (while also splitting file name like the trimmed file name).
 after rbind, I split treatmenttime by position, fix the names of the time column, remove numbers from trt column, add a new column called "trimmed" where I add in a vector that lets me group by trimmed file verses non trimmed file, the select only those columns containing the columns I want to keep. 
@@ -136,11 +136,100 @@ totseq <- fastqc_full %>%
           axis.text.x = element_blank(),
           strip.text.x = element_text(margin = margin(2,0,2,0, "pt"),face = "bold"))
 ```
-Percenttrimmed
-```{r perctrim}
+##Average sequence length  
 
+
+```{r avg seq length}
+fastqc_full %>% 
+  
+  filter(trimmed=="no") %>%
+  mutate(avg_sequence_length=as.numeric(avg_sequence_length)) %>% 
+  ggplot(., aes(x=read, y= avg_seq_len))+
+  geom_boxplot(aes(fill= trt))+
+  facet_wrap(ind~time)+
+  scale_fill_manual(values=drug_pal)+
+  theme_bw()+
+  # ylim(0,55)+
+  ggtitle("Average sequence length, untrimmed")+
+      # ylab(ylab)+
+      # xlab("")+
+      theme(strip.background = element_rect(fill = "white",linetype=1, linewidth = 0.5),
+          plot.title = element_text(size=14,hjust = 0.5,face="bold"),
+          axis.title = element_text(size = 10, color = "black"),
+          axis.ticks = element_line(linewidth = 0.5),
+          axis.line = element_line(linewidth = 0.5),
+          # axis.text.x = element_blank(),
+          strip.text.x = element_text(margin = margin(2,0,2,0, "pt"),face = "bold"))
+
+fastqc_full %>% 
+  filter(trimmed=="yes") %>% 
+   mutate(avg_sequence_length=as.numeric(avg_sequence_length)) %>% 
+  ggplot(., aes(x=read, y= avg_seq_len))+
+  geom_boxplot(aes(col= trt))+
+  facet_wrap(ind~time)+
+  scale_fill_manual(values=drug_pal)+
+  scale_color_manual(values = drug_pal)+
+  theme_bw()+
+  ggtitle("Average sequence length, trimmed")+
+      # ylab(ylab)+
+      # xlab("")+
+      theme(strip.background = element_rect(fill = "white",linetype=1, linewidth = 0.5),
+          plot.title = element_text(size=14,hjust = 0.5,face="bold"),
+          axis.title = element_text(size = 10, color = "black"),
+          axis.ticks = element_line(linewidth = 0.5),
+          axis.line = element_line(linewidth = 0.5),
+          # axis.text.x = element_blank(),
+          strip.text.x = element_text(margin = margin(2,0,2,0, "pt"),face = "bold"))
+  
 
 
 ```
 
 
+```{r percentdup, fig.width=12}
+fastqc_full %>% 
+  
+  filter(trimmed=="no") %>%
+  group_by(trt) %>% 
+  # mutate(avg_sequence_length=as.numeric(avg_sequence_length)) %>% 
+  ggplot(., aes(x=read, y= percent_dup))+
+  geom_col(position= "dodge",aes(fill= trt))+
+  geom_text(aes(group=trt,label = sprintf("%.1f",percent_dup)),
+            position=position_dodge(width =.95),angle= 90,vjust=.02, hjust=.7 )+
+  facet_wrap(ind~time)+
+  scale_fill_manual(values=drug_pal)+
+  theme_bw()+
+  # ylim(0,55)+
+  ggtitle("Percent duplicated, untrimmed")+
+      # ylab(ylab)+
+      # xlab("")+
+      theme(strip.background = element_rect(fill = "white",linetype=1, linewidth = 0.5),
+          plot.title = element_text(size=14,hjust = 0.5,face="bold"),
+          axis.title = element_text(size = 10, color = "black"),
+          axis.ticks = element_line(linewidth = 0.5),
+          axis.line = element_line(linewidth = 0.5),
+          # axis.text.x = element_blank(),
+          strip.text.x = element_text(margin = margin(2,0,2,0, "pt"),face = "bold"))
+
+fastqc_full %>% 
+  filter(trimmed=="yes") %>% 
+   group_by(trt) %>% 
+  # mutate(avg_sequence_length=as.numeric(avg_sequence_length)) %>% 
+  ggplot(., aes(x=read, y= percent_dup))+
+  geom_col(position= "dodge",aes(fill= trt))+
+  geom_text(aes(group=trt,label = sprintf("%.1f",percent_dup)),
+            position=position_dodge(width =.95),angle= 90,vjust=.02, hjust=.7 )+
+  facet_wrap(ind~time)+
+  scale_fill_manual(values=drug_pal)+
+  theme_bw()+
+      theme(strip.background = element_rect(fill = "white",linetype=1, linewidth = 0.5),
+          plot.title = element_text(size=14,hjust = 0.5,face="bold"),
+          axis.title = element_text(size = 10, color = "black"),
+          axis.ticks = element_line(linewidth = 0.5),
+          axis.line = element_line(linewidth = 0.5),
+          # axis.text.x = element_blank(),
+          strip.text.x = element_text(margin = margin(2,0,2,0, "pt"),face = "bold"))
+  
+
+
+```
