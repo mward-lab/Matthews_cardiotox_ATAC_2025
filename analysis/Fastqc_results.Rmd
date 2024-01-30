@@ -1,0 +1,146 @@
+---
+title: "ATAC_fastqc"
+author: "ERM"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE,
+	warning = FALSE
+)
+```
+
+```{css, echo=FALSE}
+pre {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+pre[class] {
+  max-height: 200px;
+}
+```
+
+```{r  package loading}
+library(tidyverse)
+# library(ggsignif)
+# library(cowplot)
+# library(ggpubr)
+# library(scales)
+# library(sjmisc)
+library(kableExtra)
+# library(broom)
+# library(biomaRt)
+library(RColorBrewer)
+# library(gprofiler2)
+# library(qvalue)
+```
+
+This code takes the multiqc fastqc output file and:
+splits by rows to trimmed and non trimmed, then separates the trimmed file names into catagories I want, then adds back in the non trimmed data rows (while also splitting file name like the trimmed file name).
+after rbind, I split treatmenttime by position, fix the names of the time column, remove numbers from trt column, add a new column called "trimmed" where I add in a vector that lets me group by trimmed file verses non trimmed file, the select only those columns containing the columns I want to keep. 
+```{r data loading}
+multiqc_fastqc2 <- read_csv("data/multiqc_fastqc_run2.txt")
+multiqc_general_stats2 <- read_csv("data/multiqc_genestat_run2.txt")
+
+
+fastqc_full <- multiqc_fastqc2 %>% 
+  slice_tail(n=144) %>% 
+  separate(Filename, into = c(NA,"ind","treatmenttime",NA,"read")) %>% 
+  rbind(., (multiqc_fastqc2 %>% slice_head(n=144) %>% separate(Filename, into = c("ind","treatmenttime",NA,"read")))) %>% 
+  separate_wider_position(., col =treatmenttime,c(2,trt=2,time=3),too_few = "align_start") %>% 
+  mutate(time=case_match(trt,"E2"~"24h","E3"~"3h","M2"~"24h", "M3"~"3h","T2"~"24h","T3"~"3h","V2"~"24h","V3"~"3h",.default = time)) %>% 
+  mutate(trt=gsub("[[:digit:]]", "", trt) ) %>% 
+  mutate(trimmed = if_else(grepl(pattern ="^trim", x = Sample)==TRUE, "yes","no")) %>% 
+  select(Sample:read, trimmed,`Total Sequences`:avg_sequence_length) %>% 
+  full_join(., multiqc_general_stats2, join_by(Sample)) %>% 
+   rename("percent_gc"="FastQC_mqc-generalstats-fastqc-percent_gc",
+         "avg_seq_len"= "FastQC_mqc-generalstats-fastqc-avg_sequence_length",
+         "percent_dup"= "FastQC_mqc-generalstats-fastqc-percent_duplicates",
+         "percent_fails"= "FastQC_mqc-generalstats-fastqc-percent_fails",
+         "total_sequences"= "FastQC_mqc-generalstats-fastqc-total_sequences") %>% 
+  mutate(ind = factor(ind, levels = c("Ind1", "Ind2", "Ind3", "Ind4", "Ind5", "Ind6"))) %>%
+  mutate(time = factor(time, levels = c("3h", "24h"), labels= c("3 hours","24 hours"))) %>% 
+  mutate(trt = factor(trt, levels = c("DX","E", "DA","M", "T", "V"), labels = c("DOX","EPI", "DNR", "MTX", "TRZ", "VEH"))) 
+
+```
+(in this case, Sample, ind, trt, time read, trimmed, Total sequences, Flagged poor  quality, sequence length, %GC,total deduplicated %,and avg sequence length)
+I also then addin the gen_stats file and rename the columns to normal things.
+```{r ggplot Total sequences}
+fastqc_full
+drug_pal <- c("#8B006D","#DF707E","#F1B72B", "#3386DD","#707031","#41B333")
+fastqc_full %>% 
+  filter(trimmed=="no") %>%
+  ggplot(., aes(x=trt, y= `Total Sequences`))+
+  geom_col(aes(fill= trt))+
+  facet_wrap(ind~time)+
+  scale_fill_manual(values=drug_pal)+
+  theme_bw()+
+  ggtitle("Total Sequences, untrimmed")+
+      # ylab(ylab)+
+      xlab("")+
+      theme(strip.background = element_rect(fill = "white",linetype=1, linewidth = 0.5),
+          plot.title = element_text(size=14,hjust = 0.5,face="bold"),
+          axis.title = element_text(size = 10, color = "black"),
+          axis.ticks = element_line(linewidth = 0.5),
+          axis.line = element_line(linewidth = 0.5),
+          axis.text.x = element_blank(),
+          strip.text.x = element_text(margin = margin(2,0,2,0, "pt"),face = "bold"))
+
+fastqc_full %>% 
+  filter(trimmed=="yes") %>% 
+  ggplot(., aes(x=trt, y= `Total Sequences`))+
+  geom_col(aes(fill= trt))+
+  facet_wrap(ind~time)+
+  scale_fill_manual(values=drug_pal)+
+  theme_bw()+
+  ggtitle("Total Sequences, trimmed")+
+      # ylab(ylab)+
+      xlab("")+
+      theme(strip.background = element_rect(fill = "white",linetype=1, linewidth = 0.5),
+          plot.title = element_text(size=14,hjust = 0.5,face="bold"),
+          axis.title = element_text(size = 10, color = "black"),
+          axis.ticks = element_line(linewidth = 0.5),
+          axis.line = element_line(linewidth = 0.5),
+          axis.text.x = element_blank(),
+          strip.text.x = element_text(margin = margin(2,0,2,0, "pt"),face = "bold"))
+
+totseq <- fastqc_full %>% 
+  dplyr::filter(read =='R1') %>% 
+  # group_by(ind,trt,time) %>% 
+ select(Sample, ind, trt, time, trimmed, `Total Sequences`) %>% 
+  pivot_wider(id_cols = c(ind,trt,time), names_from = trimmed, values_from = `Total Sequences`) %>% 
+  mutate(perc_removed=(no-yes)/no*100) #%>% 
+ kable(list(totseq[1:36,], totseq[37:72,]),caption= "Summary of Total sequences before and after trimming, with percentage of removed sequences") %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(full_width = FALSE,font_size = 18) #%>%
+   # scroll_box(width = "100%", height = "400px")
+  
+  totseq %>% 
+    ggplot(.,aes(x=trt,y=perc_removed) )+
+    geom_col(aes(fill= trt))+
+  facet_wrap(ind~time)+
+  scale_fill_manual(values=drug_pal)+
+  theme_bw()+
+  ggtitle("Total Sequences, percent removed")+
+      # ylab(ylab)+
+      xlab("")+
+      theme(strip.background = element_rect(fill = "white",linetype=1, linewidth = 0.5),
+          plot.title = element_text(size=14,hjust = 0.5,face="bold"),
+          axis.title = element_text(size = 10, color = "black"),
+          axis.ticks = element_line(linewidth = 0.5),
+          axis.line = element_line(linewidth = 0.5),
+          axis.text.x = element_blank(),
+          strip.text.x = element_text(margin = margin(2,0,2,0, "pt"),face = "bold"))
+```
+Percenttrimmed
+```{r perctrim}
+
+
+
+```
+
+
