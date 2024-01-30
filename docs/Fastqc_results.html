@@ -523,15 +523,15 @@ project makes it easier to run your code on other machines.</p>
 <div class="panel panel-default">
 <div class="panel-heading">
 <p class="panel-title">
-<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomreneeisnowhereATAClearningtreeca94ab06537abdb113529593f1ecfb1eec4183b7targetblankca94ab0a">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomreneeisnowhereATAClearningtree778ce47a7c4e47fbe2e06ea6bc9f7c057bd38662targetblank778ce47a">
 <span class="glyphicon glyphicon-ok text-success"
 aria-hidden="true"></span> <strong>Repository version:</strong>
-<a href="https://github.com/reneeisnowhere/ATAC_learning/tree/ca94ab06537abdb113529593f1ecfb1eec4183b7" target="_blank">ca94ab0</a>
+<a href="https://github.com/reneeisnowhere/ATAC_learning/tree/778ce47a7c4e47fbe2e06ea6bc9f7c057bd38662" target="_blank">778ce47</a>
 </a>
 </p>
 </div>
 <div
-id="strongRepositoryversionstrongahrefhttpsgithubcomreneeisnowhereATAClearningtreeca94ab06537abdb113529593f1ecfb1eec4183b7targetblankca94ab0a"
+id="strongRepositoryversionstrongahrefhttpsgithubcomreneeisnowhereATAClearningtree778ce47a7c4e47fbe2e06ea6bc9f7c057bd38662targetblank778ce47a"
 class="panel-collapse collapse">
 <div class="panel-body">
 <p>
@@ -541,7 +541,7 @@ reproducibility.
 </p>
 <p>
 The results in this page were generated with repository version
-<a href="https://github.com/reneeisnowhere/ATAC_learning/tree/ca94ab06537abdb113529593f1ecfb1eec4183b7" target="_blank">ca94ab0</a>.
+<a href="https://github.com/reneeisnowhere/ATAC_learning/tree/778ce47a7c4e47fbe2e06ea6bc9f7c057bd38662" target="_blank">778ce47</a>.
 See the <em>Past versions</em> tab to see a history of the changes made
 to the R Markdown and HTML files.
 </p>
@@ -613,6 +613,40 @@ Message
 <tbody>
 <tr>
 <td>
+Rmd
+</td>
+<td>
+<a href="https://github.com/reneeisnowhere/ATAC_learning/blob/778ce47a7c4e47fbe2e06ea6bc9f7c057bd38662/analysis/Fastqc_results.Rmd" target="_blank">778ce47</a>
+</td>
+<td>
+reneeisnowhere
+</td>
+<td>
+2024-01-30
+</td>
+<td>
+adding more graphs
+</td>
+</tr>
+<tr>
+<td>
+html
+</td>
+<td>
+<a href="https://rawcdn.githack.com/reneeisnowhere/ATAC_learning/dce7d59112d1fb43d37814a8221ef437f919949d/docs/Fastqc_results.html" target="_blank">dce7d59</a>
+</td>
+<td>
+reneeisnowhere
+</td>
+<td>
+2024-01-30
+</td>
+<td>
+Build site.
+</td>
+</tr>
+<tr>
+<td>
 html
 </td>
 <td>
@@ -674,6 +708,8 @@ library(kableExtra)
 library(RColorBrewer)
 # library(gprofiler2)
 # library(qvalue)</code></pre>
+<div id="total-sequences" class="section level2">
+<h2>Total Sequences</h2>
 <p>This code takes the multiqc fastqc output file and: splits by rows to
 trimmed and non trimmed, then separates the trimmed file names into
 catagories I want, then adds back in the non trimmed data rows (while
@@ -2410,7 +2446,91 @@ reneeisnowhere
 </table>
 </div>
 </div>
-<p>Percenttrimmed</p>
+<p>##Average sequence length</p>
+<pre class="r"><code>fastqc_full %&gt;% 
+  
+  filter(trimmed==&quot;no&quot;) %&gt;%
+  mutate(avg_sequence_length=as.numeric(avg_sequence_length)) %&gt;% 
+  ggplot(., aes(x=read, y= avg_seq_len))+
+  geom_boxplot(aes(fill= trt))+
+  facet_wrap(ind~time)+
+  scale_fill_manual(values=drug_pal)+
+  theme_bw()+
+  # ylim(0,55)+
+  ggtitle(&quot;Average sequence length, untrimmed&quot;)+
+      # ylab(ylab)+
+      # xlab(&quot;&quot;)+
+      theme(strip.background = element_rect(fill = &quot;white&quot;,linetype=1, linewidth = 0.5),
+          plot.title = element_text(size=14,hjust = 0.5,face=&quot;bold&quot;),
+          axis.title = element_text(size = 10, color = &quot;black&quot;),
+          axis.ticks = element_line(linewidth = 0.5),
+          axis.line = element_line(linewidth = 0.5),
+          # axis.text.x = element_blank(),
+          strip.text.x = element_text(margin = margin(2,0,2,0, &quot;pt&quot;),face = &quot;bold&quot;))</code></pre>
+<p><img src="figure/Fastqc_results.Rmd/avg%20seq%20length-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>fastqc_full %&gt;% 
+  filter(trimmed==&quot;yes&quot;) %&gt;% 
+   mutate(avg_sequence_length=as.numeric(avg_sequence_length)) %&gt;% 
+  ggplot(., aes(x=read, y= avg_seq_len))+
+  geom_boxplot(aes(col= trt))+
+  facet_wrap(ind~time)+
+  scale_fill_manual(values=drug_pal)+
+  scale_color_manual(values = drug_pal)+
+  theme_bw()+
+  ggtitle(&quot;Average sequence length, trimmed&quot;)+
+      # ylab(ylab)+
+      # xlab(&quot;&quot;)+
+      theme(strip.background = element_rect(fill = &quot;white&quot;,linetype=1, linewidth = 0.5),
+          plot.title = element_text(size=14,hjust = 0.5,face=&quot;bold&quot;),
+          axis.title = element_text(size = 10, color = &quot;black&quot;),
+          axis.ticks = element_line(linewidth = 0.5),
+          axis.line = element_line(linewidth = 0.5),
+          # axis.text.x = element_blank(),
+          strip.text.x = element_text(margin = margin(2,0,2,0, &quot;pt&quot;),face = &quot;bold&quot;))</code></pre>
+<p><img src="figure/Fastqc_results.Rmd/avg%20seq%20length-2.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>fastqc_full %&gt;% 
+  
+  filter(trimmed==&quot;no&quot;) %&gt;%
+  group_by(trt) %&gt;% 
+  # mutate(avg_sequence_length=as.numeric(avg_sequence_length)) %&gt;% 
+  ggplot(., aes(x=read, y= percent_dup))+
+  geom_col(position= &quot;dodge&quot;,aes(fill= trt))+
+  geom_text(aes(group=trt,label = sprintf(&quot;%.1f&quot;,percent_dup)),
+            position=position_dodge(width =.95),angle= 90,vjust=.02, hjust=.7 )+
+  facet_wrap(ind~time)+
+  scale_fill_manual(values=drug_pal)+
+  theme_bw()+
+  # ylim(0,55)+
+  ggtitle(&quot;Percent duplicated, untrimmed&quot;)+
+      # ylab(ylab)+
+      # xlab(&quot;&quot;)+
+      theme(strip.background = element_rect(fill = &quot;white&quot;,linetype=1, linewidth = 0.5),
+          plot.title = element_text(size=14,hjust = 0.5,face=&quot;bold&quot;),
+          axis.title = element_text(size = 10, color = &quot;black&quot;),
+          axis.ticks = element_line(linewidth = 0.5),
+          axis.line = element_line(linewidth = 0.5),
+          # axis.text.x = element_blank(),
+          strip.text.x = element_text(margin = margin(2,0,2,0, &quot;pt&quot;),face = &quot;bold&quot;))</code></pre>
+<p><img src="figure/Fastqc_results.Rmd/percentdup-1.png" width="1152" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>fastqc_full %&gt;% 
+  filter(trimmed==&quot;yes&quot;) %&gt;% 
+   group_by(trt) %&gt;% 
+  # mutate(avg_sequence_length=as.numeric(avg_sequence_length)) %&gt;% 
+  ggplot(., aes(x=read, y= percent_dup))+
+  geom_col(position= &quot;dodge&quot;,aes(fill= trt))+
+  geom_text(aes(group=trt,label = sprintf(&quot;%.1f&quot;,percent_dup)),
+            position=position_dodge(width =.95),angle= 90,vjust=.02, hjust=.7 )+
+  facet_wrap(ind~time)+
+  scale_fill_manual(values=drug_pal)+
+  theme_bw()+
+      theme(strip.background = element_rect(fill = &quot;white&quot;,linetype=1, linewidth = 0.5),
+          plot.title = element_text(size=14,hjust = 0.5,face=&quot;bold&quot;),
+          axis.title = element_text(size = 10, color = &quot;black&quot;),
+          axis.ticks = element_line(linewidth = 0.5),
+          axis.line = element_line(linewidth = 0.5),
+          # axis.text.x = element_blank(),
+          strip.text.x = element_text(margin = margin(2,0,2,0, &quot;pt&quot;),face = &quot;bold&quot;))</code></pre>
+<p><img src="figure/Fastqc_results.Rmd/percentdup-2.png" width="1152" style="display: block; margin: auto;" /></p>
 <br>
 <p>
 <button type="button" class="btn btn-default btn-workflowr btn-workflowr-sessioninfo" data-toggle="collapse" data-target="#workflowr-sessioninfo" style="display: block;">
@@ -2464,6 +2584,7 @@ loaded via a namespace (and not attached):
 [57] Rcpp_1.0.11       glue_1.6.2        xml2_1.3.5        svglite_2.1.2    
 [61] rstudioapi_0.15.0 vroom_1.6.4       jsonlite_1.8.7    R6_2.5.1         
 [65] systemfonts_1.0.5 fs_1.6.3         </code></pre>
+</div>
 </div>
 
 
