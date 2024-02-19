@@ -233,3 +233,190 @@ fastqc_full %>%
 
 
 ```
+## Trimmed sequence lengths
+
+```{r trimmed graph}
+###omitted the first288 lines (this was a duplicate of the first multiqc run... changed files to iterate over in the furture)
+
+
+trimmed_seq_length <- read.csv("data/trimmed_seq_length.csv", row.names = 1, col.names = 0:25)
+# save <-
+trimmed_seq_length <- trimmed_seq_length %>%
+  rename( "0bp"=X0,"2bp"=X1,"4bp"=X2,"6bp"=X3,"8bp"=X4,"10bp"=X5,"12bp"=X6, "14bp"=X7, "16bp"=X8, "18bp"=X9, "20bp"=X10, "22bp"=X11, "24bp"=X12, "26bp"=X13, "28bp"=X14, "30bp"=X15, "32bp"=X16, "34bp"=X17, "36bp"=X18, "38bp"=X19, "40bp"=X20, "42bp"=X21, "44bp"=X22, "46bp"=X23, "48bp"=X24, "50bp"=X25)# %>%
+  # column_to_rownames("samples") %>% write.csv(.,"data/trimmed_seq_length.csv")
+#   t() %>% 
+# as.numeric()
+# trimmed_seq_length %>% 
+#   rownames_to_column("samples") %>% 
+#   pivot_longer(., col=!samples, names_to = "frag_length", values_to = "counts")
+# 
+# 
+# 
+# pivot_longer(everything(), names_to = "lelsngth", values_to ="counts")
+# str(save)
+```
+
+
+
+```{r trimmed readpairs}
+aln_results <- read.csv("data/aln_run1_results.txt", row.names = 1)
+aln_results %>% 
+  mutate(treatment=factor(treatment, levels = c("DOX","EPI","DNR","MTX", "TRZ", "VEH"))) %>%
+  mutate(time=factor(time, levels = c("3","24"),labels=c("3 hours", "24 hours"))) %>% 
+  mutate(indv=factor(indv, levels =c ("1","2","3","4","5","6"))) %>% 
+  
+  ggplot(., aes(x =time, y= reads), group= time)+
+  geom_boxplot(position = "dodge",aes(fill=treatment))+
+  geom_point(aes(col=indv))+
+  facet_wrap(~treatment)+
+  theme_bw()+
+  ggtitle("number of read-pairs")+
+        scale_fill_manual(values=drug_pal)   +
+  scale_color_brewer(palette ="Dark2")+
+  theme(strip.background = element_rect(fill = "white",linetype=1, linewidth = 0.5),
+          plot.title = element_text(size=14,hjust = 0.5,face="bold"),
+          axis.title = element_text(size = 10, color = "black"),
+          axis.ticks = element_line(linewidth = 0.5),
+          axis.line = element_line(linewidth = 0.5),
+          # axis.text.x = element_blank(),
+          strip.text.x = element_text(margin = margin(2,0,2,0, "pt"),face = "bold"))
+
+```
+
+```{r number of alignedreads}
+aln_results %>% 
+  mutate(treatment=factor(treatment, levels = c("DOX","EPI","DNR","MTX", "TRZ", "VEH"))) %>%
+  mutate(time=factor(time, levels = c("3","24"),labels=c("3 hours", "24 hours"))) %>% 
+  mutate(indv=factor(indv, levels =c ("1","2","3","4","5","6"))) %>% 
+  
+  ggplot(., aes(x =time, y= aln_overall), group= time)+
+  geom_col(position= "dodge",aes(fill= treatment))+
+  geom_text(aes(group=treatment,label = sprintf("%.1f",aln_overall*100)),
+            position=position_dodge(width =.93),angle= 90,vjust=.1, hjust=.9 )+
+  facet_wrap(~indv)+
+  scale_fill_manual(values=drug_pal)+
+  theme_bw()+
+  ggtitle("Percent mapped reads")
+      theme(strip.background = element_rect(fill = "white",linetype=1, linewidth = 0.5),
+          plot.title = element_text(size=14,hjust = 0.5,face="bold"),
+          axis.title = element_text(size = 10, color = "black"),
+          axis.ticks = element_line(linewidth = 0.5),
+          axis.line = element_line(linewidth = 0.5),
+          # axis.text.x = element_blank(),
+          strip.text.x = element_text(margin = margin(2,0,2,0, "pt"),face = "bold"))
+
+
+```
+```{r number of aln is 1}
+aln_results %>% 
+  mutate(treatment=factor(treatment, levels = c("DOX","EPI","DNR","MTX", "TRZ", "VEH"))) %>%
+  mutate(time=factor(time, levels = c("3","24"),labels=c("3 hours", "24 hours"))) %>% 
+  mutate(indv=factor(indv, levels =c ("1","2","3","4","5","6"))) %>% 
+  # mutate(perc_aln_1_con= aln_1_con/reads * 100) %>% 
+  
+  ggplot(., aes(x =time, y= aln_1_con), group= time)+
+  geom_col(position= "dodge",aes(fill= treatment))+
+  # geom_text(aes(group=treatment,label = sprintf("%.1f",(aln_overall*100)),
+  #           position=position_dodge(width =.95),angle= 90,vjust=.02, hjust=.7 ))+
+  facet_wrap(~indv)+
+  scale_fill_manual(values=drug_pal)+
+  theme_bw()+
+  ggtitle("number of concordantly aligned reads = 1")+
+      theme(strip.background = element_rect(fill = "white",linetype=1, linewidth = 0.5),
+          plot.title = element_text(size=14,hjust = 0.5,face="bold"),
+          axis.title = element_text(size = 10, color = "black"),
+          axis.ticks = element_line(linewidth = 0.5),
+          axis.line = element_line(linewidth = 0.5),
+          # axis.text.x = element_blank(),
+          strip.text.x = element_text(margin = margin(2,0,2,0, "pt"),face = "bold"))
+
+
+```
+```{r percent conc aln reads}
+aln_results %>% 
+  mutate(treatment=factor(treatment, levels = c("DOX","EPI","DNR","MTX", "TRZ", "VEH"))) %>%
+  mutate(time=factor(time, levels = c("3","24"),labels=c("3 hours", "24 hours"))) %>% 
+  mutate(indv=factor(indv, levels =c ("1","2","3","4","5","6"))) %>% 
+  mutate(perc_aln_1_con= aln_1_con/reads * 100) %>% 
+  
+  ggplot(., aes(x =time, y= perc_aln_1_con), group= time)+
+  geom_col(position= "dodge",aes(fill= treatment))+
+  geom_text(aes(group=treatment,label = sprintf("%.1f",perc_aln_1_con)),
+            position=position_dodge(width =.95),angle= 90,vjust=.02, hjust=.7 )+
+  facet_wrap(~indv)+
+  scale_fill_manual(values=drug_pal)+
+  theme_bw()+
+  ggtitle("Percent of concordantly aligned reads = 1")+
+      theme(strip.background = element_rect(fill = "white",linetype=1, linewidth = 0.5),
+          plot.title = element_text(size=14,hjust = 0.5,face="bold"),
+          axis.title = element_text(size = 10, color = "black"),
+          axis.ticks = element_line(linewidth = 0.5),
+          axis.line = element_line(linewidth = 0.5),
+          # axis.text.x = element_blank(),
+          strip.text.x = element_text(margin = margin(2,0,2,0, "pt"),face = "bold"))
+
+
+```
+
+
+```{r perc multimaped reads}
+aln_results %>% 
+  mutate(treatment=factor(treatment, levels = c("DOX","EPI","DNR","MTX", "TRZ", "VEH"))) %>%
+  mutate(time=factor(time, levels = c("3","24"),labels=c("3 hours", "24 hours"))) %>% 
+  mutate(indv=factor(indv, levels =c ("1","2","3","4","5","6"))) %>% 
+  mutate(perc_multimapped= aln_.1_con/reads * 100) %>% 
+  
+  ggplot(., aes(x =time, y= perc_multimapped), group= time)+
+  geom_col(position= "dodge",aes(fill= treatment))+
+  geom_text(aes(group=treatment,label = sprintf("%.1f",perc_multimapped)),
+            position=position_dodge(width =.93),angle= 90,vjust=.02, hjust=.7 )+
+  facet_wrap(~indv)+
+  scale_fill_manual(values=drug_pal)+
+  theme_bw()+
+  ggtitle("Percent of aligned reads > 1")+
+      theme(strip.background = element_rect(fill = "white",linetype=1, linewidth = 0.5),
+          plot.title = element_text(size=14,hjust = 0.5,face="bold"),
+          axis.title = element_text(size = 10, color = "black"),
+          axis.ticks = element_line(linewidth = 0.5),
+          axis.line = element_line(linewidth = 0.5),
+          # axis.text.x = element_blank(),
+          strip.text.x = element_text(margin = margin(2,0,2,0, "pt"),face = "bold"))
+
+
+
+```
+
+
+## Peaks
+
+```{r peak input trial}
+Ind1_75DA24h_dedup_peaks <- read.csv("data/Ind1_75DA24h_dedup_peaks.csv", row.names = 1)
+
+Ind4_79V24h_dedup_peaks <-  ##(misspelled)
+  read.csv("data/Ind4_79B24h_dedup_peaks.csv", row.names = 1)
+```
+
+
+
+plot fragment length
+
+```{r frag length}
+
+
+Ind1_75DA24h_dedup_peaks %>% 
+  ggplot(., aes(x= length))+
+  geom_density()+
+  ggtitle("Ind1 DNR 24h")+
+  xlim(0,10^3)
+
+Ind4_79V24h_dedup_peaks %>% 
+  ggplot(., aes(x= length))+
+  geom_density()+
+  ggtitle("Ind4 VEH 24h")+
+  xlim(0,10^3)
+    
+  
+  
+```
+
+)
