@@ -1,8 +1,8 @@
 # ATAC_learning
 
-I will update as needed.   Here is my inital analysis of the fastq files.
+This is the link to my inital files of analysis.
 
-https://reneeisnowhere.github.io/ATAC_learning/Fastqc_results.html
+https://reneeisnowhere.github.io/ATAC_learning/index.html
 
 A [workflowr][] project.
 
