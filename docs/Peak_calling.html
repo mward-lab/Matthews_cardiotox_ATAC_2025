@@ -37,6 +37,8 @@
 <script src="site_libs/navigation-1.1/tabsets.js"></script>
 <link href="site_libs/highlightjs-9.12.0/textmate.css" rel="stylesheet" />
 <script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+<script src="site_libs/kePrint-0.0.1/kePrint.js"></script>
+<link href="site_libs/lightable-0.0.1/lightable.css" rel="stylesheet" />
 <link href="site_libs/font-awesome-6.4.2/css/all.min.css" rel="stylesheet" />
 <link href="site_libs/font-awesome-6.4.2/css/v4-shims.min.css" rel="stylesheet" />
 
@@ -521,15 +523,15 @@ project makes it easier to run your code on other machines.</p>
 <div class="panel panel-default">
 <div class="panel-heading">
 <p class="panel-title">
-<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomreneeisnowhereATAClearningtree1a8126feb4786cd4ccea4d54efc4fd4fefa2ac3dtargetblank1a8126fa">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomreneeisnowhereATAClearningtree0a26679c09961777a1e8ab27f057e4e54cb6a2fdtargetblank0a26679a">
 <span class="glyphicon glyphicon-ok text-success"
 aria-hidden="true"></span> <strong>Repository version:</strong>
-<a href="https://github.com/reneeisnowhere/ATAC_learning/tree/1a8126feb4786cd4ccea4d54efc4fd4fefa2ac3d" target="_blank">1a8126f</a>
+<a href="https://github.com/reneeisnowhere/ATAC_learning/tree/0a26679c09961777a1e8ab27f057e4e54cb6a2fd" target="_blank">0a26679</a>
 </a>
 </p>
 </div>
 <div
-id="strongRepositoryversionstrongahrefhttpsgithubcomreneeisnowhereATAClearningtree1a8126feb4786cd4ccea4d54efc4fd4fefa2ac3dtargetblank1a8126fa"
+id="strongRepositoryversionstrongahrefhttpsgithubcomreneeisnowhereATAClearningtree0a26679c09961777a1e8ab27f057e4e54cb6a2fdtargetblank0a26679a"
 class="panel-collapse collapse">
 <div class="panel-body">
 <p>
@@ -539,7 +541,7 @@ reproducibility.
 </p>
 <p>
 The results in this page were generated with repository version
-<a href="https://github.com/reneeisnowhere/ATAC_learning/tree/1a8126feb4786cd4ccea4d54efc4fd4fefa2ac3d" target="_blank">1a8126f</a>.
+<a href="https://github.com/reneeisnowhere/ATAC_learning/tree/0a26679c09961777a1e8ab27f057e4e54cb6a2fd" target="_blank">0a26679</a>.
 See the <em>Past versions</em> tab to see a history of the changes made
 to the R Markdown and HTML files.
 </p>
@@ -628,6 +630,40 @@ Message
 Rmd
 </td>
 <td>
+<a href="https://github.com/reneeisnowhere/ATAC_learning/blob/0a26679c09961777a1e8ab27f057e4e54cb6a2fd/analysis/Peak_calling.Rmd" target="_blank">0a26679</a>
+</td>
+<td>
+reneeisnowhere
+</td>
+<td>
+2024-02-27
+</td>
+<td>
+adding in the the reads data
+</td>
+</tr>
+<tr>
+<td>
+html
+</td>
+<td>
+<a href="https://rawcdn.githack.com/reneeisnowhere/ATAC_learning/3d2aa7b6ed17e37a4645e99c6184385654e4eee6/docs/Peak_calling.html" target="_blank">3d2aa7b</a>
+</td>
+<td>
+reneeisnowhere
+</td>
+<td>
+2024-02-27
+</td>
+<td>
+Build site.
+</td>
+</tr>
+<tr>
+<td>
+Rmd
+</td>
+<td>
 <a href="https://github.com/reneeisnowhere/ATAC_learning/blob/1a8126feb4786cd4ccea4d54efc4fd4fefa2ac3d/analysis/Peak_calling.Rmd" target="_blank">1a8126f</a>
 </td>
 <td>
@@ -694,6 +730,20 @@ ind4_V24hpeaks &lt;- readRDS(&quot;data/ind4_V24hpeaks.RDS&quot;)
 ind1_DA24hpeaks &lt;- readRDS(&quot;data/ind1_DA24hpeaks.RDS&quot;)
 anno_ind4_V24h &lt;- readRDS(&quot;data/anno_ind4_V24h.RDS&quot;)
 anno_ind1_DA24h &lt;- readRDS(&quot;data/anno_ind1_DA24h.RDS&quot;)</code></pre>
+<p>This specific page so far contains the QC analysis after calling
+peaks using MACS2.</p>
+<p>Primary scripts used for ATAC data preprocesing will be linked here
+in the future:</p>
+<p>Currently the step were as follows: 1. Basic Fastqc followed by
+adapter trimming and Fastqc analysis on the leftover fragments. 2.
+Trimmed reads were aligned to the hg38 human genome. 3. Mitochondrial
+reads (chrM) were removed 4. samtools was used to removed non-paired,
+discordantly paired, and mulimapped reads from the .bam. 5.
+Markduplicates function from Picard was used to mark optical and PCR
+duplicates, with samtools used to remove these reads using the flag -F
+1024. 6. MACS2 was used to call peaks, with QC of the peak files
+below.</p>
+<p>Initial summary of reads after each step:</p>
 <pre class="r"><code>#  library(readr)
 # &gt; Ind4_summary &lt;- read_table(&quot;~/ATAC_downloads/Ind4/Ind4_summary.txt&quot;, 
 # +     col_names = FALSE, col_types = cols(X3 = col_skip(), 
@@ -706,132 +756,361 @@ anno_ind1_DA24h &lt;- readRDS(&quot;data/anno_ind1_DA24h.RDS&quot;)</code></pre>
 #
 
 Ind4_summary  &lt;- read.csv(&quot;data/Ind4_summary.txt&quot;, row.names = 1)
- Ind4_summary %&gt;%                          
- separate(counts,into=c(&quot;counts&quot;,NA),sep= &quot; &quot;) %&gt;% 
-   mutate(counts=as.numeric(counts))</code></pre>
-<pre><code>                                                    name    counts
-1    flagstat_first/trimmed_Ind4_79V24h_S12_flagstat.txt  77013488
-2  flagstat_noM/trimmed_Ind4_79V24h_S12_noM_flagstat.txt  27439164
-3   filt_files/trimmed_Ind4_79V24h_S12.nodup.flagstat.qc   1786687
-4    filt_files/trimmed_Ind4_79V24h_S12_fin_flagstat.txt  18870010
-5    flagstat_first/trimmed_Ind4_79DA24h_S7_flagstat.txt  83930268
-6  flagstat_noM/trimmed_Ind4_79DA24h_S7_noM_flagstat.txt  39561574
-7   filt_files/trimmed_Ind4_79DA24h_S7.nodup.flagstat.qc  17862648
-8    filt_files/trimmed_Ind4_79DA24h_S7_fin_flagstat.txt  29459906
-9     flagstat_first/trimmed_Ind4_79DA3h_S1_flagstat.txt 114610072
-10  flagstat_noM/trimmed_Ind4_79DA3h_S1_noM_flagstat.txt  74283554
-11   filt_files/trimmed_Ind4_79DA3h_S1.nodup.flagstat.qc  26487126
-12    filt_files/trimmed_Ind4_79DA3h_S1_fin_flagstat.txt  55956416
-13   flagstat_first/trimmed_Ind4_79DX24h_S8_flagstat.txt  78395382
-14 flagstat_noM/trimmed_Ind4_79DX24h_S8_noM_flagstat.txt  25391928
-15  filt_files/trimmed_Ind4_79DX24h_S8.nodup.flagstat.qc  11544950
-16   filt_files/trimmed_Ind4_79DX24h_S8_fin_flagstat.txt  17146642
-17    flagstat_first/trimmed_Ind4_79DX3h_S2_flagstat.txt  77601292
-18  flagstat_noM/trimmed_Ind4_79DX3h_S2_noM_flagstat.txt  47116936
-19   filt_files/trimmed_Ind4_79DX3h_S2.nodup.flagstat.qc  18908344
-20    filt_files/trimmed_Ind4_79DX3h_S2_fin_flagstat.txt  35460994
-21    flagstat_first/trimmed_Ind4_79E24h_S9_flagstat.txt  86039200
-22  flagstat_noM/trimmed_Ind4_79E24h_S9_noM_flagstat.txt  29965542
-23   filt_files/trimmed_Ind4_79E24h_S9.nodup.flagstat.qc  12495788
-24    filt_files/trimmed_Ind4_79E24h_S9_fin_flagstat.txt  21004354
-25     flagstat_first/trimmed_Ind4_79E3h_S3_flagstat.txt  86993222
-26   flagstat_noM/trimmed_Ind4_79E3h_S3_noM_flagstat.txt  46372712
-27    filt_files/trimmed_Ind4_79E3h_S3.nodup.flagstat.qc  19109612
-28     filt_files/trimmed_Ind4_79E3h_S3_fin_flagstat.txt  34578548
-29   flagstat_first/trimmed_Ind4_79M24h_S10_flagstat.txt  82061002
-30 flagstat_noM/trimmed_Ind4_79M24h_S10_noM_flagstat.txt  27148372
-31  filt_files/trimmed_Ind4_79M24h_S10.nodup.flagstat.qc   9894182
-32   filt_files/trimmed_Ind4_79M24h_S10_fin_flagstat.txt  19085838
-33     flagstat_first/trimmed_Ind4_79M3h_S4_flagstat.txt  83929214
-34   flagstat_noM/trimmed_Ind4_79M3h_S4_noM_flagstat.txt  48985626
-35    filt_files/trimmed_Ind4_79M3h_S4.nodup.flagstat.qc  16384910
-36     filt_files/trimmed_Ind4_79M3h_S4_fin_flagstat.txt  36937534
-37   flagstat_first/trimmed_Ind4_79T24h_S11_flagstat.txt  90875858
-38 flagstat_noM/trimmed_Ind4_79T24h_S11_noM_flagstat.txt  31347532
-39  filt_files/trimmed_Ind4_79T24h_S11.nodup.flagstat.qc   8948490
-40   filt_files/trimmed_Ind4_79T24h_S11_fin_flagstat.txt  21789834
-41     flagstat_first/trimmed_Ind4_79T3h_S5_flagstat.txt 106856444
-42   flagstat_noM/trimmed_Ind4_79T3h_S5_noM_flagstat.txt  65690664
-43    filt_files/trimmed_Ind4_79T3h_S5.nodup.flagstat.qc  28930176
-44     filt_files/trimmed_Ind4_79T3h_S5_fin_flagstat.txt  49669024
-45   flagstat_first/trimmed_Ind4_79V24h_S12_flagstat.txt  77013488
-46 flagstat_noM/trimmed_Ind4_79V24h_S12_noM_flagstat.txt  27439164
-47  filt_files/trimmed_Ind4_79V24h_S12.nodup.flagstat.qc   1786687
-48   filt_files/trimmed_Ind4_79V24h_S12_fin_flagstat.txt  18870010
-49     flagstat_first/trimmed_Ind4_79V3h_S6_flagstat.txt  74863328
-50   flagstat_noM/trimmed_Ind4_79V3h_S6_noM_flagstat.txt  52535548
-51    filt_files/trimmed_Ind4_79V3h_S6.nodup.flagstat.qc  25112288
-52     filt_files/trimmed_Ind4_79V3h_S6_fin_flagstat.txt  40497298
-                                mapped
-1   75962835 + 0 mapped (98.64% : N/A)
-2   26415467 + 0 mapped (96.27% : N/A)
-3   1786687 + 0 mapped (100.00% : N/A)
-4  18870010 + 0 mapped (100.00% : N/A)
-5   83140985 + 0 mapped (99.06% : N/A)
-6   38811928 + 0 mapped (98.11% : N/A)
-7  17862648 + 0 mapped (100.00% : N/A)
-8  29459906 + 0 mapped (100.00% : N/A)
-9  112679708 + 0 mapped (98.32% : N/A)
-10  72386250 + 0 mapped (97.45% : N/A)
-11 26487126 + 0 mapped (100.00% : N/A)
-12 55956416 + 0 mapped (100.00% : N/A)
-13  77692597 + 0 mapped (99.10% : N/A)
-14  24733417 + 0 mapped (97.41% : N/A)
-15 11544950 + 0 mapped (100.00% : N/A)
-16 17146642 + 0 mapped (100.00% : N/A)
-17  76058132 + 0 mapped (98.01% : N/A)
-18  45593581 + 0 mapped (96.77% : N/A)
-19 18908344 + 0 mapped (100.00% : N/A)
-20 35460994 + 0 mapped (100.00% : N/A)
-21  85324746 + 0 mapped (99.17% : N/A)
-22  29300484 + 0 mapped (97.78% : N/A)
-23 12495788 + 0 mapped (100.00% : N/A)
-24 21004354 + 0 mapped (100.00% : N/A)
-25  85671962 + 0 mapped (98.48% : N/A)
-26  45084280 + 0 mapped (97.22% : N/A)
-27 19109612 + 0 mapped (100.00% : N/A)
-28 34578548 + 0 mapped (100.00% : N/A)
-29  81424543 + 0 mapped (99.22% : N/A)
-30  26562054 + 0 mapped (97.84% : N/A)
-31  9894182 + 0 mapped (100.00% : N/A)
-32 19085838 + 0 mapped (100.00% : N/A)
-33  82368935 + 0 mapped (98.14% : N/A)
-34  47454435 + 0 mapped (96.87% : N/A)
-35 16384910 + 0 mapped (100.00% : N/A)
-36 36937534 + 0 mapped (100.00% : N/A)
-37  89680567 + 0 mapped (98.68% : N/A)
-38  30204755 + 0 mapped (96.35% : N/A)
-39  8948490 + 0 mapped (100.00% : N/A)
-40 21789834 + 0 mapped (100.00% : N/A)
-41 105027081 + 0 mapped (98.29% : N/A)
-42  63898507 + 0 mapped (97.27% : N/A)
-43 28930176 + 0 mapped (100.00% : N/A)
-44 49669024 + 0 mapped (100.00% : N/A)
-45  75962835 + 0 mapped (98.64% : N/A)
-46  26415467 + 0 mapped (96.27% : N/A)
-47  1786687 + 0 mapped (100.00% : N/A)
-48 18870010 + 0 mapped (100.00% : N/A)
-49  73508067 + 0 mapped (98.19% : N/A)
-50  51196256 + 0 mapped (97.45% : N/A)
-51 25112288 + 0 mapped (100.00% : N/A)
-52 40497298 + 0 mapped (100.00% : N/A)</code></pre>
+ Ind4_reads_summary &lt;- Ind4_summary %&gt;%                          
+ separate(counts,into=c(&quot;reads&quot;,NA),sep= &quot; &quot;) %&gt;% 
+   mutate(reads=as.numeric(reads)) %&gt;% 
+   separate(mapped, into= c(&quot;mapped_reads&quot;, NA,NA, &quot;percent_mapped_reads&quot;,NA)) %&gt;% 
+   separate(name, into=c(&quot;one&quot;,&quot;two&quot;,NA, &quot;4&quot;,&quot;sample&quot;,NA,&quot;seven&quot;,&quot;8&quot;)) %&gt;% 
+   mutate(mapped_reads=as.numeric(mapped_reads)) %&gt;% 
+   mutate(type = if_else(two==&quot;first&quot;, &quot;total&quot;,
+                         if_else(two==&quot;noM&quot;,&quot;nuclear&quot;,
+                                 if_else((seven == &quot;fin&quot;&amp; two==&quot;files&quot;), &quot;unique&quot;, &quot;dedup&quot;))))%&gt;% 
+   dplyr::select(sample,type,  reads, mapped_reads)%&gt;% 
+   pivot_longer(cols=reads:mapped_reads, names_to = &quot;read_info&quot;, values_to = &quot;reads&quot;) %&gt;% 
+   unite(&quot;type&quot;,type:read_info, sep=&quot;_&quot;) %&gt;% 
+   distinct() %&gt;% 
+   pivot_wider(id_cols = sample, names_from = &quot;type&quot;, values_from = &quot;reads&quot;) %&gt;% 
+   mutate(per_nuclear_mapped = nuclear_mapped_reads/total_mapped_reads*100) %&gt;% 
+   dplyr::select(sample,total_reads:nuclear_mapped_reads,per_nuclear_mapped,unique_mapped_reads)
+ 
+ # dedup_mapped_reads)
+ Ind4_reads_summary %&gt;% 
+   kable(., caption= &quot;Reads summary from Ind_4&quot;) %&gt;%
+  kable_paper(&quot;striped&quot;, full_width = FALSE) %&gt;%
+  kable_styling(full_width = FALSE,font_size = 18) %&gt;%
+  scroll_box(width = &quot;100%&quot;, height = &quot;400px&quot;)</code></pre>
+<div
+style="border: 1px solid #ddd; padding: 0px; overflow-y: scroll; height:400px; overflow-x: scroll; width:100%; ">
+<table class=" lightable-paper lightable-striped table" style="font-family: &quot;Arial Narrow&quot;, arial, helvetica, sans-serif; width: auto !important; margin-left: auto; margin-right: auto; font-size: 18px; width: auto !important; margin-left: auto; margin-right: auto;">
+<caption style="font-size: initial !important;">
+Reads summary from Ind_4
+</caption>
+<thead>
+<tr>
+<th style="text-align:left;position: sticky; top:0; background-color: #FFFFFF;">
+sample
+</th>
+<th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;">
+total_reads
+</th>
+<th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;">
+total_mapped_reads
+</th>
+<th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;">
+nuclear_reads
+</th>
+<th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;">
+nuclear_mapped_reads
+</th>
+<th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;">
+per_nuclear_mapped
+</th>
+<th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;">
+unique_mapped_reads
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+79V24h
+</td>
+<td style="text-align:right;">
+77013488
+</td>
+<td style="text-align:right;">
+75962835
+</td>
+<td style="text-align:right;">
+27439164
+</td>
+<td style="text-align:right;">
+26415467
+</td>
+<td style="text-align:right;">
+34.77420
+</td>
+<td style="text-align:right;">
+18870010
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+79DA24h
+</td>
+<td style="text-align:right;">
+83930268
+</td>
+<td style="text-align:right;">
+83140985
+</td>
+<td style="text-align:right;">
+39561574
+</td>
+<td style="text-align:right;">
+38811928
+</td>
+<td style="text-align:right;">
+46.68206
+</td>
+<td style="text-align:right;">
+29459906
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+79DA3h
+</td>
+<td style="text-align:right;">
+114610072
+</td>
+<td style="text-align:right;">
+112679708
+</td>
+<td style="text-align:right;">
+74283554
+</td>
+<td style="text-align:right;">
+72386250
+</td>
+<td style="text-align:right;">
+64.24071
+</td>
+<td style="text-align:right;">
+55956416
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+79DX24h
+</td>
+<td style="text-align:right;">
+78395382
+</td>
+<td style="text-align:right;">
+77692597
+</td>
+<td style="text-align:right;">
+25391928
+</td>
+<td style="text-align:right;">
+24733417
+</td>
+<td style="text-align:right;">
+31.83497
+</td>
+<td style="text-align:right;">
+17146642
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+79DX3h
+</td>
+<td style="text-align:right;">
+77601292
+</td>
+<td style="text-align:right;">
+76058132
+</td>
+<td style="text-align:right;">
+47116936
+</td>
+<td style="text-align:right;">
+45593581
+</td>
+<td style="text-align:right;">
+59.94570
+</td>
+<td style="text-align:right;">
+35460994
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+79E24h
+</td>
+<td style="text-align:right;">
+86039200
+</td>
+<td style="text-align:right;">
+85324746
+</td>
+<td style="text-align:right;">
+29965542
+</td>
+<td style="text-align:right;">
+29300484
+</td>
+<td style="text-align:right;">
+34.33996
+</td>
+<td style="text-align:right;">
+21004354
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+79E3h
+</td>
+<td style="text-align:right;">
+86993222
+</td>
+<td style="text-align:right;">
+85671962
+</td>
+<td style="text-align:right;">
+46372712
+</td>
+<td style="text-align:right;">
+45084280
+</td>
+<td style="text-align:right;">
+52.62431
+</td>
+<td style="text-align:right;">
+34578548
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+79M24h
+</td>
+<td style="text-align:right;">
+82061002
+</td>
+<td style="text-align:right;">
+81424543
+</td>
+<td style="text-align:right;">
+27148372
+</td>
+<td style="text-align:right;">
+26562054
+</td>
+<td style="text-align:right;">
+32.62168
+</td>
+<td style="text-align:right;">
+19085838
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+79M3h
+</td>
+<td style="text-align:right;">
+83929214
+</td>
+<td style="text-align:right;">
+82368935
+</td>
+<td style="text-align:right;">
+48985626
+</td>
+<td style="text-align:right;">
+47454435
+</td>
+<td style="text-align:right;">
+57.61205
+</td>
+<td style="text-align:right;">
+36937534
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+79T24h
+</td>
+<td style="text-align:right;">
+90875858
+</td>
+<td style="text-align:right;">
+89680567
+</td>
+<td style="text-align:right;">
+31347532
+</td>
+<td style="text-align:right;">
+30204755
+</td>
+<td style="text-align:right;">
+33.68038
+</td>
+<td style="text-align:right;">
+21789834
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+79T3h
+</td>
+<td style="text-align:right;">
+106856444
+</td>
+<td style="text-align:right;">
+105027081
+</td>
+<td style="text-align:right;">
+65690664
+</td>
+<td style="text-align:right;">
+63898507
+</td>
+<td style="text-align:right;">
+60.84003
+</td>
+<td style="text-align:right;">
+49669024
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+79V3h
+</td>
+<td style="text-align:right;">
+74863328
+</td>
+<td style="text-align:right;">
+73508067
+</td>
+<td style="text-align:right;">
+52535548
+</td>
+<td style="text-align:right;">
+51196256
+</td>
+<td style="text-align:right;">
+69.64713
+</td>
+<td style="text-align:right;">
+40497298
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>**note deduped mapped reads were taken out of this list due to
+problem with script returning invalid numbers. The read-numbers for
+deduplicated read pairs will be added here after reprocessing the
+files</p>
 <pre class="r"><code># plotAvgProf(anno_ind4_V24h,xlim=c(-3000,3000))
 plotAnnoBar(anno_ind4_V24h, main = &quot;Genomic Feature Distribution&quot;)+ ggtitle(&quot;Ind4 VEH 24 hour&quot;)</code></pre>
-<p><img src="figure/Peak_calling.Rmd/final%20import%20inital-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p><img src="figure/Peak_calling.Rmd/peak%20info-1.png" width="672" style="display: block; margin: auto;" /></p>
 <pre class="r"><code>plotAnnoBar(anno_ind1_DA24h, main = &quot;Genomic Feature Distribution&quot;)+ ggtitle(&quot;Ind1 DNR 24 hour&quot;)</code></pre>
-<p><img src="figure/Peak_calling.Rmd/final%20import%20inital-2.png" width="672" style="display: block; margin: auto;" /></p>
+<p><img src="figure/Peak_calling.Rmd/peak%20info-2.png" width="672" style="display: block; margin: auto;" /></p>
 <pre class="r"><code>ind4_V24hpeaks_gr &lt;- prepGRangeObj(ind4_V24hpeaks)
 ind1_DA24hpeaks_gr &lt;- prepGRangeObj((ind1_DA24hpeaks))
 Epi_list &lt;- GRangesList(ind1_DA24hpeaks_gr, ind4_V24hpeaks_gr)
 ##plotting the TSS average window (making an overlap of each using Epi_list as list holder)
 Epi_list_tagMatrix = lapply(Epi_list, getTagMatrix, windows = TSS)</code></pre>
-<pre><code>&gt;&gt; preparing start_site regions by gene... 2024-02-27 3:04:00 PM
-&gt;&gt; preparing tag matrix...  2024-02-27 3:04:00 PM 
-&gt;&gt; preparing start_site regions by gene... 2024-02-27 3:04:14 PM
-&gt;&gt; preparing tag matrix...  2024-02-27 3:04:14 PM </code></pre>
+<pre><code>&gt;&gt; preparing start_site regions by gene... 2024-02-27 4:19:10 PM
+&gt;&gt; preparing tag matrix...  2024-02-27 4:19:10 PM 
+&gt;&gt; preparing start_site regions by gene... 2024-02-27 4:19:24 PM
+&gt;&gt; preparing tag matrix...  2024-02-27 4:19:24 PM </code></pre>
 <pre class="r"><code>plotAvgProf(Epi_list_tagMatrix, xlim=c(-3000, 3000), ylab = &quot;Count Frequency&quot;)</code></pre>
-<pre><code>&gt;&gt; plotting figure...            2024-02-27 3:04:23 PM </code></pre>
-<p><img src="figure/Peak_calling.Rmd/final%20import%20inital-3.png" width="672" style="display: block; margin: auto;" /></p>
+<pre><code>&gt;&gt; plotting figure...            2024-02-27 4:19:33 PM </code></pre>
+<p><img src="figure/Peak_calling.Rmd/peak%20info-3.png" width="672" style="display: block; margin: auto;" /></p>
 <pre class="r"><code>#plotPeakProf(Epi_list_tagMatrix, facet = &quot;none&quot;, conf = 0.95)</code></pre>
 <div id="ind4-3-hour-and-24-hour-fragment-sizes" class="section level3">
 <h3>Ind4 3 hour and 24 hour fragment sizes</h3>
@@ -844,6 +1123,43 @@ Ind4_frag_files %&gt;%
   theme_classic()+
   scale_color_manual(values=drug_pal_fact)</code></pre>
 <p><img src="figure/Peak_calling.Rmd/fragfiles%20visualize-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-no-spaces-fragfiles-visualize-1">
+Past versions of "fragfiles visualize-1.png"
+</button>
+</p>
+<div id="fig-no-spaces-fragfiles-visualize-1" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/reneeisnowhere/ATAC_learning/blob/3d2aa7b6ed17e37a4645e99c6184385654e4eee6/docs/figure/Peak_calling.Rmd/fragfiles visualize-1.png" target="_blank">3d2aa7b</a>
+</td>
+<td>
+reneeisnowhere
+</td>
+<td>
+2024-02-27
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 <pre class="r"><code>Ind4_frag_files %&gt;% 
   dplyr::filter(time ==&quot;24h&quot;) %&gt;%
   ggplot(., aes(y=counts, x=frag_size, group=trt))+
@@ -852,6 +1168,43 @@ Ind4_frag_files %&gt;%
   theme_classic()+
   scale_color_manual(values=drug_pal_fact)</code></pre>
 <p><img src="figure/Peak_calling.Rmd/fragfiles%20visualize-2.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-no-spaces-fragfiles-visualize-2">
+Past versions of "fragfiles visualize-2.png"
+</button>
+</p>
+<div id="fig-no-spaces-fragfiles-visualize-2" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/reneeisnowhere/ATAC_learning/blob/3d2aa7b6ed17e37a4645e99c6184385654e4eee6/docs/figure/Peak_calling.Rmd/fragfiles visualize-2.png" target="_blank">3d2aa7b</a>
+</td>
+<td>
+reneeisnowhere
+</td>
+<td>
+2024-02-27
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 <p>So, fragment lengths are not so great. Lots of noise.</p>
 <br>
 <p>
