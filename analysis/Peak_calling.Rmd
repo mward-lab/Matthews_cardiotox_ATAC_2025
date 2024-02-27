@@ -69,9 +69,21 @@ anno_ind1_DA24h <- readRDS("data/anno_ind1_DA24h.RDS")
 
 ```
 
+This specific page so far contains the QC analysis after calling peaks using MACS2.
 
+Primary scripts used for ATAC data preprocesing will be linked here in the future:
+
+Currently the step were as follows:
+1.  Basic Fastqc followed by adapter trimming and Fastqc analysis on the leftover fragments.
+2.  Trimmed reads were aligned to the hg38 human genome.
+3.  Mitochondrial reads (chrM) were removed
+4.  samtools was used to removed non-paired, discordantly paired, and mulimapped reads from the .bam.
+5.  Markduplicates function from Picard was used to mark optical and PCR duplicates, with samtools used to remove these reads using the flag -F 1024.
+6.  MACS2 was used to call peaks, with QC of the peak files below.
+
+
+Initial summary of reads after each step:
 ```{r final import inital}
-
 #  library(readr)
 # > Ind4_summary <- read_table("~/ATAC_downloads/Ind4/Ind4_summary.txt", 
 # +     col_names = FALSE, col_types = cols(X3 = col_skip(), 
@@ -84,12 +96,37 @@ anno_ind1_DA24h <- readRDS("data/anno_ind1_DA24h.RDS")
 #
 
 Ind4_summary  <- read.csv("data/Ind4_summary.txt", row.names = 1)
- Ind4_summary %>%                          
- separate(counts,into=c("counts",NA),sep= " ") %>% 
-   mutate(counts=as.numeric(counts))
+ Ind4_reads_summary <- Ind4_summary %>%                          
+ separate(counts,into=c("reads",NA),sep= " ") %>% 
+   mutate(reads=as.numeric(reads)) %>% 
+   separate(mapped, into= c("mapped_reads", NA,NA, "percent_mapped_reads",NA)) %>% 
+   separate(name, into=c("one","two",NA, "4","sample",NA,"seven","8")) %>% 
+   mutate(mapped_reads=as.numeric(mapped_reads)) %>% 
+   mutate(type = if_else(two=="first", "total",
+                         if_else(two=="noM","nuclear",
+                                 if_else((seven == "fin"& two=="files"), "unique", "dedup"))))%>% 
+   dplyr::select(sample,type,  reads, mapped_reads)%>% 
+   pivot_longer(cols=reads:mapped_reads, names_to = "read_info", values_to = "reads") %>% 
+   unite("type",type:read_info, sep="_") %>% 
+   distinct() %>% 
+   pivot_wider(id_cols = sample, names_from = "type", values_from = "reads") %>% 
+   mutate(per_nuclear_mapped = nuclear_mapped_reads/total_mapped_reads*100) %>% 
+   dplyr::select(sample,total_reads:nuclear_mapped_reads,per_nuclear_mapped,unique_mapped_reads)
  
+ # dedup_mapped_reads)
+ Ind4_reads_summary %>% 
+   kable(., caption= "Reads summary from Ind_4") %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(full_width = FALSE,font_size = 18) %>%
+  scroll_box(width = "100%", height = "400px")
+   
  
+```
 
+**note deduped mapped reads were taken out of this list due to problem with script returning invalid numbers.  The read-numbers for deduplicated read pairs will be added here after reprocessing the files
+
+
+```{r peak info}
 # plotAvgProf(anno_ind4_V24h,xlim=c(-3000,3000))
 plotAnnoBar(anno_ind4_V24h, main = "Genomic Feature Distribution")+ ggtitle("Ind4 VEH 24 hour")
 plotAnnoBar(anno_ind1_DA24h, main = "Genomic Feature Distribution")+ ggtitle("Ind1 DNR 24 hour")
@@ -106,7 +143,7 @@ plotAvgProf(Epi_list_tagMatrix, xlim=c(-3000, 3000), ylab = "Count Frequency")
 
 
 ```{r fragment files list, eval=FALSE, include=FALSE}
-
+### this was used to load fragment files for all individuals for display in the future
 safename <- choose.files()
 Ind4_79DA3h_frag <- read_delim("~/ATAC_downloads/Ind4/filt_files/frag_length/trimmed_Ind4_79DA3h_S1.nodup.bam.fragment_length_count.txt", 
     delim = "\t", escape_double = FALSE, 
