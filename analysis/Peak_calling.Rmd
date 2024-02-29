@@ -3,6 +3,9 @@ title: "Peak_Calling"
 author: "ERM"
 date: "`r Sys.Date()`"
 output: html_document
+editor_options: 
+  markdown: 
+    wrap: sentence
 ---
 
 ```{r setup, include=FALSE}
@@ -65,42 +68,70 @@ ind4_V24hpeaks <- readRDS("data/ind4_V24hpeaks.RDS")
 ind1_DA24hpeaks <- readRDS("data/ind1_DA24hpeaks.RDS")
 anno_ind4_V24h <- readRDS("data/anno_ind4_V24h.RDS")
 anno_ind1_DA24h <- readRDS("data/anno_ind1_DA24h.RDS")
-
-
+Ind1_summary  <- read.csv("data/Ind1_summary.txt", row.names = 1) %>% 
+  rename(X1="sample",X2="reads",X3="mapped")
+Ind2_summary  <- read.csv("data/Ind2_summary.txt", row.names = 1)%>% 
+  rename(X1="sample",X2="reads",X3="mapped")
+Ind3_summary  <- read.csv("data/Ind3_summary.txt", row.names = 1)%>% 
+  rename(X1="sample",X2="reads",X3="mapped")
+Ind4_summary  <- read.csv("data/Ind4_summary.txt", row.names = 1)%>% 
+  rename(X1="sample",X2="reads",X3="mapped")
+Ind5_summary  <- read.csv("data/Ind5_summary.txt", row.names = 1)%>% 
+  rename(X1="sample",X2="reads",X3="mapped")
+Ind6_summary  <- read.csv("data/Ind6_summary.txt", row.names = 1)%>% 
+  rename(X1="sample",X2="reads",X3="mapped")
 ```
 
 This specific page so far contains the QC analysis after calling peaks using MACS2.
 
 Primary scripts used for ATAC data preprocesing will be linked here in the future:
 
-Currently the step were as follows:
-1.  Basic Fastqc followed by adapter trimming and Fastqc analysis on the leftover fragments.
-2.  Trimmed reads were aligned to the hg38 human genome.
-3.  Mitochondrial reads (chrM) were removed
-4.  samtools was used to removed non-paired, discordantly paired, and mulimapped reads from the .bam.
-5.  Markduplicates function from Picard was used to mark optical and PCR duplicates, with samtools used to remove these reads using the flag -F 1024.
-6.  MACS2 was used to call peaks, with QC of the peak files below.
+-    Currently the steps were are as follows:
 
+    -   Basic Fastqc followed by adapter trimming and Fastqc analysis on the leftover fragments.
+
+    -   Trimmed reads were aligned to the hg38 human genome.
+
+    -   Mitochondrial reads (chrM) were removed
+
+    -   samtools was used to removed non-paired, discordantly paired, and multi-mapped reads from the .bam.
+
+    -   Markduplicates function from Picard was used to mark optical and PCR duplicates, with samtools used to remove these reads using the flag -F 1024.
+
+    -   MACS2 was used to call peaks, with QC of the peak files below.
 
 Initial summary of reads after each step:
-```{r final import inital}
-#  library(readr)
-# > Ind4_summary <- read_table("~/ATAC_downloads/Ind4/Ind4_summary.txt", 
-# +     col_names = FALSE, col_types = cols(X3 = col_skip(), 
-# +         X4 = col_skip(), X5 = col_skip(), 
-# +         X6 = col_skip(), X7 = col_skip(), 
-# +         X8 = col_skip(), X9 = col_skip(), 
-# +         X10 = col_skip(), X11 = col_skip(), 
-# +         X13 = col_skip(), X14 = col_skip(), 
-# +         X17 = col_skip(), X18 = col_skip()))
-#
 
-Ind4_summary  <- read.csv("data/Ind4_summary.txt", row.names = 1)
- Ind4_reads_summary <- Ind4_summary %>%                          
- separate(counts,into=c("reads",NA),sep= " ") %>% 
+### Individual 1 read summary
+
+```{r Readssummary1}
+#  library(readr) pulling in orginal files example code
+#
+# Ind1_summary <- read_delim("~/ATAC_downloads/Ind1/trimmed/Ind1_summedup.txt", 
+#     delim = "\t", escape_double = FALSE, 
+#     col_names = FALSE, trim_ws = TRUE)
+# Ind2_summary <- read_delim("~/ATAC_downloads/Ind2/trimmed/Ind2_summedup.txt", 
+#     delim = "\t", escape_double = FALSE, 
+#     col_names = FALSE, trim_ws = TRUE)
+# Ind3_summary <- read_delim("~/ATAC_downloads/Ind3/trimmed/Ind3_summedup.txt", 
+#     delim = "\t", escape_double = FALSE, 
+#     col_names = FALSE, trim_ws = TRUE)
+# Ind4_summary <- read_delim("~/ATAC_downloads/Ind4/trimmed/Ind4_summedup.txt", 
+#     delim = "\t", escape_double = FALSE, 
+#     col_names = FALSE, trim_ws = TRUE)
+# Ind5_summary <- read_delim("~/ATAC_downloads/Ind5/trimmed/Ind5_summedup.txt", 
+#     delim = "\t", escape_double = FALSE, 
+#     col_names = FALSE, trim_ws = TRUE)
+# Ind6_summary <- read_delim("~/ATAC_downloads/Ind6/trimmed/Ind6_summedup.txt", 
+#     delim = "\t", escape_double = FALSE, 
+#     col_names = FALSE, trim_ws = TRUE)
+# write.csv(Ind6_summary, "data/Ind6_summary.txt")
+Ind1_reads_summary <- 
+Ind1_summary %>%                          
+ separate(reads,into=c("reads",NA),sep= " ") %>% 
    mutate(reads=as.numeric(reads)) %>% 
    separate(mapped, into= c("mapped_reads", NA,NA, "percent_mapped_reads",NA)) %>% 
-   separate(name, into=c("one","two",NA, "4","sample",NA,"seven","8")) %>% 
+   separate(sample, into=c("one","two",NA, "4","sample",NA,"seven","8")) %>% 
    mutate(mapped_reads=as.numeric(mapped_reads)) %>% 
    mutate(type = if_else(two=="first", "total",
                          if_else(two=="noM","nuclear",
@@ -111,19 +142,179 @@ Ind4_summary  <- read.csv("data/Ind4_summary.txt", row.names = 1)
    distinct() %>% 
    pivot_wider(id_cols = sample, names_from = "type", values_from = "reads") %>% 
    mutate(per_nuclear_mapped = nuclear_mapped_reads/total_mapped_reads*100) %>% 
-   dplyr::select(sample,total_reads:nuclear_mapped_reads,per_nuclear_mapped,unique_mapped_reads)
+  mutate(dedup_read_pairs=dedup_reads/2) %>% 
+   dplyr::select(sample,total_reads:nuclear_mapped_reads,per_nuclear_mapped,unique_mapped_reads,dedup_reads,dedup_read_pairs)
  
  # dedup_mapped_reads)
- Ind4_reads_summary %>% 
-   kable(., caption= "Reads summary from Ind_4") %>%
+ Ind1_reads_summary %>% 
+   kable(., caption= "Reads summary from Ind 1") %>%
   kable_paper("striped", full_width = FALSE) %>%
   kable_styling(full_width = FALSE,font_size = 18) %>%
   scroll_box(width = "100%", height = "400px")
-   
+
  
 ```
 
-**note deduped mapped reads were taken out of this list due to problem with script returning invalid numbers.  The read-numbers for deduplicated read pairs will be added here after reprocessing the files
+### Individual 2 read summary
+```{r Readssummary2}
+
+Ind2_reads_summary <- 
+Ind2_summary %>%                          
+ separate(reads,into=c("reads",NA),sep= " ") %>% 
+   mutate(reads=as.numeric(reads)) %>% 
+   separate(mapped, into= c("mapped_reads", NA,NA, "percent_mapped_reads",NA)) %>% 
+   separate(sample, into=c("one","two",NA, "4","sample",NA,"seven","8")) %>% 
+   mutate(mapped_reads=as.numeric(mapped_reads)) %>% 
+   mutate(type = if_else(two=="first", "total",
+                         if_else(two=="noM","nuclear",
+                                 if_else((seven == "fin"& two=="files"), "unique", "dedup"))))%>% 
+   dplyr::select(sample,type,  reads, mapped_reads)%>% 
+   pivot_longer(cols=reads:mapped_reads, names_to = "read_info", values_to = "reads") %>% 
+   unite("type",type:read_info, sep="_") %>% 
+   distinct() %>% 
+   pivot_wider(id_cols = sample, names_from = "type", values_from = "reads") %>% 
+   mutate(per_nuclear_mapped = nuclear_mapped_reads/total_mapped_reads*100) %>% 
+  mutate(dedup_read_pairs=dedup_reads/2) %>% 
+   dplyr::select(sample,total_reads:nuclear_mapped_reads,per_nuclear_mapped,unique_mapped_reads,dedup_reads,dedup_read_pairs)
+ 
+ # dedup_mapped_reads)
+ Ind2_reads_summary %>% 
+   kable(., caption= "Reads summary from Ind 2") %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(full_width = FALSE,font_size = 18) %>%
+  scroll_box(width = "100%", height = "400px")
+
+ 
+```
+
+### Individual 3 read summary
+```{r Readssummary3}
+
+Ind3_reads_summary <- 
+Ind3_summary %>%                          
+ separate(reads,into=c("reads",NA),sep= " ") %>% 
+   mutate(reads=as.numeric(reads)) %>% 
+   separate(mapped, into= c("mapped_reads", NA,NA, "percent_mapped_reads",NA)) %>% 
+   separate(sample, into=c("one","two",NA, "4","sample",NA,"seven","8")) %>% 
+   mutate(mapped_reads=as.numeric(mapped_reads)) %>% 
+   mutate(type = if_else(two=="first", "total",
+                         if_else(two=="noM","nuclear",
+                                 if_else((seven == "fin"& two=="files"), "unique", "dedup"))))%>% 
+   dplyr::select(sample,type,  reads, mapped_reads)%>% 
+   pivot_longer(cols=reads:mapped_reads, names_to = "read_info", values_to = "reads") %>% 
+   unite("type",type:read_info, sep="_") %>% 
+   distinct() %>% 
+   pivot_wider(id_cols = sample, names_from = "type", values_from = "reads") %>% 
+   mutate(per_nuclear_mapped = nuclear_mapped_reads/total_mapped_reads*100) %>% 
+  mutate(dedup_read_pairs=dedup_reads/2) %>% 
+   dplyr::select(sample,total_reads:nuclear_mapped_reads,per_nuclear_mapped,unique_mapped_reads,dedup_reads,dedup_read_pairs)
+ 
+ # dedup_mapped_reads)
+ Ind3_reads_summary %>% 
+   kable(., caption= "Reads summary from Ind 3") %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(full_width = FALSE,font_size = 18) %>%
+  scroll_box(width = "100%", height = "400px")
+
+ 
+```
+
+### Individual 4 read summary
+```{r Readssummary4}
+
+Ind4_reads_summary <- 
+Ind4_summary %>%                          
+ separate(reads,into=c("reads",NA),sep= " ") %>% 
+   mutate(reads=as.numeric(reads)) %>% 
+   separate(mapped, into= c("mapped_reads", NA,NA, "percent_mapped_reads",NA)) %>% 
+   separate(sample, into=c("one","two",NA, "4","sample",NA,"seven","8")) %>% 
+   mutate(mapped_reads=as.numeric(mapped_reads)) %>% 
+   mutate(type = if_else(two=="first", "total",
+                         if_else(two=="noM","nuclear",
+                                 if_else((seven == "fin"& two=="files"), "unique", "dedup"))))%>% 
+   dplyr::select(sample,type,  reads, mapped_reads)%>% 
+   pivot_longer(cols=reads:mapped_reads, names_to = "read_info", values_to = "reads") %>% 
+   unite("type",type:read_info, sep="_") %>% 
+   distinct() %>% 
+   pivot_wider(id_cols = sample, names_from = "type", values_from = "reads") %>% 
+   mutate(per_nuclear_mapped = nuclear_mapped_reads/total_mapped_reads*100) %>% 
+  mutate(dedup_read_pairs=dedup_reads/2) %>% 
+   dplyr::select(sample,total_reads:nuclear_mapped_reads,per_nuclear_mapped,unique_mapped_reads,dedup_reads,dedup_read_pairs)
+ 
+ # dedup_mapped_reads)
+ Ind4_reads_summary %>% 
+   kable(., caption= "Reads summary from Ind 4") %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(full_width = FALSE,font_size = 18) %>%
+  scroll_box(width = "100%", height = "400px")
+
+ 
+```
+_note: reprocessed reads for Individual 4 vary from previous output.  This is due a file truncation that was detected in the process.  When the files were reprocessed, the truncated bam file was fixed, resulting in a larger number of overall reads.  Yay, I figured it out!_
+
+### Individual 5 read summary
+```{r Readssummary5}
+
+Ind5_reads_summary <- 
+Ind5_summary %>%                          
+ separate(reads,into=c("reads",NA),sep= " ") %>% 
+   mutate(reads=as.numeric(reads)) %>% 
+   separate(mapped, into= c("mapped_reads", NA,NA, "percent_mapped_reads",NA)) %>% 
+   separate(sample, into=c("one","two",NA, "4","sample",NA,"seven","8")) %>% 
+   mutate(mapped_reads=as.numeric(mapped_reads)) %>% 
+   mutate(type = if_else(two=="first", "total",
+                         if_else(two=="noM","nuclear",
+                                 if_else((seven == "fin"& two=="files"), "unique", "dedup"))))%>% 
+   dplyr::select(sample,type,  reads, mapped_reads)%>% 
+   pivot_longer(cols=reads:mapped_reads, names_to = "read_info", values_to = "reads") %>% 
+   unite("type",type:read_info, sep="_") %>% 
+   distinct() %>% 
+   pivot_wider(id_cols = sample, names_from = "type", values_from = "reads") %>% 
+   mutate(per_nuclear_mapped = nuclear_mapped_reads/total_mapped_reads*100) %>% 
+  mutate(dedup_read_pairs=dedup_reads/2) %>% 
+   dplyr::select(sample,total_reads:nuclear_mapped_reads,per_nuclear_mapped,unique_mapped_reads,dedup_reads,dedup_read_pairs)
+ 
+ # dedup_mapped_reads)
+ Ind5_reads_summary %>% 
+   kable(., caption= "Reads summary from Ind 5") %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(full_width = FALSE,font_size = 18) %>%
+  scroll_box(width = "100%", height = "400px")
+
+ 
+```
+
+### Individual 6 read summary
+```{r Readssummary6}
+
+Ind6_reads_summary <- 
+Ind6_summary %>%                          
+ separate(reads,into=c("reads",NA),sep= " ") %>% 
+   mutate(reads=as.numeric(reads)) %>% 
+   separate(mapped, into= c("mapped_reads", NA,NA, "percent_mapped_reads",NA)) %>% 
+   separate(sample, into=c("one","two",NA, "4","sample",NA,"seven","8")) %>% 
+   mutate(mapped_reads=as.numeric(mapped_reads)) %>% 
+   mutate(type = if_else(two=="first", "total",
+                         if_else(two=="noM","nuclear",
+                                 if_else((seven == "fin"& two=="files"), "unique", "dedup"))))%>% 
+   dplyr::select(sample,type,  reads, mapped_reads)%>% 
+   pivot_longer(cols=reads:mapped_reads, names_to = "read_info", values_to = "reads") %>% 
+   unite("type",type:read_info, sep="_") %>% 
+   distinct() %>% 
+   pivot_wider(id_cols = sample, names_from = "type", values_from = "reads") %>% 
+   mutate(per_nuclear_mapped = nuclear_mapped_reads/total_mapped_reads*100) %>% 
+  mutate(dedup_read_pairs=dedup_reads/2) %>% 
+   dplyr::select(sample,total_reads:nuclear_mapped_reads,per_nuclear_mapped,unique_mapped_reads,dedup_reads,dedup_read_pairs)
+ 
+ # dedup_mapped_reads)
+ Ind6_reads_summary %>% 
+   kable(., caption= "Reads summary from Ind 6") %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(full_width = FALSE,font_size = 18) %>%
+  scroll_box(width = "100%", height = "400px")
+
+ 
+```
 
 
 ```{r peak info}
@@ -140,124 +331,247 @@ plotAvgProf(Epi_list_tagMatrix, xlim=c(-3000, 3000), ylab = "Count Frequency")
 #plotPeakProf(Epi_list_tagMatrix, facet = "none", conf = 0.95)
 ```
 
-
-
 ```{r fragment files list, eval=FALSE, include=FALSE}
 ### this was used to load fragment files for all individuals for display in the future
 safename <- choose.files()
-Ind4_79DA3h_frag <- read_delim("~/ATAC_downloads/Ind4/filt_files/frag_length/trimmed_Ind4_79DA3h_S1.nodup.bam.fragment_length_count.txt", 
+Ind6_71DA3h_frag <- read_delim(safename[1], 
     delim = "\t", escape_double = FALSE, 
     col_names = FALSE, trim_ws = TRUE)%>% separate(col=1, into=c("counts","frag_size")) %>% 
-  rename(  "counts"="DA_3h_4_counts")
+  rename(  "counts"="DA_3h_6_counts")
 
 
-Ind4_79DA24h_frag <- read_delim(safename[2], 
+Ind6_71DA24h_frag <- read_delim(safename[2], 
     delim = "\t", escape_double = FALSE, 
     col_names = FALSE, trim_ws = TRUE) %>% separate(col=1, into=c("counts","frag_size"))%>% 
-  rename(  "counts"="DA_24h_4_counts")
+  rename(  "counts"="DA_24h_6_counts")
 
 
-Ind4_79DX3h_frag <- read_delim(safename[3], 
+Ind6_71DX3h_frag <- read_delim(safename[3], 
     delim = "\t", escape_double = FALSE, 
     col_names = FALSE, trim_ws = TRUE) %>% separate(col=1, into=c("counts","frag_size"))%>% 
-  rename(  "counts"="DX_3h_4_counts")
+  rename(  "counts"="DX_3h_6_counts")
 
 
-Ind4_79DX24h_frag<- read_delim(safename[4], 
+Ind6_71DX24h_frag<- read_delim(safename[4], 
     delim = "\t", escape_double = FALSE, 
     col_names = FALSE, trim_ws = TRUE) %>% separate(col=1, into=c("counts","frag_size"))%>% 
-  rename(  "counts"="DX_24h_4_counts")
+  rename(  "counts"="DX_24h_6_counts")
 
 
-Ind4_79E3h_frag <- read_delim(safename[5], 
+Ind6_71E3h_frag <- read_delim(safename[5], 
     delim = "\t", escape_double = FALSE, 
     col_names = FALSE, trim_ws = TRUE) %>% separate(col=1, into=c("counts","frag_size"))%>% 
-  rename(  "counts"="E_3h_4_counts")
+  rename(  "counts"="E_3h_6_counts")
 
 
-Ind4_79E24h_frag <- read_delim(safename[6], 
+Ind6_71E24h_frag <- read_delim(safename[6], 
     delim = "\t", escape_double = FALSE, 
     col_names = FALSE, trim_ws = TRUE) %>% separate(col=1, into=c("counts","frag_size"))%>% 
-  rename(  "counts"="E_24h_4_counts")
+  rename(  "counts"="E_24h_6_counts")
 
-Ind4_79M3h_frag <- read_delim(safename[7], 
+Ind6_71M3h_frag <- read_delim(safename[7], 
     delim = "\t", escape_double = FALSE, 
     col_names = FALSE, trim_ws = TRUE) %>% separate(col=1, into=c("counts","frag_size"))%>% 
-  rename(  "counts"="M_3h_4_counts")
+  rename(  "counts"="M_3h_6_counts")
 
 
-Ind4_79M24h_frag <- read_delim(safename[8], 
+Ind6_71M24h_frag <- read_delim(safename[8], 
     delim = "\t", escape_double = FALSE, 
     col_names = FALSE, trim_ws = TRUE) %>% separate(col=1, into=c("counts","frag_size"))%>% 
-  rename(  "counts"="M_24h_4_counts")
+  rename(  "counts"="M_24h_6_counts")
 
 
-Ind4_79T3h_frag <- read_delim(safename[9], 
+Ind6_71T3h_frag <- read_delim(safename[9], 
     delim = "\t", escape_double = FALSE, 
     col_names = FALSE, trim_ws = TRUE) %>% separate(col=1, into=c("counts","frag_size"))%>% 
-  rename(  "counts"="T_3h_4_counts")
+  rename(  "counts"="T_3h_6_counts")
 
 
 
-Ind4_79T24h_frag <- read_delim(safename[10], 
+Ind6_71T24h_frag <- read_delim(safename[10], 
     delim = "\t", escape_double = FALSE, 
     col_names = FALSE, trim_ws = TRUE) %>% separate(col=1, into=c("counts","frag_size"))%>% 
-  rename(  "counts"="T_24h_4_counts")
+  rename(  "counts"="T_24h_6_counts")
 
 
 
-Ind4_79V3h_frag <- read_delim(safename[11], 
+Ind6_71V3h_frag <- read_delim(safename[11], 
     delim = "\t", escape_double = FALSE, 
     col_names = FALSE, trim_ws = TRUE) %>% separate(col=1, into=c("counts","frag_size"))%>% 
-  rename(  "counts"="V_3h_4_counts")
+  rename(  "counts"="V_3h_6_counts")
 
 
 
-Ind4_79V24h_frag <- read_delim(safename[12], 
+Ind6_71V24h_frag <- read_delim(safename[12], 
     delim = "\t", escape_double = FALSE, 
     col_names = FALSE, trim_ws = TRUE) %>% separate(col=1, into=c("counts","frag_size"))%>% 
-  rename(  "counts"="V_24h_4_counts")
-Ind4_frag_files <- Ind4_79V3h_frag %>% 
-  left_join(.,Ind4_79V24h_frag, by = "frag_size") %>% 
-  left_join(.,Ind4_79DA3h_frag, by = "frag_size") %>% 
-  left_join(.,Ind4_79DA24h_frag, by = "frag_size") %>% 
-  left_join(.,Ind4_79DX3h_frag, by = "frag_size") %>% 
-left_join(.,Ind4_79DX24h_frag, by = "frag_size") %>% 
-left_join(.,Ind4_79E3h_frag, by = "frag_size") %>% 
-left_join(.,Ind4_79E24h_frag, by = "frag_size") %>% 
-  left_join(.,Ind4_79M3h_frag, by = "frag_size") %>% 
-  left_join(.,Ind4_79M24h_frag, by = "frag_size") %>% 
-  left_join(.,Ind4_79T3h_frag, by = "frag_size") %>% 
-  left_join(.,Ind4_79T24h_frag, by = "frag_size") %>% 
+  rename(  "counts"="V_24h_6_counts")
+Ind6_frag_files <- Ind6_71V3h_frag %>% 
+  left_join(.,Ind6_71V24h_frag, by = "frag_size") %>% 
+  left_join(.,Ind6_71DA3h_frag, by = "frag_size") %>% 
+  left_join(.,Ind6_71DA24h_frag, by = "frag_size") %>% 
+  left_join(.,Ind6_71DX3h_frag, by = "frag_size") %>% 
+left_join(.,Ind6_71DX24h_frag, by = "frag_size") %>% 
+left_join(.,Ind6_71E3h_frag, by = "frag_size") %>% 
+left_join(.,Ind6_71E24h_frag, by = "frag_size") %>% 
+  left_join(.,Ind6_71M3h_frag, by = "frag_size") %>% 
+  left_join(.,Ind6_71M24h_frag, by = "frag_size") %>% 
+  left_join(.,Ind6_71T3h_frag, by = "frag_size") %>% 
+  left_join(.,Ind6_71T24h_frag, by = "frag_size") %>% 
   pivot_longer(cols= !frag_size,names_to = "sample",values_to = "counts") %>% 
   separate(sample, into = c("trt","time","indv",NA), sep = "_") %>% 
   mutate(trt = factor(trt, levels = c("DX","E","DA","M","T","V"))) %>% 
   mutate(time = factor(time, levels = c("3h","24h"))) %>% 
   mutate(counts= as.numeric(counts), frag_size= as.numeric(frag_size))
-write.csv(Ind4_frag_files,"data/Ind4_fragment_files.txt")
+write.csv(Ind6_frag_files,"data/Ind6_fragment_files.txt")
 
 ```
 
-### Ind4 3 hour and 24 hour fragment sizes
+### Individual 4 fragment files:
+
 ```{r fragfiles visualize}
 
-Ind4_frag_files <- read.csv("data/Ind4_fragment_files.txt", row.names = 1)
+Ind4_frag_files <- read.csv("data/Ind4_fragment_filesN.txt", row.names = 1)
 Ind4_frag_files %>% 
   dplyr::filter(time =="3h") %>%
   ggplot(., aes(y=counts, x=frag_size, group=trt))+
-  geom_line(aes(col=trt, alpha = 0.5, linewidth=1 ))+
+  geom_line(aes(col=trt ))+
   ggtitle("Individual 4\n3 hour fragment sizes")+
   theme_classic()+
+   facet_wrap(~trt)+
   scale_color_manual(values=drug_pal_fact)
 Ind4_frag_files %>% 
   dplyr::filter(time =="24h") %>%
   ggplot(., aes(y=counts, x=frag_size, group=trt))+
-  geom_line(aes(col=trt, alpha = 0.5, linewidth=1 ))+
+  geom_line(aes(col=trt ))+
   ggtitle("Individual 4\n24 hour fragment sizes")+
   theme_classic()+
+   facet_wrap(~trt)+
   scale_color_manual(values=drug_pal_fact)
 
 
 ```
 
-So, fragment lengths are not so great. Lots of noise. 
+So, fragment lengths are not so great.
+Lots of noise.
+
+### Individual 1 fragment files:
+
+```{r fragfiles1}
+
+Ind1_frag_files <- read.csv("data/Ind1_fragment_files.txt", row.names = 1)
+Ind1_frag_files %>% 
+  dplyr::filter(time =="3h") %>%
+  ggplot(., aes(y=counts, x=frag_size, group=trt))+
+  # geom_line(aes(col=trt, alpha = 0.5, linewidth=1 ))+
+  geom_line(aes(col=trt))+
+  ggtitle("Individual 1\n3 hour fragment sizes")+
+  theme_classic()+
+   facet_wrap(~trt)+
+  scale_color_manual(values=drug_pal_fact)
+Ind1_frag_files %>% 
+  dplyr::filter(time =="24h") %>%
+  ggplot(., aes(y=counts, x=frag_size, group=trt))+
+  geom_line(aes(col=trt))+
+  ggtitle("Individual 1\n24 hour fragment sizes")+
+  theme_classic()+
+  facet_wrap(~trt)+
+  scale_color_manual(values=drug_pal_fact)
+```
+
+### Individual 2 fragment files:
+
+```{r fragfiles2}
+
+Ind2_frag_files <- read.csv("data/Ind2_fragment_files.txt", row.names = 1)
+Ind2_frag_files %>% 
+  dplyr::filter(time =="3h") %>%
+  ggplot(., aes(y=counts, x=frag_size, group=trt))+
+  # geom_line(aes(col=trt, alpha = 0.5, linewidth=1 ))+
+  geom_line(aes(col=trt))+
+  ggtitle("Individual 2\n3 hour fragment sizes")+
+  theme_classic()+
+   facet_wrap(~trt)+
+  scale_color_manual(values=drug_pal_fact)
+Ind2_frag_files %>% 
+  dplyr::filter(time =="24h") %>%
+  ggplot(., aes(y=counts, x=frag_size, group=trt))+
+  geom_line(aes(col=trt))+
+  ggtitle("Individual 2\n24 hour fragment sizes")+
+  theme_classic()+
+  facet_wrap(~trt)+
+  scale_color_manual(values=drug_pal_fact)
+```
+
+### Individual 3 fragment files:
+
+```{r fragfiles3}
+
+Ind3_frag_files <- read.csv("data/Ind3_fragment_files.txt", row.names = 1)
+Ind3_frag_files %>% 
+  dplyr::filter(time =="3h") %>%
+  ggplot(., aes(y=counts, x=frag_size, group=trt))+
+  # geom_line(aes(col=trt, alpha = 0.5, linewidth=1 ))+
+  geom_line(aes(col=trt))+
+  ggtitle("Individual 3\n3 hour fragment sizes")+
+  theme_classic()+
+   facet_wrap(~trt)+
+  scale_color_manual(values=drug_pal_fact)
+Ind3_frag_files %>% 
+  dplyr::filter(time =="24h") %>%
+  ggplot(., aes(y=counts, x=frag_size, group=trt))+
+  geom_line(aes(col=trt))+
+  ggtitle("Individual 3\n24 hour fragment sizes")+
+  theme_classic()+
+  facet_wrap(~trt)+
+  scale_color_manual(values=drug_pal_fact)
+```
+
+### Individual 5 fragment files:
+
+```{r fragfiles5}
+
+Ind5_frag_files <- read.csv("data/Ind5_fragment_filesN.txt", row.names = 1)
+Ind5_frag_files %>% 
+  dplyr::filter(time =="3h") %>%
+  ggplot(., aes(y=counts, x=frag_size, group=trt))+
+  # geom_line(aes(col=trt, alpha = 0.5, linewidth=1 ))+
+  geom_line(aes(col=trt))+
+  ggtitle("Individual 5\n3 hour fragment sizes")+
+  theme_classic()+
+   facet_wrap(~trt)+
+  scale_color_manual(values=drug_pal_fact)
+Ind5_frag_files %>% 
+  dplyr::filter(time =="24h") %>%
+  ggplot(., aes(y=counts, x=frag_size, group=trt))+
+  geom_line(aes(col=trt))+
+  ggtitle("Individual 5\n24 hour fragment sizes")+
+  theme_classic()+
+  facet_wrap(~trt)+
+  scale_color_manual(values=drug_pal_fact)
+```
+
+
+### Individual 6 fragment files:
+
+```{r fragfiles6}
+
+Ind6_frag_files <- read.csv("data/Ind6_fragment_files.txt", row.names = 1)
+Ind6_frag_files %>% 
+  dplyr::filter(time =="3h") %>%
+  ggplot(., aes(y=counts, x=frag_size, group=trt))+
+  # geom_line(aes(col=trt, alpha = 0.5, linewidth=1 ))+
+  geom_line(aes(col=trt))+
+  ggtitle("Individual 6\n3 hour fragment sizes")+
+  theme_classic()+
+   facet_wrap(~trt)+
+  scale_color_manual(values=drug_pal_fact)
+Ind6_frag_files %>% 
+  dplyr::filter(time =="24h") %>%
+  ggplot(., aes(y=counts, x=frag_size, group=trt))+
+  geom_line(aes(col=trt))+
+  ggtitle("Individual 6\n24 hour fragment sizes")+
+  theme_classic()+
+  facet_wrap(~trt)+
+  scale_color_manual(values=drug_pal_fact)
+```
