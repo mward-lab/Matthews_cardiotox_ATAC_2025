@@ -644,18 +644,226 @@ total_reads_summary %>%
 ### Peak features
 
 
-
-
 ```{r peak info}
-# plotAvgProf(anno_ind4_V24h,xlim=c(-3000,3000))
-plotAnnoBar(anno_ind4_V24h, main = "Genomic Feature Distribution")+ ggtitle("Ind4 VEH 24 hour")
-plotAnnoBar(anno_ind1_DA24h, main = "Genomic Feature Distribution")+ ggtitle("Ind1 DNR 24 hour")
+##collecting summary files
 
-ind4_V24hpeaks_gr <- prepGRangeObj(ind4_V24hpeaks)
-ind1_DA24hpeaks_gr <- prepGRangeObj((ind1_DA24hpeaks))
-Epi_list <- GRangesList(ind1_DA24hpeaks_gr, ind4_V24hpeaks_gr)
-##plotting the TSS average window (making an overlap of each using Epi_list as list holder)
-Epi_list_tagMatrix = lapply(Epi_list, getTagMatrix, windows = TSS)
-plotAvgProf(Epi_list_tagMatrix, xlim=c(-3000, 3000), ylab = "Count Frequency")
+# Ind1_peaksummary <- read_table("~/ATAC_downloads/Ind1/trimmed/macs_output/Ind1_peaksummary.txt",
+#     col_names = FALSE) %>%
+#   rename(X1 ="counts", X2= "sample")
+# Ind2_peaksummary <- read_table("~/ATAC_downloads/Ind2/trimmed/macs_output/Ind2_peaksummary.txt",
+#     col_names = FALSE)%>%
+#   rename(X1 ="counts", X2= "sample")
+# Ind3_peaksummary <- read_table("~/ATAC_downloads/Ind3/trimmed/macs_output/Ind3_peaksummary.txt",
+#     col_names = FALSE)%>%
+#   rename(X1 ="counts", X2= "sample")
+# Ind4_peaksummary <- read_table("~/ATAC_downloads/Ind4/trimmed/macs_output/Ind4_peaksummary.txt",
+#     col_names = FALSE)%>%
+#   rename(X1 ="counts", X2= "sample")
+# Ind5_peaksummary <- read_table("~/ATAC_downloads/Ind5/trimmed/macs_output/Ind5_peaksummary.txt",
+#     col_names = FALSE)%>%
+#   rename(X1 ="counts", X2= "sample")
+# Ind6_peaksummary <- read_table("~/ATAC_downloads/Ind6/trimmed/macs_output/Ind6_peaksummary.txt",
+#     col_names = FALSE)%>%
+#   rename(X1 ="counts", X2= "sample")
+# Peaksummary <- rbind(Ind1_peaksummary,Ind2_peaksummary,Ind3_peaksummary,Ind4_peaksummary,Ind5_peaksummary,Ind6_peaksummary)
+# # 
+# write.csv(Peaksummary, "data/first_Peaksummarycounts.csv")
+Peaksummary <- read.csv("data/first_Peaksummarycounts.csv",row.names=1)
+Peaksummary %>% 
+  dplyr::filter(sample != "total") %>% 
+   separate(sample, into=c(NA,"indv","sample",NA,NA,NA)) %>% 
+  mutate(trt=gsub("[[:digit:]]", "",sample)) %>% 
+  # mutate(trt=substr(trt,-1,2))
+  mutate(time = if_else(grepl("24h$", sample) ==TRUE, "24_hours","3_hours")) %>% 
+  mutate(trt = case_match(trt,"DAh"~"DNR","DXh"~"DOX","Eh"~"EPI", "Mh" ~ "MTX", "Th" ~ "TRZ", "Vh" ~"VEH",.default = trt)) %>% 
+  mutate(indv = factor(indv, levels = c("Ind1", "Ind2", "Ind3", "Ind4", "Ind5", "Ind6"))) %>%
+  mutate(time = factor(time, levels = c("3_hours", "24_hours"), labels= c("3 hours","24 hours"))) %>% 
+  mutate(trt = factor(trt, levels =  c("DOX","EPI", "DNR", "MTX", "TRZ", "VEH")))%>% 
+  ggplot(., aes(x =trt, y=counts,group=trt))+
+  geom_boxplot(aes(fill= trt))+
+  geom_point(aes(col=indv, size =3))+
+  facet_wrap(~time)+
+   scale_fill_manual(values=drug_pal_fact)+
+  scale_color_brewer(palette = "Dark2")+
+  ggtitle("Peak counts by treatment")+
+  theme_bw()
+
+
+
+```
+
+
+### Ind1 Peaks
+
+```{r Ind1 inital TSS setup}
+
+# plotAnnoBar(anno_ind4_V24h, main = "Genomic Feature Distribution")+ ggtitle("Ind4 VEH 24 hour")
+# plotAnnoBar(anno_ind1_DA24h, main = "Genomic Feature Distribution")+ ggtitle("Ind1 DNR 24 hour")
+
+# ind4_V24hpeaks_gr <- prepGRangeObj(ind4_V24hpeaks)
+# ind1_DA24hpeaks_gr <- prepGRangeObj((ind1_DA24hpeaks))
+# Epi_list <- GRangesList(ind1_DA24hpeaks_gr, ind4_V24hpeaks_gr)
+# # ##plotting the TSS average window (making an overlap of each using Epi_list as list holder)
+# Epi_list_tagMatrix = lapply(Epi_list, getTagMatrix, windows = TSS)
+# plotAvgProf(Epi_list_tagMatrix, xlim=c(-3000, 3000), ylab = "Count Frequency")
 #plotPeakProf(Epi_list_tagMatrix, facet = "none", conf = 0.95)
+
+## What I did here:  I called all my narrowpeak files
+# peakfiles1 <- choose.files()
+
+##these were practice for getting file names and shortening for the for loop below
+# testname <- basename(peakfiles1[1])
+# str_split_i(testname, "_",3)
+
+##This loop first established a list then (because I already knew the list had 12 files)
+## I then imported each of these onto that list.  Once I had the list, I stored it as
+## an R object, 
+# Ind1_peaks <- list()
+# for (file in 1:12){
+#     testname <- basename(peakfiles1[file])
+#   banana_peel <- str_split_i(testname, "_",3)
+#  Ind1_peaks[[banana_peel]] <- readPeakFile(peakfiles1[file])
+# }
+# saveRDS(Ind1_peaks, "data/Ind1_peaks_list.RDS")
+# I then called annotatePeak on that list object, and stored that as a R object for later retrieval.)
+# peakAnnoList_1 <- lapply(Ind1_peaks, annotatePeak, tssRegion =c(-2000,2000), TxDb= txdb)
+# saveRDS(peakAnnoList_1, "data/peakAnnoList_1.RDS")
+
+peakAnnoList_1 <- readRDS("data/peakAnnoList_1.RDS")
+plotAnnoBar(peakAnnoList_1, main = "Genomic Feature Distribution")
+
+
+# saveRDS(Epi_list_tagMatrix, "data/Ind1_TSS_peaks.RDS")
+
+Ind1_TSS_peaks_plot <- readRDS("data/Ind1_TSS_peaks.RDS")
+
+# Epi_list_tagMatrix = lapply(Ind1_peaks, getTagMatrix, windows = TSS)
+
+plotAvgProf(Ind1_TSS_peaks_plot[c(1,3,5,7,9,11)], xlim=c(-3000, 3000), ylab = "Count Frequency")+ ggtitle("3 hour Individual 1" )
+
+plotAvgProf(Ind1_TSS_peaks_plot[c(2,4,6,8,10,12)], xlim=c(-3000, 3000),ylab = "Count Frequency")+ ggtitle("24 hour Individual 1" )
+
+```
+
+
+### Ind2 Peaks
+
+```{r Ind2 inital TSS setup}
+
+## What I did here:  I called all my narrowpeak files
+
+# peakfiles2 <- choose.files()
+
+##This loop first established a list then (because I already knew the list had 12 files)
+## I then imported each of these onto that list.  Once I had the list, I stored it as
+## an R object, 
+# Ind2_peaks <- list()
+# for (file in 1:12){
+#     testname <- basename(peakfiles2[file])
+#   banana_peel <- str_split_i(testname, "_",3)
+#  Ind2_peaks[[banana_peel]] <- readPeakFile(peakfiles2[file])
+# }
+# saveRDS(Ind2_peaks, "data/Ind2_peaks_list.RDS")
+# I then called annotatePeak on that list object, and stored that as a R object for later retrieval.)
+
+Ind2_peaks <- readRDS("data/Ind2_peaks_list.RDS")
+# peakAnnoList_2 <- lapply(Ind2_peaks, annotatePeak, tssRegion =c(-2000,2000), TxDb= txdb)
+# saveRDS(peakAnnoList_2, "data/peakAnnoList_2.RDS")
+
+peakAnnoList_2 <- readRDS("data/peakAnnoList_2.RDS")
+plotAnnoBar(peakAnnoList_2, main = "Genomic Feature Distribution, Individual 2")
+
+# Epi_list_tagMatrix = lapply(Ind2_peaks, getTagMatrix, windows = TSS)
+# saveRDS(Epi_list_tagMatrix, "data/Ind2_TSS_peaks.RDS")
+
+Ind2_TSS_peaks_plot <- readRDS("data/Ind2_TSS_peaks.RDS")
+
+
+
+plotAvgProf(Ind2_TSS_peaks_plot[c(1,3,5,7,9,11)], xlim=c(-3000, 3000), ylab = "Count Frequency")+ ggtitle("3 hour Individual 2" )
+
+plotAvgProf(Ind2_TSS_peaks_plot[c(2,4,6,8,10,12)], xlim=c(-3000, 3000),ylab = "Count Frequency")+ ggtitle("24 hour Individual 2" )
+
+```
+
+
+### Ind3 Peaks
+
+```{r Ind3 inital TSS setup}
+
+## What I did here:  I called all my narrowpeak files
+
+# peakfiles3 <- choose.files()
+
+##This loop first established a list then (because I already knew the list had 12 files)
+## I then imported each of these onto that list.  Once I had the list, I stored it as
+## an R object, 
+# Ind3_peaks <- list()
+# for (file in 1:12){
+#     testname <- basename(peakfiles3[file])
+#   banana_peel <- str_split_i(testname, "_",3)
+#  Ind3_peaks[[banana_peel]] <- readPeakFile(peakfiles3[file])
+# }
+# saveRDS(Ind3_peaks, "data/Ind3_peaks_list.RDS")
+# I then called annotatePeak on that list object, and stored that as a R object for later retrieval.)
+
+Ind3_peaks <- readRDS("data/Ind3_peaks_list.RDS")
+# peakAnnoList_3 <- lapply(Ind3_peaks, annotatePeak, tssRegion =c(-2000,2000), TxDb= txdb)
+# saveRDS(peakAnnoList_3, "data/peakAnnoList_3.RDS")
+
+peakAnnoList_3 <- readRDS("data/peakAnnoList_3.RDS")
+plotAnnoBar(peakAnnoList_3, main = "Genomic Feature Distribution, Individual 3")
+
+# Epi_list_tagMatrix = lapply(Ind3_peaks, getTagMatrix, windows = TSS)
+# saveRDS(Epi_list_tagMatrix, "data/Ind3_TSS_peaks.RDS")
+
+Ind3_TSS_peaks_plot <- readRDS("data/Ind3_TSS_peaks.RDS")
+
+
+
+plotAvgProf(Ind3_TSS_peaks_plot[c(1,3,5,7,9,11)], xlim=c(-3000, 3000), ylab = "Count Frequency")+ ggtitle("3 hour Individual 3" )
+
+plotAvgProf(Ind3_TSS_peaks_plot[c(2,4,6,8,10,12)], xlim=c(-3000, 3000),ylab = "Count Frequency")+ ggtitle("24 hour Individual 3" )
+
+```
+
+
+### Ind4 Peaks
+
+```{r Ind4 inital TSS setup}
+
+## What I did here:  I called all my narrowpeak files
+
+# peakfiles4 <- choose.files()
+# 
+# ##This loop first established a list then (because I already knew the list had 12 files)
+# ## I then imported each of these onto that list.  Once I had the list, I stored it as
+# ## an R object, 
+# Ind4_peaks <- list()
+# for (file in 1:12){
+#     testname <- basename(peakfiles4[file])
+#   banana_peel <- str_split_i(testname, "_",3)
+#  Ind4_peaks[[banana_peel]] <- readPeakFile(peakfiles4[file])
+# }
+# saveRDS(Ind4_peaks, "data/Ind4_peaks_list.RDS")
+# I then called annotatePeak on that list object, and stored that as a R object for later retrieval.)
+
+Ind4_peaks <- readRDS("data/Ind4_peaks_list.RDS")
+# peakAnnoList_4 <- lapply(Ind4_peaks, annotatePeak, tssRegion =c(-2000,2000), TxDb= txdb)
+# saveRDS(peakAnnoList_4, "data/peakAnnoList_4.RDS")
+
+peakAnnoList_4 <- readRDS("data/peakAnnoList_4.RDS")
+plotAnnoBar(peakAnnoList_4, main = "Genomic Feature Distribution, Individual 4")
+
+# Epi_list_tagMatrix = lapply(Ind4_peaks, getTagMatrix, windows = TSS)
+# saveRDS(Epi_list_tagMatrix, "data/Ind4_TSS_peaks.RDS")
+
+Ind4_TSS_peaks_plot <- readRDS("data/Ind4_TSS_peaks.RDS")
+
+
+
+plotAvgProf(Ind4_TSS_peaks_plot[c(1,3,5,7,9,11)], xlim=c(-3000, 3000), ylab = "Count Frequency")+ ggtitle("3 hour Individual 4" )
+
+plotAvgProf(Ind4_TSS_peaks_plot[c(2,4,6,8,10,12)], xlim=c(-3000, 3000),ylab = "Count Frequency")+ ggtitle("24 hour Individual 4" )
+
 ```
