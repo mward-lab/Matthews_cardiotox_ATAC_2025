@@ -104,7 +104,7 @@ Initial summary of reads after each step:
 
 ### Individual 1 read summary
 
-```{r Readssummary1}
+```{r Readssummary1, fig}
 #  library(readr) pulling in orginal files example code
 #
 # Ind1_summary <- read_delim("~/ATAC_downloads/Ind1/trimmed/Ind1_summedup.txt", 
@@ -152,7 +152,21 @@ Ind1_summary %>%
   kable_styling(full_width = FALSE,font_size = 18) %>%
   scroll_box(width = "100%", height = "400px")
 
- 
+Ind1_reads_summary %>% 
+  pivot_longer(cols = total_reads:dedup_read_pairs, names_to="type", values_to = "reads") %>% 
+  dplyr::filter(type %in% list("total_reads","total_mapped_reads","nuclear_mapped_reads", "unique_mapped_reads","dedup_reads")) %>% 
+  mutate(type=factor(type, levels=c("total_reads", "total_mapped_reads", "nuclear_mapped_reads","unique_mapped_reads","dedup_reads"))) %>% 
+  mutate(trt=gsub("[[:digit:]]", "",sample)) %>% 
+  # mutate(trt=substr(trt,-1,2))
+  mutate(time = if_else(grepl("24h$", sample) ==TRUE, "24_hours","3_hours")) %>% 
+   mutate(time=factor(time, levels=c("3_hours","24_hours"))) %>% 
+  mutate(trt = case_match(trt,"DAh"~"DNR","DXh"~"DOX","Eh"~"EPI", "Mh" ~ "MTX", "Th" ~ "TRZ", "Vh" ~"VEH",.default = trt)) %>% 
+  ggplot(., aes (x=type, y=reads, group = time)) +
+  geom_col(position="dodge",aes(fill=time))+
+  facet_wrap(~trt)+
+  theme(axis.text.x=element_text(angle=90))+
+  ggtitle("Ind 1")
+  
 ```
 
 ### Individual 2 read summary
@@ -183,7 +197,20 @@ Ind2_summary %>%
   kable_paper("striped", full_width = FALSE) %>%
   kable_styling(full_width = FALSE,font_size = 18) %>%
   scroll_box(width = "100%", height = "400px")
-
+Ind2_reads_summary %>% 
+  pivot_longer(cols = total_reads:dedup_read_pairs, names_to="type", values_to = "reads") %>% 
+  dplyr::filter(type %in% list("total_reads","total_mapped_reads","nuclear_mapped_reads", "unique_mapped_reads","dedup_reads")) %>% 
+  mutate(type=factor(type, levels=c("total_reads", "total_mapped_reads", "nuclear_mapped_reads","unique_mapped_reads","dedup_reads"))) %>% 
+  mutate(trt=gsub("[[:digit:]]", "",sample)) %>% 
+  # mutate(trt=substr(trt,-1,2))
+  mutate(time = if_else(grepl("24h$", sample) ==TRUE, "24_hours","3_hours")) %>% 
+   mutate(time=factor(time, levels=c("3_hours","24_hours"))) %>% 
+  mutate(trt = case_match(trt,"DAh"~"DNR","DXh"~"DOX","Eh"~"EPI", "Mh" ~ "MTX", "Th" ~ "TRZ", "Vh" ~"VEH",.default = trt)) %>% 
+  ggplot(., aes (x=type, y=reads, group = time)) +
+  geom_col(position="dodge",aes(fill=time))+
+  facet_wrap(~trt)+
+  theme(axis.text.x=element_text(angle=90))+
+  ggtitle("Ind 2")
  
 ```
 
@@ -217,6 +244,21 @@ Ind3_summary %>%
   scroll_box(width = "100%", height = "400px")
 
  
+ 
+ Ind3_reads_summary %>% 
+  pivot_longer(cols = total_reads:dedup_read_pairs, names_to="type", values_to = "reads") %>% 
+  dplyr::filter(type %in% list("total_reads","total_mapped_reads","nuclear_mapped_reads", "unique_mapped_reads","dedup_reads")) %>% 
+  mutate(type=factor(type, levels=c("total_reads", "total_mapped_reads", "nuclear_mapped_reads","unique_mapped_reads","dedup_reads"))) %>% 
+  mutate(trt=gsub("[[:digit:]]", "",sample)) %>% 
+  # mutate(trt=substr(trt,-1,2))
+  mutate(time = if_else(grepl("24h$", sample) ==TRUE, "24_hours","3_hours")) %>% 
+    mutate(time=factor(time, levels=c("3_hours","24_hours"))) %>% 
+  mutate(trt = case_match(trt,"DAh"~"DNR","DXh"~"DOX","Eh"~"EPI", "Mh" ~ "MTX", "Th" ~ "TRZ", "Vh" ~"VEH",.default = trt)) %>% 
+  ggplot(., aes (x=type, y=reads, group = time)) +
+  geom_col(position="dodge",aes(fill=time))+
+  facet_wrap(~trt)+
+  theme(axis.text.x=element_text(angle=90))+
+  ggtitle("Ind 3")
 ```
 
 ### Individual 4 read summary
@@ -248,6 +290,21 @@ Ind4_summary %>%
   kable_styling(full_width = FALSE,font_size = 18) %>%
   scroll_box(width = "100%", height = "400px")
 
+ 
+ Ind4_reads_summary %>% 
+  pivot_longer(cols = total_reads:dedup_read_pairs, names_to="type", values_to = "reads") %>% 
+  dplyr::filter(type %in% list("total_reads","total_mapped_reads","nuclear_mapped_reads", "unique_mapped_reads","dedup_reads")) %>% 
+  mutate(type=factor(type, levels=c("total_reads", "total_mapped_reads", "nuclear_mapped_reads","unique_mapped_reads","dedup_reads"))) %>% 
+  mutate(trt=gsub("[[:digit:]]", "",sample)) %>% 
+  # mutate(trt=substr(trt,-1,2))
+  mutate(time = if_else(grepl("24h$", sample) ==TRUE, "24_hours","3_hours")) %>% 
+    mutate(time=factor(time, levels=c("3_hours","24_hours"))) %>% 
+  mutate(trt = case_match(trt,"DAh"~"DNR","DXh"~"DOX","Eh"~"EPI", "Mh" ~ "MTX", "Th" ~ "TRZ", "Vh" ~"VEH",.default = trt)) %>% 
+  ggplot(., aes (x=type, y=reads, group = time)) +
+  geom_col(position="dodge",aes(fill=time))+
+  facet_wrap(~trt)+
+  theme(axis.text.x=element_text(angle=90))+
+  ggtitle("Ind 4")
  
 ```
 _note: reprocessed reads for Individual 4 vary from previous output.  This is due a file truncation that was detected in the process.  When the files were reprocessed, the truncated bam file was fixed, resulting in a larger number of overall reads.  Yay, I figured it out!_
@@ -282,6 +339,20 @@ Ind5_summary %>%
   scroll_box(width = "100%", height = "400px")
 
  
+ Ind5_reads_summary %>% 
+  pivot_longer(cols = total_reads:dedup_read_pairs, names_to="type", values_to = "reads") %>% 
+  dplyr::filter(type %in% list("total_reads","total_mapped_reads","nuclear_mapped_reads", "unique_mapped_reads","dedup_reads")) %>% 
+  mutate(type=factor(type, levels=c("total_reads", "total_mapped_reads", "nuclear_mapped_reads","unique_mapped_reads","dedup_reads"))) %>% 
+  mutate(trt=gsub("[[:digit:]]", "",sample)) %>% 
+  # mutate(trt=substr(trt,-1,2))
+  mutate(time = if_else(grepl("24h$", sample) ==TRUE, "24_hours","3_hours")) %>% 
+    mutate(time=factor(time, levels=c("3_hours","24_hours"))) %>% 
+  mutate(trt = case_match(trt,"DAh"~"DNR","DXh"~"DOX","Eh"~"EPI", "Mh" ~ "MTX", "Th" ~ "TRZ", "Vh" ~"VEH",.default = trt)) %>% 
+  ggplot(., aes (x=type, y=reads, group = time)) +
+  geom_col(position="dodge",aes(fill=time))+
+  facet_wrap(~trt)+
+  theme(axis.text.x=element_text(angle=90))+
+  ggtitle("Ind 5")
 ```
 
 ### Individual 6 read summary
@@ -313,6 +384,21 @@ Ind6_summary %>%
   kable_styling(full_width = FALSE,font_size = 18) %>%
   scroll_box(width = "100%", height = "400px")
 
+ 
+ Ind6_reads_summary %>% 
+  pivot_longer(cols = total_reads:dedup_read_pairs, names_to="type", values_to = "reads") %>% 
+  dplyr::filter(type %in% list("total_reads","total_mapped_reads","nuclear_mapped_reads", "unique_mapped_reads","dedup_reads")) %>% 
+  mutate(type=factor(type, levels=c("total_reads", "total_mapped_reads", "nuclear_mapped_reads","unique_mapped_reads","dedup_reads"))) %>% 
+  mutate(trt=gsub("[[:digit:]]", "",sample)) %>% 
+  # mutate(trt=substr(trt,-1,2))
+  mutate(time = if_else(grepl("24h$", sample) ==TRUE, "24_hours","3_hours")) %>% 
+   mutate(time=factor(time, levels=c("3_hours","24_hours"))) %>% 
+  mutate(trt = case_match(trt,"DAh"~"DNR","DXh"~"DOX","Eh"~"EPI", "Mh" ~ "MTX", "Th" ~ "TRZ", "Vh" ~"VEH",.default = trt)) %>% 
+  ggplot(., aes (x=type, y=reads, group = time)) +
+  geom_col(position="dodge",aes(fill=time))+
+  facet_wrap(~trt)+
+  theme(axis.text.x=element_text(angle=90))+
+  ggtitle("Ind 6")
  
 ```
 
