@@ -523,15 +523,15 @@ project makes it easier to run your code on other machines.</p>
 <div class="panel panel-default">
 <div class="panel-heading">
 <p class="panel-title">
-<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomreneeisnowhereATAClearningtreed61bef5c622c2a48a4f8873927a1b91ca0296390targetblankd61bef5a">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomreneeisnowhereATAClearningtree4b83ab154d1ba327bfc254a20584ff2f3a861273targetblank4b83ab1a">
 <span class="glyphicon glyphicon-ok text-success"
 aria-hidden="true"></span> <strong>Repository version:</strong>
-<a href="https://github.com/reneeisnowhere/ATAC_learning/tree/d61bef5c622c2a48a4f8873927a1b91ca0296390" target="_blank">d61bef5</a>
+<a href="https://github.com/reneeisnowhere/ATAC_learning/tree/4b83ab154d1ba327bfc254a20584ff2f3a861273" target="_blank">4b83ab1</a>
 </a>
 </p>
 </div>
 <div
-id="strongRepositoryversionstrongahrefhttpsgithubcomreneeisnowhereATAClearningtreed61bef5c622c2a48a4f8873927a1b91ca0296390targetblankd61bef5a"
+id="strongRepositoryversionstrongahrefhttpsgithubcomreneeisnowhereATAClearningtree4b83ab154d1ba327bfc254a20584ff2f3a861273targetblank4b83ab1a"
 class="panel-collapse collapse">
 <div class="panel-body">
 <p>
@@ -541,7 +541,7 @@ reproducibility.
 </p>
 <p>
 The results in this page were generated with repository version
-<a href="https://github.com/reneeisnowhere/ATAC_learning/tree/d61bef5c622c2a48a4f8873927a1b91ca0296390" target="_blank">d61bef5</a>.
+<a href="https://github.com/reneeisnowhere/ATAC_learning/tree/4b83ab154d1ba327bfc254a20584ff2f3a861273" target="_blank">4b83ab1</a>.
 See the <em>Past versions</em> tab to see a history of the changes made
 to the R Markdown and HTML files.
 </p>
@@ -558,7 +558,6 @@ were generated:
 Ignored files:
     Ignored:    .Rhistory
     Ignored:    .Rproj.user/
-    Ignored:    analysis/figure/
     Ignored:    data/Ind1_75DA24h_dedup_peaks.csv
     Ignored:    data/Ind1_TSS_peaks.RDS
     Ignored:    data/Ind1_fragment_files.txt
@@ -651,6 +650,40 @@ Message
 </tr>
 </thead>
 <tbody>
+<tr>
+<td>
+Rmd
+</td>
+<td>
+<a href="https://github.com/reneeisnowhere/ATAC_learning/blob/4b83ab154d1ba327bfc254a20584ff2f3a861273/analysis/Peak_calling.Rmd" target="_blank">4b83ab1</a>
+</td>
+<td>
+reneeisnowhere
+</td>
+<td>
+2024-03-04
+</td>
+<td>
+adding in read progression
+</td>
+</tr>
+<tr>
+<td>
+html
+</td>
+<td>
+<a href="https://rawcdn.githack.com/reneeisnowhere/ATAC_learning/9a1e5008ee9435f79903365d1096b49efbf616f5/docs/Peak_calling.html" target="_blank">9a1e500</a>
+</td>
+<td>
+reneeisnowhere
+</td>
+<td>
+2024-03-04
+</td>
+<td>
+Build site.
+</td>
+</tr>
 <tr>
 <td>
 Rmd
@@ -1362,6 +1395,21 @@ dedup_read_pairs
 </tbody>
 </table>
 </div>
+<pre class="r"><code>Ind1_reads_summary %&gt;% 
+  pivot_longer(cols = total_reads:dedup_read_pairs, names_to=&quot;type&quot;, values_to = &quot;reads&quot;) %&gt;% 
+  dplyr::filter(type %in% list(&quot;total_reads&quot;,&quot;total_mapped_reads&quot;,&quot;nuclear_mapped_reads&quot;, &quot;unique_mapped_reads&quot;,&quot;dedup_reads&quot;)) %&gt;% 
+  mutate(type=factor(type, levels=c(&quot;total_reads&quot;, &quot;total_mapped_reads&quot;, &quot;nuclear_mapped_reads&quot;,&quot;unique_mapped_reads&quot;,&quot;dedup_reads&quot;))) %&gt;% 
+  mutate(trt=gsub(&quot;[[:digit:]]&quot;, &quot;&quot;,sample)) %&gt;% 
+  # mutate(trt=substr(trt,-1,2))
+  mutate(time = if_else(grepl(&quot;24h$&quot;, sample) ==TRUE, &quot;24_hours&quot;,&quot;3_hours&quot;)) %&gt;% 
+   mutate(time=factor(time, levels=c(&quot;3_hours&quot;,&quot;24_hours&quot;))) %&gt;% 
+  mutate(trt = case_match(trt,&quot;DAh&quot;~&quot;DNR&quot;,&quot;DXh&quot;~&quot;DOX&quot;,&quot;Eh&quot;~&quot;EPI&quot;, &quot;Mh&quot; ~ &quot;MTX&quot;, &quot;Th&quot; ~ &quot;TRZ&quot;, &quot;Vh&quot; ~&quot;VEH&quot;,.default = trt)) %&gt;% 
+  ggplot(., aes (x=type, y=reads, group = time)) +
+  geom_col(position=&quot;dodge&quot;,aes(fill=time))+
+  facet_wrap(~trt)+
+  theme(axis.text.x=element_text(angle=90))+
+  ggtitle(&quot;Ind 1&quot;)</code></pre>
+<p><img src="figure/Peak_calling.Rmd/Readssummary1,%20fig-1.png" width="672" style="display: block; margin: auto;" /></p>
 </div>
 <div id="individual-2-read-summary" class="section level3">
 <h3>Individual 2 read summary</h3>
@@ -1779,6 +1827,21 @@ dedup_read_pairs
 </tbody>
 </table>
 </div>
+<pre class="r"><code>Ind2_reads_summary %&gt;% 
+  pivot_longer(cols = total_reads:dedup_read_pairs, names_to=&quot;type&quot;, values_to = &quot;reads&quot;) %&gt;% 
+  dplyr::filter(type %in% list(&quot;total_reads&quot;,&quot;total_mapped_reads&quot;,&quot;nuclear_mapped_reads&quot;, &quot;unique_mapped_reads&quot;,&quot;dedup_reads&quot;)) %&gt;% 
+  mutate(type=factor(type, levels=c(&quot;total_reads&quot;, &quot;total_mapped_reads&quot;, &quot;nuclear_mapped_reads&quot;,&quot;unique_mapped_reads&quot;,&quot;dedup_reads&quot;))) %&gt;% 
+  mutate(trt=gsub(&quot;[[:digit:]]&quot;, &quot;&quot;,sample)) %&gt;% 
+  # mutate(trt=substr(trt,-1,2))
+  mutate(time = if_else(grepl(&quot;24h$&quot;, sample) ==TRUE, &quot;24_hours&quot;,&quot;3_hours&quot;)) %&gt;% 
+   mutate(time=factor(time, levels=c(&quot;3_hours&quot;,&quot;24_hours&quot;))) %&gt;% 
+  mutate(trt = case_match(trt,&quot;DAh&quot;~&quot;DNR&quot;,&quot;DXh&quot;~&quot;DOX&quot;,&quot;Eh&quot;~&quot;EPI&quot;, &quot;Mh&quot; ~ &quot;MTX&quot;, &quot;Th&quot; ~ &quot;TRZ&quot;, &quot;Vh&quot; ~&quot;VEH&quot;,.default = trt)) %&gt;% 
+  ggplot(., aes (x=type, y=reads, group = time)) +
+  geom_col(position=&quot;dodge&quot;,aes(fill=time))+
+  facet_wrap(~trt)+
+  theme(axis.text.x=element_text(angle=90))+
+  ggtitle(&quot;Ind 2&quot;)</code></pre>
+<p><img src="figure/Peak_calling.Rmd/Readssummary2-1.png" width="672" style="display: block; margin: auto;" /></p>
 </div>
 <div id="individual-3-read-summary" class="section level3">
 <h3>Individual 3 read summary</h3>
@@ -2196,6 +2259,21 @@ dedup_read_pairs
 </tbody>
 </table>
 </div>
+<pre class="r"><code> Ind3_reads_summary %&gt;% 
+  pivot_longer(cols = total_reads:dedup_read_pairs, names_to=&quot;type&quot;, values_to = &quot;reads&quot;) %&gt;% 
+  dplyr::filter(type %in% list(&quot;total_reads&quot;,&quot;total_mapped_reads&quot;,&quot;nuclear_mapped_reads&quot;, &quot;unique_mapped_reads&quot;,&quot;dedup_reads&quot;)) %&gt;% 
+  mutate(type=factor(type, levels=c(&quot;total_reads&quot;, &quot;total_mapped_reads&quot;, &quot;nuclear_mapped_reads&quot;,&quot;unique_mapped_reads&quot;,&quot;dedup_reads&quot;))) %&gt;% 
+  mutate(trt=gsub(&quot;[[:digit:]]&quot;, &quot;&quot;,sample)) %&gt;% 
+  # mutate(trt=substr(trt,-1,2))
+  mutate(time = if_else(grepl(&quot;24h$&quot;, sample) ==TRUE, &quot;24_hours&quot;,&quot;3_hours&quot;)) %&gt;% 
+    mutate(time=factor(time, levels=c(&quot;3_hours&quot;,&quot;24_hours&quot;))) %&gt;% 
+  mutate(trt = case_match(trt,&quot;DAh&quot;~&quot;DNR&quot;,&quot;DXh&quot;~&quot;DOX&quot;,&quot;Eh&quot;~&quot;EPI&quot;, &quot;Mh&quot; ~ &quot;MTX&quot;, &quot;Th&quot; ~ &quot;TRZ&quot;, &quot;Vh&quot; ~&quot;VEH&quot;,.default = trt)) %&gt;% 
+  ggplot(., aes (x=type, y=reads, group = time)) +
+  geom_col(position=&quot;dodge&quot;,aes(fill=time))+
+  facet_wrap(~trt)+
+  theme(axis.text.x=element_text(angle=90))+
+  ggtitle(&quot;Ind 3&quot;)</code></pre>
+<p><img src="figure/Peak_calling.Rmd/Readssummary3-1.png" width="672" style="display: block; margin: auto;" /></p>
 </div>
 <div id="individual-4-read-summary" class="section level3">
 <h3>Individual 4 read summary</h3>
@@ -2613,11 +2691,25 @@ dedup_read_pairs
 </tbody>
 </table>
 </div>
-<p><em>note: reprocessed reads for Individual 4 vary from previous
-output. This is due a file truncation that was detected in the process.
-When the files were reprocessed, the truncated bam file was fixed,
-resulting in a larger number of overall reads. Yay, I figured it
-out!</em></p>
+<pre class="r"><code> Ind4_reads_summary %&gt;% 
+  pivot_longer(cols = total_reads:dedup_read_pairs, names_to=&quot;type&quot;, values_to = &quot;reads&quot;) %&gt;% 
+  dplyr::filter(type %in% list(&quot;total_reads&quot;,&quot;total_mapped_reads&quot;,&quot;nuclear_mapped_reads&quot;, &quot;unique_mapped_reads&quot;,&quot;dedup_reads&quot;)) %&gt;% 
+  mutate(type=factor(type, levels=c(&quot;total_reads&quot;, &quot;total_mapped_reads&quot;, &quot;nuclear_mapped_reads&quot;,&quot;unique_mapped_reads&quot;,&quot;dedup_reads&quot;))) %&gt;% 
+  mutate(trt=gsub(&quot;[[:digit:]]&quot;, &quot;&quot;,sample)) %&gt;% 
+  # mutate(trt=substr(trt,-1,2))
+  mutate(time = if_else(grepl(&quot;24h$&quot;, sample) ==TRUE, &quot;24_hours&quot;,&quot;3_hours&quot;)) %&gt;% 
+    mutate(time=factor(time, levels=c(&quot;3_hours&quot;,&quot;24_hours&quot;))) %&gt;% 
+  mutate(trt = case_match(trt,&quot;DAh&quot;~&quot;DNR&quot;,&quot;DXh&quot;~&quot;DOX&quot;,&quot;Eh&quot;~&quot;EPI&quot;, &quot;Mh&quot; ~ &quot;MTX&quot;, &quot;Th&quot; ~ &quot;TRZ&quot;, &quot;Vh&quot; ~&quot;VEH&quot;,.default = trt)) %&gt;% 
+  ggplot(., aes (x=type, y=reads, group = time)) +
+  geom_col(position=&quot;dodge&quot;,aes(fill=time))+
+  facet_wrap(~trt)+
+  theme(axis.text.x=element_text(angle=90))+
+  ggtitle(&quot;Ind 4&quot;)</code></pre>
+<p><img src="figure/Peak_calling.Rmd/Readssummary4-1.png" width="672" style="display: block; margin: auto;" />
+<em>note: reprocessed reads for Individual 4 vary from previous output.
+This is due a file truncation that was detected in the process. When the
+files were reprocessed, the truncated bam file was fixed, resulting in a
+larger number of overall reads. Yay, I figured it out!</em></p>
 </div>
 <div id="individual-5-read-summary" class="section level3">
 <h3>Individual 5 read summary</h3>
@@ -3035,6 +3127,21 @@ dedup_read_pairs
 </tbody>
 </table>
 </div>
+<pre class="r"><code> Ind5_reads_summary %&gt;% 
+  pivot_longer(cols = total_reads:dedup_read_pairs, names_to=&quot;type&quot;, values_to = &quot;reads&quot;) %&gt;% 
+  dplyr::filter(type %in% list(&quot;total_reads&quot;,&quot;total_mapped_reads&quot;,&quot;nuclear_mapped_reads&quot;, &quot;unique_mapped_reads&quot;,&quot;dedup_reads&quot;)) %&gt;% 
+  mutate(type=factor(type, levels=c(&quot;total_reads&quot;, &quot;total_mapped_reads&quot;, &quot;nuclear_mapped_reads&quot;,&quot;unique_mapped_reads&quot;,&quot;dedup_reads&quot;))) %&gt;% 
+  mutate(trt=gsub(&quot;[[:digit:]]&quot;, &quot;&quot;,sample)) %&gt;% 
+  # mutate(trt=substr(trt,-1,2))
+  mutate(time = if_else(grepl(&quot;24h$&quot;, sample) ==TRUE, &quot;24_hours&quot;,&quot;3_hours&quot;)) %&gt;% 
+    mutate(time=factor(time, levels=c(&quot;3_hours&quot;,&quot;24_hours&quot;))) %&gt;% 
+  mutate(trt = case_match(trt,&quot;DAh&quot;~&quot;DNR&quot;,&quot;DXh&quot;~&quot;DOX&quot;,&quot;Eh&quot;~&quot;EPI&quot;, &quot;Mh&quot; ~ &quot;MTX&quot;, &quot;Th&quot; ~ &quot;TRZ&quot;, &quot;Vh&quot; ~&quot;VEH&quot;,.default = trt)) %&gt;% 
+  ggplot(., aes (x=type, y=reads, group = time)) +
+  geom_col(position=&quot;dodge&quot;,aes(fill=time))+
+  facet_wrap(~trt)+
+  theme(axis.text.x=element_text(angle=90))+
+  ggtitle(&quot;Ind 5&quot;)</code></pre>
+<p><img src="figure/Peak_calling.Rmd/Readssummary5-1.png" width="672" style="display: block; margin: auto;" /></p>
 </div>
 <div id="individual-6-read-summary" class="section level3">
 <h3>Individual 6 read summary</h3>
@@ -3452,6 +3559,21 @@ dedup_read_pairs
 </tbody>
 </table>
 </div>
+<pre class="r"><code> Ind6_reads_summary %&gt;% 
+  pivot_longer(cols = total_reads:dedup_read_pairs, names_to=&quot;type&quot;, values_to = &quot;reads&quot;) %&gt;% 
+  dplyr::filter(type %in% list(&quot;total_reads&quot;,&quot;total_mapped_reads&quot;,&quot;nuclear_mapped_reads&quot;, &quot;unique_mapped_reads&quot;,&quot;dedup_reads&quot;)) %&gt;% 
+  mutate(type=factor(type, levels=c(&quot;total_reads&quot;, &quot;total_mapped_reads&quot;, &quot;nuclear_mapped_reads&quot;,&quot;unique_mapped_reads&quot;,&quot;dedup_reads&quot;))) %&gt;% 
+  mutate(trt=gsub(&quot;[[:digit:]]&quot;, &quot;&quot;,sample)) %&gt;% 
+  # mutate(trt=substr(trt,-1,2))
+  mutate(time = if_else(grepl(&quot;24h$&quot;, sample) ==TRUE, &quot;24_hours&quot;,&quot;3_hours&quot;)) %&gt;% 
+   mutate(time=factor(time, levels=c(&quot;3_hours&quot;,&quot;24_hours&quot;))) %&gt;% 
+  mutate(trt = case_match(trt,&quot;DAh&quot;~&quot;DNR&quot;,&quot;DXh&quot;~&quot;DOX&quot;,&quot;Eh&quot;~&quot;EPI&quot;, &quot;Mh&quot; ~ &quot;MTX&quot;, &quot;Th&quot; ~ &quot;TRZ&quot;, &quot;Vh&quot; ~&quot;VEH&quot;,.default = trt)) %&gt;% 
+  ggplot(., aes (x=type, y=reads, group = time)) +
+  geom_col(position=&quot;dodge&quot;,aes(fill=time))+
+  facet_wrap(~trt)+
+  theme(axis.text.x=element_text(angle=90))+
+  ggtitle(&quot;Ind 6&quot;)</code></pre>
+<p><img src="figure/Peak_calling.Rmd/Readssummary6-1.png" width="672" style="display: block; margin: auto;" /></p>
 </div>
 <div id="individual-4-fragment-files" class="section level3">
 <h3>Individual 4 fragment files:</h3>
@@ -4518,6 +4640,17 @@ Date
 <tbody>
 <tr>
 <td>
+<a href="https://github.com/reneeisnowhere/ATAC_learning/blob/9a1e5008ee9435f79903365d1096b49efbf616f5/docs/figure/Peak_calling.Rmd/peak info-1.png" target="_blank">9a1e500</a>
+</td>
+<td>
+reneeisnowhere
+</td>
+<td>
+2024-03-04
+</td>
+</tr>
+<tr>
+<td>
 <a href="https://github.com/reneeisnowhere/ATAC_learning/blob/4bfdef9aa596e91f688589d07cc5a5b25ba956c6/docs/figure/Peak_calling.Rmd/peak info-1.png" target="_blank">4bfdef9</a>
 </td>
 <td>
@@ -4569,6 +4702,43 @@ reneeisnowhere
 peakAnnoList_1 &lt;- readRDS(&quot;data/peakAnnoList_1.RDS&quot;)
 plotAnnoBar(peakAnnoList_1, main = &quot;Genomic Feature Distribution&quot;)</code></pre>
 <p><img src="figure/Peak_calling.Rmd/Ind1%20inital%20TSS%20setup-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-no-spaces-Ind1-inital-TSS-setup-1">
+Past versions of "Ind1 inital TSS setup-1.png"
+</button>
+</p>
+<div id="fig-no-spaces-Ind1-inital-TSS-setup-1" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/reneeisnowhere/ATAC_learning/blob/9a1e5008ee9435f79903365d1096b49efbf616f5/docs/figure/Peak_calling.Rmd/Ind1 inital TSS setup-1.png" target="_blank">9a1e500</a>
+</td>
+<td>
+reneeisnowhere
+</td>
+<td>
+2024-03-04
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 <pre class="r"><code># saveRDS(Epi_list_tagMatrix, &quot;data/Ind1_TSS_peaks.RDS&quot;)
 
 Ind1_TSS_peaks_plot &lt;- readRDS(&quot;data/Ind1_TSS_peaks.RDS&quot;)
@@ -4576,11 +4746,85 @@ Ind1_TSS_peaks_plot &lt;- readRDS(&quot;data/Ind1_TSS_peaks.RDS&quot;)
 # Epi_list_tagMatrix = lapply(Ind1_peaks, getTagMatrix, windows = TSS)
 
 plotAvgProf(Ind1_TSS_peaks_plot[c(1,3,5,7,9,11)], xlim=c(-3000, 3000), ylab = &quot;Count Frequency&quot;)+ ggtitle(&quot;3 hour Individual 1&quot; )</code></pre>
-<pre><code>&gt;&gt; plotting figure...            2024-03-04 3:21:52 PM </code></pre>
+<pre><code>&gt;&gt; plotting figure...            2024-03-04 9:02:12 PM </code></pre>
 <p><img src="figure/Peak_calling.Rmd/Ind1%20inital%20TSS%20setup-2.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-no-spaces-Ind1-inital-TSS-setup-2">
+Past versions of "Ind1 inital TSS setup-2.png"
+</button>
+</p>
+<div id="fig-no-spaces-Ind1-inital-TSS-setup-2" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/reneeisnowhere/ATAC_learning/blob/9a1e5008ee9435f79903365d1096b49efbf616f5/docs/figure/Peak_calling.Rmd/Ind1 inital TSS setup-2.png" target="_blank">9a1e500</a>
+</td>
+<td>
+reneeisnowhere
+</td>
+<td>
+2024-03-04
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 <pre class="r"><code>plotAvgProf(Ind1_TSS_peaks_plot[c(2,4,6,8,10,12)], xlim=c(-3000, 3000),ylab = &quot;Count Frequency&quot;)+ ggtitle(&quot;24 hour Individual 1&quot; )</code></pre>
-<pre><code>&gt;&gt; plotting figure...            2024-03-04 3:21:53 PM </code></pre>
+<pre><code>&gt;&gt; plotting figure...            2024-03-04 9:02:13 PM </code></pre>
 <p><img src="figure/Peak_calling.Rmd/Ind1%20inital%20TSS%20setup-3.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-no-spaces-Ind1-inital-TSS-setup-3">
+Past versions of "Ind1 inital TSS setup-3.png"
+</button>
+</p>
+<div id="fig-no-spaces-Ind1-inital-TSS-setup-3" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/reneeisnowhere/ATAC_learning/blob/9a1e5008ee9435f79903365d1096b49efbf616f5/docs/figure/Peak_calling.Rmd/Ind1 inital TSS setup-3.png" target="_blank">9a1e500</a>
+</td>
+<td>
+reneeisnowhere
+</td>
+<td>
+2024-03-04
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 </div>
 <div id="ind2-peaks" class="section level3">
 <h3>Ind2 Peaks</h3>
@@ -4607,6 +4851,43 @@ Ind2_peaks &lt;- readRDS(&quot;data/Ind2_peaks_list.RDS&quot;)
 peakAnnoList_2 &lt;- readRDS(&quot;data/peakAnnoList_2.RDS&quot;)
 plotAnnoBar(peakAnnoList_2, main = &quot;Genomic Feature Distribution, Individual 2&quot;)</code></pre>
 <p><img src="figure/Peak_calling.Rmd/Ind2%20inital%20TSS%20setup-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-no-spaces-Ind2-inital-TSS-setup-1">
+Past versions of "Ind2 inital TSS setup-1.png"
+</button>
+</p>
+<div id="fig-no-spaces-Ind2-inital-TSS-setup-1" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/reneeisnowhere/ATAC_learning/blob/9a1e5008ee9435f79903365d1096b49efbf616f5/docs/figure/Peak_calling.Rmd/Ind2 inital TSS setup-1.png" target="_blank">9a1e500</a>
+</td>
+<td>
+reneeisnowhere
+</td>
+<td>
+2024-03-04
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 <pre class="r"><code># Epi_list_tagMatrix = lapply(Ind2_peaks, getTagMatrix, windows = TSS)
 # saveRDS(Epi_list_tagMatrix, &quot;data/Ind2_TSS_peaks.RDS&quot;)
 
@@ -4615,11 +4896,85 @@ Ind2_TSS_peaks_plot &lt;- readRDS(&quot;data/Ind2_TSS_peaks.RDS&quot;)
 
 
 plotAvgProf(Ind2_TSS_peaks_plot[c(1,3,5,7,9,11)], xlim=c(-3000, 3000), ylab = &quot;Count Frequency&quot;)+ ggtitle(&quot;3 hour Individual 2&quot; )</code></pre>
-<pre><code>&gt;&gt; plotting figure...            2024-03-04 3:22:41 PM </code></pre>
+<pre><code>&gt;&gt; plotting figure...            2024-03-04 9:02:33 PM </code></pre>
 <p><img src="figure/Peak_calling.Rmd/Ind2%20inital%20TSS%20setup-2.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-no-spaces-Ind2-inital-TSS-setup-2">
+Past versions of "Ind2 inital TSS setup-2.png"
+</button>
+</p>
+<div id="fig-no-spaces-Ind2-inital-TSS-setup-2" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/reneeisnowhere/ATAC_learning/blob/9a1e5008ee9435f79903365d1096b49efbf616f5/docs/figure/Peak_calling.Rmd/Ind2 inital TSS setup-2.png" target="_blank">9a1e500</a>
+</td>
+<td>
+reneeisnowhere
+</td>
+<td>
+2024-03-04
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 <pre class="r"><code>plotAvgProf(Ind2_TSS_peaks_plot[c(2,4,6,8,10,12)], xlim=c(-3000, 3000),ylab = &quot;Count Frequency&quot;)+ ggtitle(&quot;24 hour Individual 2&quot; )</code></pre>
-<pre><code>&gt;&gt; plotting figure...            2024-03-04 3:22:42 PM </code></pre>
+<pre><code>&gt;&gt; plotting figure...            2024-03-04 9:02:35 PM </code></pre>
 <p><img src="figure/Peak_calling.Rmd/Ind2%20inital%20TSS%20setup-3.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-no-spaces-Ind2-inital-TSS-setup-3">
+Past versions of "Ind2 inital TSS setup-3.png"
+</button>
+</p>
+<div id="fig-no-spaces-Ind2-inital-TSS-setup-3" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/reneeisnowhere/ATAC_learning/blob/9a1e5008ee9435f79903365d1096b49efbf616f5/docs/figure/Peak_calling.Rmd/Ind2 inital TSS setup-3.png" target="_blank">9a1e500</a>
+</td>
+<td>
+reneeisnowhere
+</td>
+<td>
+2024-03-04
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 </div>
 <div id="ind3-peaks" class="section level3">
 <h3>Ind3 Peaks</h3>
@@ -4646,6 +5001,43 @@ Ind3_peaks &lt;- readRDS(&quot;data/Ind3_peaks_list.RDS&quot;)
 peakAnnoList_3 &lt;- readRDS(&quot;data/peakAnnoList_3.RDS&quot;)
 plotAnnoBar(peakAnnoList_3, main = &quot;Genomic Feature Distribution, Individual 3&quot;)</code></pre>
 <p><img src="figure/Peak_calling.Rmd/Ind3%20inital%20TSS%20setup-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-no-spaces-Ind3-inital-TSS-setup-1">
+Past versions of "Ind3 inital TSS setup-1.png"
+</button>
+</p>
+<div id="fig-no-spaces-Ind3-inital-TSS-setup-1" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/reneeisnowhere/ATAC_learning/blob/9a1e5008ee9435f79903365d1096b49efbf616f5/docs/figure/Peak_calling.Rmd/Ind3 inital TSS setup-1.png" target="_blank">9a1e500</a>
+</td>
+<td>
+reneeisnowhere
+</td>
+<td>
+2024-03-04
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 <pre class="r"><code># Epi_list_tagMatrix = lapply(Ind3_peaks, getTagMatrix, windows = TSS)
 # saveRDS(Epi_list_tagMatrix, &quot;data/Ind3_TSS_peaks.RDS&quot;)
 
@@ -4654,11 +5046,85 @@ Ind3_TSS_peaks_plot &lt;- readRDS(&quot;data/Ind3_TSS_peaks.RDS&quot;)
 
 
 plotAvgProf(Ind3_TSS_peaks_plot[c(1,3,5,7,9,11)], xlim=c(-3000, 3000), ylab = &quot;Count Frequency&quot;)+ ggtitle(&quot;3 hour Individual 3&quot; )</code></pre>
-<pre><code>&gt;&gt; plotting figure...            2024-03-04 3:23:04 PM </code></pre>
+<pre><code>&gt;&gt; plotting figure...            2024-03-04 9:03:07 PM </code></pre>
 <p><img src="figure/Peak_calling.Rmd/Ind3%20inital%20TSS%20setup-2.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-no-spaces-Ind3-inital-TSS-setup-2">
+Past versions of "Ind3 inital TSS setup-2.png"
+</button>
+</p>
+<div id="fig-no-spaces-Ind3-inital-TSS-setup-2" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/reneeisnowhere/ATAC_learning/blob/9a1e5008ee9435f79903365d1096b49efbf616f5/docs/figure/Peak_calling.Rmd/Ind3 inital TSS setup-2.png" target="_blank">9a1e500</a>
+</td>
+<td>
+reneeisnowhere
+</td>
+<td>
+2024-03-04
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 <pre class="r"><code>plotAvgProf(Ind3_TSS_peaks_plot[c(2,4,6,8,10,12)], xlim=c(-3000, 3000),ylab = &quot;Count Frequency&quot;)+ ggtitle(&quot;24 hour Individual 3&quot; )</code></pre>
-<pre><code>&gt;&gt; plotting figure...            2024-03-04 3:23:05 PM </code></pre>
+<pre><code>&gt;&gt; plotting figure...            2024-03-04 9:03:08 PM </code></pre>
 <p><img src="figure/Peak_calling.Rmd/Ind3%20inital%20TSS%20setup-3.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-no-spaces-Ind3-inital-TSS-setup-3">
+Past versions of "Ind3 inital TSS setup-3.png"
+</button>
+</p>
+<div id="fig-no-spaces-Ind3-inital-TSS-setup-3" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/reneeisnowhere/ATAC_learning/blob/9a1e5008ee9435f79903365d1096b49efbf616f5/docs/figure/Peak_calling.Rmd/Ind3 inital TSS setup-3.png" target="_blank">9a1e500</a>
+</td>
+<td>
+reneeisnowhere
+</td>
+<td>
+2024-03-04
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 </div>
 <div id="ind4-peaks" class="section level3">
 <h3>Ind4 Peaks</h3>
@@ -4685,6 +5151,43 @@ Ind4_peaks &lt;- readRDS(&quot;data/Ind4_peaks_list.RDS&quot;)
 peakAnnoList_4 &lt;- readRDS(&quot;data/peakAnnoList_4.RDS&quot;)
 plotAnnoBar(peakAnnoList_4, main = &quot;Genomic Feature Distribution, Individual 4&quot;)</code></pre>
 <p><img src="figure/Peak_calling.Rmd/Ind4%20inital%20TSS%20setup-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-no-spaces-Ind4-inital-TSS-setup-1">
+Past versions of "Ind4 inital TSS setup-1.png"
+</button>
+</p>
+<div id="fig-no-spaces-Ind4-inital-TSS-setup-1" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/reneeisnowhere/ATAC_learning/blob/9a1e5008ee9435f79903365d1096b49efbf616f5/docs/figure/Peak_calling.Rmd/Ind4 inital TSS setup-1.png" target="_blank">9a1e500</a>
+</td>
+<td>
+reneeisnowhere
+</td>
+<td>
+2024-03-04
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 <pre class="r"><code># Epi_list_tagMatrix = lapply(Ind4_peaks, getTagMatrix, windows = TSS)
 # saveRDS(Epi_list_tagMatrix, &quot;data/Ind4_TSS_peaks.RDS&quot;)
 
@@ -4693,11 +5196,85 @@ Ind4_TSS_peaks_plot &lt;- readRDS(&quot;data/Ind4_TSS_peaks.RDS&quot;)
 
 
 plotAvgProf(Ind4_TSS_peaks_plot[c(1,3,5,7,9,11)], xlim=c(-3000, 3000), ylab = &quot;Count Frequency&quot;)+ ggtitle(&quot;3 hour Individual 4&quot; )</code></pre>
-<pre><code>&gt;&gt; plotting figure...            2024-03-04 3:23:35 PM </code></pre>
+<pre><code>&gt;&gt; plotting figure...            2024-03-04 9:03:25 PM </code></pre>
 <p><img src="figure/Peak_calling.Rmd/Ind4%20inital%20TSS%20setup-2.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-no-spaces-Ind4-inital-TSS-setup-2">
+Past versions of "Ind4 inital TSS setup-2.png"
+</button>
+</p>
+<div id="fig-no-spaces-Ind4-inital-TSS-setup-2" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/reneeisnowhere/ATAC_learning/blob/9a1e5008ee9435f79903365d1096b49efbf616f5/docs/figure/Peak_calling.Rmd/Ind4 inital TSS setup-2.png" target="_blank">9a1e500</a>
+</td>
+<td>
+reneeisnowhere
+</td>
+<td>
+2024-03-04
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 <pre class="r"><code>plotAvgProf(Ind4_TSS_peaks_plot[c(2,4,6,8,10,12)], xlim=c(-3000, 3000),ylab = &quot;Count Frequency&quot;)+ ggtitle(&quot;24 hour Individual 4&quot; )</code></pre>
-<pre><code>&gt;&gt; plotting figure...            2024-03-04 3:23:36 PM </code></pre>
+<pre><code>&gt;&gt; plotting figure...            2024-03-04 9:03:26 PM </code></pre>
 <p><img src="figure/Peak_calling.Rmd/Ind4%20inital%20TSS%20setup-3.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-no-spaces-Ind4-inital-TSS-setup-3">
+Past versions of "Ind4 inital TSS setup-3.png"
+</button>
+</p>
+<div id="fig-no-spaces-Ind4-inital-TSS-setup-3" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/reneeisnowhere/ATAC_learning/blob/9a1e5008ee9435f79903365d1096b49efbf616f5/docs/figure/Peak_calling.Rmd/Ind4 inital TSS setup-3.png" target="_blank">9a1e500</a>
+</td>
+<td>
+reneeisnowhere
+</td>
+<td>
+2024-03-04
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 <br>
 <p>
 <button type="button" class="btn btn-default btn-workflowr btn-workflowr-sessioninfo" data-toggle="collapse" data-target="#workflowr-sessioninfo" style="display: block;">
