@@ -423,7 +423,7 @@ Ind6_summary  <- read.csv("data/Ind6_summary.txt", row.names = 1)%>%
 
 
 
-###Individual 1 read summary
+### Individual 1 read summary
 
 ```{r frag length}
 
@@ -801,6 +801,68 @@ write.csv(Ind1_firstfrag_files,"data/Ind1_firstfragment_files.txt")
 
 ```
 
+### Total reads summary
+```{r readsummary 1}
+total_reads_summary <- Ind1_reads_summary %>% 
+ mutate(sample=gsub("75","1_",sample)) %>% 
+  rbind((Ind2_reads_summary %>%
+           mutate(sample=gsub("87","2_",sample)))) %>% 
+  rbind((Ind3_reads_summary %>%
+           mutate(sample=gsub("77","3_",sample)))) %>% 
+  rbind((Ind4_reads_summary %>%
+           mutate(sample=gsub("79","4_",sample)))) %>% 
+  rbind((Ind5_reads_summary %>%
+           mutate(sample=gsub("78","5_",sample)))) %>% 
+  rbind((Ind6_reads_summary %>%
+           mutate(sample=gsub("71","6_",sample)))) %>% 
+  mutate(sample = gsub("24h","_24h",sample), 
+       sample = gsub("3h","_3h",sample)) %>%
+  separate(sample, into = c("indv","trt","time")) %>% 
+  mutate(time=factor(time, levels = c("3h","24h"))) %>% 
+  mutate(trt=factor(trt, levels=c("DX","E","DA","M","T","V"), labels = c("DOX","EPI","DNR","MTX","TRZ","VEH")))
+         
+total_reads_summary %>% 
+  ggplot(., aes(x=trt, y=total_reads ))+
+  geom_boxplot(aes(fill=trt))+
+  geom_point(aes(col=indv, size =3))+
+  facet_wrap(time~.)+
+   scale_fill_manual(values=drug_pal_fact)+
+  scale_color_brewer(palette = "Dark2")+
+  ggtitle("total number of reads by time and treatment")
+
+
+
+total_reads_summary %>% 
+  ggplot(., aes(x=trt, y=nuclear_reads ))+
+  geom_boxplot(aes(fill=trt))+
+ geom_point(aes(col=indv, size =3))+
+  facet_wrap(time~.)+
+   scale_fill_manual(values=drug_pal_fact)+
+  scale_color_brewer(palette = "Dark2")+
+  ggtitle("total number of nuclear reads by time and treatment")
+
+
+total_reads_summary %>% 
+  ggplot(., aes(x=trt, y=unique_mapped_reads ))+
+  geom_boxplot(aes(fill=trt))+
+ geom_point(aes(col=indv, size =3))+
+  facet_wrap(time~.)+
+   scale_fill_manual(values=drug_pal_fact)+
+  scale_color_brewer(palette = "Dark2")+
+  ggtitle("total number of unique-nuclear reads by time and treatment")
+
+
+
+total_reads_summary %>% 
+  ggplot(., aes(x=trt, y=dedup_reads ))+
+  geom_boxplot(aes(fill=trt))+
+  geom_point(aes(col=indv, size =3))+
+  facet_wrap(time~.)+
+   scale_fill_manual(values=drug_pal_fact)+
+  scale_color_brewer(palette = "Dark2")+
+  ggtitle("total unique, deduplicated nuclear mapped reads by time and treatment")
+
+```
 
 
 
