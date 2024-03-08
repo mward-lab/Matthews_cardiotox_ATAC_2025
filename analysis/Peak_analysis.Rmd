@@ -1,0 +1,303 @@
+---
+title: "Peak_analysis"
+author: "ERM"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE,
+	warning = FALSE
+)
+```
+
+```{css, echo=FALSE}
+pre {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+pre[class] {
+  max-height: 200px;
+}
+```
+
+```{r  package loading}
+library(tidyverse)
+# library(ggsignif)
+# library(cowplot)
+# library(ggpubr)
+# library(scales)
+# library(sjmisc)
+library(kableExtra)
+# library(broom)
+# library(biomaRt)
+library(RColorBrewer)
+# library(gprofiler2)
+# library(qvalue)
+# library(ChIPseeker)
+# library("TxDb.Hsapiens.UCSC.hg38.knownGene")
+# library("org.Hs.eg.db")
+# library(ATACseqQC)
+# library(rtracklayer)
+library(edgeR)
+library(ggfortify)
+```
+
+```{r functions to have}
+
+pca_plot <-
+  function(df,
+           col_var = NULL,
+           shape_var = NULL,
+           title = "") {
+    ggplot(df) + geom_point(aes_string(
+      x = "PC1",
+      y = "PC2",
+      color = col_var,
+      shape = shape_var
+    ),
+    size = 5) +
+      labs(title = title, x = "PC 1", y = "PC 2") +
+      scale_color_manual(values = c(
+        "#8B006D",
+        "#DF707E",
+        "#F1B72B",
+        "#3386DD",
+        "#707031",
+        "#41B333"
+      ))
+  }
+pca_var_plot <- function(pca) {
+  # x: class == prcomp
+  pca.var <- pca$sdev ^ 2
+  pca.prop <- pca.var / sum(pca.var)
+  var.plot <-
+    qplot(PC, prop, data = data.frame(PC = 1:length(pca.prop),
+                                      prop = pca.prop)) +
+    labs(title = 'Variance contributed by each PC',
+         x = 'PC', y = 'Proportion of variance')
+}
+
+calc_pca <- function(x) {
+  # Performs principal components analysis with prcomp
+  # x: a sample-by-gene numeric matrix
+  prcomp(x, scale. = TRUE, retx = TRUE)
+}
+
+get_regr_pval <- function(mod) {
+  # Returns the p-value for the Fstatistic of a linear model
+  # mod: class lm
+  stopifnot(class(mod) == "lm")
+  fstat <- summary(mod)$fstatistic
+  pval <- 1 - pf(fstat[1], fstat[2], fstat[3])
+  return(pval)
+}
+
+plot_versus_pc <- function(df, pc_num, fac) {
+  # df: data.frame
+  # pc_num: numeric, specific PC for plotting
+  # fac: column name of df for plotting against PC
+  pc_char <- paste0("PC", pc_num)
+  # Calculate F-statistic p-value for linear model
+  pval <- get_regr_pval(lm(df[, pc_char] ~ df[, fac]))
+  if (is.numeric(df[, f])) {
+    ggplot(df, aes_string(x = f, y = pc_char)) + geom_point() +
+      geom_smooth(method = "lm") + labs(title = sprintf("p-val: %.2f", pval))
+  } else {
+    ggplot(df, aes_string(x = f, y = pc_char)) + geom_boxplot() +
+      labs(title = sprintf("p-val: %.2f", pval))
+  }
+}
+x_axis_labels = function(labels, every_nth = 1, ...) {
+  axis(side = 1,
+       at = seq_along(labels),
+       labels = F)
+  text(
+    x = (seq_along(labels))[seq_len(every_nth) == 1],
+    y = par("usr")[3] - 0.075 * (par("usr")[4] - par("usr")[3]),
+    labels = labels[seq_len(every_nth) == 1],
+    xpd = TRUE,
+    ...
+  )
+}
+
+```
+
+
+
+```{r cpm and corr plots}
+first_run_frag_counts <- read.csv("data/first_run_frag_counts.txt", row.names = 1) 
+Frag_cor <- first_run_frag_counts %>% 
+  dplyr::select(Ind1_75DA24h:Ind6_71V3h)  %>% 
+  cpm(., log = TRUE) %>% 
+  cor()
+  
+filmat_groupmat_col <- data.frame(timeset = colnames(Frag_cor))
+
+counts_corr_mat <-filmat_groupmat_col %>% 
+  mutate(timeset=gsub("75","1_",timeset)) %>% 
+  mutate(timeset=gsub("87","2_",timeset)) %>% 
+  mutate(timeset=gsub("77","3_",timeset)) %>% 
+  mutate(timeset=gsub("79","4_",timeset)) %>% 
+  mutate(timeset=gsub("78","5_",timeset)) %>%
+  mutate(timeset=gsub("71","6_",timeset)) %>% 
+  mutate(timeset = gsub("24h","_24h",timeset), 
+       timeset = gsub("3h","_3h",timeset)) %>%
+  separate(timeset, into = c(NA,"indv","trt","time"), sep= "_") %>% 
+  
+  mutate(trt= case_match(trt, 'DX' ~'DOX', 'E'~'EPI', 'DA'~'DNR', 'M'~'MTX', 'T'~'TRZ', 'V'~'VEH',.default = trt)) %>% 
+  mutate(class = if_else(trt == "DNR", "AC", if_else(
+    trt == "DOX", "AC", if_else(trt == "EPI", "AC", "nAC")
+  ))) %>%
+  mutate(TOP2i = if_else(trt == "DNR", "yes", if_else(
+    trt == "DOX", "yes", if_else(trt == "EPI", "yes", if_else(trt == "MTX", "yes", "no"))
+  ))) 
+                         
+ mat_colors <- list( 
+   trt= c("#F1B72B","#8B006D","#DF707E","#3386DD","#707031","#41B333"),
+   indv=c("#1B9E77", "#D95F02" ,"#7570B3", "#E7298A" ,"#66A61E", "#E6AB02"),
+   time=c("pink", "chocolate4"),
+   class=c("yellow1","darkorange1"), 
+   TOP2i =c("darkgreen","lightgreen"))                        
+                         
+names(mat_colors$trt)   <- unique(counts_corr_mat$trt)                      
+names(mat_colors$indv) <- unique(counts_corr_mat$indv)
+names(mat_colors$time) <- unique(counts_corr_mat$time)
+names(mat_colors$class) <- unique(counts_corr_mat$class)
+names(mat_colors$TOP2i) <- unique(counts_corr_mat$TOP2i)
+
+
+ComplexHeatmap::pheatmap(Frag_cor,
+                         # column_title=(paste0("RNA-seq log"[2]~"cpm correlation")),
+        annotation_col = counts_corr_mat,
+        annotation_colors = mat_colors,
+        heatmap_legend_param = mat_colors,
+        fontsize=10,
+        fontsize_row = 8,
+        angle_col="90",
+        treeheight_row=25,
+        fontsize_col = 8,
+        treeheight_col = 20)
+
+
+
+
+```
+
+```{r inital analysis}
+first_run_frag_counts <- read.csv("data/first_run_frag_counts.txt", row.names = 1) 
+
+##loading of the counts matrix
+##then separting off the non-counts columns
+PCAmat <- first_run_frag_counts %>% 
+  dplyr::select(Ind1_75DA24h:Ind6_71V3h) %>% as.matrix()
+
+annotation_mat <- data.frame(timeset=colnames(PCAmat)) %>% 
+  mutate(sample = timeset) %>% 
+  mutate(timeset=gsub("Ind1_75","1_",timeset)) %>% 
+  mutate(timeset=gsub("Ind2_87","2_",timeset)) %>% 
+  mutate(timeset=gsub("Ind3_77","3_",timeset)) %>% 
+  mutate(timeset=gsub("Ind4_79","4_",timeset)) %>% 
+  mutate(timeset=gsub("Ind5_78","5_",timeset)) %>%
+  mutate(timeset=gsub("Ind6_71","6_",timeset)) %>% 
+  mutate(timeset = gsub("24h","_24h",timeset), 
+       timeset = gsub("3h","_3h",timeset)) %>%
+  separate(timeset, into = c("indv","trt","time"), sep= "_") %>% 
+  mutate(trt= case_match(trt, 'DX' ~'DOX', 'E'~'EPI', 'DA'~'DNR', 'M'~'MTX', 'T'~'TRZ', 'V'~'VEH',.default = trt)) %>% 
+  # mutate(indv = factor(indv, levels = c("1", "2", "3", "4", "5", "6"))) %>%
+  mutate(time = factor(time, levels = c("3h", "24h"), labels= c("3 hours","24 hours"))) %>% 
+  mutate(trt = factor(trt, levels = c("DOX","EPI", "DNR", "MTX", "TRZ", "VEH"))) 
+
+PCA_info <- (prcomp(t(PCAmat), scale. = TRUE)) 
+PCA_info_anno <- PCA_info$x %>% cbind(.,annotation_mat)
+# autoplot(PCA_info)
+summary(PCA_info)
+# cpm(PCAmat, log=TRUE)
+pca_plot(PCA_info_anno, col_var='trt', shape_var = 'time')
+        
+pca_plot(PCA_info_anno, col_var='trt', shape_var = 'indv')
+```
+
+
+```{r filtering step}
+
+lcpm <- cpm(PCAmat, log=TRUE)  ### for determining the basic cutoffs
+dim(lcpm)
+
+row_means <- rowMeans(lcpm)
+x_filtered <- PCAmat[row_means > 0,]
+dim(x_filtered)
+
+filt_matrix_lcpm <- cpm(x_filtered, log=TRUE)
+# hist(lcpm,  main = "Histogram of total counts (unfiltered)", 
+#      xlab =expression("Log"[2]*" counts-per-million"), col =4 )
+# 
+# hist(filt_matrix_lcpm, main = "Histogram of total counts (filtered)", 
+#      xlab =expression("Log"[2]*" counts-per-million"), col =4 )
+PCA_info_filter <- (prcomp(t(filt_matrix_lcpm), scale. = TRUE))
+summary(PCA_info_filter)
+# autoplot(PCA_info_filter)
+
+pca_var_plot(PCA_info_filter)
+
+pca_all <- calc_pca(t(filt_matrix_lcpm))
+pca_all_anno <- data.frame(annotation_mat, pca_all$x)
+
+
+head(pca_all_anno)[,1:12]
+drug_pal <- c("#8B006D","#DF707E","#F1B72B", "#3386DD","#707031","#41B333")
+
+pca_all_anno %>%
+  ggplot(.,aes(x = PC1, y = PC2, col=trt, shape=time, group=indv))+
+  geom_point(size= 5)+
+  scale_color_manual(values=drug_pal)+
+   ggrepel::geom_text_repel(aes(label = indv))+
+  #scale_shape_manual(name = "Time",values= c("3h"=0,"24h"=1))+
+  ggtitle(expression("PCA of log"[2]*"(peaks)"))+
+  theme_bw()+
+  guides(col="none", size =4)+
+  # labs(y = "PC 2 (15.76%)", x ="PC 1 (29.06%)")+
+  theme(plot.title=element_text(size= 14,hjust = 0.5),
+        axis.title = element_text(size = 12, color = "black"))
+
+
+
+
+
+
+pca_all_anno %>%
+  ggplot(.,aes(x = PC3, y = PC4, col=trt, shape=time, group=indv))+
+  geom_point(size= 5)+
+  scale_color_manual(values=drug_pal)+
+   ggrepel::geom_text_repel(aes(label = indv))+
+  #scale_shape_manual(name = "Time",values= c("3h"=0,"24h"=1))+
+  ggtitle(expression("PCA of log"[2]*"(peaks)"))+
+  theme_bw()+
+  guides(col="none", size =4)+
+  # labs(y = "PC 2 (15.76%)", x ="PC 1 (29.06%)")+
+  theme(plot.title=element_text(size= 14,hjust = 0.5),
+        axis.title = element_text(size = 12, color = "black"))
+
+
+Frag_cor_filter <- filt_matrix_lcpm %>% cor()
+ComplexHeatmap::pheatmap(Frag_cor_filter,
+                         # column_title=(paste0("RNA-seq log"[2]~"cpm correlation")),
+        annotation_col = counts_corr_mat,
+        annotation_colors = mat_colors,
+        heatmap_legend_param = mat_colors,
+        fontsize=10,
+        fontsize_row = 8,
+        angle_col="90",
+        treeheight_row=25,
+        fontsize_col = 8,
+        treeheight_col = 20)
+
+
+```
+
+
+
