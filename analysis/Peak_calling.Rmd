@@ -44,6 +44,7 @@ library(ChIPseeker)
 library("TxDb.Hsapiens.UCSC.hg38.knownGene")
 library("org.Hs.eg.db")
 library(ATACseqQC)
+library(rtracklayer)
 ```
 
 ```{r data_loading and other functions}
@@ -713,3 +714,87 @@ tsse <- TSSEscore(gal1, txs)
 tsse$TSSEscore
 summary(tsse$values)
 ```
+
+
+
+```{r bedfile annotation, fig.height=8, fig.width=12}
+### bring in the Feature counted files
+# Ind1_counts <- read.delim("~/ATAC_downloads/Ind1_files.txt", comment.char="#")
+# Ind2_counts <- read.delim("~/ATAC_downloads/Ind2_files.txt", comment.char="#")
+# Ind3_counts <- read.delim("~/ATAC_downloads/Ind3_files.txt", comment.char="#")
+# Ind4_counts <- read.delim("~/ATAC_downloads/Ind4_files.txt", comment.char="#")
+# Ind5_counts <- read.delim("~/ATAC_downloads/Ind5_files.txt", comment.char="#")
+# Ind6_counts <- read.delim("~/ATAC_downloads/Ind6_files.txt", comment.char="#")
+# 
+# first_run_frag_counts <- Ind1_counts %>% 
+#   full_join(Ind2_counts) %>% 
+# full_join(Ind3_counts) %>% 
+# full_join(Ind4_counts) %>% 
+# full_join(Ind5_counts) %>% 
+# full_join(Ind6_counts) 
+# 
+# names(first_run_frag_counts) = gsub(pattern = "_S.*", replacement = "", x = names(first_run_frag_counts))
+# 
+# names(first_run_frag_counts)=gsub(pattern = "^ind6.trimmed.filt_files.trimmed_", replacement = "", x = names(first_run_frag_counts))
+# 
+# write.csv(first_run_frag_counts,"data/first_run_frag_counts.txt")
+first_run_frag_counts <- read.csv("data/first_run_frag_counts.txt", row.names = 1) 
+
+Frag_cor <- first_run_frag_counts %>% 
+  dplyr::select(Ind1_75DA24h:Ind6_71V3h) %>% 
+  cor()
+  
+# pheatmap::pheatmap(Frag_cor , cluster_rows = TRUE, cluster_cols = TRUE)
+
+
+
+filmat_groupmat_col <- data.frame(timeset = colnames(Frag_cor))
+
+counts_corr_mat <-filmat_groupmat_col %>% 
+  mutate(timeset=gsub("75","1_",timeset)) %>% 
+  mutate(timeset=gsub("87","2_",timeset)) %>% 
+  mutate(timeset=gsub("77","3_",timeset)) %>% 
+  mutate(timeset=gsub("79","4_",timeset)) %>% 
+  mutate(timeset=gsub("78","5_",timeset)) %>%
+  mutate(timeset=gsub("71","6_",timeset)) %>% 
+  mutate(timeset = gsub("24h","_24h",timeset), 
+       timeset = gsub("3h","_3h",timeset)) %>%
+  separate(timeset, into = c(NA,"indv","trt","time"), sep= "_") %>% 
+  
+  mutate(trt= case_match(trt, 'DX' ~'DOX', 'E'~'EPI', 'DA'~'DNR', 'M'~'MTX', 'T'~'TRZ', 'V'~'VEH',.default = trt)) %>% 
+  mutate(class = if_else(trt == "DNR", "AC", if_else(
+    trt == "DOX", "AC", if_else(trt == "EPI", "AC", "nAC")
+  ))) %>%
+  mutate(TOP2i = if_else(trt == "DNR", "yes", if_else(
+    trt == "DOX", "yes", if_else(trt == "EPI", "yes", if_else(trt == "MTX", "yes", "no"))
+  ))) 
+                         
+ mat_colors <- list( 
+   trt= c("#F1B72B","#8B006D","#DF707E","#3386DD","#707031","#41B333"),
+   indv=c("#1B9E77", "#D95F02" ,"#7570B3", "#E7298A" ,"#66A61E", "#E6AB02"),
+   time=c("pink", "chocolate4"),
+   class=c("yellow1","darkorange1"), 
+   TOP2i =c("darkgreen","lightgreen"))                        
+                         
+names(mat_colors$trt)   <- unique(counts_corr_mat$trt)                      
+names(mat_colors$indv) <- unique(counts_corr_mat$indv)
+names(mat_colors$time) <- unique(counts_corr_mat$time)
+names(mat_colors$class) <- unique(counts_corr_mat$class)
+names(mat_colors$TOP2i) <- unique(counts_corr_mat$TOP2i)
+
+
+ComplexHeatmap::pheatmap(Frag_cor,
+                         # column_title=(paste0("RNA-seq log"[2]~"cpm correlation")),
+        annotation_col = counts_corr_mat,
+        annotation_colors = mat_colors,
+        heatmap_legend_param = mat_colors,
+        fontsize=10,
+        fontsize_row = 8,
+        angle_col="90",
+        treeheight_row=25,
+        fontsize_col = 8,
+        treeheight_col = 20)
+
+
+```
+
