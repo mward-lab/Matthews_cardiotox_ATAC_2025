@@ -55,9 +55,9 @@ fastqc_full <- multiqc_fastqc2 %>%
   mutate(time=case_match(trt,"E2"~"24h","E3"~"3h","M2"~"24h", "M3"~"3h","T2"~"24h","T3"~"3h","V2"~"24h","V3"~"3h",.default = time)) %>% 
   mutate(trt=gsub("[[:digit:]]", "", trt) ) %>% 
   mutate(trimmed = if_else(grepl(pattern ="^trim", x = Sample)==TRUE, "yes","no")) %>% 
-  select(Sample:read, trimmed,`Total Sequences`:avg_sequence_length) %>% 
+  dplyr::select(Sample:read, trimmed,`Total Sequences`:avg_sequence_length) %>% 
   full_join(., multiqc_general_stats2, join_by(Sample)) %>% 
-   rename("percent_gc"="FastQC_mqc-generalstats-fastqc-percent_gc",
+   dplyr::rename("percent_gc"="FastQC_mqc-generalstats-fastqc-percent_gc",
          "avg_seq_len"= "FastQC_mqc-generalstats-fastqc-avg_sequence_length",
          "percent_dup"= "FastQC_mqc-generalstats-fastqc-percent_duplicates",
          "percent_fails"= "FastQC_mqc-generalstats-fastqc-percent_fails",
@@ -72,6 +72,7 @@ I also then addin the gen_stats file and rename the columns to normal things.
 ```{r ggplot Total sequences}
 # fastqc_full
 drug_pal <- c("#8B006D","#DF707E","#F1B72B", "#3386DD","#707031","#41B333")
+drug_pal_fac <- c("#8B006D","#DF707E","#F1B72B", "#3386DD","#707031","#41B333")
 fastqc_full %>% 
   filter(trimmed=="no") %>%
   ggplot(., aes(x=trt, y= `Total Sequences`))+
@@ -111,7 +112,7 @@ fastqc_full %>%
 totseq <- fastqc_full %>% 
   dplyr::filter(read =='R1') %>% 
   # group_by(ind,trt,time) %>% 
- select(Sample, ind, trt, time, trimmed, `Total Sequences`) %>% 
+dplyr::select(Sample, ind, trt, time, trimmed, `Total Sequences`) %>% 
   pivot_wider(id_cols = c(ind,trt,time), names_from = trimmed, values_from = `Total Sequences`) %>% 
   mutate(perc_removed=(no-yes)/no*100) #%>% 
  # kable(list(totseq[1:36,], totseq[37:72,]),caption= "Summary of Total sequences before and after trimming, with percentage of removed sequences") %>%
@@ -242,7 +243,7 @@ fastqc_full %>%
 trimmed_seq_length <- read.csv("data/trimmed_seq_length.csv", row.names = 1, col.names = 0:25)
 # save <-
 trimmed_seq_length <- trimmed_seq_length %>%
-  rename( "0bp"=X0,"2bp"=X1,"4bp"=X2,"6bp"=X3,"8bp"=X4,"10bp"=X5,"12bp"=X6, "14bp"=X7, "16bp"=X8, "18bp"=X9, "20bp"=X10, "22bp"=X11, "24bp"=X12, "26bp"=X13, "28bp"=X14, "30bp"=X15, "32bp"=X16, "34bp"=X17, "36bp"=X18, "38bp"=X19, "40bp"=X20, "42bp"=X21, "44bp"=X22, "46bp"=X23, "48bp"=X24, "50bp"=X25)# %>%
+  dplyr::rename( "0bp"=X0,"2bp"=X1,"4bp"=X2,"6bp"=X3,"8bp"=X4,"10bp"=X5,"12bp"=X6, "14bp"=X7, "16bp"=X8, "18bp"=X9, "20bp"=X10, "22bp"=X11, "24bp"=X12, "26bp"=X13, "28bp"=X14, "30bp"=X15, "32bp"=X16, "34bp"=X17, "36bp"=X18, "38bp"=X19, "40bp"=X20, "42bp"=X21, "44bp"=X22, "46bp"=X23, "48bp"=X24, "50bp"=X25)# %>%
   # column_to_rownames("samples") %>% write.csv(.,"data/trimmed_seq_length.csv")
 #   t() %>% 
 # as.numeric()
@@ -296,7 +297,7 @@ aln_results %>%
   facet_wrap(~indv)+
   scale_fill_manual(values=drug_pal)+
   theme_bw()+
-  ggtitle("Percent mapped reads")
+  ggtitle("Percent mapped reads")+
       theme(strip.background = element_rect(fill = "white",linetype=1, linewidth = 0.5),
           plot.title = element_text(size=14,hjust = 0.5,face="bold"),
           axis.title = element_text(size = 10, color = "black"),
@@ -307,6 +308,7 @@ aln_results %>%
 
 
 ```
+
 ```{r number of aln is 1}
 aln_results %>% 
   mutate(treatment=factor(treatment, levels = c("DOX","EPI","DNR","MTX", "TRZ", "VEH"))) %>%
@@ -408,17 +410,17 @@ aln_results %>%
 ```{r reads input }
 
 Ind1_summary  <- read.csv("data/Ind1_summary.txt", row.names = 1) %>% 
-  rename("sample"=X1,"reads"=X2,"mapped"=X3)
+  dplyr::rename("sample"=X1,"reads"=X2,"mapped"=X3)
 Ind2_summary  <- read.csv("data/Ind2_summary.txt", row.names = 1)%>% 
-  rename("sample"=X1,"reads"=X2,"mapped"=X3)
+  dplyr::rename("sample"=X1,"reads"=X2,"mapped"=X3)
 Ind3_summary  <- read.csv("data/Ind3_summary.txt", row.names = 1)%>% 
-  rename("sample"=X1,"reads"=X2,"mapped"=X3)
+  dplyr::rename("sample"=X1,"reads"=X2,"mapped"=X3)
 Ind4_summary  <- read.csv("data/Ind4_summary.txt", row.names = 1)%>% 
-  rename("sample"=X1,"reads"=X2,"mapped"=X3)
+  dplyr::rename("sample"=X1,"reads"=X2,"mapped"=X3)
 Ind5_summary  <- read.csv("data/Ind5_summary.txt", row.names = 1)%>% 
- rename("sample"=X1,"reads"=X2,"mapped"=X3)
+ dplyr::rename("sample"=X1,"reads"=X2,"mapped"=X3)
 Ind6_summary  <- read.csv("data/Ind6_summary.txt", row.names = 1)%>% 
-  rename("sample"=X1,"reads"=X2,"mapped"=X3)
+  dplyr::rename("sample"=X1,"reads"=X2,"mapped"=X3)
 ```
 
 
@@ -458,13 +460,14 @@ Ind1_reads_summary %>%
   dplyr::filter(type %in% list("total_reads","total_mapped_reads","nuclear_mapped_reads", "unique_mapped_reads","dedup_reads")) %>% 
   mutate(type=factor(type, levels=c("total_reads", "total_mapped_reads", "nuclear_mapped_reads","unique_mapped_reads","dedup_reads"))) %>% 
   mutate(trt=gsub("[[:digit:]]", "",sample)) %>% 
+  dplyr::filter (type != "total_reads") %>% 
   # mutate(trt=substr(trt,-1,2))
   mutate(time = if_else(grepl("24h$", sample) ==TRUE, "24_hours","3_hours")) %>% 
    mutate(time=factor(time, levels=c("3_hours","24_hours"))) %>% 
   mutate(trt = case_match(trt,"DAh"~"DNR","DXh"~"DOX","Eh"~"EPI", "Mh" ~ "MTX", "Th" ~ "TRZ", "Vh" ~"VEH",.default = trt)) %>% 
-  ggplot(., aes (x=type, y=reads, group = time)) +
+  ggplot(., aes (x=type, y=reads, group = trt)) +
   geom_col(position="dodge",aes(fill=time))+
-  facet_wrap(~trt)+
+  facet_wrap(time~trt, ncol = 6)+
   theme(axis.text.x=element_text(angle=90))+
   ggtitle("Ind 1")
 ```
@@ -485,6 +488,7 @@ Ind2_summary %>%
                          if_else(two=="noM","nuclear",
                                  if_else((seven == "fin"& two=="files"), "unique", "dedup"))))%>% 
    dplyr::select(sample,type,  reads, mapped_reads)%>% 
+  
    pivot_longer(cols=reads:mapped_reads, names_to = "read_info", values_to = "reads") %>% 
    unite("type",type:read_info, sep="_") %>% 
    distinct() %>% 
@@ -504,16 +508,16 @@ Ind2_reads_summary %>%
   dplyr::filter(type %in% list("total_reads","total_mapped_reads","nuclear_mapped_reads", "unique_mapped_reads","dedup_reads")) %>% 
   mutate(type=factor(type, levels=c("total_reads", "total_mapped_reads", "nuclear_mapped_reads","unique_mapped_reads","dedup_reads"))) %>% 
   mutate(trt=gsub("[[:digit:]]", "",sample)) %>% 
+  dplyr::filter (type != "total_reads") %>% 
   # mutate(trt=substr(trt,-1,2))
   mutate(time = if_else(grepl("24h$", sample) ==TRUE, "24_hours","3_hours")) %>% 
    mutate(time=factor(time, levels=c("3_hours","24_hours"))) %>% 
   mutate(trt = case_match(trt,"DAh"~"DNR","DXh"~"DOX","Eh"~"EPI", "Mh" ~ "MTX", "Th" ~ "TRZ", "Vh" ~"VEH",.default = trt)) %>% 
-  ggplot(., aes (x=type, y=reads, group = time)) +
+  ggplot(., aes (x=type, y=reads, group = trt)) +
   geom_col(position="dodge",aes(fill=time))+
-  facet_wrap(~trt)+
+  facet_wrap(time~trt, ncol = 6)+
   theme(axis.text.x=element_text(angle=90))+
   ggtitle("Ind 2")
- 
 ```
 
 ### Individual 3 read summary
@@ -552,13 +556,14 @@ Ind3_summary %>%
   dplyr::filter(type %in% list("total_reads","total_mapped_reads","nuclear_mapped_reads", "unique_mapped_reads","dedup_reads")) %>% 
   mutate(type=factor(type, levels=c("total_reads", "total_mapped_reads", "nuclear_mapped_reads","unique_mapped_reads","dedup_reads"))) %>% 
   mutate(trt=gsub("[[:digit:]]", "",sample)) %>% 
+  dplyr::filter (type != "total_reads") %>% 
   # mutate(trt=substr(trt,-1,2))
   mutate(time = if_else(grepl("24h$", sample) ==TRUE, "24_hours","3_hours")) %>% 
-    mutate(time=factor(time, levels=c("3_hours","24_hours"))) %>% 
+   mutate(time=factor(time, levels=c("3_hours","24_hours"))) %>% 
   mutate(trt = case_match(trt,"DAh"~"DNR","DXh"~"DOX","Eh"~"EPI", "Mh" ~ "MTX", "Th" ~ "TRZ", "Vh" ~"VEH",.default = trt)) %>% 
-  ggplot(., aes (x=type, y=reads, group = time)) +
+  ggplot(., aes (x=type, y=reads, group = trt)) +
   geom_col(position="dodge",aes(fill=time))+
-  facet_wrap(~trt)+
+  facet_wrap(time~trt, ncol = 6)+
   theme(axis.text.x=element_text(angle=90))+
   ggtitle("Ind 3")
 ```
@@ -598,13 +603,14 @@ Ind4_summary %>%
   dplyr::filter(type %in% list("total_reads","total_mapped_reads","nuclear_mapped_reads", "unique_mapped_reads","dedup_reads")) %>% 
   mutate(type=factor(type, levels=c("total_reads", "total_mapped_reads", "nuclear_mapped_reads","unique_mapped_reads","dedup_reads"))) %>% 
   mutate(trt=gsub("[[:digit:]]", "",sample)) %>% 
+  dplyr::filter (type != "total_reads") %>% 
   # mutate(trt=substr(trt,-1,2))
   mutate(time = if_else(grepl("24h$", sample) ==TRUE, "24_hours","3_hours")) %>% 
-    mutate(time=factor(time, levels=c("3_hours","24_hours"))) %>% 
+   mutate(time=factor(time, levels=c("3_hours","24_hours"))) %>% 
   mutate(trt = case_match(trt,"DAh"~"DNR","DXh"~"DOX","Eh"~"EPI", "Mh" ~ "MTX", "Th" ~ "TRZ", "Vh" ~"VEH",.default = trt)) %>% 
-  ggplot(., aes (x=type, y=reads, group = time)) +
+  ggplot(., aes (x=type, y=reads, group = trt)) +
   geom_col(position="dodge",aes(fill=time))+
-  facet_wrap(~trt)+
+  facet_wrap(time~trt, ncol = 6)+
   theme(axis.text.x=element_text(angle=90))+
   ggtitle("Ind 4")
  
@@ -642,17 +648,18 @@ Ind5_summary %>%
 
  
  Ind5_reads_summary %>% 
-  pivot_longer(cols = total_reads:dedup_read_pairs, names_to="type", values_to = "reads") %>% 
+   pivot_longer(cols = total_reads:dedup_read_pairs, names_to="type", values_to = "reads") %>% 
   dplyr::filter(type %in% list("total_reads","total_mapped_reads","nuclear_mapped_reads", "unique_mapped_reads","dedup_reads")) %>% 
   mutate(type=factor(type, levels=c("total_reads", "total_mapped_reads", "nuclear_mapped_reads","unique_mapped_reads","dedup_reads"))) %>% 
   mutate(trt=gsub("[[:digit:]]", "",sample)) %>% 
+  dplyr::filter (type != "total_reads") %>% 
   # mutate(trt=substr(trt,-1,2))
   mutate(time = if_else(grepl("24h$", sample) ==TRUE, "24_hours","3_hours")) %>% 
-    mutate(time=factor(time, levels=c("3_hours","24_hours"))) %>% 
+   mutate(time=factor(time, levels=c("3_hours","24_hours"))) %>% 
   mutate(trt = case_match(trt,"DAh"~"DNR","DXh"~"DOX","Eh"~"EPI", "Mh" ~ "MTX", "Th" ~ "TRZ", "Vh" ~"VEH",.default = trt)) %>% 
-  ggplot(., aes (x=type, y=reads, group = time)) +
+  ggplot(., aes (x=type, y=reads, group = trt)) +
   geom_col(position="dodge",aes(fill=time))+
-  facet_wrap(~trt)+
+  facet_wrap(time~trt, ncol = 6)+
   theme(axis.text.x=element_text(angle=90))+
   ggtitle("Ind 5")
 ```
@@ -692,13 +699,14 @@ Ind6_summary %>%
   dplyr::filter(type %in% list("total_reads","total_mapped_reads","nuclear_mapped_reads", "unique_mapped_reads","dedup_reads")) %>% 
   mutate(type=factor(type, levels=c("total_reads", "total_mapped_reads", "nuclear_mapped_reads","unique_mapped_reads","dedup_reads"))) %>% 
   mutate(trt=gsub("[[:digit:]]", "",sample)) %>% 
+  dplyr::filter (type != "total_reads") %>% 
   # mutate(trt=substr(trt,-1,2))
   mutate(time = if_else(grepl("24h$", sample) ==TRUE, "24_hours","3_hours")) %>% 
    mutate(time=factor(time, levels=c("3_hours","24_hours"))) %>% 
   mutate(trt = case_match(trt,"DAh"~"DNR","DXh"~"DOX","Eh"~"EPI", "Mh" ~ "MTX", "Th" ~ "TRZ", "Vh" ~"VEH",.default = trt)) %>% 
-  ggplot(., aes (x=type, y=reads, group = time)) +
+  ggplot(., aes (x=type, y=reads, group = trt)) +
   geom_col(position="dodge",aes(fill=time))+
-  facet_wrap(~trt)+
+  facet_wrap(time~trt, ncol = 6)+
   theme(axis.text.x=element_text(angle=90))+
   ggtitle("Ind 6")
  
@@ -826,7 +834,7 @@ total_reads_summary %>%
   geom_boxplot(aes(fill=trt))+
   geom_point(aes(col=indv, size =3))+
   facet_wrap(time~.)+
-   scale_fill_manual(values=drug_pal_fact)+
+   scale_fill_manual(values=drug_pal_fac)+
   scale_color_brewer(palette = "Dark2")+
   ggtitle("total number of reads by time and treatment")
 
@@ -837,7 +845,7 @@ total_reads_summary %>%
   geom_boxplot(aes(fill=trt))+
  geom_point(aes(col=indv, size =3))+
   facet_wrap(time~.)+
-   scale_fill_manual(values=drug_pal_fact)+
+   scale_fill_manual(values=drug_pal_fac)+
   scale_color_brewer(palette = "Dark2")+
   ggtitle("total number of nuclear reads by time and treatment")
 
@@ -847,7 +855,7 @@ total_reads_summary %>%
   geom_boxplot(aes(fill=trt))+
  geom_point(aes(col=indv, size =3))+
   facet_wrap(time~.)+
-   scale_fill_manual(values=drug_pal_fact)+
+   scale_fill_manual(values=drug_pal_fac)+
   scale_color_brewer(palette = "Dark2")+
   ggtitle("total number of unique-nuclear reads by time and treatment")
 
@@ -858,7 +866,7 @@ total_reads_summary %>%
   geom_boxplot(aes(fill=trt))+
   geom_point(aes(col=indv, size =3))+
   facet_wrap(time~.)+
-   scale_fill_manual(values=drug_pal_fact)+
+   scale_fill_manual(values=drug_pal_fac)+
   scale_color_brewer(palette = "Dark2")+
   ggtitle("total unique, deduplicated nuclear mapped reads by time and treatment")
 
