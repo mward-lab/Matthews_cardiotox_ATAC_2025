@@ -45,6 +45,7 @@ library(RColorBrewer)
 # library(rtracklayer)
 library(edgeR)
 library(ggfortify)
+library(limma)
 ```
 
 ```{r functions to have}
@@ -128,7 +129,7 @@ x_axis_labels = function(labels, every_nth = 1, ...) {
 ```
 
 
-
+### Initial peak calling heatmap
 ```{r cpm and corr plots}
 first_run_frag_counts <- read.csv("data/first_run_frag_counts.txt", row.names = 1) 
 Frag_cor <- first_run_frag_counts %>% 
@@ -187,6 +188,7 @@ ComplexHeatmap::pheatmap(Frag_cor,
 
 
 ```
+This correlation is after log2 of the counts in peaks.   Because ind4 and ind5 have the lowest reads, the next correlation will filter out rowMeans >0.
 
 ```{r inital analysis}
 first_run_frag_counts <- read.csv("data/first_run_frag_counts.txt", row.names = 1) 
@@ -221,9 +223,9 @@ pca_plot(PCA_info_anno, col_var='trt', shape_var = 'time')
         
 pca_plot(PCA_info_anno, col_var='trt', shape_var = 'indv')
 ```
-
-
-```{r filtering step}
+This PCA is impacted by the number of reads per sample too.  
+### Log2 cpm of initial peak counts
+```{r filtering step initial peaks}
 
 lcpm <- cpm(PCAmat, log=TRUE)  ### for determining the basic cutoffs
 dim(lcpm)
@@ -257,7 +259,7 @@ pca_all_anno %>%
   scale_color_manual(values=drug_pal)+
    ggrepel::geom_text_repel(aes(label = indv))+
   #scale_shape_manual(name = "Time",values= c("3h"=0,"24h"=1))+
-  ggtitle(expression("PCA of log"[2]*"(peaks)"))+
+  ggtitle(expression("PCA of log"[2]*"(cpm)"))+
   theme_bw()+
   guides(col="none", size =4)+
   # labs(y = "PC 2 (15.76%)", x ="PC 1 (29.06%)")+
@@ -298,6 +300,168 @@ ComplexHeatmap::pheatmap(Frag_cor_filter,
 
 
 ```
+ We go from `r dim(lcpm)` peaks to`r dim(x_filtered)` peaks using rowMeans (log2cpm) > 0 across all samples.  The heatmap shows good clustering in treatments, with individual 5 and some of individual 4 at 3 hours clustering outside.  This is inline with QC metrics (FRiP) and Fragment lengths graphs.
+
+### High confidence peak set
+
+
+Based on the initial peaks, I wanted to know if they same thing is seen in a high confidence set of peaks.  To this end, I did several steps in bedtools to create a high confidence set.  
+
+-First I moved all .narrowPeak files into the same folder and ran `bedtools multiinter -i ./* >log.file.txt` to create an intersection of all peaks.  I then was only interested in segments that had a count of more than 4 (intersection existed in at least 4 of the data sets) in all files.   I filtered column #4 of the `log.file.txt` output by `awk -F"\t" '$4 > 4 {print $1"\t"$2"\t"$3 }' log.file.txt > all_filt_peaks.bed` and printed the results of anything >4 in bed format to the `all_filt_peaks.bed` file.   Upon further reading of bedtools documents, I realized the number of "peaks" was actually fragments of peaks that were intersected amoung all files.  This was not the final output I wanted so I intersected these high counted segments back with the very first initial mergedPeaks.bed file using `bedtools intersect -a mergedPeaks.bed -b all_filt_peaks.bed -wa -u > merged_filtered_peaks.bed`.  using the `-wa -u` flags allowed me to filter the first mergedPeaks file, keeping only those high confidence peaks that overlapped the `all_filt_peaks.bed` and only reporting the unique calls.
+This left me with a file that went from 470,000+ to 162,264   high confidence peaks that I will analyze below.
+
+
+```{r highconf peaks}
+##the file was called all_filt_peaks before I imported into this library
+##I then saved as high_conf_peaks_counts.txt
+
+###this removes that pesky long file names
+# names(high_conf_peak_counts) = gsub(pattern = "_S.*", replacement = "", x = names(high_conf_peak_counts))
+# 
+# names(high_conf_peak_counts)=gsub(pattern = "^ind1.trimmed.filt_files.trimmed_", replacement = "", x = names(high_conf_peak_counts))
+
+# write.csv(high_conf_peak_counts, "data/high_conf_peak_counts.csv")
+# write_delim(all_filt_peaks, "data/high_conf_peaks_counts.txt")
+high_conf_peak_counts <- read.csv("data/high_conf_peak_counts.csv", row.names = 1)
+
+
+Frag_cor_filt <- high_conf_peak_counts %>% 
+  dplyr::select(Ind1_75DA24h:Ind6_71V3h)  %>% 
+  cpm(., log = TRUE) %>% 
+  cor()
+  
+filmat_groupmat_col1 <- data.frame(timeset = colnames(Frag_cor_filt))
+
+counts_corr_mat1 <-filmat_groupmat_col1 %>% 
+  mutate(timeset=gsub("75","1_",timeset)) %>% 
+  mutate(timeset=gsub("87","2_",timeset)) %>% 
+  mutate(timeset=gsub("77","3_",timeset)) %>% 
+  mutate(timeset=gsub("79","4_",timeset)) %>% 
+  mutate(timeset=gsub("78","5_",timeset)) %>%
+  mutate(timeset=gsub("71","6_",timeset)) %>% 
+  mutate(timeset = gsub("24h","_24h",timeset), 
+       timeset = gsub("3h","_3h",timeset)) %>%
+  separate(timeset, into = c(NA,"indv","trt","time"), sep= "_") %>% 
+  
+  mutate(trt= case_match(trt, 'DX' ~'DOX', 'E'~'EPI', 'DA'~'DNR', 'M'~'MTX', 'T'~'TRZ', 'V'~'VEH',.default = trt)) %>% 
+  mutate(class = if_else(trt == "DNR", "AC", if_else(
+    trt == "DOX", "AC", if_else(trt == "EPI", "AC", "nAC")
+  ))) %>%
+  mutate(TOP2i = if_else(trt == "DNR", "yes", if_else(
+    trt == "DOX", "yes", if_else(trt == "EPI", "yes", if_else(trt == "MTX", "yes", "no"))
+  ))) 
+                         
+ mat_colors <- list( 
+   trt= c("#F1B72B","#8B006D","#DF707E","#3386DD","#707031","#41B333"),
+   indv=c("#1B9E77", "#D95F02" ,"#7570B3", "#E7298A" ,"#66A61E", "#E6AB02"),
+   time=c("pink", "chocolate4"),
+   class=c("yellow1","darkorange1"), 
+   TOP2i =c("darkgreen","lightgreen"))                        
+                         
+names(mat_colors$trt)   <- unique(counts_corr_mat1$trt)                      
+names(mat_colors$indv) <- unique(counts_corr_mat1$indv)
+names(mat_colors$time) <- unique(counts_corr_mat1$time)
+names(mat_colors$class) <- unique(counts_corr_mat1$class)
+names(mat_colors$TOP2i) <- unique(counts_corr_mat1$TOP2i)
+
+
+ComplexHeatmap::pheatmap(Frag_cor_filt,
+                         # column_title=(paste0("RNA-seq log"[2]~"cpm correlation")),
+        annotation_col = counts_corr_mat1,
+        annotation_colors = mat_colors,
+        heatmap_legend_param = mat_colors,
+        fontsize=10,
+        fontsize_row = 8,
+        angle_col="90",
+        treeheight_row=25,
+        fontsize_col = 8,
+        treeheight_col = 20)
+
+
+
+
+```
+Changes in the heatmap are as follows:  
+ Ind4 and Ind5 segregate out of the full correlation.  3 hour treatments AC and non-AC cluster out into the lower right.  Very shape AC signal seen in 3 hours  and 24 hours so far.
+ 
+ 
+Next I will try my initial Differential accessibility analysis.
+
+
+```{r DAR_highconf}
+
+##filter log cpm counts file
+my_hc_counts <- high_conf_peak_counts %>% 
+  dplyr::select(Ind1_75DA24h:Ind6_71V3h)   
+
+lcpm <- cpm(my_hc_counts, log=TRUE)  ### for determining the basic cutoffs
+
+
+
+row_means <- rowMeans(lcpm)
+my_hc_filtered_counts <- my_hc_counts[row_means > 0,]
+dim(my_hc_filtered_counts)
+##3 now have 153,355 high conf peaks
+group <- c( rep(c(1,2,3,4,5,6,7,8,9,10,11,12),6))
+group <- factor(group, levels =c("1","2","3","4","5","6","7","8","9","10","11","12"))
+short_names <- paste0(counts_corr_mat1$indv,"_",counts_corr_mat1$trt,"_",counts_corr_mat$time)
+
+dge <- DGEList.data.frame(counts = my_hc_filtered_counts, group = group)
+
+##renaming colnames
+colnames(my_hc_filtered_counts) <- short_names
+dge$group$indv <- counts_corr_mat1$indv
+dge$group$time <- counts_corr_mat1$time
+dge$group$trt <- counts_corr_mat1$trt
+
+
+
+indv <- counts_corr_mat1$indv
+# indv <- factor(indv, levels = c(1,2,3,4,5,6))
+time <- counts_corr_mat1$time
+# time <- factor(time, levels =c("3h","24"))
+trt <- counts_corr_mat1$trt
+# trt <- factor(trt, levels = c("DOX","EPI","DNR","MTX","TRZ","VEH"))
+
+
+mm <- model.matrix(~0 +indv+ time+trt)
+# colnames(mm) <- c("DNR_24", "DNR_3", "DOX_24","DOX_3","EPI_24", "EPI_3","MTX_24", "MTX_3", "TRZ_24","TRZ_3","VEH_24", "VEH_3")
+
+y <- voom(dge$counts, mm,plot =TRUE)
+
+corfit <- duplicateCorrelation(y, mm, block = indv)
+
+v <- voom(dge$counts, mm, block = indv, correlation = corfit$consensus)
+
+fit <- lmFit(v, mm, block = indv, correlation = corfit$consensus)
+colnames(mm) <- c("DNR_24","DNR_3","DOX_24","DOX_3","EPI_24","EPI_3","MTX_24","MTX_3","TRZ_24","TRZ_3","VEH_24", "VEH_3")
+
+
+
+cm <- makeContrasts(
+  DNR_3.VEH_3 = DNR_3-VEH_3,
+  DOX_3.VEH_3 = DOX_3-VEH_3,
+  EPI_3.VEH_3 = EPI_3-VEH_3,
+  MTX_3.VEH_3 = MTX_3-VEH_3,
+  TRZ_3.VEH_3 = TRZ_3-VEH_3,
+  DNR_24.VEH_24 =DNR_24-VEH_24,
+  DOX_24.VEH_24= DOX_24-VEH_24,
+  EPI_24.VEH_24= EPI_24-VEH_24,
+  MTX_24.VEH_24= MTX_24-VEH_24,
+  TRZ_24.VEH_24= TRZ_24-VEH_24,
+  levels = mm)
+
+vfit <- lmFit(y, mm)
+
+vfit<- contrasts.fit(vfit, contrasts=cm)
+
+efit2 <- eBayes(vfit)
+# saveRDS(efit2,"data/filt_Peaks_efit2.RDS")
+
+results = decideTests(efit2)
+summary(results)
+```
+
 
 
 
