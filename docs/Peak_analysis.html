@@ -11,7 +11,7 @@
 
 <meta name="author" content="ERM" />
 
-<meta name="date" content="2024-03-14" />
+<meta name="date" content="2024-03-15" />
 
 <title>Peak_analysis</title>
 
@@ -361,7 +361,7 @@ div.tocify {
 
 <h1 class="title toc-ignore">Peak_analysis</h1>
 <h4 class="author">ERM</h4>
-<h4 class="date">2024-03-14</h4>
+<h4 class="date">2024-03-15</h4>
 
 </div>
 
@@ -390,7 +390,7 @@ class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span>
 <div class="tab-content">
 <div id="summary" class="tab-pane fade in active">
 <p>
-<strong>Last updated:</strong> 2024-03-14
+<strong>Last updated:</strong> 2024-03-15
 </p>
 <p>
 <strong>Checks:</strong> <span
@@ -521,15 +521,15 @@ project makes it easier to run your code on other machines.</p>
 <div class="panel panel-default">
 <div class="panel-heading">
 <p class="panel-title">
-<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomreneeisnowhereATAClearningtree0e9506a5ac281b578bd829fc15a408b7d08a0772targetblank0e9506aa">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomreneeisnowhereATAClearningtree930ee3cecd3d46cf7444c89f84f72ba0bb183c71targetblank930ee3ca">
 <span class="glyphicon glyphicon-ok text-success"
 aria-hidden="true"></span> <strong>Repository version:</strong>
-<a href="https://github.com/reneeisnowhere/ATAC_learning/tree/0e9506a5ac281b578bd829fc15a408b7d08a0772" target="_blank">0e9506a</a>
+<a href="https://github.com/reneeisnowhere/ATAC_learning/tree/930ee3cecd3d46cf7444c89f84f72ba0bb183c71" target="_blank">930ee3c</a>
 </a>
 </p>
 </div>
 <div
-id="strongRepositoryversionstrongahrefhttpsgithubcomreneeisnowhereATAClearningtree0e9506a5ac281b578bd829fc15a408b7d08a0772targetblank0e9506aa"
+id="strongRepositoryversionstrongahrefhttpsgithubcomreneeisnowhereATAClearningtree930ee3cecd3d46cf7444c89f84f72ba0bb183c71targetblank930ee3ca"
 class="panel-collapse collapse">
 <div class="panel-body">
 <p>
@@ -539,7 +539,7 @@ reproducibility.
 </p>
 <p>
 The results in this page were generated with repository version
-<a href="https://github.com/reneeisnowhere/ATAC_learning/tree/0e9506a5ac281b578bd829fc15a408b7d08a0772" target="_blank">0e9506a</a>.
+<a href="https://github.com/reneeisnowhere/ATAC_learning/tree/930ee3cecd3d46cf7444c89f84f72ba0bb183c71" target="_blank">930ee3c</a>.
 See the <em>Past versions</em> tab to see a history of the changes made
 to the R Markdown and HTML files.
 </p>
@@ -598,10 +598,13 @@ Ignored files:
     Ignored:    data/aln_run1_results.txt
     Ignored:    data/anno_ind1_DA24h.RDS
     Ignored:    data/anno_ind4_V24h.RDS
+    Ignored:    data/filt_Peaks_efit2.RDS
+    Ignored:    data/filt_Peaks_efit2_bl.RDS
     Ignored:    data/first_Peaksummarycounts.csv
     Ignored:    data/first_run_frag_counts.txt
     Ignored:    data/high_conf_peak_counts.csv
     Ignored:    data/high_conf_peak_counts.txt
+    Ignored:    data/high_conf_peaks_bl_counts.txt
     Ignored:    data/high_conf_peaks_counts.txt
     Ignored:    data/ind1_DA24hpeaks.RDS
     Ignored:    data/ind4_V24hpeaks.RDS
@@ -623,6 +626,9 @@ Ignored files:
 
 Untracked files:
     Untracked:  Firstcorr plotATAC.pdf
+    Untracked:  analysis/CorMotif_data.Rmd
+    Untracked:  code/IGV_snapshot_code.R
+    Untracked:  code/corMotifcustom.R
     Untracked:  code/just_for_Fun.R
     Untracked:  lcpm_filtered_corplot.pdf
     Untracked:  log2cpmfragcount.pdf
@@ -677,6 +683,40 @@ Message
 </tr>
 </thead>
 <tbody>
+<tr>
+<td>
+Rmd
+</td>
+<td>
+<a href="https://github.com/reneeisnowhere/ATAC_learning/blob/930ee3cecd3d46cf7444c89f84f72ba0bb183c71/analysis/Peak_analysis.Rmd" target="_blank">930ee3c</a>
+</td>
+<td>
+reneeisnowhere
+</td>
+<td>
+2024-03-15
+</td>
+<td>
+updates to filtering of peaks
+</td>
+</tr>
+<tr>
+<td>
+html
+</td>
+<td>
+<a href="https://rawcdn.githack.com/reneeisnowhere/ATAC_learning/78795a75745e18937e4dc541e9c1f9be5eecb5b1/docs/Peak_analysis.html" target="_blank">78795a7</a>
+</td>
+<td>
+reneeisnowhere
+</td>
+<td>
+2024-03-14
+</td>
+<td>
+Build site.
+</td>
+</tr>
 <tr>
 <td>
 Rmd
@@ -765,7 +805,8 @@ library(RColorBrewer)
 library(edgeR)
 library(ggfortify)
 library(limma)</code></pre>
-<pre class="r"><code>pca_plot &lt;-
+<pre class="r"><code>drug_pal &lt;- c(&quot;#8B006D&quot;,&quot;#DF707E&quot;,&quot;#F1B72B&quot;, &quot;#3386DD&quot;,&quot;#707031&quot;,&quot;#41B333&quot;)
+pca_plot &lt;-
   function(df,
            col_var = NULL,
            shape_var = NULL,
@@ -1198,6 +1239,43 @@ pca_all_anno %&gt;%
   theme(plot.title=element_text(size= 14,hjust = 0.5),
         axis.title = element_text(size = 12, color = &quot;black&quot;))</code></pre>
 <p><img src="figure/Peak_analysis.Rmd/filtering%20step%20initial%20peaks-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-no-spaces-filtering-step-initial-peaks-1">
+Past versions of "filtering step initial peaks-1.png"
+</button>
+</p>
+<div id="fig-no-spaces-filtering-step-initial-peaks-1" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/reneeisnowhere/ATAC_learning/blob/78795a75745e18937e4dc541e9c1f9be5eecb5b1/docs/figure/Peak_analysis.Rmd/filtering step initial peaks-1.png" target="_blank">78795a7</a>
+</td>
+<td>
+reneeisnowhere
+</td>
+<td>
+2024-03-14
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 <pre class="r"><code>pca_all_anno %&gt;%
   ggplot(.,aes(x = PC3, y = PC4, col=trt, shape=time, group=indv))+
   geom_point(size= 5)+
@@ -1211,6 +1289,43 @@ pca_all_anno %&gt;%
   theme(plot.title=element_text(size= 14,hjust = 0.5),
         axis.title = element_text(size = 12, color = &quot;black&quot;))</code></pre>
 <p><img src="figure/Peak_analysis.Rmd/filtering%20step%20initial%20peaks-2.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-no-spaces-filtering-step-initial-peaks-2">
+Past versions of "filtering step initial peaks-2.png"
+</button>
+</p>
+<div id="fig-no-spaces-filtering-step-initial-peaks-2" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/reneeisnowhere/ATAC_learning/blob/78795a75745e18937e4dc541e9c1f9be5eecb5b1/docs/figure/Peak_analysis.Rmd/filtering step initial peaks-2.png" target="_blank">78795a7</a>
+</td>
+<td>
+reneeisnowhere
+</td>
+<td>
+2024-03-14
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 <pre class="r"><code>Frag_cor_filter &lt;- filt_matrix_lcpm %&gt;% cor()
 ComplexHeatmap::pheatmap(Frag_cor_filter,
                          # column_title=(paste0(&quot;RNA-seq log&quot;[2]~&quot;cpm correlation&quot;)),
@@ -1223,10 +1338,47 @@ ComplexHeatmap::pheatmap(Frag_cor_filter,
         treeheight_row=25,
         fontsize_col = 8,
         treeheight_col = 20)</code></pre>
-<p><img src="figure/Peak_analysis.Rmd/filtering%20step%20initial%20peaks-3.png" width="672" style="display: block; margin: auto;" />
-We go from 463947, 72 peaks to170488, 72 peaks using rowMeans (log2cpm)
-&gt; 0 across all samples. The heatmap shows good clustering in
-treatments, with individual 5 and some of individual 4 at 3 hours
+<p><img src="figure/Peak_analysis.Rmd/filtering%20step%20initial%20peaks-3.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-no-spaces-filtering-step-initial-peaks-3">
+Past versions of "filtering step initial peaks-3.png"
+</button>
+</p>
+<div id="fig-no-spaces-filtering-step-initial-peaks-3" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/reneeisnowhere/ATAC_learning/blob/78795a75745e18937e4dc541e9c1f9be5eecb5b1/docs/figure/Peak_analysis.Rmd/filtering step initial peaks-3.png" target="_blank">78795a7</a>
+</td>
+<td>
+reneeisnowhere
+</td>
+<td>
+2024-03-14
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p>We go from 463947, 72 peaks to170488, 72 peaks using rowMeans
+(log2cpm) &gt; 0 across all samples. The heatmap shows good clustering
+in treatments, with individual 5 and some of individual 4 at 3 hours
 clustering outside. This is inline with QC metrics (FRiP) and Fragment
 lengths graphs.</p>
 </div>
@@ -1254,17 +1406,22 @@ mergedPeaks file, keeping only those high confidence peaks that
 overlapped the <code>all_filt_peaks.bed</code> and only reporting the
 unique calls. This left me with a file that went from 470,000+ to
 162,264 high confidence peaks that I will analyze below.</p>
+<p>** I added a new step on the 15th. I filtered out the blacklisted
+regions using the following code:
+<code>intersectBed -v -a merged_filtered_peaks.bed -b Blacklist/hg38.blacklist.bed.gz &gt; final_bl_filt_peaks.bed</code>
+My final peaks file contains 162243 peaks. Not much of a difference, but
+may have an impact later after I reanalyze.</p>
 <pre class="r"><code>##the file was called all_filt_peaks before I imported into this library
 ##I then saved as high_conf_peaks_counts.txt
 
 ###this removes that pesky long file names
 # names(high_conf_peak_counts) = gsub(pattern = &quot;_S.*&quot;, replacement = &quot;&quot;, x = names(high_conf_peak_counts))
-# 
-# names(high_conf_peak_counts)=gsub(pattern = &quot;^ind1.trimmed.filt_files.trimmed_&quot;, replacement = &quot;&quot;, x = names(high_conf_peak_counts))
+# # 
+# names(high_conf_peak_counts)=gsub(pattern = &quot;^ind6.trimmed.filt_files.trimmed_&quot;, replacement = &quot;&quot;, x = names(high_conf_peak_counts))
 
-# write.csv(high_conf_peak_counts, &quot;data/high_conf_peak_counts.csv&quot;)
-# write_delim(all_filt_peaks, &quot;data/high_conf_peaks_counts.txt&quot;)
-high_conf_peak_counts &lt;- read.csv(&quot;data/high_conf_peak_counts.csv&quot;, row.names = 1)
+# write.csv(high_conf_peak_counts, &quot;data/high_conf_peaks_bl_counts.txt&quot;)
+## write_delim(all_bl_filt_peaks, &quot;data/high_conf_peaks_bl_counts.txt&quot;)
+high_conf_peak_counts &lt;- read.csv(&quot;data/high_conf_peaks_bl_counts.txt&quot;, row.names = 1)
 
 
 Frag_cor_filt &lt;- high_conf_peak_counts %&gt;% 
@@ -1318,15 +1475,56 @@ ComplexHeatmap::pheatmap(Frag_cor_filt,
         treeheight_row=25,
         fontsize_col = 8,
         treeheight_col = 20)</code></pre>
-<p><img src="figure/Peak_analysis.Rmd/highconf%20peaks-1.png" width="672" style="display: block; margin: auto;" />
-Changes in the heatmap are as follows:<br />
+<p><img src="figure/Peak_analysis.Rmd/highconf%20peaks-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-no-spaces-highconf-peaks-1">
+Past versions of "highconf peaks-1.png"
+</button>
+</p>
+<div id="fig-no-spaces-highconf-peaks-1" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/reneeisnowhere/ATAC_learning/blob/78795a75745e18937e4dc541e9c1f9be5eecb5b1/docs/figure/Peak_analysis.Rmd/highconf peaks-1.png" target="_blank">78795a7</a>
+</td>
+<td>
+reneeisnowhere
+</td>
+<td>
+2024-03-14
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p>Changes in the heatmap are as follows:<br />
 Ind4 and Ind5 segregate out of the full correlation. 3 hour treatments
 AC and non-AC cluster out into the lower right. Very shape AC signal
 seen in 3 hours and 24 hours so far.</p>
 <p>Next I will try my initial Differential accessibility analysis.</p>
+</div>
+<div id="dar-high-confidence-peak-set1" class="section level3">
+<h3>DAR high confidence peak set1</h3>
 <pre class="r"><code>##filter log cpm counts file
 my_hc_counts &lt;- high_conf_peak_counts %&gt;% 
-  dplyr::select(Ind1_75DA24h:Ind6_71V3h)   
+  dplyr::select(Geneid,Ind1_75DA24h:Ind6_71V3h) %&gt;% 
+  column_to_rownames(&quot;Geneid&quot;)
 
 lcpm &lt;- cpm(my_hc_counts, log=TRUE)  ### for determining the basic cutoffs
 
@@ -1335,19 +1533,20 @@ lcpm &lt;- cpm(my_hc_counts, log=TRUE)  ### for determining the basic cutoffs
 row_means &lt;- rowMeans(lcpm)
 my_hc_filtered_counts &lt;- my_hc_counts[row_means &gt; 0,]
 dim(my_hc_filtered_counts)</code></pre>
-<pre><code>[1] 153355     72</code></pre>
-<pre class="r"><code>##3 now have 153,355 high conf peaks
+<pre><code>[1] 153348     72</code></pre>
+<pre class="r"><code>##3 now have 153,348 high conf peaks
 group &lt;- c( rep(c(1,2,3,4,5,6,7,8,9,10,11,12),6))
 group &lt;- factor(group, levels =c(&quot;1&quot;,&quot;2&quot;,&quot;3&quot;,&quot;4&quot;,&quot;5&quot;,&quot;6&quot;,&quot;7&quot;,&quot;8&quot;,&quot;9&quot;,&quot;10&quot;,&quot;11&quot;,&quot;12&quot;))
-short_names &lt;- paste0(counts_corr_mat1$indv,&quot;_&quot;,counts_corr_mat1$trt,&quot;_&quot;,counts_corr_mat$time)
+short_names &lt;- paste0(counts_corr_mat1$indv,&quot;_&quot;,counts_corr_mat1$trt,&quot;_&quot;,counts_corr_mat1$time)
 
-dge &lt;- DGEList.data.frame(counts = my_hc_filtered_counts, group = group)
+dge &lt;- DGEList.data.frame(counts = my_hc_filtered_counts, group = group, genes = row.names(my_hc_filtered_counts))
 
 ##renaming colnames
 colnames(my_hc_filtered_counts) &lt;- short_names
 dge$group$indv &lt;- counts_corr_mat1$indv
 dge$group$time &lt;- counts_corr_mat1$time
 dge$group$trt &lt;- counts_corr_mat1$trt
+
 
 
 
@@ -1358,51 +1557,222 @@ time &lt;- counts_corr_mat1$time
 trt &lt;- counts_corr_mat1$trt
 # trt &lt;- factor(trt, levels = c(&quot;DOX&quot;,&quot;EPI&quot;,&quot;DNR&quot;,&quot;MTX&quot;,&quot;TRZ&quot;,&quot;VEH&quot;))
 
+##commented out to save time for future processing
 
-mm &lt;- model.matrix(~0 +indv+ time+trt)
+efit2 &lt;- readRDS(&quot;data/filt_Peaks_efit2_bl.RDS&quot;)
+
+# mm &lt;- model.matrix(~0 +indv+ time+trt)
 # colnames(mm) &lt;- c(&quot;DNR_24&quot;, &quot;DNR_3&quot;, &quot;DOX_24&quot;,&quot;DOX_3&quot;,&quot;EPI_24&quot;, &quot;EPI_3&quot;,&quot;MTX_24&quot;, &quot;MTX_3&quot;, &quot;TRZ_24&quot;,&quot;TRZ_3&quot;,&quot;VEH_24&quot;, &quot;VEH_3&quot;)
 
-y &lt;- voom(dge$counts, mm,plot =TRUE)</code></pre>
-<p><img src="figure/Peak_analysis.Rmd/DAR_highconf-1.png" width="672" style="display: block; margin: auto;" /></p>
-<pre class="r"><code>corfit &lt;- duplicateCorrelation(y, mm, block = indv)
+# y &lt;- voom(dge$counts, mm,plot =TRUE)
 
-v &lt;- voom(dge$counts, mm, block = indv, correlation = corfit$consensus)
+# corfit &lt;- duplicateCorrelation(y, mm, block = indv)
 
-fit &lt;- lmFit(v, mm, block = indv, correlation = corfit$consensus)
-colnames(mm) &lt;- c(&quot;DNR_24&quot;,&quot;DNR_3&quot;,&quot;DOX_24&quot;,&quot;DOX_3&quot;,&quot;EPI_24&quot;,&quot;EPI_3&quot;,&quot;MTX_24&quot;,&quot;MTX_3&quot;,&quot;TRZ_24&quot;,&quot;TRZ_3&quot;,&quot;VEH_24&quot;, &quot;VEH_3&quot;)
+# v &lt;- voom(dge$counts, mm, block = indv, correlation = corfit$consensus)
 
+# fit &lt;- lmFit(v, mm, block = indv, correlation = corfit$consensus)
+# colnames(mm) &lt;- c(&quot;DNR_24&quot;,&quot;DNR_3&quot;,&quot;DOX_24&quot;,&quot;DOX_3&quot;,&quot;EPI_24&quot;,&quot;EPI_3&quot;,&quot;MTX_24&quot;,&quot;MTX_3&quot;,&quot;TRZ_24&quot;,&quot;TRZ_3&quot;,&quot;VEH_24&quot;, &quot;VEH_3&quot;)
+#
+#
+# cm &lt;- makeContrasts(
+#   DNR_3.VEH_3 = DNR_3-VEH_3,
+#   DOX_3.VEH_3 = DOX_3-VEH_3,
+#   EPI_3.VEH_3 = EPI_3-VEH_3,
+#   MTX_3.VEH_3 = MTX_3-VEH_3,
+#   TRZ_3.VEH_3 = TRZ_3-VEH_3,
+#   DNR_24.VEH_24 =DNR_24-VEH_24,
+#   DOX_24.VEH_24= DOX_24-VEH_24,
+#   EPI_24.VEH_24= EPI_24-VEH_24,
+#   MTX_24.VEH_24= MTX_24-VEH_24,
+#   TRZ_24.VEH_24= TRZ_24-VEH_24,
+#   levels = mm)
+# 
+# vfit &lt;- lmFit(y, mm)
 
-
-cm &lt;- makeContrasts(
-  DNR_3.VEH_3 = DNR_3-VEH_3,
-  DOX_3.VEH_3 = DOX_3-VEH_3,
-  EPI_3.VEH_3 = EPI_3-VEH_3,
-  MTX_3.VEH_3 = MTX_3-VEH_3,
-  TRZ_3.VEH_3 = TRZ_3-VEH_3,
-  DNR_24.VEH_24 =DNR_24-VEH_24,
-  DOX_24.VEH_24= DOX_24-VEH_24,
-  EPI_24.VEH_24= EPI_24-VEH_24,
-  MTX_24.VEH_24= MTX_24-VEH_24,
-  TRZ_24.VEH_24= TRZ_24-VEH_24,
-  levels = mm)
-
-vfit &lt;- lmFit(y, mm)
-
-vfit&lt;- contrasts.fit(vfit, contrasts=cm)
-
-efit2 &lt;- eBayes(vfit)
-# saveRDS(efit2,&quot;data/filt_Peaks_efit2.RDS&quot;)
-
+# vfit&lt;- contrasts.fit(vfit, contrasts=cm)
+# 
+# efit2 &lt;- eBayes(vfit)
+# saveRDS(efit2,&quot;data/filt_Peaks_efit2_bl.RDS&quot;)
+# str(efit2)
 results = decideTests(efit2)
 summary(results)</code></pre>
 <pre><code>       DNR_3.VEH_3 DOX_3.VEH_3 EPI_3.VEH_3 MTX_3.VEH_3 TRZ_3.VEH_3
-Down         10436        7511        5454       28864        9548
-NotSig       47478       45328       43235       88770      128633
-Up           95441      100516      104666       35721       15174
+Down         10434        7497        5453       28879        9555
+NotSig       47476       45329       43228       88751      128608
+Up           95438      100522      104667       35718       15185
        DNR_24.VEH_24 DOX_24.VEH_24 EPI_24.VEH_24 MTX_24.VEH_24 TRZ_24.VEH_24
-Down            9624          9696          8926         26095         32953
-NotSig         39932         46866         54754        104398         82751
-Up            103799         96793         89675         22862         37651</code></pre>
+Down            9625          9691          8919         26096         32957
+NotSig         39926         46865         54760        104390         82747
+Up            103797         96792         89669         22862         37644</code></pre>
+</div>
+<div id="evaluation-of-change-in-peaks" class="section level3">
+<h3>Evaluation of change in peaks</h3>
+<pre class="r"><code>V.DNR_3.top= topTable(efit2, coef=1, adjust.method=&quot;BH&quot;, number=Inf, sort.by=&quot;p&quot;)
+V.DOX_3.top= topTable(efit2, coef=2, adjust.method=&quot;BH&quot;, number=Inf, sort.by=&quot;p&quot;)
+V.EPI_3.top= topTable(efit2, coef=3, adjust.method=&quot;BH&quot;, number=Inf, sort.by=&quot;p&quot;)
+V.MTX_3.top= topTable(efit2, coef=4, adjust.method=&quot;BH&quot;, number=Inf, sort.by=&quot;p&quot;)
+V.TRZ_3.top= topTable(efit2, coef=5, adjust.method=&quot;BH&quot;, number=Inf, sort.by=&quot;p&quot;)
+V.DNR_24.top= topTable(efit2, coef=6, adjust.method=&quot;BH&quot;, number=Inf, sort.by=&quot;p&quot;)
+V.DOX_24.top= topTable(efit2, coef=7, adjust.method=&quot;BH&quot;, number=Inf, sort.by=&quot;p&quot;)
+V.EPI_24.top= topTable(efit2, coef=8, adjust.method=&quot;BH&quot;, number=Inf, sort.by=&quot;p&quot;)
+V.MTX_24.top= topTable(efit2, coef=9, adjust.method=&quot;BH&quot;, number=Inf, sort.by=&quot;p&quot;)
+V.TRZ_24.top= topTable(efit2, coef=10, adjust.method=&quot;BH&quot;, number=Inf, sort.by=&quot;p&quot;)</code></pre>
+<pre class="r"><code>DNR_3_top3 &lt;- row.names(V.DNR_3.top[1:3,])
+
+log_filt_hc &lt;- my_hc_filtered_counts %&gt;% 
+  cpm(., log=TRUE) %&gt;% as.data.frame()
+row.names(log_filt_hc) &lt;- row.names(my_hc_filtered_counts)
+log_filt_hc %&gt;% 
+  dplyr::filter(row.names(.) %in% DNR_3_top3) %&gt;% 
+  mutate(Peak = row.names(.)) %&gt;% 
+  pivot_longer(cols = !Peak, names_to = &quot;sample&quot;, values_to = &quot;counts&quot;) %&gt;% 
+  separate(&quot;sample&quot;, into = c(&quot;indv&quot;,&quot;trt&quot;,&quot;time&quot;)) %&gt;% 
+  mutate(time=factor(time, levels = c(&quot;3h&quot;,&quot;24h&quot;))) %&gt;% 
+  mutate(trt=factor(trt, levels= c(&quot;DOX&quot;,&quot;EPI&quot;,&quot;DNR&quot;,&quot;MTX&quot;,&quot;TRZ&quot;,&quot;VEH&quot;))) %&gt;% 
+  ggplot(., aes (x = time, y=counts))+
+  geom_boxplot(aes(fill=trt))+
+  facet_wrap(Peak~.)+
+  ggtitle(&quot;top 3 DAR in 3 hour DNR&quot;)+
+  scale_fill_manual(values = drug_pal)</code></pre>
+<p><img src="figure/Peak_analysis.Rmd/examine%20top3_3h-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>DOX_3_top3 &lt;- row.names(V.DOX_3.top[1:3,])
+
+log_filt_hc %&gt;%  
+  dplyr::filter(row.names(.) %in% DOX_3_top3) %&gt;% 
+  mutate(Peak = row.names(.)) %&gt;% 
+  pivot_longer(cols = !Peak, names_to = &quot;sample&quot;, values_to = &quot;counts&quot;) %&gt;% 
+  separate(&quot;sample&quot;, into = c(&quot;indv&quot;,&quot;trt&quot;,&quot;time&quot;)) %&gt;% 
+  mutate(time=factor(time, levels = c(&quot;3h&quot;,&quot;24h&quot;))) %&gt;% 
+  mutate(trt=factor(trt, levels= c(&quot;DOX&quot;,&quot;EPI&quot;,&quot;DNR&quot;,&quot;MTX&quot;,&quot;TRZ&quot;,&quot;VEH&quot;))) %&gt;% 
+  ggplot(., aes (x = time, y=counts))+
+  geom_boxplot(aes(fill=trt))+
+  facet_wrap(Peak~.)+
+  ggtitle(&quot;top 3 DAR in 3 hour DOX&quot;)+
+  scale_fill_manual(values = drug_pal)</code></pre>
+<p><img src="figure/Peak_analysis.Rmd/examine%20top3_3h-2.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>EPI_3_top3 &lt;- row.names(V.EPI_3.top[1:3,])
+
+log_filt_hc %&gt;%  
+  dplyr::filter(row.names(.) %in% EPI_3_top3) %&gt;% 
+  mutate(Peak = row.names(.)) %&gt;% 
+  pivot_longer(cols = !Peak, names_to = &quot;sample&quot;, values_to = &quot;counts&quot;) %&gt;% 
+  separate(&quot;sample&quot;, into = c(&quot;indv&quot;,&quot;trt&quot;,&quot;time&quot;)) %&gt;% 
+  mutate(time=factor(time, levels = c(&quot;3h&quot;,&quot;24h&quot;))) %&gt;% 
+  mutate(trt=factor(trt, levels= c(&quot;DOX&quot;,&quot;EPI&quot;,&quot;DNR&quot;,&quot;MTX&quot;,&quot;TRZ&quot;,&quot;VEH&quot;))) %&gt;% 
+  ggplot(., aes (x = time, y=counts))+
+  geom_boxplot(aes(fill=trt))+
+  facet_wrap(Peak~.)+
+  ggtitle(&quot;top 3 DAR in 3 hour EPI&quot;)+
+  scale_fill_manual(values = drug_pal)</code></pre>
+<p><img src="figure/Peak_analysis.Rmd/examine%20top3_3h-3.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>MTX_3_top3 &lt;- row.names(V.MTX_3.top[1:3,])
+
+log_filt_hc %&gt;%  
+  dplyr::filter(row.names(.) %in% MTX_3_top3) %&gt;% 
+  mutate(Peak = row.names(.)) %&gt;% 
+  pivot_longer(cols = !Peak, names_to = &quot;sample&quot;, values_to = &quot;counts&quot;) %&gt;% 
+  separate(&quot;sample&quot;, into = c(&quot;indv&quot;,&quot;trt&quot;,&quot;time&quot;)) %&gt;% 
+  mutate(time=factor(time, levels = c(&quot;3h&quot;,&quot;24h&quot;))) %&gt;% 
+  mutate(trt=factor(trt, levels= c(&quot;DOX&quot;,&quot;EPI&quot;,&quot;DNR&quot;,&quot;MTX&quot;,&quot;TRZ&quot;,&quot;VEH&quot;))) %&gt;% 
+  ggplot(., aes (x = time, y=counts))+
+  geom_boxplot(aes(fill=trt))+
+  facet_wrap(Peak~.)+
+  ggtitle(&quot;top 3 DAR in 3 hour MTX&quot;)+
+  scale_fill_manual(values = drug_pal)</code></pre>
+<p><img src="figure/Peak_analysis.Rmd/examine%20top3_3h-4.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>TRZ_3_top3 &lt;- row.names(V.TRZ_3.top[1:3,])
+
+log_filt_hc %&gt;%  
+  dplyr::filter(row.names(.) %in% TRZ_3_top3) %&gt;% 
+  mutate(Peak = row.names(.)) %&gt;% 
+  pivot_longer(cols = !Peak, names_to = &quot;sample&quot;, values_to = &quot;counts&quot;) %&gt;% 
+  separate(&quot;sample&quot;, into = c(&quot;indv&quot;,&quot;trt&quot;,&quot;time&quot;)) %&gt;% 
+  mutate(time=factor(time, levels = c(&quot;3h&quot;,&quot;24h&quot;))) %&gt;% 
+  mutate(trt=factor(trt, levels= c(&quot;DOX&quot;,&quot;EPI&quot;,&quot;DNR&quot;,&quot;MTX&quot;,&quot;TRZ&quot;,&quot;VEH&quot;))) %&gt;% 
+  ggplot(., aes (x = time, y=counts))+
+  geom_boxplot(aes(fill=trt))+
+  facet_wrap(Peak~.)+
+  ggtitle(&quot;top 3 DAR in 3 hour TRZ&quot;)+
+  scale_fill_manual(values = drug_pal)</code></pre>
+<p><img src="figure/Peak_analysis.Rmd/examine%20top3_3h-5.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>DNR_24_top3 &lt;- row.names(V.DNR_24.top[1:3,])
+
+log_filt_hc &lt;- my_hc_filtered_counts %&gt;% 
+  cpm(., log=TRUE) %&gt;% as.data.frame()
+row.names(log_filt_hc) &lt;- row.names(my_hc_filtered_counts)
+log_filt_hc %&gt;% 
+  dplyr::filter(row.names(.) %in% DNR_24_top3) %&gt;% 
+  mutate(Peak = row.names(.)) %&gt;% 
+  pivot_longer(cols = !Peak, names_to = &quot;sample&quot;, values_to = &quot;counts&quot;) %&gt;% 
+  separate(&quot;sample&quot;, into = c(&quot;indv&quot;,&quot;trt&quot;,&quot;time&quot;)) %&gt;% 
+  mutate(time=factor(time, levels = c(&quot;3h&quot;,&quot;24h&quot;))) %&gt;% 
+  mutate(trt=factor(trt, levels= c(&quot;DOX&quot;,&quot;EPI&quot;,&quot;DNR&quot;,&quot;MTX&quot;,&quot;TRZ&quot;,&quot;VEH&quot;))) %&gt;% 
+  ggplot(., aes (x = time, y=counts))+
+  geom_boxplot(aes(fill=trt))+
+  facet_wrap(Peak~.)+
+  ggtitle(&quot;top 3 DAR in 24 hour DNR&quot;)+
+  scale_fill_manual(values = drug_pal)</code></pre>
+<p><img src="figure/Peak_analysis.Rmd/24hourtopexpression-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>DOX_24_top3 &lt;- row.names(V.DOX_24.top[1:3,])
+
+log_filt_hc %&gt;%  
+  dplyr::filter(row.names(.) %in% DOX_24_top3) %&gt;% 
+  mutate(Peak = row.names(.)) %&gt;% 
+  pivot_longer(cols = !Peak, names_to = &quot;sample&quot;, values_to = &quot;counts&quot;) %&gt;% 
+  separate(&quot;sample&quot;, into = c(&quot;indv&quot;,&quot;trt&quot;,&quot;time&quot;)) %&gt;% 
+  mutate(time=factor(time, levels = c(&quot;3h&quot;,&quot;24h&quot;))) %&gt;% 
+  mutate(trt=factor(trt, levels= c(&quot;DOX&quot;,&quot;EPI&quot;,&quot;DNR&quot;,&quot;MTX&quot;,&quot;TRZ&quot;,&quot;VEH&quot;))) %&gt;% 
+  ggplot(., aes (x = time, y=counts))+
+  geom_boxplot(aes(fill=trt))+
+  facet_wrap(Peak~.)+
+  ggtitle(&quot;top 3 DAR in 24 hour DOX&quot;)+
+  scale_fill_manual(values = drug_pal)</code></pre>
+<p><img src="figure/Peak_analysis.Rmd/24hourtopexpression-2.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>EPI_24_top3 &lt;- row.names(V.EPI_24.top[1:3,])
+
+log_filt_hc %&gt;%  
+  dplyr::filter(row.names(.) %in% EPI_24_top3) %&gt;% 
+  mutate(Peak = row.names(.)) %&gt;% 
+  pivot_longer(cols = !Peak, names_to = &quot;sample&quot;, values_to = &quot;counts&quot;) %&gt;% 
+  separate(&quot;sample&quot;, into = c(&quot;indv&quot;,&quot;trt&quot;,&quot;time&quot;)) %&gt;% 
+  mutate(time=factor(time, levels = c(&quot;3h&quot;,&quot;24h&quot;))) %&gt;% 
+  mutate(trt=factor(trt, levels= c(&quot;DOX&quot;,&quot;EPI&quot;,&quot;DNR&quot;,&quot;MTX&quot;,&quot;TRZ&quot;,&quot;VEH&quot;))) %&gt;% 
+  ggplot(., aes (x = time, y=counts))+
+  geom_boxplot(aes(fill=trt))+
+  facet_wrap(Peak~.)+
+  ggtitle(&quot;top 3 DAR in 24 hour EPI&quot;)+
+  scale_fill_manual(values = drug_pal)</code></pre>
+<p><img src="figure/Peak_analysis.Rmd/24hourtopexpression-3.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>MTX_24_top3 &lt;- row.names(V.MTX_24.top[1:3,])
+
+log_filt_hc %&gt;%  
+  dplyr::filter(row.names(.) %in% MTX_24_top3) %&gt;% 
+  mutate(Peak = row.names(.)) %&gt;% 
+  pivot_longer(cols = !Peak, names_to = &quot;sample&quot;, values_to = &quot;counts&quot;) %&gt;% 
+  separate(&quot;sample&quot;, into = c(&quot;indv&quot;,&quot;trt&quot;,&quot;time&quot;)) %&gt;% 
+  mutate(time=factor(time, levels = c(&quot;3h&quot;,&quot;24h&quot;))) %&gt;% 
+  mutate(trt=factor(trt, levels= c(&quot;DOX&quot;,&quot;EPI&quot;,&quot;DNR&quot;,&quot;MTX&quot;,&quot;TRZ&quot;,&quot;VEH&quot;))) %&gt;% 
+  ggplot(., aes (x = time, y=counts))+
+  geom_boxplot(aes(fill=trt))+
+  facet_wrap(Peak~.)+
+  ggtitle(&quot;top 3 DAR in 24 hour MTX&quot;)+
+  scale_fill_manual(values = drug_pal)</code></pre>
+<p><img src="figure/Peak_analysis.Rmd/24hourtopexpression-4.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>TRZ_24_top3 &lt;- row.names(V.TRZ_24.top[1:3,])
+
+log_filt_hc %&gt;%  
+  dplyr::filter(row.names(.) %in% TRZ_24_top3) %&gt;% 
+  mutate(Peak = row.names(.)) %&gt;% 
+  pivot_longer(cols = !Peak, names_to = &quot;sample&quot;, values_to = &quot;counts&quot;) %&gt;% 
+  separate(&quot;sample&quot;, into = c(&quot;indv&quot;,&quot;trt&quot;,&quot;time&quot;)) %&gt;% 
+  mutate(time=factor(time, levels = c(&quot;3h&quot;,&quot;24h&quot;))) %&gt;% 
+  mutate(trt=factor(trt, levels= c(&quot;DOX&quot;,&quot;EPI&quot;,&quot;DNR&quot;,&quot;MTX&quot;,&quot;TRZ&quot;,&quot;VEH&quot;))) %&gt;% 
+  ggplot(., aes (x = time, y=counts))+
+  geom_boxplot(aes(fill=trt))+
+  facet_wrap(Peak~.)+
+  ggtitle(&quot;top 3 DAR in 24 hour TRZ&quot;)+
+  scale_fill_manual(values = drug_pal)</code></pre>
+<p><img src="figure/Peak_analysis.Rmd/24hourtopexpression-5.png" width="672" style="display: block; margin: auto;" /></p>
 <br>
 <p>
 <button type="button" class="btn btn-default btn-workflowr btn-workflowr-sessioninfo" data-toggle="collapse" data-target="#workflowr-sessioninfo" style="display: block;">
@@ -1439,7 +1809,7 @@ other attached packages:
 [13] tibble_3.2.1       ggplot2_3.5.0      tidyverse_2.0.0    workflowr_1.7.1   
 
 loaded via a namespace (and not attached):
- [1] tidyselect_1.2.0      viridisLite_0.4.2     farver_2.1.1         
+ [1] tidyselect_1.2.1      viridisLite_0.4.2     farver_2.1.1         
  [4] fastmap_1.1.1         promises_1.2.1        digest_0.6.34        
  [7] timechange_0.3.0      lifecycle_1.0.4       cluster_2.1.6        
 [10] statmod_1.5.0         processx_3.8.3        magrittr_2.0.3       
