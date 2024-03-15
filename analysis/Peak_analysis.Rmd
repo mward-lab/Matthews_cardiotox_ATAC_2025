@@ -49,7 +49,7 @@ library(limma)
 ```
 
 ```{r functions to have}
-
+drug_pal <- c("#8B006D","#DF707E","#F1B72B", "#3386DD","#707031","#41B333")
 pca_plot <-
   function(df,
            col_var = NULL,
@@ -310,6 +310,9 @@ Based on the initial peaks, I wanted to know if they same thing is seen in a hig
 -First I moved all .narrowPeak files into the same folder and ran `bedtools multiinter -i ./* >log.file.txt` to create an intersection of all peaks.  I then was only interested in segments that had a count of more than 4 (intersection existed in at least 4 of the data sets) in all files.   I filtered column #4 of the `log.file.txt` output by `awk -F"\t" '$4 > 4 {print $1"\t"$2"\t"$3 }' log.file.txt > all_filt_peaks.bed` and printed the results of anything >4 in bed format to the `all_filt_peaks.bed` file.   Upon further reading of bedtools documents, I realized the number of "peaks" was actually fragments of peaks that were intersected amoung all files.  This was not the final output I wanted so I intersected these high counted segments back with the very first initial mergedPeaks.bed file using `bedtools intersect -a mergedPeaks.bed -b all_filt_peaks.bed -wa -u > merged_filtered_peaks.bed`.  using the `-wa -u` flags allowed me to filter the first mergedPeaks file, keeping only those high confidence peaks that overlapped the `all_filt_peaks.bed` and only reporting the unique calls.
 This left me with a file that went from 470,000+ to 162,264   high confidence peaks that I will analyze below.
 
+** I added a new step on the 15th.   I filtered out the blacklisted regions using the following code: `intersectBed -v -a merged_filtered_peaks.bed -b Blacklist/hg38.blacklist.bed.gz > final_bl_filt_peaks.bed`
+My final peaks file contains 162243 peaks.  Not much of a difference, but may have an impact later after I reanalyze.
+
 
 ```{r highconf peaks}
 ##the file was called all_filt_peaks before I imported into this library
@@ -317,12 +320,12 @@ This left me with a file that went from 470,000+ to 162,264   high confidence pe
 
 ###this removes that pesky long file names
 # names(high_conf_peak_counts) = gsub(pattern = "_S.*", replacement = "", x = names(high_conf_peak_counts))
-# 
-# names(high_conf_peak_counts)=gsub(pattern = "^ind1.trimmed.filt_files.trimmed_", replacement = "", x = names(high_conf_peak_counts))
+# # 
+# names(high_conf_peak_counts)=gsub(pattern = "^ind6.trimmed.filt_files.trimmed_", replacement = "", x = names(high_conf_peak_counts))
 
-# write.csv(high_conf_peak_counts, "data/high_conf_peak_counts.csv")
-# write_delim(all_filt_peaks, "data/high_conf_peaks_counts.txt")
-high_conf_peak_counts <- read.csv("data/high_conf_peak_counts.csv", row.names = 1)
+# write.csv(high_conf_peak_counts, "data/high_conf_peaks_bl_counts.txt")
+## write_delim(all_bl_filt_peaks, "data/high_conf_peaks_bl_counts.txt")
+high_conf_peak_counts <- read.csv("data/high_conf_peaks_bl_counts.txt", row.names = 1)
 
 
 Frag_cor_filt <- high_conf_peak_counts %>% 
@@ -387,12 +390,14 @@ Changes in the heatmap are as follows:
  
 Next I will try my initial Differential accessibility analysis.
 
+### DAR high confidence peak set1
 
 ```{r DAR_highconf}
 
 ##filter log cpm counts file
 my_hc_counts <- high_conf_peak_counts %>% 
-  dplyr::select(Ind1_75DA24h:Ind6_71V3h)   
+  dplyr::select(Geneid,Ind1_75DA24h:Ind6_71V3h) %>% 
+  column_to_rownames("Geneid")
 
 lcpm <- cpm(my_hc_counts, log=TRUE)  ### for determining the basic cutoffs
 
@@ -401,18 +406,19 @@ lcpm <- cpm(my_hc_counts, log=TRUE)  ### for determining the basic cutoffs
 row_means <- rowMeans(lcpm)
 my_hc_filtered_counts <- my_hc_counts[row_means > 0,]
 dim(my_hc_filtered_counts)
-##3 now have 153,355 high conf peaks
+##3 now have 153,348 high conf peaks
 group <- c( rep(c(1,2,3,4,5,6,7,8,9,10,11,12),6))
 group <- factor(group, levels =c("1","2","3","4","5","6","7","8","9","10","11","12"))
-short_names <- paste0(counts_corr_mat1$indv,"_",counts_corr_mat1$trt,"_",counts_corr_mat$time)
+short_names <- paste0(counts_corr_mat1$indv,"_",counts_corr_mat1$trt,"_",counts_corr_mat1$time)
 
-dge <- DGEList.data.frame(counts = my_hc_filtered_counts, group = group)
+dge <- DGEList.data.frame(counts = my_hc_filtered_counts, group = group, genes = row.names(my_hc_filtered_counts))
 
 ##renaming colnames
 colnames(my_hc_filtered_counts) <- short_names
 dge$group$indv <- counts_corr_mat1$indv
 dge$group$time <- counts_corr_mat1$time
 dge$group$trt <- counts_corr_mat1$trt
+
 
 
 
@@ -423,45 +429,233 @@ time <- counts_corr_mat1$time
 trt <- counts_corr_mat1$trt
 # trt <- factor(trt, levels = c("DOX","EPI","DNR","MTX","TRZ","VEH"))
 
+##commented out to save time for future processing
 
-mm <- model.matrix(~0 +indv+ time+trt)
+efit2 <- readRDS("data/filt_Peaks_efit2_bl.RDS")
+
+# mm <- model.matrix(~0 +indv+ time+trt)
 # colnames(mm) <- c("DNR_24", "DNR_3", "DOX_24","DOX_3","EPI_24", "EPI_3","MTX_24", "MTX_3", "TRZ_24","TRZ_3","VEH_24", "VEH_3")
 
-y <- voom(dge$counts, mm,plot =TRUE)
+# y <- voom(dge$counts, mm,plot =TRUE)
 
-corfit <- duplicateCorrelation(y, mm, block = indv)
+# corfit <- duplicateCorrelation(y, mm, block = indv)
 
-v <- voom(dge$counts, mm, block = indv, correlation = corfit$consensus)
+# v <- voom(dge$counts, mm, block = indv, correlation = corfit$consensus)
 
-fit <- lmFit(v, mm, block = indv, correlation = corfit$consensus)
-colnames(mm) <- c("DNR_24","DNR_3","DOX_24","DOX_3","EPI_24","EPI_3","MTX_24","MTX_3","TRZ_24","TRZ_3","VEH_24", "VEH_3")
+# fit <- lmFit(v, mm, block = indv, correlation = corfit$consensus)
+# colnames(mm) <- c("DNR_24","DNR_3","DOX_24","DOX_3","EPI_24","EPI_3","MTX_24","MTX_3","TRZ_24","TRZ_3","VEH_24", "VEH_3")
+#
+#
+# cm <- makeContrasts(
+#   DNR_3.VEH_3 = DNR_3-VEH_3,
+#   DOX_3.VEH_3 = DOX_3-VEH_3,
+#   EPI_3.VEH_3 = EPI_3-VEH_3,
+#   MTX_3.VEH_3 = MTX_3-VEH_3,
+#   TRZ_3.VEH_3 = TRZ_3-VEH_3,
+#   DNR_24.VEH_24 =DNR_24-VEH_24,
+#   DOX_24.VEH_24= DOX_24-VEH_24,
+#   EPI_24.VEH_24= EPI_24-VEH_24,
+#   MTX_24.VEH_24= MTX_24-VEH_24,
+#   TRZ_24.VEH_24= TRZ_24-VEH_24,
+#   levels = mm)
+# 
+# vfit <- lmFit(y, mm)
 
-
-
-cm <- makeContrasts(
-  DNR_3.VEH_3 = DNR_3-VEH_3,
-  DOX_3.VEH_3 = DOX_3-VEH_3,
-  EPI_3.VEH_3 = EPI_3-VEH_3,
-  MTX_3.VEH_3 = MTX_3-VEH_3,
-  TRZ_3.VEH_3 = TRZ_3-VEH_3,
-  DNR_24.VEH_24 =DNR_24-VEH_24,
-  DOX_24.VEH_24= DOX_24-VEH_24,
-  EPI_24.VEH_24= EPI_24-VEH_24,
-  MTX_24.VEH_24= MTX_24-VEH_24,
-  TRZ_24.VEH_24= TRZ_24-VEH_24,
-  levels = mm)
-
-vfit <- lmFit(y, mm)
-
-vfit<- contrasts.fit(vfit, contrasts=cm)
-
-efit2 <- eBayes(vfit)
-# saveRDS(efit2,"data/filt_Peaks_efit2.RDS")
-
+# vfit<- contrasts.fit(vfit, contrasts=cm)
+# 
+# efit2 <- eBayes(vfit)
+# saveRDS(efit2,"data/filt_Peaks_efit2_bl.RDS")
+# str(efit2)
 results = decideTests(efit2)
 summary(results)
 ```
 
 
+### Evaluation of change in peaks
+
+```{r toptable eval}
+
+V.DNR_3.top= topTable(efit2, coef=1, adjust.method="BH", number=Inf, sort.by="p")
+V.DOX_3.top= topTable(efit2, coef=2, adjust.method="BH", number=Inf, sort.by="p")
+V.EPI_3.top= topTable(efit2, coef=3, adjust.method="BH", number=Inf, sort.by="p")
+V.MTX_3.top= topTable(efit2, coef=4, adjust.method="BH", number=Inf, sort.by="p")
+V.TRZ_3.top= topTable(efit2, coef=5, adjust.method="BH", number=Inf, sort.by="p")
+V.DNR_24.top= topTable(efit2, coef=6, adjust.method="BH", number=Inf, sort.by="p")
+V.DOX_24.top= topTable(efit2, coef=7, adjust.method="BH", number=Inf, sort.by="p")
+V.EPI_24.top= topTable(efit2, coef=8, adjust.method="BH", number=Inf, sort.by="p")
+V.MTX_24.top= topTable(efit2, coef=9, adjust.method="BH", number=Inf, sort.by="p")
+V.TRZ_24.top= topTable(efit2, coef=10, adjust.method="BH", number=Inf, sort.by="p")
 
 
+```
+
+
+```{r examine top3_3h}
+DNR_3_top3 <- row.names(V.DNR_3.top[1:3,])
+
+log_filt_hc <- my_hc_filtered_counts %>% 
+  cpm(., log=TRUE) %>% as.data.frame()
+row.names(log_filt_hc) <- row.names(my_hc_filtered_counts)
+log_filt_hc %>% 
+  dplyr::filter(row.names(.) %in% DNR_3_top3) %>% 
+  mutate(Peak = row.names(.)) %>% 
+  pivot_longer(cols = !Peak, names_to = "sample", values_to = "counts") %>% 
+  separate("sample", into = c("indv","trt","time")) %>% 
+  mutate(time=factor(time, levels = c("3h","24h"))) %>% 
+  mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
+  ggplot(., aes (x = time, y=counts))+
+  geom_boxplot(aes(fill=trt))+
+  facet_wrap(Peak~.)+
+  ggtitle("top 3 DAR in 3 hour DNR")+
+  scale_fill_manual(values = drug_pal)
+  
+DOX_3_top3 <- row.names(V.DOX_3.top[1:3,])
+
+log_filt_hc %>%  
+  dplyr::filter(row.names(.) %in% DOX_3_top3) %>% 
+  mutate(Peak = row.names(.)) %>% 
+  pivot_longer(cols = !Peak, names_to = "sample", values_to = "counts") %>% 
+  separate("sample", into = c("indv","trt","time")) %>% 
+  mutate(time=factor(time, levels = c("3h","24h"))) %>% 
+  mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
+  ggplot(., aes (x = time, y=counts))+
+  geom_boxplot(aes(fill=trt))+
+  facet_wrap(Peak~.)+
+  ggtitle("top 3 DAR in 3 hour DOX")+
+  scale_fill_manual(values = drug_pal)
+
+
+EPI_3_top3 <- row.names(V.EPI_3.top[1:3,])
+
+log_filt_hc %>%  
+  dplyr::filter(row.names(.) %in% EPI_3_top3) %>% 
+  mutate(Peak = row.names(.)) %>% 
+  pivot_longer(cols = !Peak, names_to = "sample", values_to = "counts") %>% 
+  separate("sample", into = c("indv","trt","time")) %>% 
+  mutate(time=factor(time, levels = c("3h","24h"))) %>% 
+  mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
+  ggplot(., aes (x = time, y=counts))+
+  geom_boxplot(aes(fill=trt))+
+  facet_wrap(Peak~.)+
+  ggtitle("top 3 DAR in 3 hour EPI")+
+  scale_fill_manual(values = drug_pal)
+
+MTX_3_top3 <- row.names(V.MTX_3.top[1:3,])
+
+log_filt_hc %>%  
+  dplyr::filter(row.names(.) %in% MTX_3_top3) %>% 
+  mutate(Peak = row.names(.)) %>% 
+  pivot_longer(cols = !Peak, names_to = "sample", values_to = "counts") %>% 
+  separate("sample", into = c("indv","trt","time")) %>% 
+  mutate(time=factor(time, levels = c("3h","24h"))) %>% 
+  mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
+  ggplot(., aes (x = time, y=counts))+
+  geom_boxplot(aes(fill=trt))+
+  facet_wrap(Peak~.)+
+  ggtitle("top 3 DAR in 3 hour MTX")+
+  scale_fill_manual(values = drug_pal)
+
+
+
+TRZ_3_top3 <- row.names(V.TRZ_3.top[1:3,])
+
+log_filt_hc %>%  
+  dplyr::filter(row.names(.) %in% TRZ_3_top3) %>% 
+  mutate(Peak = row.names(.)) %>% 
+  pivot_longer(cols = !Peak, names_to = "sample", values_to = "counts") %>% 
+  separate("sample", into = c("indv","trt","time")) %>% 
+  mutate(time=factor(time, levels = c("3h","24h"))) %>% 
+  mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
+  ggplot(., aes (x = time, y=counts))+
+  geom_boxplot(aes(fill=trt))+
+  facet_wrap(Peak~.)+
+  ggtitle("top 3 DAR in 3 hour TRZ")+
+  scale_fill_manual(values = drug_pal)
+
+```
+
+
+```{r 24hourtopexpression}
+
+DNR_24_top3 <- row.names(V.DNR_24.top[1:3,])
+
+log_filt_hc <- my_hc_filtered_counts %>% 
+  cpm(., log=TRUE) %>% as.data.frame()
+row.names(log_filt_hc) <- row.names(my_hc_filtered_counts)
+log_filt_hc %>% 
+  dplyr::filter(row.names(.) %in% DNR_24_top3) %>% 
+  mutate(Peak = row.names(.)) %>% 
+  pivot_longer(cols = !Peak, names_to = "sample", values_to = "counts") %>% 
+  separate("sample", into = c("indv","trt","time")) %>% 
+  mutate(time=factor(time, levels = c("3h","24h"))) %>% 
+  mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
+  ggplot(., aes (x = time, y=counts))+
+  geom_boxplot(aes(fill=trt))+
+  facet_wrap(Peak~.)+
+  ggtitle("top 3 DAR in 24 hour DNR")+
+  scale_fill_manual(values = drug_pal)
+  
+DOX_24_top3 <- row.names(V.DOX_24.top[1:3,])
+
+log_filt_hc %>%  
+  dplyr::filter(row.names(.) %in% DOX_24_top3) %>% 
+  mutate(Peak = row.names(.)) %>% 
+  pivot_longer(cols = !Peak, names_to = "sample", values_to = "counts") %>% 
+  separate("sample", into = c("indv","trt","time")) %>% 
+  mutate(time=factor(time, levels = c("3h","24h"))) %>% 
+  mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
+  ggplot(., aes (x = time, y=counts))+
+  geom_boxplot(aes(fill=trt))+
+  facet_wrap(Peak~.)+
+  ggtitle("top 3 DAR in 24 hour DOX")+
+  scale_fill_manual(values = drug_pal)
+
+
+EPI_24_top3 <- row.names(V.EPI_24.top[1:3,])
+
+log_filt_hc %>%  
+  dplyr::filter(row.names(.) %in% EPI_24_top3) %>% 
+  mutate(Peak = row.names(.)) %>% 
+  pivot_longer(cols = !Peak, names_to = "sample", values_to = "counts") %>% 
+  separate("sample", into = c("indv","trt","time")) %>% 
+  mutate(time=factor(time, levels = c("3h","24h"))) %>% 
+  mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
+  ggplot(., aes (x = time, y=counts))+
+  geom_boxplot(aes(fill=trt))+
+  facet_wrap(Peak~.)+
+  ggtitle("top 3 DAR in 24 hour EPI")+
+  scale_fill_manual(values = drug_pal)
+
+MTX_24_top3 <- row.names(V.MTX_24.top[1:3,])
+
+log_filt_hc %>%  
+  dplyr::filter(row.names(.) %in% MTX_24_top3) %>% 
+  mutate(Peak = row.names(.)) %>% 
+  pivot_longer(cols = !Peak, names_to = "sample", values_to = "counts") %>% 
+  separate("sample", into = c("indv","trt","time")) %>% 
+  mutate(time=factor(time, levels = c("3h","24h"))) %>% 
+  mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
+  ggplot(., aes (x = time, y=counts))+
+  geom_boxplot(aes(fill=trt))+
+  facet_wrap(Peak~.)+
+  ggtitle("top 3 DAR in 24 hour MTX")+
+  scale_fill_manual(values = drug_pal)
+
+
+
+TRZ_24_top3 <- row.names(V.TRZ_24.top[1:3,])
+
+log_filt_hc %>%  
+  dplyr::filter(row.names(.) %in% TRZ_24_top3) %>% 
+  mutate(Peak = row.names(.)) %>% 
+  pivot_longer(cols = !Peak, names_to = "sample", values_to = "counts") %>% 
+  separate("sample", into = c("indv","trt","time")) %>% 
+  mutate(time=factor(time, levels = c("3h","24h"))) %>% 
+  mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
+  ggplot(., aes (x = time, y=counts))+
+  geom_boxplot(aes(fill=trt))+
+  facet_wrap(Peak~.)+
+  ggtitle("top 3 DAR in 24 hour TRZ")+
+  scale_fill_manual(values = drug_pal)
+
+```
