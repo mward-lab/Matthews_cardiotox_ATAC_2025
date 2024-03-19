@@ -65,22 +65,22 @@ library(ggpubr)
 ```{r setting up data}
 high_conf_peak_counts <- read.csv("data/high_conf_peak_counts.csv", row.names = 1)
 
+
 high_conf_peak_counts <- high_conf_peak_counts %>% 
+  column_to_rownames("Geneid") %>% 
   dplyr::select(Ind1_75DA24h:Ind6_71V3h)
-  
 groupmat_names <- data.frame(timeset = colnames(high_conf_peak_counts))
 
 df_names <-groupmat_names %>% 
-  mutate(timeset=gsub("75","1_",timeset)) %>% 
-  mutate(timeset=gsub("87","2_",timeset)) %>% 
-  mutate(timeset=gsub("77","3_",timeset)) %>% 
-  mutate(timeset=gsub("79","4_",timeset)) %>% 
+  mutate(timeset=gsub("75","1_",timeset)) %>%
+  mutate(timeset=gsub("87","2_",timeset)) %>%
+  mutate(timeset=gsub("77","3_",timeset)) %>%
+  mutate(timeset=gsub("79","4_",timeset)) %>%
   mutate(timeset=gsub("78","5_",timeset)) %>%
-  mutate(timeset=gsub("71","6_",timeset)) %>% 
-  mutate(timeset = gsub("24h","_24h",timeset), 
+  mutate(timeset=gsub("71","6_",timeset)) %>%
+  mutate(timeset = gsub("24h","_24h",timeset),
        timeset = gsub("3h","_3h",timeset)) %>%
   separate(timeset, into = c(NA,"indv","trt","time"), sep= "_") %>% 
-  
   mutate(trt= case_match(trt, 'DX' ~'DOX', 'E'~'EPI', 'DA'~'DNR', 'M'~'MTX', 'T'~'TRZ', 'V'~'VEH',.default = trt)) 
   
  
@@ -98,7 +98,9 @@ groupid <- as.numeric(group_fac)
 compid <- data.frame(c1= c(2,4,6,8,10,1,3,5,7,9), c2 = c( 12,12,12,12,12,11,11,11,11,11))
 
 y_TMM_cpm <- cpm(high_conf_peak_counts, log = TRUE)
+ 
 
+rownames(y_TMM_cpm) <- rownames(high_conf_peak_counts)
 colnames(y_TMM_cpm) <- label
 # y_TMM_cpm
 set.seed(31415)
@@ -110,20 +112,50 @@ set.seed(31415)
 
 cormotif_initial <- readRDS("data/cormotif_full_6_run.RDS")
 gene_prob_tran <- cormotif_initial$bestmotif$p.post
+
 rownames(gene_prob_tran) <- rownames(y_TMM_cpm)
 motif_prob <- cormotif_initial$bestmotif$clustlike
 rownames(motif_prob) <- rownames(y_TMM_cpm)
-# write.csv(motif_prob,"output/cormotif_probability_genelist.csv")
+# write.csv(motif_prob,"data/cormotif_probability_all_6_list.csv")
 
 Cormotif::plotIC(cormotif_initial)
 Cormotif::plotMotif(cormotif_initial)
 
-
+myColors <-  rev(c("#FFFFFF", "#E6E6E6" ,"#CCCCCC", "#B3B3B3", "#999999", "#808080", "#666666","#4C4C4C", "#333333", "#191919","#000000"))
+plot.new()
+legend('bottomleft',fill=myColors, legend =rev(c("0", "0.1", "0.2", "0.3", "0.4",  "0.5", "0.6", "0.7", "0.8","0.9", "1")), box.col="white",title = "Probability\nlegend", horiz=FALSE,title.cex=.8)
 
 
 ```
 
+Study breakdown: 1 = DNR_3, 2 = DOX_3, 3 = EPI_3, 4 = MTX_3, 5 = TRZ_3  
+                6 = DNR_24, 7 = DOX_24, 8 = EPI_24, 9 = MTX_24, 10 = TRZ_24
 
+
+```{r pulling out the groups}
+
+motif_prob <- read.csv("data/cormotif_probability_all_6_list.csv")
+motif_prob <- motif_prob %>% 
+  column_to_rownames('X')
+clust1 <- motif_prob %>%
+  as.data.frame() %>%
+  filter(V1>0.5) %>% 
+  rownames
+clust2 <- motif_prob %>%
+  as.data.frame() %>%
+  filter(V2>0.5) %>% 
+  rownames
+clust3 <- motif_prob %>%
+  as.data.frame() %>%
+  filter(V3>0.5) %>% 
+  rownames
+clust4 <- motif_prob %>%
+  as.data.frame() %>%
+  filter(V4>0.5) %>% 
+  rownames
+
+
+```
 
 
 

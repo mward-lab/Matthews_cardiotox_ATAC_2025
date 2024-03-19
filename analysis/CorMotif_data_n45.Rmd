@@ -68,6 +68,7 @@ high_conf_peak_counts <- read.csv("data/high_conf_peak_counts.csv", row.names = 
 
 
 high_conf_peak_counts_n45 <- high_conf_peak_counts %>% 
+  column_to_rownames("Geneid") %>% 
   dplyr::select(Ind1_75DA24h:Ind3_77V3h,Ind6_71DA24h:Ind6_71V3h)
 
 groupmat_names_n45 <- data.frame(timeset = colnames(high_conf_peak_counts_n45))
@@ -109,13 +110,48 @@ set.seed(31415)
 
 cormotif_initial_n45 <- readRDS("data/cormotif_full_4_run.RDS")
 gene_prob_tran_n45 <- cormotif_initial_n45$bestmotif$p.post
-rownames(gene_prob_tran_n45) <- rownames(y_TMM_cpm_n45)
+rownames(gene_prob_tran_n45) <- rownames(high_conf_peak_counts_n45)
 motif_prob_n45 <- cormotif_initial_n45$bestmotif$clustlike
-rownames(motif_prob_n45) <- rownames(y_TMM_cpm_n45)
-# write.csv(motif_prob_n45,"output/cormotif_probability_45_list.csv")
+rownames(motif_prob_n45) <- rownames(high_conf_peak_counts_n45)
+# write.csv(motif_prob_n45,"data/cormotif_probability_45_list.csv")
 
 Cormotif::plotIC(cormotif_initial_n45)
 Cormotif::plotMotif(cormotif_initial_n45)
+
+
+
+myColors <-  rev(c("#FFFFFF", "#E6E6E6" ,"#CCCCCC", "#B3B3B3", "#999999", "#808080", "#666666","#4C4C4C", "#333333", "#191919","#000000"))
+plot.new()
+legend('bottomleft',fill=myColors, legend =rev(c("0", "0.1", "0.2", "0.3", "0.4",  "0.5", "0.6", "0.7", "0.8","0.9", "1")), box.col="white",title = "Probability\nlegend", horiz=FALSE,title.cex=.8)
+```
+
+Study breakdown: 1 = DNR_3, 2 = DOX_3, 3 = EPI_3, 4 = MTX_3, 5 = TRZ_3  
+                6 = DNR_24, 7 = DOX_24, 8 = EPI_24, 9 = MTX_24, 10 = TRZ_24
+
+
+```{r pulling out the groups}
+
+motif_prob_n45 <- read.csv("output/cormotif_probability_45_list.csv")
+motif_prob_n45 <- motif_prob_n45 %>% 
+  column_to_rownames('X')
+clust1_n45 <- motif_prob_n45 %>%
+  as.data.frame() %>%
+  filter(V1>0.5) %>% 
+  rownames
+clust2_n45 <- motif_prob_n45 %>%
+  as.data.frame() %>%
+  filter(V2>0.5) %>% 
+  rownames
+clust3_n45 <- motif_prob_n45 %>%
+  as.data.frame() %>%
+  filter(V3>0.5) %>% 
+  rownames
+clust4_n45 <- motif_prob_n45 %>%
+  as.data.frame() %>%
+  filter(V4>0.5) %>% 
+  rownames
+
+
 ```
 
 
