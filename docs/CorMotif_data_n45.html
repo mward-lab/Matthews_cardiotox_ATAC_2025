@@ -521,15 +521,15 @@ project makes it easier to run your code on other machines.</p>
 <div class="panel panel-default">
 <div class="panel-heading">
 <p class="panel-title">
-<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomreneeisnowhereATAClearningtree365165205b05a0ed6bbd66aca0312f3fe2c8996btargetblank3651652a">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomreneeisnowhereATAClearningtreeb64480b231a4bd357f8b785e3ccc9c6c7537df6etargetblankb64480ba">
 <span class="glyphicon glyphicon-ok text-success"
 aria-hidden="true"></span> <strong>Repository version:</strong>
-<a href="https://github.com/reneeisnowhere/ATAC_learning/tree/365165205b05a0ed6bbd66aca0312f3fe2c8996b" target="_blank">3651652</a>
+<a href="https://github.com/reneeisnowhere/ATAC_learning/tree/b64480b231a4bd357f8b785e3ccc9c6c7537df6e" target="_blank">b64480b</a>
 </a>
 </p>
 </div>
 <div
-id="strongRepositoryversionstrongahrefhttpsgithubcomreneeisnowhereATAClearningtree365165205b05a0ed6bbd66aca0312f3fe2c8996btargetblank3651652a"
+id="strongRepositoryversionstrongahrefhttpsgithubcomreneeisnowhereATAClearningtreeb64480b231a4bd357f8b785e3ccc9c6c7537df6etargetblankb64480ba"
 class="panel-collapse collapse">
 <div class="panel-body">
 <p>
@@ -539,7 +539,7 @@ reproducibility.
 </p>
 <p>
 The results in this page were generated with repository version
-<a href="https://github.com/reneeisnowhere/ATAC_learning/tree/365165205b05a0ed6bbd66aca0312f3fe2c8996b" target="_blank">3651652</a>.
+<a href="https://github.com/reneeisnowhere/ATAC_learning/tree/b64480b231a4bd357f8b785e3ccc9c6c7537df6e" target="_blank">b64480b</a>.
 See the <em>Past versions</em> tab to see a history of the changes made
 to the R Markdown and HTML files.
 </p>
@@ -602,6 +602,8 @@ Ignored files:
     Ignored:    data/cardiomyocyte_FRIP.csv
     Ignored:    data/cormotif_full_4_run.RDS
     Ignored:    data/cormotif_full_6_run.RDS
+    Ignored:    data/cormotif_probability_45_list.csv
+    Ignored:    data/cormotif_probability_all_6_list.csv
     Ignored:    data/embryo_heart_FRIP.csv
     Ignored:    data/filt_Peaks_efit2.RDS
     Ignored:    data/filt_Peaks_efit2_bl.RDS
@@ -622,6 +624,8 @@ Ignored files:
     Ignored:    data/multiqc_fastqc_run2.txt
     Ignored:    data/multiqc_genestat_run1.txt
     Ignored:    data/multiqc_genestat_run2.txt
+    Ignored:    data/my_hc_filt_counts.RDS
+    Ignored:    data/my_hc_filt_counts_n45.RDS
     Ignored:    data/peakAnnoList_1.RDS
     Ignored:    data/peakAnnoList_2.RDS
     Ignored:    data/peakAnnoList_3.RDS
@@ -634,6 +638,7 @@ Ignored files:
 Untracked files:
     Untracked:  Firstcorr plotATAC.pdf
     Untracked:  IND1_2_3_6_corrplot.pdf
+    Untracked:  analysis/my_hc_filt_counts.csv
     Untracked:  code/IGV_snapshot_code.R
     Untracked:  code/corMotifcustom.R
     Untracked:  code/just_for_Fun.R
@@ -644,10 +649,6 @@ Untracked files:
     Untracked:  splited/
     Untracked:  trimmed_Ind1_75DA24h_S7.nodup.fragment.size.distribution.pdf
     Untracked:  trimmed_Ind1_75DA3h_S1.nodup.fragment.size.distribution.pdf
-
-Unstaged changes:
-    Modified:   analysis/CorMotif_data.Rmd
-    Modified:   analysis/Peak_analysis.Rmd
 
 </code></pre>
 <p>
@@ -693,6 +694,40 @@ Message
 </tr>
 </thead>
 <tbody>
+<tr>
+<td>
+Rmd
+</td>
+<td>
+<a href="https://github.com/reneeisnowhere/ATAC_learning/blob/b64480b231a4bd357f8b785e3ccc9c6c7537df6e/analysis/CorMotif_data_n45.Rmd" target="_blank">b64480b</a>
+</td>
+<td>
+reneeisnowhere
+</td>
+<td>
+2024-03-19
+</td>
+<td>
+updates to cormotif data
+</td>
+</tr>
+<tr>
+<td>
+html
+</td>
+<td>
+<a href="https://rawcdn.githack.com/reneeisnowhere/ATAC_learning/659f5877be8c26c9f0cdc7d936654b5f03595aee/docs/CorMotif_data_n45.html" target="_blank">659f587</a>
+</td>
+<td>
+reneeisnowhere
+</td>
+<td>
+2024-03-19
+</td>
+<td>
+Build site.
+</td>
+</tr>
 <tr>
 <td>
 Rmd
@@ -1507,6 +1542,7 @@ plotMotif&lt;-function(fitted_cormotif,title=&quot;&quot;)
 
 
 high_conf_peak_counts_n45 &lt;- high_conf_peak_counts %&gt;% 
+  column_to_rownames(&quot;Geneid&quot;) %&gt;% 
   dplyr::select(Ind1_75DA24h:Ind3_77V3h,Ind6_71DA24h:Ind6_71V3h)
 
 groupmat_names_n45 &lt;- data.frame(timeset = colnames(high_conf_peak_counts_n45))
@@ -1548,15 +1584,117 @@ set.seed(31415)
 
 cormotif_initial_n45 &lt;- readRDS(&quot;data/cormotif_full_4_run.RDS&quot;)
 gene_prob_tran_n45 &lt;- cormotif_initial_n45$bestmotif$p.post
-rownames(gene_prob_tran_n45) &lt;- rownames(y_TMM_cpm_n45)
+rownames(gene_prob_tran_n45) &lt;- rownames(high_conf_peak_counts_n45)
 motif_prob_n45 &lt;- cormotif_initial_n45$bestmotif$clustlike
-rownames(motif_prob_n45) &lt;- rownames(y_TMM_cpm_n45)
-# write.csv(motif_prob_n45,&quot;output/cormotif_probability_45_list.csv&quot;)
+rownames(motif_prob_n45) &lt;- rownames(high_conf_peak_counts_n45)
+# write.csv(motif_prob_n45,&quot;data/cormotif_probability_45_list.csv&quot;)
 
 Cormotif::plotIC(cormotif_initial_n45)</code></pre>
 <p><img src="figure/CorMotif_data_n45.Rmd/without4%20and%205%20setting%20up%20data-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-no-spaces-without4-and-5-setting-up-data-1">
+Past versions of "without4 and 5 setting up data-1.png"
+</button>
+</p>
+<div id="fig-no-spaces-without4-and-5-setting-up-data-1"
+class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/reneeisnowhere/ATAC_learning/blob/659f5877be8c26c9f0cdc7d936654b5f03595aee/docs/figure/CorMotif_data_n45.Rmd/without4 and 5 setting up data-1.png" target="_blank">659f587</a>
+</td>
+<td>
+reneeisnowhere
+</td>
+<td>
+2024-03-19
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 <pre class="r"><code>Cormotif::plotMotif(cormotif_initial_n45)</code></pre>
 <p><img src="figure/CorMotif_data_n45.Rmd/without4%20and%205%20setting%20up%20data-2.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-no-spaces-without4-and-5-setting-up-data-2">
+Past versions of "without4 and 5 setting up data-2.png"
+</button>
+</p>
+<div id="fig-no-spaces-without4-and-5-setting-up-data-2"
+class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/reneeisnowhere/ATAC_learning/blob/659f5877be8c26c9f0cdc7d936654b5f03595aee/docs/figure/CorMotif_data_n45.Rmd/without4 and 5 setting up data-2.png" target="_blank">659f587</a>
+</td>
+<td>
+reneeisnowhere
+</td>
+<td>
+2024-03-19
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<pre class="r"><code>myColors &lt;-  rev(c(&quot;#FFFFFF&quot;, &quot;#E6E6E6&quot; ,&quot;#CCCCCC&quot;, &quot;#B3B3B3&quot;, &quot;#999999&quot;, &quot;#808080&quot;, &quot;#666666&quot;,&quot;#4C4C4C&quot;, &quot;#333333&quot;, &quot;#191919&quot;,&quot;#000000&quot;))
+plot.new()
+legend(&#39;bottomleft&#39;,fill=myColors, legend =rev(c(&quot;0&quot;, &quot;0.1&quot;, &quot;0.2&quot;, &quot;0.3&quot;, &quot;0.4&quot;,  &quot;0.5&quot;, &quot;0.6&quot;, &quot;0.7&quot;, &quot;0.8&quot;,&quot;0.9&quot;, &quot;1&quot;)), box.col=&quot;white&quot;,title = &quot;Probability\nlegend&quot;, horiz=FALSE,title.cex=.8)</code></pre>
+<p><img src="figure/CorMotif_data_n45.Rmd/without4%20and%205%20setting%20up%20data-3.png" width="672" style="display: block; margin: auto;" /></p>
+<p>Study breakdown: 1 = DNR_3, 2 = DOX_3, 3 = EPI_3, 4 = MTX_3, 5 =
+TRZ_3<br />
+6 = DNR_24, 7 = DOX_24, 8 = EPI_24, 9 = MTX_24, 10 = TRZ_24</p>
+<pre class="r"><code>motif_prob_n45 &lt;- read.csv(&quot;output/cormotif_probability_45_list.csv&quot;)
+motif_prob_n45 &lt;- motif_prob_n45 %&gt;% 
+  column_to_rownames(&#39;X&#39;)
+clust1_n45 &lt;- motif_prob_n45 %&gt;%
+  as.data.frame() %&gt;%
+  filter(V1&gt;0.5) %&gt;% 
+  rownames
+clust2_n45 &lt;- motif_prob_n45 %&gt;%
+  as.data.frame() %&gt;%
+  filter(V2&gt;0.5) %&gt;% 
+  rownames
+clust3_n45 &lt;- motif_prob_n45 %&gt;%
+  as.data.frame() %&gt;%
+  filter(V3&gt;0.5) %&gt;% 
+  rownames
+clust4_n45 &lt;- motif_prob_n45 %&gt;%
+  as.data.frame() %&gt;%
+  filter(V4&gt;0.5) %&gt;% 
+  rownames</code></pre>
 <br>
 <p>
 <button type="button" class="btn btn-default btn-workflowr btn-workflowr-sessioninfo" data-toggle="collapse" data-target="#workflowr-sessioninfo" style="display: block;">
