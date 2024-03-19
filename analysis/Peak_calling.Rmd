@@ -189,24 +189,24 @@ Initial read summary is found [at this LINK](https://reneeisnowhere.github.io/AT
 #   theme(axis.text.x=element_text(angle=90))+
 # #   ggtitle("Ind 1")
 # #   
-# left_ventricle_Frip <-
-#   left_ventricle_frip %>% 
-#   dplyr::rename("sample"=X1,"lv_counts"= X2) %>% 
-# separate(sample, into=c(NA,NA,NA,NA,NA,NA,NA, NA,NA,NA,NA,"sample")) %>% 
-#   mutate(sample=gsub("75","1_",sample)) %>% 
-#   mutate(sample=gsub("87","2_",sample)) %>% 
-#   mutate(sample=gsub("77","3_",sample)) %>% 
-#   mutate(sample=gsub("79","4_",sample)) %>% 
+# embryo_heart_Frip <-
+# embryo_heart %>%
+#   dplyr::rename("sample"=X1,"embryo_counts"= X2) %>%
+# separate(sample, into=c(NA,NA,NA,NA,NA,NA,NA, NA,NA,NA,NA,"sample")) %>%
+#   mutate(sample=gsub("75","1_",sample)) %>%
+#   mutate(sample=gsub("87","2_",sample)) %>%
+#   mutate(sample=gsub("77","3_",sample)) %>%
+#   mutate(sample=gsub("79","4_",sample)) %>%
 #   mutate(sample=gsub("78","5_",sample)) %>%
-#   mutate(sample=gsub("71","6_",sample)) %>% 
-#   mutate(sample = gsub("24h","_24h",sample), 
+#   mutate(sample=gsub("71","6_",sample)) %>%
+#   mutate(sample = gsub("24h","_24h",sample),
 #        sample = gsub("3h","_3h",sample)) %>%
-#   separate(sample, into = c("indv","trt","time"), sep= "_") %>% 
-#   
-# #   mutate(trt= case_match(trt, 'DX' ~'DOX', 'E'~'EPI', 'DA'~'DNR', 'M'~'MTX', 'T'~'TRZ', 'V'~'VEH',.default = trt))
+#   separate(sample, into = c("indv","trt","time"), sep= "_") %>%
+#    mutate(trt= case_match(trt, 'DX' ~'DOX', 'E'~'EPI', 'DA'~'DNR', 'M'~'MTX', 'T'~'TRZ', 'V'~'VEH',.default = trt))
 # write.csv(cardiac_muscle_Frip,"data/cardiac_muscle_FRIP.csv")
 # write.csv(cardiomyocyte_Frip,"data/cardiomyocyte_FRIP.csv")
 # write.csv(left_ventricle_Frip,"data/left_ventricle_FRIP.csv")
+#  write.csv(embryo_heart_Frip,"data/embryo_heart_FRIP.csv")
 
 ```
 
@@ -275,6 +275,7 @@ Ind1_firstfrag_files %>%
 cardiac_muscle_Frip <- read.csv("data/cardiac_muscle_FRIP.csv", row.names = 1)
 cardiomyocyte_Frip <- read.csv("data/cardiomyocyte_FRIP.csv", row.names = 1)
 left_ventricle_Frip <- read.csv("data/left_ventricle_FRIP.csv", row.names = 1)
+embryo_heart_Frip <- read.csv("data/embryo_heart_FRIP.csv", row.names = 1)
 # Ind1_summary  <- read.csv("data/Ind1_summary.txt", row.names = 1) %>% 
   # dplyr::rename("sample"=X1,"reads"=X2,"mapped"=X3)
 
@@ -296,9 +297,11 @@ all_frip1 <- Frip_1_reads %>%
   left_join(., (cardiac_muscle_Frip %>% mutate(trt=factor(trt, levels=c("DOX","EPI","DNR","MTX","TRZ","VEH"))))) %>% 
  left_join(., (left_ventricle_Frip %>% mutate(trt=factor(trt, levels=c("DOX","EPI","DNR","MTX","TRZ","VEH"))))) %>% 
     left_join(., (cardiomyocyte_Frip %>% mutate(trt=factor(trt, levels=c("DOX","EPI","DNR","MTX","TRZ","VEH"))))) %>% 
+   left_join(., (embryo_heart_Frip %>% mutate(trt=factor(trt, levels=c("DOX","EPI","DNR","MTX","TRZ","VEH"))))) %>% 
+  mutate(FRIP_embryo=embryo_counts/dedup_reads *100) %>% 
   mutate(FRIP_cm=cm_counts/dedup_reads*100) %>% 
 mutate(FRIP_lv=lv_counts/dedup_reads*100) %>% 
-mutate(FRIP_fetal=c_muscle_counts/dedup_reads*100)
+mutate(FRIP_adult=c_muscle_counts/dedup_reads*100)
 
 # Ind1_reads_frip <- 
 # Ind1_summary %>%                          
@@ -358,8 +361,45 @@ FRiP_first_run %>%
   geom_hline(yintercept = 30,linetype=3)+
   facet_wrap(~indv)+
   theme_classic()+
-  ggtitle("FRiP Score across each sample")+
+  ggtitle("FRiP Score across Ind1 sample")+
    scale_fill_manual(values=drug_pal_fac)
+
+all_frip1 %>% ggplot(., aes (x=time, y=FRIP_cm, group=trt))+
+  geom_col(position= "dodge",aes(fill=trt))+
+  geom_hline(yintercept = 20)+
+  geom_hline(yintercept = 30,linetype=3)+
+  facet_wrap(~indv)+
+  theme_classic()+
+  ggtitle("FRiP Score across Ind1 using cardiomyocyte DNAse peaks")+
+   scale_fill_manual(values=drug_pal_fac)
+  
+all_frip1 %>% ggplot(., aes (x=time, y=FRIP_lv, group=trt))+
+  geom_col(position= "dodge",aes(fill=trt))+
+  geom_hline(yintercept = 20)+
+  geom_hline(yintercept = 30,linetype=3)+
+  facet_wrap(~indv)+
+  theme_classic()+
+  ggtitle("FRiP Score across Ind1 using left ventricle DNAse peaks")+
+   scale_fill_manual(values=drug_pal_fac)
+
+all_frip1 %>% ggplot(., aes (x=time, y=FRIP_adult, group=trt))+
+  geom_col(position= "dodge",aes(fill=trt))+
+  geom_hline(yintercept = 20)+
+  geom_hline(yintercept = 30,linetype=3)+
+  facet_wrap(~indv)+
+  theme_classic()+
+  ggtitle("FRiP Score across Ind1 using adult heart DNAse peaks")+
+   scale_fill_manual(values=drug_pal_fac)
+
+all_frip1 %>% ggplot(., aes (x=time, y=FRIP_embryo, group=trt))+
+  geom_col(position= "dodge",aes(fill=trt))+
+  geom_hline(yintercept = 20)+
+  geom_hline(yintercept = 30,linetype=3)+
+  facet_wrap(~indv)+
+  theme_classic()+
+  ggtitle("FRiP Score across Ind1 using embryonic heart DNAse peaks")+
+   scale_fill_manual(values=drug_pal_fac)
+
 
 
 
@@ -446,9 +486,11 @@ all_frip2 <- Frip_2_reads %>%
   left_join(., (cardiac_muscle_Frip %>% mutate(trt=factor(trt, levels=c("DOX","EPI","DNR","MTX","TRZ","VEH"))))) %>% 
  left_join(., (left_ventricle_Frip %>% mutate(trt=factor(trt, levels=c("DOX","EPI","DNR","MTX","TRZ","VEH"))))) %>% 
     left_join(., (cardiomyocyte_Frip %>% mutate(trt=factor(trt, levels=c("DOX","EPI","DNR","MTX","TRZ","VEH"))))) %>% 
+  left_join(., (embryo_heart_Frip %>% mutate(trt=factor(trt, levels=c("DOX","EPI","DNR","MTX","TRZ","VEH"))))) %>% 
+  mutate(FRIP_embryo=embryo_counts/dedup_reads *100) %>% 
   mutate(FRIP_cm=cm_counts/dedup_reads*100) %>% 
 mutate(FRIP_lv=lv_counts/dedup_reads*100) %>% 
-mutate(FRIP_fetal=c_muscle_counts/dedup_reads*100)
+mutate(FRIP_adult=c_muscle_counts/dedup_reads*100)
 
 Frip_2_reads %>% 
  mutate(sample=gsub("87","2_",sample)) %>% 
@@ -465,6 +507,48 @@ Frip_2_reads %>%
   theme_classic()+
   ggtitle("FRiP Score across each sample for individual 2")+
    scale_fill_manual(values=drug_pal_fac)
+
+
+
+all_frip2 %>% ggplot(., aes (x=time, y=FRIP_cm, group=trt))+
+  geom_col(position= "dodge",aes(fill=trt))+
+  geom_hline(yintercept = 20)+
+  geom_hline(yintercept = 30,linetype=3)+
+  facet_wrap(~indv)+
+  theme_classic()+
+  ggtitle("FRiP Score across Ind2 using cardiomyocyte DNAse peaks")+
+   scale_fill_manual(values=drug_pal_fac)
+  
+all_frip2 %>% ggplot(., aes (x=time, y=FRIP_lv, group=trt))+
+  geom_col(position= "dodge",aes(fill=trt))+
+  geom_hline(yintercept = 20)+
+  geom_hline(yintercept = 30,linetype=3)+
+  facet_wrap(~indv)+
+  theme_classic()+
+  ggtitle("FRiP Score across Ind2  using left ventricle DNAse peaks")+
+   scale_fill_manual(values=drug_pal_fac)
+
+all_frip2 %>% ggplot(., aes (x=time, y=FRIP_adult, group=trt))+
+  geom_col(position= "dodge",aes(fill=trt))+
+  geom_hline(yintercept = 20)+
+  geom_hline(yintercept = 30,linetype=3)+
+  facet_wrap(~indv)+
+  theme_classic()+
+  ggtitle("FRiP Score across Ind2  using adult heart DNAse peaks")+
+   scale_fill_manual(values=drug_pal_fac)
+
+all_frip2 %>% ggplot(., aes (x=time, y=FRIP_embryo, group=trt))+
+  geom_col(position= "dodge",aes(fill=trt))+
+  geom_hline(yintercept = 20)+
+  geom_hline(yintercept = 30,linetype=3)+
+  facet_wrap(~indv)+
+  theme_classic()+
+  ggtitle("FRiP Score across Ind2 using embryonic heart DNAse peaks")+
+   scale_fill_manual(values=drug_pal_fac)
+
+
+
+
 
 ```
 
@@ -544,9 +628,11 @@ all_frip3 <- Frip_3_reads %>%
   left_join(., (cardiac_muscle_Frip %>% mutate(trt=factor(trt, levels=c("DOX","EPI","DNR","MTX","TRZ","VEH"))))) %>% 
  left_join(., (left_ventricle_Frip %>% mutate(trt=factor(trt, levels=c("DOX","EPI","DNR","MTX","TRZ","VEH"))))) %>% 
     left_join(., (cardiomyocyte_Frip %>% mutate(trt=factor(trt, levels=c("DOX","EPI","DNR","MTX","TRZ","VEH"))))) %>% 
+  left_join(., (embryo_heart_Frip %>% mutate(trt=factor(trt, levels=c("DOX","EPI","DNR","MTX","TRZ","VEH"))))) %>% 
+  mutate(FRIP_embryo=embryo_counts/dedup_reads *100) %>% 
   mutate(FRIP_cm=cm_counts/dedup_reads*100) %>% 
 mutate(FRIP_lv=lv_counts/dedup_reads*100) %>% 
-mutate(FRIP_fetal=c_muscle_counts/dedup_reads*100)
+mutate(FRIP_adult=c_muscle_counts/dedup_reads*100)
 
 
 
@@ -568,6 +654,46 @@ Frip_3_reads %>%
   theme_classic()+
   ggtitle("FRiP Score across each sample for individual 3")+
    scale_fill_manual(values=drug_pal_fac)
+
+
+
+all_frip3 %>% ggplot(., aes (x=time, y=FRIP_cm, group=trt))+
+  geom_col(position= "dodge",aes(fill=trt))+
+  geom_hline(yintercept = 20)+
+  geom_hline(yintercept = 30,linetype=3)+
+  facet_wrap(~indv)+
+  theme_classic()+
+  ggtitle("FRiP Score across Ind3 using cardiomyocyte DNAse peaks")+
+   scale_fill_manual(values=drug_pal_fac)
+  
+all_frip3 %>% ggplot(., aes (x=time, y=FRIP_lv, group=trt))+
+  geom_col(position= "dodge",aes(fill=trt))+
+  geom_hline(yintercept = 20)+
+  geom_hline(yintercept = 30,linetype=3)+
+  facet_wrap(~indv)+
+  theme_classic()+
+  ggtitle("FRiP Score across Ind3 using left ventricle DNAse peaks")+
+   scale_fill_manual(values=drug_pal_fac)
+
+all_frip3 %>% ggplot(., aes (x=time, y=FRIP_adult, group=trt))+
+  geom_col(position= "dodge",aes(fill=trt))+
+  geom_hline(yintercept = 20)+
+  geom_hline(yintercept = 30,linetype=3)+
+  facet_wrap(~indv)+
+  theme_classic()+
+  ggtitle("FRiP Score across Ind3 using adult heart DNAse peaks")+
+   scale_fill_manual(values=drug_pal_fac)
+
+all_frip3 %>% ggplot(., aes (x=time, y=FRIP_embryo, group=trt))+
+  geom_col(position= "dodge",aes(fill=trt))+
+  geom_hline(yintercept = 20)+
+  geom_hline(yintercept = 30,linetype=3)+
+  facet_wrap(~indv)+
+  theme_classic()+
+  ggtitle("FRiP Score across Ind3 using embryonic heart DNAse peaks")+
+   scale_fill_manual(values=drug_pal_fac)
+
+
 
 
 
@@ -648,9 +774,11 @@ all_frip4 <- Frip_4_reads %>%
   left_join(., (cardiac_muscle_Frip %>% mutate(trt=factor(trt, levels=c("DOX","EPI","DNR","MTX","TRZ","VEH"))))) %>% 
  left_join(., (left_ventricle_Frip %>% mutate(trt=factor(trt, levels=c("DOX","EPI","DNR","MTX","TRZ","VEH"))))) %>% 
     left_join(., (cardiomyocyte_Frip %>% mutate(trt=factor(trt, levels=c("DOX","EPI","DNR","MTX","TRZ","VEH"))))) %>% 
+  left_join(., (embryo_heart_Frip %>% mutate(trt=factor(trt, levels=c("DOX","EPI","DNR","MTX","TRZ","VEH"))))) %>% 
+  mutate(FRIP_embryo=embryo_counts/dedup_reads *100) %>% 
   mutate(FRIP_cm=cm_counts/dedup_reads*100) %>% 
 mutate(FRIP_lv=lv_counts/dedup_reads*100) %>% 
-mutate(FRIP_fetal=c_muscle_counts/dedup_reads*100)
+mutate(FRIP_adult=c_muscle_counts/dedup_reads*100)
 Frip_4_reads %>% 
   mutate(sample=gsub("79","4_",sample)) %>% 
    mutate(sample = gsub("24h","_24h",sample), 
@@ -665,6 +793,43 @@ Frip_4_reads %>%
   facet_wrap(~indv)+
   theme_classic()+
   ggtitle("FRiP Score across each sample for individual 4")+
+   scale_fill_manual(values=drug_pal_fac)
+
+
+all_frip4 %>% ggplot(., aes (x=time, y=FRIP_cm, group=trt))+
+  geom_col(position= "dodge",aes(fill=trt))+
+  geom_hline(yintercept = 20)+
+  geom_hline(yintercept = 30,linetype=3)+
+  facet_wrap(~indv)+
+  theme_classic()+
+  ggtitle("FRiP Score across Ind4 using cardiomyocyte DNAse peaks")+
+   scale_fill_manual(values=drug_pal_fac)
+  
+all_frip4 %>% ggplot(., aes (x=time, y=FRIP_lv, group=trt))+
+  geom_col(position= "dodge",aes(fill=trt))+
+  geom_hline(yintercept = 20)+
+  geom_hline(yintercept = 30,linetype=3)+
+  facet_wrap(~indv)+
+  theme_classic()+
+  ggtitle("FRiP Score  across Ind4 using left ventricle DNAse peaks")+
+   scale_fill_manual(values=drug_pal_fac)
+
+all_frip4 %>% ggplot(., aes (x=time, y=FRIP_adult, group=trt))+
+  geom_col(position= "dodge",aes(fill=trt))+
+  geom_hline(yintercept = 20)+
+  geom_hline(yintercept = 30,linetype=3)+
+  facet_wrap(~indv)+
+  theme_classic()+
+  ggtitle("FRiP Score  across Ind4 using adult heart DNAse peaks")+
+   scale_fill_manual(values=drug_pal_fac)
+
+all_frip4 %>% ggplot(., aes (x=time, y=FRIP_embryo, group=trt))+
+  geom_col(position= "dodge",aes(fill=trt))+
+  geom_hline(yintercept = 20)+
+  geom_hline(yintercept = 30,linetype=3)+
+  facet_wrap(~indv)+
+  theme_classic()+
+  ggtitle("FRiP Score across Ind4 using embryonic heart DNAse peaks")+
    scale_fill_manual(values=drug_pal_fac)
 
 
@@ -746,9 +911,11 @@ all_frip5 <- Frip_5_reads %>%
   left_join(., (cardiac_muscle_Frip %>% mutate(trt=factor(trt, levels=c("DOX","EPI","DNR","MTX","TRZ","VEH"))))) %>% 
  left_join(., (left_ventricle_Frip %>% mutate(trt=factor(trt, levels=c("DOX","EPI","DNR","MTX","TRZ","VEH"))))) %>% 
     left_join(., (cardiomyocyte_Frip %>% mutate(trt=factor(trt, levels=c("DOX","EPI","DNR","MTX","TRZ","VEH"))))) %>% 
+  left_join(., (embryo_heart_Frip %>% mutate(trt=factor(trt, levels=c("DOX","EPI","DNR","MTX","TRZ","VEH"))))) %>% 
+  mutate(FRIP_embryo=embryo_counts/dedup_reads *100) %>% 
   mutate(FRIP_cm=cm_counts/dedup_reads*100) %>% 
 mutate(FRIP_lv=lv_counts/dedup_reads*100) %>% 
-mutate(FRIP_fetal=c_muscle_counts/dedup_reads*100)
+mutate(FRIP_adult=c_muscle_counts/dedup_reads*100)
  
  
 Frip_5_reads %>% 
@@ -764,9 +931,44 @@ Frip_5_reads %>%
   geom_hline(yintercept = 30,linetype=3)+
   facet_wrap(~indv)+
   theme_classic()+
-  ggtitle("FRiP Score across each sample for individual 5")+
+  ggtitle("FRiP Score a across Ind5 for individual 5")+
    scale_fill_manual(values=drug_pal_fac)
 
+all_frip5 %>% ggplot(., aes (x=time, y=FRIP_cm, group=trt))+
+  geom_col(position= "dodge",aes(fill=trt))+
+  geom_hline(yintercept = 20)+
+  geom_hline(yintercept = 30,linetype=3)+
+  facet_wrap(~indv)+
+  theme_classic()+
+  ggtitle("FRiP Score  across Ind5 using cardiomyocyte DNAse peaks")+
+   scale_fill_manual(values=drug_pal_fac)
+  
+all_frip5 %>% ggplot(., aes (x=time, y=FRIP_lv, group=trt))+
+  geom_col(position= "dodge",aes(fill=trt))+
+  geom_hline(yintercept = 20)+
+  geom_hline(yintercept = 30,linetype=3)+
+  facet_wrap(~indv)+
+  theme_classic()+
+  ggtitle("FRiP Score  across Ind5 using left ventricle DNAse peaks")+
+   scale_fill_manual(values=drug_pal_fac)
+
+all_frip5 %>% ggplot(., aes (x=time, y=FRIP_adult, group=trt))+
+  geom_col(position= "dodge",aes(fill=trt))+
+  geom_hline(yintercept = 20)+
+  geom_hline(yintercept = 30,linetype=3)+
+  facet_wrap(~indv)+
+  theme_classic()+
+  ggtitle("FRiP Score across each sample using adult heart DNAse peaks")+
+   scale_fill_manual(values=drug_pal_fac)
+
+all_frip5 %>% ggplot(., aes (x=time, y=FRIP_embryo, group=trt))+
+  geom_col(position= "dodge",aes(fill=trt))+
+  geom_hline(yintercept = 20)+
+  geom_hline(yintercept = 30,linetype=3)+
+  facet_wrap(~indv)+
+  theme_classic()+
+  ggtitle("FRiP Score across Ind5 using embryonic heart DNAse peaks")+
+   scale_fill_manual(values=drug_pal_fac)
 
 ```
 
@@ -847,9 +1049,11 @@ all_frip6 <- Frip_6_reads %>%
   left_join(., (cardiac_muscle_Frip %>% mutate(trt=factor(trt, levels=c("DOX","EPI","DNR","MTX","TRZ","VEH"))))) %>% 
  left_join(., (left_ventricle_Frip %>% mutate(trt=factor(trt, levels=c("DOX","EPI","DNR","MTX","TRZ","VEH"))))) %>% 
     left_join(., (cardiomyocyte_Frip %>% mutate(trt=factor(trt, levels=c("DOX","EPI","DNR","MTX","TRZ","VEH"))))) %>% 
+  left_join(., (embryo_heart_Frip %>% mutate(trt=factor(trt, levels=c("DOX","EPI","DNR","MTX","TRZ","VEH"))))) %>% 
+  mutate(FRIP_embryo=embryo_counts/dedup_reads *100) %>% 
   mutate(FRIP_cm=cm_counts/dedup_reads*100) %>% 
 mutate(FRIP_lv=lv_counts/dedup_reads*100) %>% 
-mutate(FRIP_fetal=c_muscle_counts/dedup_reads*100)
+mutate(FRIP_adult=c_muscle_counts/dedup_reads*100)
  
 
 Frip_6_reads %>% 
@@ -867,6 +1071,43 @@ Frip_6_reads %>%
   theme_classic()+
   ggtitle("FRiP Score across each sample for individual 6")+
    scale_fill_manual(values=drug_pal_fac)
+
+all_frip6 %>% ggplot(., aes (x=time, y=FRIP_cm, group=trt))+
+  geom_col(position= "dodge",aes(fill=trt))+
+  geom_hline(yintercept = 20)+
+  geom_hline(yintercept = 30,linetype=3)+
+  facet_wrap(~indv)+
+  theme_classic()+
+  ggtitle("FRiP Score  across Ind6 using cardiomyocyte DNAse peaks")+
+   scale_fill_manual(values=drug_pal_fac)
+  
+all_frip6 %>% ggplot(., aes (x=time, y=FRIP_lv, group=trt))+
+  geom_col(position= "dodge",aes(fill=trt))+
+  geom_hline(yintercept = 20)+
+  geom_hline(yintercept = 30,linetype=3)+
+  facet_wrap(~indv)+
+  theme_classic()+
+  ggtitle("FRiP Score across Ind6 using left ventricle DNAse peaks")+
+   scale_fill_manual(values=drug_pal_fac)
+
+all_frip6 %>% ggplot(., aes (x=time, y=FRIP_adult, group=trt))+
+  geom_col(position= "dodge",aes(fill=trt))+
+  geom_hline(yintercept = 20)+
+  geom_hline(yintercept = 30,linetype=3)+
+  facet_wrap(~indv)+
+  theme_classic()+
+  ggtitle("FRiP Score across Ind6 using adult heart DNAse peaks")+
+   scale_fill_manual(values=drug_pal_fac)
+
+all_frip6 %>% ggplot(., aes (x=time, y=FRIP_embryo, group=trt))+
+  geom_col(position= "dodge",aes(fill=trt))+
+  geom_hline(yintercept = 20)+
+  geom_hline(yintercept = 30,linetype=3)+
+  facet_wrap(~indv)+
+  theme_classic()+
+  ggtitle("FRiP Score across Ind6 using embryonic heart DNAse peaks")+
+   scale_fill_manual(values=drug_pal_fac)
+
 
 
 
