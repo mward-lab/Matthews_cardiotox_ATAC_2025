@@ -433,15 +433,18 @@ trt <- counts_corr_mat1$trt
 
 efit2 <- readRDS("data/filt_Peaks_efit2_bl.RDS")
 
-# mm <- model.matrix(~0 +indv+ time+trt)
-# colnames(mm) <- c("DNR_24", "DNR_3", "DOX_24","DOX_3","EPI_24", "EPI_3","MTX_24", "MTX_3", "TRZ_24","TRZ_3","VEH_24", "VEH_3")
+group_1 <- c(rep(c("DNR_24","DNR_3","DOX_24","DOX_3","EPI_24","EPI_3","MTX_24","MTX_3","TRZ_24","TRZ_3","VEH_24", "VEH_3"),6))
+
+
+mm <- model.matrix(~0 +group_1)
+# colnames(mm) <- c("DNR_24", "DNtrt_n45# colnames(mm) <- c("DNR_24", "DNR_3", "DOX_24","DOX_3","EPI_24", "EPI_3","MTX_24", "MTX_3", "TRZ_24","TRZ_3","VEH_24", "VEH_3")
 
 # y <- voom(dge$counts, mm,plot =TRUE)
-
+# 
 # corfit <- duplicateCorrelation(y, mm, block = indv)
-
+# 
 # v <- voom(dge$counts, mm, block = indv, correlation = corfit$consensus)
-
+# 
 # fit <- lmFit(v, mm, block = indv, correlation = corfit$consensus)
 # colnames(mm) <- c("DNR_24","DNR_3","DOX_24","DOX_3","EPI_24","EPI_3","MTX_24","MTX_3","TRZ_24","TRZ_3","VEH_24", "VEH_3")
 #
@@ -458,14 +461,14 @@ efit2 <- readRDS("data/filt_Peaks_efit2_bl.RDS")
 #   MTX_24.VEH_24= MTX_24-VEH_24,
 #   TRZ_24.VEH_24= TRZ_24-VEH_24,
 #   levels = mm)
-# 
+
 # vfit <- lmFit(y, mm)
 
 # vfit<- contrasts.fit(vfit, contrasts=cm)
 # 
 # efit2 <- eBayes(vfit)
 # saveRDS(efit2,"data/filt_Peaks_efit2_bl.RDS")
-# str(efit2)
+
 results = decideTests(efit2)
 summary(results)
 ```
@@ -659,3 +662,224 @@ log_filt_hc %>%
   scale_fill_manual(values = drug_pal)
 
 ```
+
+### Volcano plots of peaks
+
+```{r volcano plots}
+library(cowplot)
+efit2 <- readRDS("data/filt_Peaks_efit2_bl.RDS")
+# volcanoplot(efit2,coef = c(1,2,3,4,5,6),style = "p-value",
+#                           # highlight = 8,
+#                           # names = efit2$genes$SYMBOL,
+#                           hl.col = "red",xlab = "Log2 Fold Change",
+#                           ylab = NULL,pch = 16,cex = 0.35,
+#                           main = "test")
+# 
+
+plot_filenames <- c("V.DNR_3.top","V.DOX_3.top","V.EPI_3.top","V.MTX_3.top",
+                    "V.TRZ_.top","V.DNR_24.top","V.DOX_24.top","V.EPI_24.top",
+                    "V.MTX_24.top","V.TRZ_24.top")
+plot_files <- c( V.DNR_3.top,V.DOX_3.top,V.EPI_3.top,V.MTX_3.top,
+                    V.TRZ_3.top,V.DNR_24.top,V.DOX_24.top,V.EPI_24.top,
+                    V.MTX_24.top,V.TRZ_24.top)
+
+volcanosig <- function(df, psig.lvl) {
+    df <- df %>% 
+    mutate(threshold = ifelse(adj.P.Val > psig.lvl, "A", ifelse(adj.P.Val <= psig.lvl & logFC<=0,"B","C")))
+      # ifelse(adj.P.Val <= psig.lvl & logFC >= 0,"B", "C")))
+    ##This is where I could add labels, but I have taken out
+    # df <- df %>% mutate(genelabels = "")
+    # df$genelabels[1:topg] <- df$rownames[1:topg]
+    
+  ggplot(df, aes(x=logFC, y=-log10(adj.P.Val))) + 
+    geom_point(aes(color=threshold))+
+    # geom_text_repel(aes(label = genelabels), segment.curvature = -1e-20,force = 1,size=2.5,
+    # arrow = arrow(length = unit(0.015, "npc")), max.overlaps = Inf) +
+    #geom_hline(yintercept = -log10(psig.lvl))+
+    xlab(expression("Log"[2]*" FC"))+
+    ylab(expression("-log"[10]*"adj. P Value"))+
+    scale_color_manual(values = c("black", "red","blue"))+
+    theme_cowplot()+
+    theme(legend.position = "none",
+              plot.title = element_text(size = rel(1.5), hjust = 0.5),
+              axis.title = element_text(size = rel(0.8))) 
+}
+#v1<- volcanosig(V.DA24.top, 0.01,0)
+v1 <- volcanosig(V.DNR_3.top, 0.01)+ ggtitle("Daunorubicin 3 hour")
+v2 <- volcanosig(V.DNR_24.top, 0.01)+ ggtitle("Daunorubicin 24 hour")+ylab("")
+v3 <- volcanosig(V.DOX_3.top, 0.01)+ ggtitle("Doxorubicin 3 hour")
+v4 <- volcanosig(V.DOX_24.top, 0.01)+ ggtitle("Doxorubicin 24 hour")+ylab("")
+v5 <- volcanosig(V.EPI_3.top, 0.01)+ ggtitle("Epirubicin 3 hour")
+v6 <- volcanosig(V.EPI_24.top, 0.01)+ ggtitle("Epirubicin 24 hour")+ylab("")
+v7 <- volcanosig(V.MTX_3.top, 0.01)+ ggtitle("Mitoxantrone 3 hour")
+v8 <- volcanosig(V.MTX_24.top, 0.01)+ ggtitle("Mitoxantrone 24 hour")+ylab("")
+v9 <- volcanosig(V.TRZ_3.top, 0.01)+ ggtitle("Trastuzumab 3 hour")
+v10 <- volcanosig(V.TRZ_24.top, 0.01)+ ggtitle("Trastuzumab 24 hour")+ylab("")
+# volcanoplot(efit2,coef = 10,style = "p-value",
+#                           highlight = 8,
+#                           names = efit2$genes$SYMBOL,
+#                           hl.col = "red",xlab = "Log2 Fold Change",
+#                           ylab = NULL,pch = 16,cex = 0.35,
+#                           main = "Using Trastuzumab 24 hour data and volcanoplot function")
+plot_grid(v1,v2,  rel_widths =c(.8,1))
+plot_grid(v3,v4,  rel_widths =c(.8,1))
+plot_grid(v5,v6,  rel_widths =c(.8,1))
+plot_grid(v7,v8,  rel_widths =c(.8,1))
+plot_grid(v9,v10,  rel_widths =c(.8,1))
+
+```
+
+
+### Analysis without Indv 4 and 5
+#### Heatmap log2cpm
+
+```{r no 4 or 5 log2cpm}
+high_conf_peak_counts <- read.csv("data/high_conf_peaks_bl_counts.txt", row.names = 1)
+
+
+Frag_cor_filt_n45 <- high_conf_peak_counts %>% 
+  dplyr::select(Ind1_75DA24h:Ind3_77V3h,Ind6_71DA24h:Ind6_71V3h)  %>% 
+  cpm(., log = TRUE) %>% 
+  cor()
+  
+filmat_groupmat_col_n45 <- data.frame(timeset = colnames(Frag_cor_filt_n45))
+
+counts_corr_mat_n45 <-filmat_groupmat_col_n45 %>% 
+  mutate(timeset=gsub("75","1_",timeset)) %>% 
+  mutate(timeset=gsub("87","2_",timeset)) %>% 
+  mutate(timeset=gsub("77","3_",timeset)) %>% 
+  mutate(timeset=gsub("79","4_",timeset)) %>% 
+  mutate(timeset=gsub("78","5_",timeset)) %>%
+  mutate(timeset=gsub("71","6_",timeset)) %>% 
+  mutate(timeset = gsub("24h","_24h",timeset), 
+       timeset = gsub("3h","_3h",timeset)) %>%
+  separate(timeset, into = c(NA,"indv","trt","time"), sep= "_") %>% 
+  
+  mutate(trt= case_match(trt, 'DX' ~'DOX', 'E'~'EPI', 'DA'~'DNR', 'M'~'MTX', 'T'~'TRZ', 'V'~'VEH',.default = trt)) %>% 
+  mutate(class = if_else(trt == "DNR", "AC", if_else(
+    trt == "DOX", "AC", if_else(trt == "EPI", "AC", "nAC")
+  ))) %>%
+  mutate(TOP2i = if_else(trt == "DNR", "yes", if_else(
+    trt == "DOX", "yes", if_else(trt == "EPI", "yes", if_else(trt == "MTX", "yes", "no"))
+  ))) 
+                         
+ mat_colors_n45 <- list( 
+   trt= c("#F1B72B","#8B006D","#DF707E","#3386DD","#707031","#41B333"),
+   indv=c("#1B9E77", "#D95F02" ,"#7570B3", "#E6AB02"),
+   time=c("pink", "chocolate4"),
+   class=c("yellow1","darkorange1"), 
+   TOP2i =c("darkgreen","lightgreen"))                        
+                         
+names(mat_colors_n45$trt)   <- unique(counts_corr_mat_n45$trt)                      
+names(mat_colors_n45$indv) <- unique(counts_corr_mat_n45$indv)
+names(mat_colors_n45$time) <- unique(counts_corr_mat_n45$time)
+names(mat_colors_n45$class) <- unique(counts_corr_mat_n45$class)
+names(mat_colors_n45$TOP2i) <- unique(counts_corr_mat_n45$TOP2i)
+
+
+ComplexHeatmap::pheatmap(Frag_cor_filt_n45,
+                         # column_title=(paste0("RNA-seq log"[2]~"cpm correlation")),
+        annotation_col = counts_corr_mat_n45,
+        annotation_colors = mat_colors_n45,
+        heatmap_legend_param = mat_colors_n45,
+        fontsize=10,
+        fontsize_row = 8,
+        angle_col="90",
+        treeheight_row=25,
+        fontsize_col = 8,
+        treeheight_col = 20)
+
+```
+
+#### DEG using 1,2,3,6
+
+```{r DEG no 4 or 5}
+
+my_hc_counts_n45 <- high_conf_peak_counts %>% 
+  dplyr::select(Geneid,Ind1_75DA24h:Ind3_77V3h,Ind6_71DA24h:Ind6_71V3h) %>% 
+  column_to_rownames("Geneid")
+
+lcpm_n45 <- cpm(my_hc_counts_n45, log=TRUE)  ### for determining the basic cutoffs
+
+
+
+row_means_n45 <- rowMeans(lcpm_n45)
+my_hc_filtered_counts_n45 <- my_hc_counts_n45[row_means_n45 > 0,]
+dim(my_hc_filtered_counts_n45)
+##3 now have 151,800 high conf peaks
+group_n45 <- c( rep(c(1,2,3,4,5,6,7,8,9,10,11,12),4))
+group_n45 <- factor(group_n45, levels =c("1","2","3","4","5","6","7","8","9","10","11","12"))
+short_names_n45 <- paste0(counts_corr_mat_n45$indv,"_",counts_corr_mat_n45$trt,"_",counts_corr_mat_n45$time)
+
+dge_n45 <- DGEList.data.frame(counts = my_hc_filtered_counts_n45, group = group_n45, genes = row.names(my_hc_filtered_counts_n45))
+
+##renaming colnames
+colnames(my_hc_filtered_counts_n45) <- short_names_n45
+# dge_n45$group$indv <- counts_corr_mat_n45$indv
+# dge_n45$group$time <- counts_corr_mat_n45$time
+# dge_n45$group$trt <- counts_corr_mat_n45$trt
+
+
+
+indv_n45 <- counts_corr_mat_n45$indv
+# indv <- factor(indv, levels = c(1,2,3,4,5,6))
+time_n45 <- counts_corr_mat_n45$time
+# time <- factor(time, levels =c("3h","24"))
+trt_n45 <- counts_corr_mat_n45$trt
+# trt <- factor(trt, levels = c("DOX","EPI","DNR","MTX","TRZ","VEH"))
+efit2_n45 <- readRDS("data/filt_Peaks_efit2_n45.RDS")
+##commented out to save time for future processing
+
+# efit2 <- readRDS("data/filt_Peaks_efit2_bl.RDS")
+group_n45 <- c(rep(c("DNR_24","DNR_3","DOX_24","DOX_3","EPI_24","EPI_3","MTX_24","MTX_3","TRZ_24","TRZ_3","VEH_24", "VEH_3"),4))
+
+mm_n4 <- model.matrix(~0 +group_n45)
+# mm_n45 <- model.matrix(~0 + indv_n45 +trt_n45+time_n45)
+# colnames(mm) <- c("DNR_24", "DNR_3", "DOX_24","DOX_3","EPI_24", "EPI_3","MTX_24", "MTX_3", "TRZ_24","TRZ_3","VEH_24", "VEH_3")
+
+# 
+# y_n4 <- voom(dge_n45$counts,mm_n4)
+# 
+# 
+# corfit_n4 <- duplicateCorrelation(y_n4, mm_n4, block = indv_n45)
+# 
+# v_n4 <- voom(dge_n45$counts, mm_n4, block = indv_n45, correlation = corfit_n4$consensus)
+# 
+# # 
+# # 
+# fit_n4 <- lmFit(v_n4, mm_n45, block = indv_n45, correlation = corfit_n4$consensus)
+# 
+# colnames(mm_n4) <- c("DNR_24","DNR_3","DOX_24","DOX_3","EPI_24","EPI_3","MTX_24","MTX_3","TRZ_24","TRZ_3","VEH_24", "VEH_3")
+
+
+
+# cm_n4 <-makeContrasts(
+#   DNR_3.VEH_3 = DNR_3-VEH_3,
+#   DOX_3.VEH_3 = DOX_3-VEH_3,
+#   EPI_3.VEH_3 = EPI_3-VEH_3,
+#   MTX_3.VEH_3 = MTX_3-VEH_3,
+#   TRZ_3.VEH_3 = TRZ_3-VEH_3,
+#   DNR_24.VEH_24 =DNR_24-VEH_24,
+#   DOX_24.VEH_24= DOX_24-VEH_24,
+#   EPI_24.VEH_24= EPI_24-VEH_24,
+#   MTX_24.VEH_24= MTX_24-VEH_24,
+#   TRZ_24.VEH_24= TRZ_24-VEH_24,
+#   levels = mm_n4)
+
+
+# vfit_n4 <- lmFit(y_n4, mm_n4)
+
+
+# vfit_n4<- contrasts.fit(vfit_n4, contrasts=cm_n4)
+#
+# efit2_n45 <- eBayes(vfit_n4)
+# saveRDS(efit2_n45,"data/filt_Peaks_efit2_n45.RDS")
+# str(efit2)
+results = decideTests(efit2_n45)
+summary(results)
+
+
+```
+
+
+

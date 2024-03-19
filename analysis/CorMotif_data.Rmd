@@ -1,0 +1,179 @@
+---
+title: "CorMotif_data"
+author: "ERM"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE,
+	warning = FALSE
+)
+```
+
+```{css, echo=FALSE}
+pre {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+pre[class] {
+  max-height: 200px;
+}
+```
+
+```{r  package loading}
+library(tidyverse)
+# library(ggsignif)
+# library(cowplot)
+# library(ggpubr)
+# library(scales)
+# library(sjmisc)
+library(kableExtra)
+# library(broom)
+# library(biomaRt)
+library(RColorBrewer)
+# library(gprofiler2)
+# library(qvalue)
+# library(ChIPseeker)
+# library("TxDb.Hsapiens.UCSC.hg38.knownGene")
+# library("org.Hs.eg.db")
+# library(ATACseqQC)
+# library(rtracklayer)
+library(edgeR)
+library(ggfortify)
+library(limma)
+library(readr)
+library(BiocGenerics)
+library(gridExtra)
+library(VennDiagram)
+
+library(scales)
+# library(ggVennDiagram)
+library(Cormotif)
+library(BiocParallel)
+library(ggpubr)
+```
+
+```{r echo=TRUE, file='code/corMotifcustom.R'}
+
+```
+
+```{r setting up data}
+high_conf_peak_counts <- read.csv("data/high_conf_peak_counts.csv", row.names = 1)
+
+high_conf_peak_counts <- high_conf_peak_counts %>% 
+  dplyr::select(Ind1_75DA24h:Ind6_71V3h)
+  
+groupmat_names <- data.frame(timeset = colnames(high_conf_peak_counts))
+
+df_names <-groupmat_names %>% 
+  mutate(timeset=gsub("75","1_",timeset)) %>% 
+  mutate(timeset=gsub("87","2_",timeset)) %>% 
+  mutate(timeset=gsub("77","3_",timeset)) %>% 
+  mutate(timeset=gsub("79","4_",timeset)) %>% 
+  mutate(timeset=gsub("78","5_",timeset)) %>%
+  mutate(timeset=gsub("71","6_",timeset)) %>% 
+  mutate(timeset = gsub("24h","_24h",timeset), 
+       timeset = gsub("3h","_3h",timeset)) %>%
+  separate(timeset, into = c(NA,"indv","trt","time"), sep= "_") %>% 
+  
+  mutate(trt= case_match(trt, 'DX' ~'DOX', 'E'~'EPI', 'DA'~'DNR', 'M'~'MTX', 'T'~'TRZ', 'V'~'VEH',.default = trt)) 
+  
+ 
+group <- c( rep(c(1,2,3,4,5,6,7,8,9,10,11,12),6))
+group <- factor(group, levels =c("1","2","3","4","5","6","7","8","9","10","11","12"))                        
+indv <- df_names$indv
+# indv <- factor(indv, levels = c(1,2,3,4,5,6))
+time <- df_names$time
+# time <- factor(time, levels =c("3h","24"))
+trt <- df_names$trt
+label <- paste0(indv,"_",trt,"_",time)
+group_fac <- group
+groupid <- as.numeric(group_fac)
+
+compid <- data.frame(c1= c(2,4,6,8,10,1,3,5,7,9), c2 = c( 12,12,12,12,12,11,11,11,11,11))
+
+y_TMM_cpm <- cpm(high_conf_peak_counts, log = TRUE)
+
+colnames(y_TMM_cpm) <- label
+# y_TMM_cpm
+set.seed(31415)
+# cormotif_initial <- cormotiffit(exprs = y_TMM_cpm,
+#                                 groupid = groupid,
+#                                 compid = compid,
+#                                 K=1:6, max.iter = 500, runtype="logCPM")
+# saveRDS(cormotif_initial,"data/cormotif_full_6_run.RDS")
+
+cormotif_initial <- readRDS("data/cormotif_full_6_run.RDS")
+gene_prob_tran <- cormotif_initial$bestmotif$p.post
+rownames(gene_prob_tran) <- rownames(y_TMM_cpm)
+motif_prob <- cormotif_initial$bestmotif$clustlike
+rownames(motif_prob) <- rownames(y_TMM_cpm)
+# write.csv(motif_prob,"output/cormotif_probability_genelist.csv")
+
+Cormotif::plotIC(cormotif_initial)
+Cormotif::plotMotif(cormotif_initial)
+
+
+
+
+```
+
+
+
+
+```{r without4 and 5}
+high_conf_peak_counts_n45 <- high_conf_peak_counts %>% 
+  dplyr::select(Ind1_75DA24h:Ind3_77V3h,Ind6_71DA24h:Ind6_71V3h)
+
+df_names_n45 <-groupmat_names %>% 
+  mutate(timeset=gsub("75","1_",timeset)) %>% 
+  mutate(timeset=gsub("87","2_",timeset)) %>% 
+  mutate(timeset=gsub("77","3_",timeset)) %>% 
+  mutate(timeset=gsub("79","4_",timeset)) %>% 
+  mutate(timeset=gsub("78","5_",timeset)) %>%
+  mutate(timeset=gsub("71","6_",timeset)) %>% 
+  mutate(timeset = gsub("24h","_24h",timeset), 
+       timeset = gsub("3h","_3h",timeset)) %>%
+  separate(timeset, into = c(NA,"indv","trt","time"), sep= "_") %>% 
+  
+  mutate(trt= case_match(trt, 'DX' ~'DOX', 'E'~'EPI', 'DA'~'DNR', 'M'~'MTX', 'T'~'TRZ', 'V'~'VEH',.default = trt)) %>% 
+  dplyr::filter(indv %in% c(1,2,3,6))
+ 
+group_n45 <- c( rep(c(1,2,3,4,5,6,7,8,9,10,11,12),4))
+group_n45 <- factor(group, levels =c("1","2","3","4","5","6","7","8","9","10","11","12"))                        
+indv_n45 <- df_names_n45$indv
+# indv <- factor(indv, levels = c(1,2,3,4,5,6))
+time_n45 <- df_names_n45$time
+# time <- factor(time, levels =c("3h","24"))
+trt_n45 <- df_names_n45$trt
+label_n45 <- paste0(indv_n45,"_",trt_n45,"_",time_n45)
+group_fac_n45 <- group_n45
+groupid_n45 <- as.numeric(group_fac_n45)
+
+compid_n45 <- data.frame(c1= c(2,4,6,8,10,1,3,5,7,9), c2 = c( 12,12,12,12,12,11,11,11,11,11))
+
+y_TMM_cpm_n45 <- cpm(high_conf_peak_counts_n45, log = TRUE)
+
+colnames(y_TMM_cpm_n45) <- label_n45
+# y_TMM_cpm
+set.seed(31415)
+cormotif_initial_n45 <- cormotiffit(exprs = y_TMM_cpm_n45, groupid = groupid_n45, compid = compid_n45, K=1:6, max.iter = 500)
+saveRDS(cormotif_initial_n45,"data/cormotif_full_4_run.RDS")
+
+cormotif_initial <- readRDS("data/cormotif_full_6_run.RDS")
+gene_prob_tran <- cormotif_initial$bestmotif$p.post
+rownames(gene_prob_tran) <- rownames(y_TMM_cpm)
+motif_prob <- cormotif_initial$bestmotif$clustlike
+rownames(motif_prob) <- rownames(y_TMM_cpm)
+# write.csv(motif_prob,"output/cormotif_probability_genelist.csv")
+
+Cormotif::plotIC(cormotif_initial)
+Cormotif::plotMotif(cormotif_initial)
+```
+
+

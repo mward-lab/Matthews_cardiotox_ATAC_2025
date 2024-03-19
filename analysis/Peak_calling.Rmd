@@ -45,6 +45,12 @@ library("TxDb.Hsapiens.UCSC.hg38.knownGene")
 library("org.Hs.eg.db")
 library(ATACseqQC)
 library(rtracklayer)
+# library(motifStack)
+library(ATACseqQC)
+library(TxDb.Hsapiens.UCSC.hg38.knownGene)
+library(BSgenome.Hsapiens.UCSC.hg38)
+library(MotifDb)
+library(ChIPpeakAnno)
 ```
 
 ```{r data_loading and other functions}
@@ -110,25 +116,25 @@ Initial read summary is found [at this LINK](https://reneeisnowhere.github.io/AT
 
 
 ```{r Readssummary1, eval=FALSE, include=FALSE}
- # library(readr) pulling in orginal files example code
+ # library(readr) pulling in original files example code
 
-# Ind1_summary_RIP <- read_delim("~/ATAC_downloads/Ind1_files.txt.summary", 
-#      delim = "\t", escape_double = FALSE, 
+# Ind1_summary_RIP <- read_delim("~/ATAC_downloads/Ind1_files.txt.summary",
+#      delim = "\t", escape_double = FALSE,
 #    trim_ws = TRUE)
-# Ind2_summary_RIP <- read_delim("~/ATAC_downloads/Ind2_files.txt.summary", 
-#      delim = "\t", escape_double = FALSE, 
+# Ind2_summary_RIP <- read_delim("~/ATAC_downloads/Ind2_files.txt.summary",
+#      delim = "\t", escape_double = FALSE,
 #      trim_ws = TRUE)
-# Ind3_summary_RIP <- read_delim("~/ATAC_downloads/Ind3_files.txt.summary", 
-#      delim = "\t", escape_double = FALSE, 
+# Ind3_summary_RIP <- read_delim("~/ATAC_downloads/Ind3_files.txt.summary",
+#      delim = "\t", escape_double = FALSE,
 #      trim_ws = TRUE)
-# Ind4_summary_RIP <- read_delim("~/ATAC_downloads/Ind4_files.txt.summary", 
-#                                delim = "\t", escape_double = FALSE, 
+# Ind4_summary_RIP <- read_delim("~/ATAC_downloads/Ind4_files.txt.summary",
+#                                delim = "\t", escape_double = FALSE,
 #      trim_ws = TRUE)
-# Ind5_summary_RIP <- read_delim("~/ATAC_downloads/Ind5_files.txt.summary", 
-#      delim = "\t", escape_double = FALSE, 
+# Ind5_summary_RIP <- read_delim("~/ATAC_downloads/Ind5_files.txt.summary",
+#      delim = "\t", escape_double = FALSE,
 #      trim_ws = TRUE)
-# Ind6_summary_RIP <- read_delim("~/ATAC_downloads/Ind6_files.txt.summary", 
-#      delim = "\t", escape_double = FALSE, 
+# Ind6_summary_RIP <- read_delim("~/ATAC_downloads/Ind6_files.txt.summary",
+#      delim = "\t", escape_double = FALSE,
 #      trim_ws = TRUE)
 # write.csv(Ind6_summary, "data/Ind6_summary.txt")
 # Ind6_Frip <-
@@ -181,8 +187,27 @@ Initial read summary is found [at this LINK](https://reneeisnowhere.github.io/AT
 #   geom_col(position="dodge",aes(fill=time))+
 #   facet_wrap(~trt)+
 #   theme(axis.text.x=element_text(angle=90))+
-#   ggtitle("Ind 1")
+# #   ggtitle("Ind 1")
+# #   
+# left_ventricle_Frip <-
+#   left_ventricle_frip %>% 
+#   dplyr::rename("sample"=X1,"lv_counts"= X2) %>% 
+# separate(sample, into=c(NA,NA,NA,NA,NA,NA,NA, NA,NA,NA,NA,"sample")) %>% 
+#   mutate(sample=gsub("75","1_",sample)) %>% 
+#   mutate(sample=gsub("87","2_",sample)) %>% 
+#   mutate(sample=gsub("77","3_",sample)) %>% 
+#   mutate(sample=gsub("79","4_",sample)) %>% 
+#   mutate(sample=gsub("78","5_",sample)) %>%
+#   mutate(sample=gsub("71","6_",sample)) %>% 
+#   mutate(sample = gsub("24h","_24h",sample), 
+#        sample = gsub("3h","_3h",sample)) %>%
+#   separate(sample, into = c("indv","trt","time"), sep= "_") %>% 
 #   
+# #   mutate(trt= case_match(trt, 'DX' ~'DOX', 'E'~'EPI', 'DA'~'DNR', 'M'~'MTX', 'T'~'TRZ', 'V'~'VEH',.default = trt))
+# write.csv(cardiac_muscle_Frip,"data/cardiac_muscle_FRIP.csv")
+# write.csv(cardiomyocyte_Frip,"data/cardiomyocyte_FRIP.csv")
+# write.csv(left_ventricle_Frip,"data/left_ventricle_FRIP.csv")
+
 ```
 
 ### Individual 1 fragment files:
@@ -247,7 +272,9 @@ Ind1_firstfrag_files %>%
 #### FRiP Individual 1
 
 ```{r Frip1}
-
+cardiac_muscle_Frip <- read.csv("data/cardiac_muscle_FRIP.csv", row.names = 1)
+cardiomyocyte_Frip <- read.csv("data/cardiomyocyte_FRIP.csv", row.names = 1)
+left_ventricle_Frip <- read.csv("data/left_ventricle_FRIP.csv", row.names = 1)
 # Ind1_summary  <- read.csv("data/Ind1_summary.txt", row.names = 1) %>% 
   # dplyr::rename("sample"=X1,"reads"=X2,"mapped"=X3)
 
@@ -259,7 +286,19 @@ Ind1_firstfrag_files %>%
 # write.csv(Frip_1_reads,"data/Frip_1_reads.csv")
 Frip_1_reads <- read.csv("data/Frip_1_reads.csv", row.names = 1)
 
-
+all_frip1 <- Frip_1_reads %>% 
+ mutate(sample=gsub("75","1_",sample)) %>% 
+   mutate(sample = gsub("24h","_24h",sample), 
+       sample = gsub("3h","_3h",sample)) %>%
+  separate(sample, into = c("indv","trt","time")) %>%
+  mutate(trt=factor(trt, levels=c("DX","E","DA","M","T","V"), labels = c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>%  
+  mutate(indv=as.numeric(indv)) %>% 
+  left_join(., (cardiac_muscle_Frip %>% mutate(trt=factor(trt, levels=c("DOX","EPI","DNR","MTX","TRZ","VEH"))))) %>% 
+ left_join(., (left_ventricle_Frip %>% mutate(trt=factor(trt, levels=c("DOX","EPI","DNR","MTX","TRZ","VEH"))))) %>% 
+    left_join(., (cardiomyocyte_Frip %>% mutate(trt=factor(trt, levels=c("DOX","EPI","DNR","MTX","TRZ","VEH"))))) %>% 
+  mutate(FRIP_cm=cm_counts/dedup_reads*100) %>% 
+mutate(FRIP_lv=lv_counts/dedup_reads*100) %>% 
+mutate(FRIP_fetal=c_muscle_counts/dedup_reads*100)
 
 # Ind1_reads_frip <- 
 # Ind1_summary %>%                          
@@ -396,13 +435,23 @@ Ind2_frag_files %>%
 # write.csv(Frip_2_reads,"data/Frip_2_reads.csv")
 Frip_2_reads <- read.csv("data/Frip_2_reads.csv", row.names = 1)
 
-
-
-
-
+all_frip2 <- Frip_2_reads %>% 
+  mutate(sample=gsub("87","2_",sample)) %>% 
+   mutate(sample = gsub("24h","_24h",sample), 
+       sample = gsub("3h","_3h",sample)) %>%
+  separate(sample, into = c("indv","trt","time")) %>% 
+  mutate(time=factor(time, levels = c("3h","24h"))) %>% 
+  mutate(trt=factor(trt, levels=c("DX","E","DA","M","T","V"), labels = c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>%  
+  mutate(indv=as.numeric(indv)) %>% 
+  left_join(., (cardiac_muscle_Frip %>% mutate(trt=factor(trt, levels=c("DOX","EPI","DNR","MTX","TRZ","VEH"))))) %>% 
+ left_join(., (left_ventricle_Frip %>% mutate(trt=factor(trt, levels=c("DOX","EPI","DNR","MTX","TRZ","VEH"))))) %>% 
+    left_join(., (cardiomyocyte_Frip %>% mutate(trt=factor(trt, levels=c("DOX","EPI","DNR","MTX","TRZ","VEH"))))) %>% 
+  mutate(FRIP_cm=cm_counts/dedup_reads*100) %>% 
+mutate(FRIP_lv=lv_counts/dedup_reads*100) %>% 
+mutate(FRIP_fetal=c_muscle_counts/dedup_reads*100)
 
 Frip_2_reads %>% 
-  mutate(sample=gsub("87","2_",sample)) %>% 
+ mutate(sample=gsub("87","2_",sample)) %>% 
    mutate(sample = gsub("24h","_24h",sample), 
        sample = gsub("3h","_3h",sample)) %>%
   separate(sample, into = c("indv","trt","time")) %>% 
@@ -416,7 +465,6 @@ Frip_2_reads %>%
   theme_classic()+
   ggtitle("FRiP Score across each sample for individual 2")+
    scale_fill_manual(values=drug_pal_fac)
-
 
 ```
 
@@ -484,6 +532,27 @@ Ind3_frag_files %>%
 #   mutate(FRiP_3= counts_in_peaks/dedup_reads*100)
 # write.csv(Frip_3_reads,"data/Frip_3_reads.csv")
 Frip_3_reads <- read.csv("data/Frip_3_reads.csv", row.names = 1)
+
+all_frip3 <- Frip_3_reads %>% 
+  mutate(sample=gsub("77","3_",sample)) %>% 
+   mutate(sample = gsub("24h","_24h",sample), 
+       sample = gsub("3h","_3h",sample)) %>%
+  separate(sample, into = c("indv","trt","time")) %>% 
+  mutate(time=factor(time, levels = c("3h","24h"))) %>% 
+ mutate(trt=factor(trt, levels=c("DX","E","DA","M","T","V"), labels = c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>%  
+  mutate(indv=as.numeric(indv)) %>% 
+  left_join(., (cardiac_muscle_Frip %>% mutate(trt=factor(trt, levels=c("DOX","EPI","DNR","MTX","TRZ","VEH"))))) %>% 
+ left_join(., (left_ventricle_Frip %>% mutate(trt=factor(trt, levels=c("DOX","EPI","DNR","MTX","TRZ","VEH"))))) %>% 
+    left_join(., (cardiomyocyte_Frip %>% mutate(trt=factor(trt, levels=c("DOX","EPI","DNR","MTX","TRZ","VEH"))))) %>% 
+  mutate(FRIP_cm=cm_counts/dedup_reads*100) %>% 
+mutate(FRIP_lv=lv_counts/dedup_reads*100) %>% 
+mutate(FRIP_fetal=c_muscle_counts/dedup_reads*100)
+
+
+
+
+
+
 Frip_3_reads %>% 
   mutate(sample=gsub("77","3_",sample)) %>% 
    mutate(sample = gsub("24h","_24h",sample), 
@@ -567,6 +636,21 @@ Ind4_frag_files %>%
 #   mutate(FRiP_4= counts_in_peaks/dedup_reads*100)
 # write.csv(Frip_4_reads,"data/Frip_4_reads.csv")
 Frip_4_reads <- read.csv("data/Frip_4_reads.csv", row.names = 1)
+
+all_frip4 <- Frip_4_reads %>% 
+  mutate(sample=gsub("79","4_",sample)) %>% 
+   mutate(sample = gsub("24h","_24h",sample), 
+       sample = gsub("3h","_3h",sample)) %>%
+  separate(sample, into = c("indv","trt","time")) %>% 
+  mutate(time=factor(time, levels = c("3h","24h"))) %>% 
+  mutate(trt=factor(trt, levels=c("DX","E","DA","M","T","V"), labels = c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>%   
+  mutate(indv=as.numeric(indv)) %>% 
+  left_join(., (cardiac_muscle_Frip %>% mutate(trt=factor(trt, levels=c("DOX","EPI","DNR","MTX","TRZ","VEH"))))) %>% 
+ left_join(., (left_ventricle_Frip %>% mutate(trt=factor(trt, levels=c("DOX","EPI","DNR","MTX","TRZ","VEH"))))) %>% 
+    left_join(., (cardiomyocyte_Frip %>% mutate(trt=factor(trt, levels=c("DOX","EPI","DNR","MTX","TRZ","VEH"))))) %>% 
+  mutate(FRIP_cm=cm_counts/dedup_reads*100) %>% 
+mutate(FRIP_lv=lv_counts/dedup_reads*100) %>% 
+mutate(FRIP_fetal=c_muscle_counts/dedup_reads*100)
 Frip_4_reads %>% 
   mutate(sample=gsub("79","4_",sample)) %>% 
    mutate(sample = gsub("24h","_24h",sample), 
@@ -650,6 +734,23 @@ Ind5_frag_files %>%
 #   mutate(FRiP_5= counts_in_peaks/dedup_reads*100)
 # write.csv(Frip_5_reads,"data/Frip_5_reads.csv")
 Frip_5_reads <- read.csv("data/Frip_5_reads.csv", row.names = 1)
+
+all_frip5 <- Frip_5_reads %>% 
+  mutate(sample=gsub("78","5_",sample)) %>% 
+   mutate(sample = gsub("24h","_24h",sample), 
+       sample = gsub("3h","_3h",sample)) %>%
+  separate(sample, into = c("indv","trt","time")) %>% 
+  mutate(time=factor(time, levels = c("3h","24h"))) %>% 
+ mutate(trt=factor(trt, levels=c("DX","E","DA","M","T","V"), labels = c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>%   
+  mutate(indv=as.numeric(indv)) %>% 
+  left_join(., (cardiac_muscle_Frip %>% mutate(trt=factor(trt, levels=c("DOX","EPI","DNR","MTX","TRZ","VEH"))))) %>% 
+ left_join(., (left_ventricle_Frip %>% mutate(trt=factor(trt, levels=c("DOX","EPI","DNR","MTX","TRZ","VEH"))))) %>% 
+    left_join(., (cardiomyocyte_Frip %>% mutate(trt=factor(trt, levels=c("DOX","EPI","DNR","MTX","TRZ","VEH"))))) %>% 
+  mutate(FRIP_cm=cm_counts/dedup_reads*100) %>% 
+mutate(FRIP_lv=lv_counts/dedup_reads*100) %>% 
+mutate(FRIP_fetal=c_muscle_counts/dedup_reads*100)
+ 
+ 
 Frip_5_reads %>% 
   mutate(sample=gsub("78","5_",sample)) %>% 
    mutate(sample = gsub("24h","_24h",sample), 
@@ -734,6 +835,22 @@ Ind6_frag_files %>%
 # write.csv(Frip_6_reads,"data/Frip_6_reads.csv")
 
 Frip_6_reads <- read.csv("data/Frip_6_reads.csv", row.names = 1)
+
+all_frip6 <- Frip_6_reads %>% 
+  mutate(sample=gsub("71","6_",sample)) %>% 
+   mutate(sample = gsub("24h","_24h",sample), 
+       sample = gsub("3h","_3h",sample)) %>%
+  separate(sample, into = c("indv","trt","time")) %>% 
+  mutate(time=factor(time, levels = c("3h","24h"))) %>% 
+  mutate(trt=factor(trt, levels=c("DX","E","DA","M","T","V"), labels = c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
+  mutate(indv=as.numeric(indv)) %>% 
+  left_join(., (cardiac_muscle_Frip %>% mutate(trt=factor(trt, levels=c("DOX","EPI","DNR","MTX","TRZ","VEH"))))) %>% 
+ left_join(., (left_ventricle_Frip %>% mutate(trt=factor(trt, levels=c("DOX","EPI","DNR","MTX","TRZ","VEH"))))) %>% 
+    left_join(., (cardiomyocyte_Frip %>% mutate(trt=factor(trt, levels=c("DOX","EPI","DNR","MTX","TRZ","VEH"))))) %>% 
+  mutate(FRIP_cm=cm_counts/dedup_reads*100) %>% 
+mutate(FRIP_lv=lv_counts/dedup_reads*100) %>% 
+mutate(FRIP_fetal=c_muscle_counts/dedup_reads*100)
+ 
 
 Frip_6_reads %>% 
   mutate(sample=gsub("71","6_",sample)) %>% 
@@ -854,9 +971,11 @@ Ind1_TSS_peaks_plot <- readRDS("data/Ind1_TSS_peaks.RDS")
 
 # Epi_list_tagMatrix = lapply(Ind1_peaks, getTagMatrix, windows = TSS)
 
-plotAvgProf(Ind1_TSS_peaks_plot[c(1,3,5,7,9,11)], xlim=c(-3000, 3000), ylab = "Count Frequency")+ ggtitle("3 hour Individual 1" )+ coord_cartesian(xlim = c(-100,500))
+plotAvgProf(Ind1_TSS_peaks_plot[c(1,3,5,7,9,11)], xlim=c(-3000, 3000), ylab = "Count Frequency")+ ggtitle("3 hour Individual 1" )
+# + coord_cartesian(xlim = c(-100,500))
 
-plotAvgProf(Ind1_TSS_peaks_plot[c(2,4,6,8,10,12)], xlim=c(-3000, 3000),ylab = "Count Frequency")+ ggtitle("24 hour Individual 1" )+ coord_cartesian(xlim = c(-100,500))
+plotAvgProf(Ind1_TSS_peaks_plot[c(2,4,6,8,10,12)], xlim=c(-3000, 3000),ylab = "Count Frequency")+ ggtitle("24 hour Individual 1" )
+# + coord_cartesian(xlim = c(-100,500))
 
 ```
 
@@ -1071,16 +1190,89 @@ plotAvgProf(Ind6_TSS_peaks_plot[c(2,4,6,8,10,12)], xlim=c(-3000, 3000),ylab = "C
 
 bamfile <- choose.files()
 bamfile.labels <- gsub(".bam", "", basename(bamfile))
+bamfile.sample.ID <- gsub(".bam", "", basename(bamfile))
 # estimateLibComplexity(readsDupFreq(bamfile))
 
 fragSize <- fragSizeDist(bamfile, bamfile.labels)
 
+pdf(paste0(bamfile.sample.ID, ".fragment.size.distribution.pdf"), width =10, height=8) 
+fragSize <- fragSizeDist(bamFiles=bamfile, bamFiles.labels=bamfile.sample.ID)
+dev.off()
 
-
-promoter <- getPromoters(TxDb=txdb, upstream=3000, downstream=3000)
+# promoter <- getPromoters(TxDb=txdb, upstream=3000, downstream=3000)
 ## tagMatrixList <- lapply(files, getTagMatrix, windows=promoter)
+tags <- c("AS", "NM", "MD")
+outPath <- paste0(bamfile.sample.ID, ".splited.bam")
+if (!dir.exists(outPath)){
+   dir.create(outPath)
+}
+human.genome <- SeqinfoForUCSCGenome("hg38")
+seqlev <- as.character(human.genome[,1])
+# which <- human.genome[seqnames(human.genome) %in% c("chr1", "chr2")]
+gal <- readBamFile(bamfile, tag=tags,  asMates=TRUE)
+
+gal1 <- shiftGAlignmentsList(gal)
+shiftedBamfile <- file.path(outPath, paste0(bamfile,".shifted.bam"))
+## Outputting the shifted BAM file
+export(gal1, shiftedBamfile)
+
+## Getting information of known transcripts from UCSC genome browser database
+txs <- transcripts(TxDb.Hsapiens.UCSC.hg38.knownGene)
 
 
+## Classifying reads into nucleosome-free, mono-, di- and tri-nucleosome bins based on their fragment sizes.
+genome <- Hsapiens
+objs <- splitGAlignmentsByCut(gal1, txs=txs, genome=genome)
+
+
+## outputting split BAM files
+null <- writeListOfGAlignments(objs, outPath)
+
+## Generating heatmaps and coverage curves for nucleosome-free, mono-, di- and tri-nucleosome occupied regions
+
+bamfiles <- file.path(outPath,
+                      c("NucleosomeFree.bam",
+                        "mononucleosome.bam",
+                        "dinucleosome.bam",
+                        "trinucleosome.bam"))
+
+
+## extracting TSSs coordinates
+TSS <- promoters(txs, upstream=0, downstream=1)
+TSS <- unique(TSS)
+
+## estimating the library size for normalization
+librarySize <- estLibSize(bamfiles)
+
+
+## calculating the signals around TSSs.
+NTILE <- 101
+dws <- ups <- 1010
+sigs <- enrichedFragments(bamfiles, TSS=TSS,
+                          librarySize=librarySize,
+                          seqlev=seqlev,
+                          TSS.filter=0.5,
+                          n.tile = NTILE,
+                          upstream = ups,
+                          downstream = dws)
+                          
+                          
+## log2-transforming signals
+names(sigs) <- gsub(".bam", "", basename(names(sigs)))
+sigs.log2 <- lapply(sigs, function(.ele) log2(.ele+1))
+
+## plotting heatmap showing signals  for nucleosome-free and oligonucleosome-bound regions around TSSs. (Figure 1 H and 1I)
+pdf(paste0(bamfile.sample.ID, ".heatmap and averaged coverage.pdf"))
+featureAlignedHeatmap(sigs.log2, reCenterPeaks(TSS, width=ups+dws),
+                      zeroAt=.5, n.tile=NTILE)
+
+out <- featureAlignedDistribution(sigs, 
+                                  reCenterPeaks(TSS, width=ups+dws),
+                                  zeroAt=.5, n.tile=NTILE, type="l", 
+                                  yalb="Averaged coverage", 
+                                  ylab="Averaged coverage")
+dev.off()
+y
 
 
 ```
