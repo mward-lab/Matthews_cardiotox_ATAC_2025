@@ -246,14 +246,14 @@ summary(PCA_info_filter)
 
 pca_var_plot(PCA_info_filter)
 
-pca_all <- calc_pca(t(filt_matrix_lcpm))
-pca_all_anno <- data.frame(annotation_mat, pca_all$x)
+pca_n45 <- calc_pca(t(filt_matrix_lcpm))
+pca_n45_anno <- data.frame(annotation_mat, pca_n45$x)
 
 
-head(pca_all_anno)[,1:12]
+head(pca_n45_anno)[,1:12]
 drug_pal <- c("#8B006D","#DF707E","#F1B72B", "#3386DD","#707031","#41B333")
 
-pca_all_anno %>%
+pca_n45_anno %>%
   ggplot(.,aes(x = PC1, y = PC2, col=trt, shape=time, group=indv))+
   geom_point(size= 5)+
   scale_color_manual(values=drug_pal)+
@@ -271,7 +271,7 @@ pca_all_anno %>%
 
 
 
-pca_all_anno %>%
+pca_n45_anno %>%
   ggplot(.,aes(x = PC3, y = PC4, col=trt, shape=time, group=indv))+
   geom_point(size= 5)+
   scale_color_manual(values=drug_pal)+
@@ -410,7 +410,7 @@ dim(my_hc_filtered_counts)
 group <- c( rep(c(1,2,3,4,5,6,7,8,9,10,11,12),6))
 group <- factor(group, levels =c("1","2","3","4","5","6","7","8","9","10","11","12"))
 short_names <- paste0(counts_corr_mat1$indv,"_",counts_corr_mat1$trt,"_",counts_corr_mat1$time)
-
+# saveRDS(my_hc_filtered_counts,"data/my_hc_filt_counts.RDS")
 dge <- DGEList.data.frame(counts = my_hc_filtered_counts, group = group, genes = row.names(my_hc_filtered_counts))
 
 ##renaming colnames
@@ -730,6 +730,67 @@ plot_grid(v9,v10,  rel_widths =c(.8,1))
 
 ```
 
+### PCA analysis of full set
+
+
+This is the PCA above redone on the filtered matrix of my_hc_filtered_counts.  The "low' expression
+
+
+```{r filtering step hcpeaks}
+
+my_hc_filtered_counts <- readRDS("data/my_hc_filt_counts.RDS")
+PCAmat_all <- my_hc_filtered_counts %>%
+  cpm(., log = TRUE) %>% 
+  as.matrix()
+
+annotation_mat_all  <-
+  data.frame(timeset=colnames(PCAmat_all )) %>% 
+  separate(timeset, into = c("indv","trt","time"), sep= "_") %>% 
+  mutate(trt= case_match(trt, 'DX' ~'DOX', 'E'~'EPI', 'DA'~'DNR', 'M'~'MTX', 'T'~'TRZ', 'V'~'VEH',.default = trt)) %>% 
+  mutate(indv = factor(indv, levels = c("1", "2", "3", "4", "5", "6"))) %>%
+  mutate(time = factor(time, levels = c("3h", "24h"), labels= c("3 hours","24 hours"))) %>% 
+  mutate(trt = factor(trt, levels = c("DOX","EPI", "DNR", "MTX", "TRZ", "VEH"))) 
+
+PCA_info_all  <- (prcomp(t(PCAmat_all ), scale. = TRUE)) 
+PCA_info_anno_all  <- PCA_info_all$x %>% cbind(.,annotation_mat_all )
+# autoplot(PCA_info)
+summary(PCA_info_all)
+# cpm(PCAmat, log=TRUE)
+# pca_plot(PCA_info_all , col_var='trt', shape_var = 'time')
+#         
+# pca_plot(PCA_info_all , col_var='trt', shape_var = 'indv')
+
+
+drug_pal <- c("#8B006D","#DF707E","#F1B72B", "#3386DD","#707031","#41B333")
+
+PCA_info_anno_all  %>%
+  ggplot(.,aes(x = PC1, y = PC2, col=trt, shape=time, group=indv))+
+  geom_point(size= 5)+
+  scale_color_manual(values=drug_pal)+
+   ggrepel::geom_text_repel(aes(label = indv))+
+  #scale_shape_manual(name = "Time",values= c("3h"=0,"24h"=1))+
+  ggtitle(expression("PCA of log"[2]*"(cpm)"))+
+  theme_bw()+
+  guides(col="none", size =4)+
+  labs(y = "PC 2 (13.81%)", x ="PC 1 (16.58%)")+
+  theme(plot.title=element_text(size= 14,hjust = 0.5),
+        axis.title = element_text(size = 12, color = "black"))
+
+
+PCA_info_anno_all  %>%
+  ggplot(.,aes(x = PC3, y = PC4, col=trt, shape=time, group=indv))+
+  geom_point(size= 5)+
+  scale_color_manual(values=drug_pal)+
+   ggrepel::geom_text_repel(aes(label = indv))+
+  #scale_shape_manual(name = "Time",values= c("3h"=0,"24h"=1))+
+  ggtitle(expression("PCA of log"[2]*"(peaks)"))+
+  theme_bw()+
+  guides(col="none", size =4)+
+  labs(y = "PC 4 (5.3%)", x ="PC 3 (6.65%)")+
+  theme(plot.title=element_text(size= 14,hjust = 0.5),
+        axis.title = element_text(size = 12, color = "black"))
+
+```
 
 ### Analysis without Indv 4 and 5
 #### Heatmap log2cpm
@@ -807,6 +868,8 @@ lcpm_n45 <- cpm(my_hc_counts_n45, log=TRUE)  ### for determining the basic cutof
 row_means_n45 <- rowMeans(lcpm_n45)
 my_hc_filtered_counts_n45 <- my_hc_counts_n45[row_means_n45 > 0,]
 dim(my_hc_filtered_counts_n45)
+
+# saveRDS(my_hc_filtered_counts_n45,"data/my_hc_filt_counts_n45.RDS")
 ##3 now have 151,800 high conf peaks
 group_n45 <- c( rep(c(1,2,3,4,5,6,7,8,9,10,11,12),4))
 group_n45 <- factor(group_n45, levels =c("1","2","3","4","5","6","7","8","9","10","11","12"))
@@ -988,7 +1051,7 @@ log_filt_hc_n45 %>%
 ```
 
 
-## 24 hour boxplots without 4 and 5
+### 24 hour boxplots without 4 and 5
 
 
 
@@ -1076,5 +1139,126 @@ log_filt_hc_n45 %>%
   facet_wrap(Peak~.)+
   ggtitle("top 3 DAR in 24 hour TRZ")+
   scale_fill_manual(values = drug_pal)
+
+```
+
+
+
+### Volcano plots of peaks
+
+```{r volcano plots n45}
+library(cowplot)
+efit2_n45 <- readRDS("data/filt_Peaks_efit2_n45.RDS")
+
+
+# plot_filenames <- c("V.DNR_3.top","V.DOX_3.top","V.EPI_3.top","V.MTX_3.top",
+#                     "V.TRZ_.top","V.DNR_24.top","V.DOX_24.top","V.EPI_24.top",
+#                     "V.MTX_24.top","V.TRZ_24.top")
+# plot_files <- c( V.DNR_3.top,V.DOX_3.top,V.EPI_3.top,V.MTX_3.top,
+#                     V.TRZ_3.top,V.DNR_24.top,V.DOX_24.top,V.EPI_24.top,
+#                     V.MTX_24.top,V.TRZ_24.top)
+
+volcanosig <- function(df, psig.lvl) {
+    df <- df %>% 
+    mutate(threshold = ifelse(adj.P.Val > psig.lvl, "A", ifelse(adj.P.Val <= psig.lvl & logFC<=0,"B","C")))
+      # ifelse(adj.P.Val <= psig.lvl & logFC >= 0,"B", "C")))
+    ##This is where I could add labels, but I have taken out
+    # df <- df %>% mutate(genelabels = "")
+    # df$genelabels[1:topg] <- df$rownames[1:topg]
+    
+  ggplot(df, aes(x=logFC, y=-log10(adj.P.Val))) + 
+    geom_point(aes(color=threshold))+
+    # geom_text_repel(aes(label = genelabels), segment.curvature = -1e-20,force = 1,size=2.5,
+    # arrow = arrow(length = unit(0.015, "npc")), max.overlaps = Inf) +
+    #geom_hline(yintercept = -log10(psig.lvl))+
+    xlab(expression("Log"[2]*" FC"))+
+    ylab(expression("-log"[10]*"adj. P Value"))+
+    scale_color_manual(values = c("black", "red","blue"))+
+    theme_cowplot()+
+    theme(legend.position = "none",
+              plot.title = element_text(size = rel(1.5), hjust = 0.5),
+              axis.title = element_text(size = rel(0.8))) 
+}
+#v1<- volcanosig(V.DA24.top, 0.01,0)
+v1n <- volcanosig(V.DNR_3.top_n45, 0.01)+ ggtitle("Daunorubicin 3 hour")+ylim(0,16)
+v2n <- volcanosig(V.DNR_24.top_n45, 0.01)+ ggtitle("Daunorubicin 24 hour")+ylab("")+ ylim(0,16)
+v3n <- volcanosig(V.DOX_3.top_n45, 0.01)+ ggtitle("Doxorubicin 3 hour")+ ylim(0,16)
+v4n <- volcanosig(V.DOX_24.top_n45, 0.01)+ ggtitle("Doxorubicin 24 hour")+ylab("")+ ylim(0,16)
+v5n <- volcanosig(V.EPI_3.top_n45, 0.01)+ ggtitle("Epirubicin 3 hour")+ ylim(0,16)
+v6n <- volcanosig(V.EPI_24.top_n45, 0.01)+ ggtitle("Epirubicin 24 hour")+ylab("")+ ylim(0,16)
+v7n <- volcanosig(V.MTX_3.top_n45, 0.01)+ ggtitle("Mitoxantrone 3 hour")+ ylim(0,16)
+v8n <- volcanosig(V.MTX_24.top_n45, 0.01)+ ggtitle("Mitoxantrone 24 hour")+ylab("")+ ylim(0,16)
+v9n <- volcanosig(V.TRZ_3.top_n45, 0.01)+ ggtitle("Trastuzumab 3 hour")+ ylim(0,16)
+v10n <- volcanosig(V.TRZ_24.top_n45, 0.01)+ ggtitle("Trastuzumab 24 hour")+ylab("")+ ylim(0,16)
+# volcanoplot(efit2,coef = 10,style = "p-value",
+#                           highlight = 8,
+#                           names = efit2$genes$SYMBOL,
+#                           hl.col = "red",xlab = "Log2 Fold Change",
+#                           ylab = NULL,pch = 16,cex = 0.35,
+#                           main = "Using Trastuzumab 24 hour data and volcanoplot function")
+plot_grid(v1n,v2n,  rel_widths =c(.8,1))
+plot_grid(v3n,v4n,  rel_widths =c(.8,1))
+plot_grid(v5n,v6n,  rel_widths =c(.8,1))
+plot_grid(v7n,v8n,  rel_widths =c(.8,1))
+plot_grid(v9n,v10n,  rel_widths =c(.8,1))
+# plot_grid(v1n)
+```
+
+### PCA analysis without 4 and 5
+
+
+```{r filtering step wo 4-5}
+
+my_hc_filtered_counts_n45 <- readRDS("data/my_hc_filt_counts_n45.RDS")
+PCAmat_n45 <- my_hc_filtered_counts_n45 %>%
+  cpm(., log = TRUE) %>% 
+  as.matrix()
+
+annotation_mat_n45  <-
+  data.frame(timeset=colnames(PCAmat_n45 )) %>% 
+  separate(timeset, into = c("indv","trt","time"), sep= "_") %>% 
+  mutate(trt= case_match(trt, 'DX' ~'DOX', 'E'~'EPI', 'DA'~'DNR', 'M'~'MTX', 'T'~'TRZ', 'V'~'VEH',.default = trt)) %>% 
+  mutate(indv = factor(indv, levels = c("1", "2", "3", "4", "5", "6"))) %>%
+  mutate(time = factor(time, levels = c("3h", "24h"), labels= c("3 hours","24 hours"))) %>% 
+  mutate(trt = factor(trt, levels = c("DOX","EPI", "DNR", "MTX", "TRZ", "VEH"))) 
+
+PCA_info_n45  <- (prcomp(t(PCAmat_n45 ), scale. = TRUE)) 
+PCA_info_anno_n45  <- PCA_info_n45$x %>% cbind(.,annotation_mat_n45 )
+# autoplot(PCA_info)
+summary(PCA_info_n45)
+# cpm(PCAmat, log=TRUE)
+# pca_plot(PCA_info_n45 , col_var='trt', shape_var = 'time')
+#         
+# pca_plot(PCA_info_n45 , col_var='trt', shape_var = 'indv')
+
+
+drug_pal <- c("#8B006D","#DF707E","#F1B72B", "#3386DD","#707031","#41B333")
+
+PCA_info_anno_n45  %>%
+  ggplot(.,aes(x = PC1, y = PC2, col=trt, shape=time, group=indv))+
+  geom_point(size= 5)+
+  scale_color_manual(values=drug_pal)+
+   ggrepel::geom_text_repel(aes(label = indv))+
+  #scale_shape_manual(name = "Time",values= c("3h"=0,"24h"=1))+
+  ggtitle(expression("PCA of log"[2]*"(cpm)"))+
+  theme_bw()+
+  guides(col="none", size =4)+
+  labs(y = "PC 2 (13.81%)", x ="PC 1 (22.46%)")+
+  theme(plot.title=element_text(size= 14,hjust = 0.5),
+        axis.title = element_text(size = 12, color = "black"))
+
+
+PCA_info_anno_n45  %>%
+  ggplot(.,aes(x = PC3, y = PC4, col=trt, shape=time, group=indv))+
+  geom_point(size= 5)+
+  scale_color_manual(values=drug_pal)+
+   ggrepel::geom_text_repel(aes(label = indv))+
+  #scale_shape_manual(name = "Time",values= c("3h"=0,"24h"=1))+
+  ggtitle(expression("PCA of log"[2]*"(peaks)"))+
+  theme_bw()+
+  guides(col="none", size =4)+
+  labs(y = "PC 4 (5.52%)", x ="PC 3 (8.2%)")+
+  theme(plot.title=element_text(size= 14,hjust = 0.5),
+        axis.title = element_text(size = 12, color = "black"))
 
 ```
