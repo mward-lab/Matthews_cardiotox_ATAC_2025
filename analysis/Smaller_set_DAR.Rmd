@@ -1,0 +1,259 @@
+---
+title: "Smaller_set_DAR"
+author: "ERM"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE,
+	warning = FALSE
+)
+```
+
+```{css, echo=FALSE}
+pre {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+pre[class] {
+  max-height: 200px;
+}
+```
+
+```{r  package loading}
+library(tidyverse)
+library(ggsignif)
+library(cowplot)
+library(ggpubr)
+library(scales)
+# library(sjmisc)
+library(kableExtra)
+# library(broom)
+# library(biomaRt)
+library(RColorBrewer)
+# library(gprofiler2)
+# library(qvalue)
+# library(ChIPseeker)
+# library("TxDb.Hsapiens.UCSC.hg38.knownGene")
+# library("org.Hs.eg.db")
+# library(ATACseqQC)
+# library(rtracklayer)
+library(gridExtra)
+library(edgeR)
+library(ggfortify)
+library(limma)
+```
+```{r functions to have}
+drug_pal <- c("#8B006D","#DF707E","#F1B72B", "#3386DD","#707031","#41B333")
+pca_plot <-
+  function(df,
+           col_var = NULL,
+           shape_var = NULL,
+           title = "") {
+    ggplot(df) + geom_point(aes_string(
+      x = "PC1",
+      y = "PC2",
+      color = col_var,
+      shape = shape_var
+    ),
+    size = 5) +
+      labs(title = title, x = "PC 1", y = "PC 2") +
+      scale_color_manual(values = c(
+        "#8B006D",
+        "#DF707E",
+        "#F1B72B",
+        "#3386DD",
+        "#707031",
+        "#41B333"
+      ))
+  }
+pca_var_plot <- function(pca) {
+  # x: class == prcomp
+  pca.var <- pca$sdev ^ 2
+  pca.prop <- pca.var / sum(pca.var)
+  var.plot <-
+    qplot(PC, prop, data = data.frame(PC = 1:length(pca.prop),
+                                      prop = pca.prop)) +
+    labs(title = 'Variance contributed by each PC',
+         x = 'PC', y = 'Proportion of variance')
+}
+
+calc_pca <- function(x) {
+  # Performs principal components analysis with prcomp
+  # x: a sample-by-gene numeric matrix
+  prcomp(x, scale. = TRUE, retx = TRUE)
+}
+
+get_regr_pval <- function(mod) {
+  # Returns the p-value for the Fstatistic of a linear model
+  # mod: class lm
+  stopifnot(class(mod) == "lm")
+  fstat <- summary(mod)$fstatistic
+  pval <- 1 - pf(fstat[1], fstat[2], fstat[3])
+  return(pval)
+}
+
+plot_versus_pc <- function(df, pc_num, fac) {
+  # df: data.frame
+  # pc_num: numeric, specific PC for plotting
+  # fac: column name of df for plotting against PC
+  pc_char <- paste0("PC", pc_num)
+  # Calculate F-statistic p-value for linear model
+  pval <- get_regr_pval(lm(df[, pc_char] ~ df[, fac]))
+  if (is.numeric(df[, f])) {
+    ggplot(df, aes_string(x = f, y = pc_char)) + geom_point() +
+      geom_smooth(method = "lm") + labs(title = sprintf("p-val: %.2f", pval))
+  } else {
+    ggplot(df, aes_string(x = f, y = pc_char)) + geom_boxplot() +
+      labs(title = sprintf("p-val: %.2f", pval))
+  }
+}
+x_axis_labels = function(labels, every_nth = 1, ...) {
+  axis(side = 1,
+       at = seq_along(labels),
+       labels = F)
+  text(
+    x = (seq_along(labels))[seq_len(every_nth) == 1],
+    y = par("usr")[3] - 0.075 * (par("usr")[4] - par("usr")[3]),
+    labels = labels[seq_len(every_nth) == 1],
+    xpd = TRUE,
+    ...
+  )
+}
+
+```
+
+This page is for DAR analysis using only individuals 1, 2, 3, and 6.
+
+```{r data loading}
+
+my_hc_filtered_counts_n45 <- readRDS("data/my_hc_filt_counts_n45.RDS")
+##3 now have 151,800 high conf peaks
+group_n45 <- c( rep(c(1,2,3,4,5,6,7,8,9,10,11,12),4))
+group_n45 <- factor(group_n45, levels =c("1","2","3","4","5","6","7","8","9","10","11","12"))
+
+##renaming colnames
+
+efit2_n45 <- readRDS("data/filt_Peaks_efit2_n45.RDS")
+##commented out to save time for future processing
+
+group_n45 <- c(rep(c("DNR_24","DNR_3","DOX_24","DOX_3","EPI_24","EPI_3","MTX_24","MTX_3","TRZ_24","TRZ_3","VEH_24", "VEH_3"),4))
+
+
+```
+
+
+
+
+### Evaluation of change in peaks
+
+```{r toptable eval_n45}
+
+V.DNR_3.top_n45= topTable(efit2_n45, coef=1, adjust.method="BH", number=Inf, sort.by="p")
+V.DOX_3.top_n45= topTable(efit2_n45, coef=2, adjust.method="BH", number=Inf, sort.by="p")
+V.EPI_3.top_n45= topTable(efit2_n45, coef=3, adjust.method="BH", number=Inf, sort.by="p")
+V.MTX_3.top_n45= topTable(efit2_n45, coef=4, adjust.method="BH", number=Inf, sort.by="p")
+V.TRZ_3.top_n45= topTable(efit2_n45, coef=5, adjust.method="BH", number=Inf, sort.by="p")
+V.DNR_24.top_n45= topTable(efit2_n45, coef=6, adjust.method="BH", number=Inf, sort.by="p")
+V.DOX_24.top_n45= topTable(efit2_n45, coef=7, adjust.method="BH", number=Inf, sort.by="p")
+V.EPI_24.top_n45= topTable(efit2_n45, coef=8, adjust.method="BH", number=Inf, sort.by="p")
+V.MTX_24.top_n45= topTable(efit2_n45, coef=9, adjust.method="BH", number=Inf, sort.by="p")
+V.TRZ_24.top_n45= topTable(efit2_n45, coef=10, adjust.method="BH", number=Inf, sort.by="p")
+
+toplist_full_n45  <- list(V.DNR_3.top_n45, V.DOX_3.top_n45,V.EPI_3.top_n45,V.MTX_3.top_n45,V.TRZ_3.top_n45,V.DNR_24.top_n45, V.DOX_24.top_n45,V.EPI_24.top_n45,V.MTX_24.top_n45,V.TRZ_24.top_n45)
+names(toplist_full_n45) <- c("DNR_3", "DOX_3","EPI_3","MTX_3","TRZ_3","DNR_24", "DOX_24","EPI_24","MTX_24","TRZ_24")
+# toplist_n45 <-map_df(toplist_full_n45, ~as.data.frame(.x), .id="trt_time")
+# 
+# toplist_n45 <- toplist_n45 %>%
+#   separate(trt_time, into= c("trt","time"), sep = "_") %>%
+#   mutate(trt=factor(trt, levels = c("DOX","EPI","DNR","MTX","TRZ"))) %>%
+#   mutate(time = factor(time, levels = c("3", "24"), labels = c("3 hours", "24 hours")))
+toplist_n45 <- readRDS("data/toplist_n45.RDS")
+
+```
+
+
+```{r prop by trt_45}
+
+toplist_n45 %>% 
+  group_by(time, trt) %>% 
+  mutate(sigcount = if_else(adj.P.Val < 0.05,'sig','notsig'))%>%
+  count(sigcount) %>% 
+  pivot_wider(id_cols = c(time,trt), names_from=sigcount, values_from=n) %>% 
+  mutate(prop = sig/(sig+notsig)*100) %>% 
+  mutate(prop=if_else(is.na(prop),0,prop)) %>% 
+  ggplot(., aes(x=trt, y= prop))+
+  geom_col(aes(fill=trt))+
+  geom_text(aes(label = sprintf("%.2f",prop)),
+            position=position_dodge(0.9),vjust=-.2 )+
+  scale_fill_manual(values =drug_pal)+
+  guides(fill=guide_legend(title = "Treatment"))+
+  facet_wrap(~time)+#labeller = (time = facettimelabel) )+
+  theme_bw()+
+  xlab("")+
+  ylab("Percentage DAR peaks")+
+  theme_bw()+
+  ggtitle("Percent DARs (adj. P value <0.05)")+
+  scale_y_continuous(expand=expansion(c(0.02,.2)))+
+  theme(plot.title = element_text(size = rel(1.5), hjust = 0.5),
+        axis.title = element_text(size = 15, color = "black"),
+        # axis.ticks = element_line(linewidth = 1.5),
+        # axis.line = element_line(linewidth = 1.5),
+        strip.background = element_rect(fill = "transparent"),
+        axis.text.x = element_text(size = 8, color = "white", angle = 0),
+        axis.text.y = element_text(size = 8, color = "black", angle = 0),
+        strip.text.x = element_text(size = 12, color = "black", face = "bold"))
+```
+
+```{r magresp_45}
+toplist_n45 %>% 
+  group_by(time, trt) %>% 
+  ggplot(., aes(x=trt, y=logFC))+
+  geom_boxplot(aes(fill=trt))+
+  ggpubr::fill_palette(palette =drug_pal)+
+  guides(fill=guide_legend(title = "Treatment"))+
+  # facet_wrap(sigcount~time)+
+  theme_bw()+
+  xlab("")+
+  ylab(expression("Log"[2]*" fold change"))+
+  theme_bw()+
+  facet_wrap(~time)+
+  theme(plot.title = element_text(size = rel(1.5), hjust = 0.5),
+        axis.title = element_text(size = 15, color = "black"),
+        # axis.ticks = element_line(linewidth = 1.5),
+        # axis.line = element_line(linewidth = 1.5),
+        strip.background = element_rect(fill = "transparent"),
+        axis.text.x = element_blank(),
+        strip.text.x = element_text(size = 12, color = "black", face = "bold"))
+```
+
+```{r histograms}
+
+
+toplist_n45 %>% 
+  group_by(time, trt) %>% 
+  dplyr::filter(trt != "TRZ") %>%
+  ggplot(., aes( x=(adj.P.Val)))+
+ geom_histogram(aes(y=..density..), colour="black", fill="white")+
+  geom_density(alpha=.2, fill="#FF6666")+
+  theme_bw()+
+  ggtitle("adj.P.Value density by time/trt")+
+  facet_wrap(time~trt)
+
+toplist_n45 %>% 
+  group_by(time, trt) %>% 
+  # dplyr::filter(trt == "DOX") %>% 
+  ggplot(., aes( x=(P.Value)))+
+  geom_histogram(aes(y=..density..), colour="black", fill="white")+
+  geom_density(alpha=.2, fill="#FF6666")+
+  theme_bw()+
+  ggtitle("P.Value density by time/trt")+
+  facet_wrap(time~trt)
+
+
+```
