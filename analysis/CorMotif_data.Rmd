@@ -61,7 +61,9 @@ library(ggpubr)
 ```{r echo=TRUE, file='code/corMotifcustom.R'}
 
 ```
+## Data import and set up
 
+The first time I ran this data, I used all of the high confidence peaks.   
 ```{r setting up data}
 high_conf_peak_counts <- read.csv("data/high_conf_peak_counts.csv", row.names = 1)
 
@@ -128,8 +130,89 @@ legend('bottomleft',fill=myColors, legend =rev(c("0", "0.1", "0.2", "0.3", "0.4"
 
 ```
 
+total number of peaks = `r length(high_conf_peak_counts[[1]])`.
+
 Study breakdown: 1 = DNR_3, 2 = DOX_3, 3 = EPI_3, 4 = MTX_3, 5 = TRZ_3  
                 6 = DNR_24, 7 = DOX_24, 8 = EPI_24, 9 = MTX_24, 10 = TRZ_24
+
+I realized  I may need to run the cormotif with JUST the highly expressed set of highconf (hc) peaks and
+therefore reran cormotif on the set with log2cpm rowmeans > 0.
+
+```{r hc high expressed motif}
+
+high_conf_peak_counts <- read.csv("data/high_conf_peak_counts.csv", row.names = 1)
+my_hc_counts <- high_conf_peak_counts %>% 
+  dplyr::select(Geneid,Ind1_75DA24h:Ind6_71V3h) %>% 
+  column_to_rownames("Geneid")
+
+lcpm <- cpm(my_hc_counts, log=TRUE)  ### for determining the basic cutoffs
+
+row_means <- rowMeans(lcpm)
+my_hc_filtered_counts <- my_hc_counts[row_means > 0,]
+
+
+
+groupmat_names_he <- data.frame(timeset = colnames(my_hc_filtered_counts))
+
+df_names_he <-groupmat_names_he %>% 
+  mutate(timeset=gsub("75","1_",timeset)) %>%
+  mutate(timeset=gsub("87","2_",timeset)) %>%
+  mutate(timeset=gsub("77","3_",timeset)) %>%
+  mutate(timeset=gsub("79","4_",timeset)) %>%
+  mutate(timeset=gsub("78","5_",timeset)) %>%
+  mutate(timeset=gsub("71","6_",timeset)) %>%
+  mutate(timeset = gsub("24h","_24h",timeset),
+       timeset = gsub("3h","_3h",timeset)) %>%
+  separate(timeset, into = c(NA,"indv","trt","time"), sep= "_") %>% 
+  mutate(trt= case_match(trt, 'DX' ~'DOX', 'E'~'EPI', 'DA'~'DNR', 'M'~'MTX', 'T'~'TRZ', 'V'~'VEH',.default = trt)) 
+  
+ 
+label <- paste0(indv,"_",trt,"_",time)
+group_fac <- group
+groupid <- as.numeric(group_fac)
+
+compid <- data.frame(c1= c(2,4,6,8,10,1,3,5,7,9), c2 = c( 12,12,12,12,12,11,11,11,11,11))
+
+y_TMM_cpm_he <- cpm(my_hc_filtered_counts, log = TRUE)
+ 
+
+rownames(y_TMM_cpm_he) <- rownames(my_hc_filtered_counts)
+colnames(y_TMM_cpm_he) <- label
+set.seed(31415)
+# cormotif_initial_he <- cormotiffit(exprs = y_TMM_cpm_he,
+                                # groupid = groupid,
+                                # compid = compid,
+                                # K=1:6, max.iter = 500, runtype="logCPM")
+# saveRDS(cormotif_initial_he,"data/cormotif_full_6_run_he.RDS")
+
+cormotif_initial_he<- readRDS("data/cormotif_full_6_run_he.RDS")
+gene_prob_tran_he <- cormotif_initial_he$bestmotif$p.post
+
+rownames(gene_prob_tran_he) <- rownames(y_TMM_cpm_he)
+motif_prob_he <- cormotif_initial_he$bestmotif$clustlike
+rownames(motif_prob_he) <- rownames(y_TMM_cpm_he)
+write.csv(motif_prob_he,"data/cormotif_probability_all_6_list_he.csv")
+
+Cormotif::plotIC(cormotif_initial_he)
+Cormotif::plotMotif(cormotif_initial_he)
+
+myColors <-  rev(c("#FFFFFF", "#E6E6E6" ,"#CCCCCC", "#B3B3B3", "#999999", "#808080", "#666666","#4C4C4C", "#333333", "#191919","#000000"))
+plot.new()
+legend('bottomleft',fill=myColors, legend =rev(c("0", "0.1", "0.2", "0.3", "0.4",  "0.5", "0.6", "0.7", "0.8","0.9", "1")), box.col="white",title = "Probability\nlegend", horiz=FALSE,title.cex=.8)
+
+
+
+
+
+
+
+
+
+```
+This filtering left me with `r length(my_hc_filtered_counts[[1]])` peaks.
+
+
+
 
 
 ```{r pulling out the groups}

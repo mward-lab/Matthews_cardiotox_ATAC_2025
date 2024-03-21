@@ -129,6 +129,69 @@ Study breakdown: 1 = DNR_3, 2 = DOX_3, 3 = EPI_3, 4 = MTX_3, 5 = TRZ_3
                 6 = DNR_24, 7 = DOX_24, 8 = EPI_24, 9 = MTX_24, 10 = TRZ_24
 
 
+```{r he peaks n45}
+
+high_conf_peak_counts <- read.csv("data/high_conf_peak_counts.csv", row.names = 1)
+
+
+high_conf_peak_counts_n45 <- high_conf_peak_counts %>% 
+  column_to_rownames("Geneid") %>% 
+  dplyr::select(Ind1_75DA24h:Ind3_77V3h,Ind6_71DA24h:Ind6_71V3h)
+
+lcpm_n45 <- cpm(high_conf_peak_counts_n45, log=TRUE)  ### for determining the basic cutoffs
+
+row_means_n45 <- rowMeans(lcpm_n45)
+my_hc_filtered_counts_he_n45 <- high_conf_peak_counts_n45[row_means_n45 > 0,]
+
+
+groupmat_names_n45 <- data.frame(timeset = colnames(my_hc_filtered_counts_he_n45))
+df_names_n45 <-groupmat_names_n45 %>% 
+  mutate(timeset=gsub("75","1_",timeset)) %>% 
+  mutate(timeset=gsub("87","2_",timeset)) %>% 
+  mutate(timeset=gsub("77","3_",timeset)) %>% 
+  mutate(timeset=gsub("79","4_",timeset)) %>% 
+  mutate(timeset=gsub("78","5_",timeset)) %>%
+  mutate(timeset=gsub("71","6_",timeset)) %>% 
+  mutate(timeset = gsub("24h","_24h",timeset), 
+       timeset = gsub("3h","_3h",timeset)) %>%
+  separate(timeset, into = c(NA,"indv","trt","time"), sep= "_") %>% 
+  mutate(trt= case_match(trt, 'DX' ~'DOX', 'E'~'EPI', 'DA'~'DNR', 'M'~'MTX', 'T'~'TRZ', 'V'~'VEH',.default = trt)) %>% 
+  dplyr::filter(indv %in% c(1,2,3,6))
+# group_fac <- group
+# groupid <- as.nCumeric(group_fac)
+indv_n45 <- df_names_n45$indv
+time_n45 <- df_names_n45$time
+# time <- factor(time, levels =c("3h","24"))
+trt_n45 <- df_names_n45$trt
+label_n45 <- paste0(indv_n45,"_",trt_n45,"_",time_n45)
+
+compid_n45 <- data.frame(c1= c(2,4,6,8,10,1,3,5,7,9), c2 = c( 12,12,12,12,12,11,11,11,11,11))
+
+y_TMM_cpm_n45_he <- cpm(my_hc_filtered_counts_he_n45, log = TRUE)
+
+# y_TMM_cpm_n45_he <- cpm(high_conf_peak_counts_he_n45, log = TRUE)
+rownames(y_TMM_cpm_n45_he) <- rownames(my_hc_filtered_counts_he_n45)
+colnames(y_TMM_cpm_n45_he) <- label_n45
+# y_TMM_cpm
+# set.seed(31415)
+# cormotif_initial_n45_he <- cormotiffit(exprs = y_TMM_cpm_n45_he, groupid = groupid_n45, compid = compid_n45, K=1:6, max.iter = 500, runtype = "logCPM")
+
+# saveRDS(cormotif_initial_n45_he,"data/cormotif_full_4_run_he.RDS")
+
+cormotif_initial_n45_he <- readRDS("data/cormotif_full_4_run_he.RDS")
+gene_prob_tran_n45_he <- cormotif_initial_n45_he$bestmotif$p.post
+rownames(gene_prob_tran_n45_he) <- rownames(my_hc_filtered_counts_he_n45)
+motif_prob_n45_he <- cormotif_initial_n45_he$bestmotif$clustlike
+rownames(motif_prob_n45_he) <- rownames(my_hc_filtered_counts_he_n45)
+# write.csv(motif_prob_n45_he,"data/cormotif_probability_45_list_he.csv")
+
+Cormotif::plotIC(cormotif_initial_n45_he)
+Cormotif::plotMotif(cormotif_initial_n45_he)
+
+
+```
+
+
 ```{r pulling out the groups}
 
 motif_prob_n45 <- read.csv("output/cormotif_probability_45_list.csv")
