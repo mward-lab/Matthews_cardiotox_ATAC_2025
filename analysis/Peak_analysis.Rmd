@@ -43,6 +43,7 @@ library(RColorBrewer)
 # library("org.Hs.eg.db")
 # library(ATACseqQC)
 # library(rtracklayer)
+library(gridExtra)
 library(edgeR)
 library(ggfortify)
 library(limma)
@@ -188,7 +189,7 @@ ComplexHeatmap::pheatmap(Frag_cor,
 
 
 ```
-This correlation is after log2 of the counts in peaks.   Because ind4 and ind5 have the lowest reads, the next correlation will filter out rowMeans >0.
+This correlation is after log2 of the counts in peaks.   The next correlation will filter out rowMeans >0.
 
 ```{r inital analysis}
 first_run_frag_counts <- read.csv("data/first_run_frag_counts.txt", row.names = 1) 
@@ -385,7 +386,7 @@ ComplexHeatmap::pheatmap(Frag_cor_filt,
 
 ```
 Changes in the heatmap are as follows:  
- Ind4 and Ind5 segregate out of the full correlation.  3 hour treatments AC and non-AC cluster out into the lower right.  Very shape AC signal seen in 3 hours  and 24 hours so far.
+ Ind4 and Ind5 segregate out of the full correlation.  3 hour treatments AC and non-AC cluster out into the lower right.  Very sharp AC signal seen in 3 hours  and 24 hours so far.
  
  
 Next I will try my initial Differential accessibility analysis.
@@ -427,7 +428,7 @@ indv <- counts_corr_mat1$indv
 time <- counts_corr_mat1$time
 # time <- factor(time, levels =c("3h","24"))
 trt <- counts_corr_mat1$trt
-# trt <- factor(trt, levels = c("DOX","EPI","DNR","MTX","TRZ","VEH"))
+# trt <- factor(trt, levels = c("VEH","DOX","EPI","DNR","MTX","TRZ",))
 
 ##commented out to save time for future processing
 
@@ -436,7 +437,7 @@ efit2 <- readRDS("data/filt_Peaks_efit2_bl.RDS")
 group_1 <- c(rep(c("DNR_24","DNR_3","DOX_24","DOX_3","EPI_24","EPI_3","MTX_24","MTX_3","TRZ_24","TRZ_3","VEH_24", "VEH_3"),6))
 
 
-mm <- model.matrix(~0 +group_1)
+mm <- model.matrix(~0 +group_1)  
 # colnames(mm) <- c("DNR_24", "DNtrt_n45# colnames(mm) <- c("DNR_24", "DNR_3", "DOX_24","DOX_3","EPI_24", "EPI_3","MTX_24", "MTX_3", "TRZ_24","TRZ_3","VEH_24", "VEH_3")
 
 # y <- voom(dge$counts, mm,plot =TRUE)
@@ -488,6 +489,16 @@ V.DOX_24.top= topTable(efit2, coef=7, adjust.method="BH", number=Inf, sort.by="p
 V.EPI_24.top= topTable(efit2, coef=8, adjust.method="BH", number=Inf, sort.by="p")
 V.MTX_24.top= topTable(efit2, coef=9, adjust.method="BH", number=Inf, sort.by="p")
 V.TRZ_24.top= topTable(efit2, coef=10, adjust.method="BH", number=Inf, sort.by="p")
+
+# toplist_full  <- list(V.DNR_3.top, V.DOX_3.top,V.EPI_3.top,V.MTX_3.top,V.TRZ_3.top,V.DNR_24.top, V.DOX_24.top,V.EPI_24.top,V.MTX_24.top,V.TRZ_24.top)
+# names(toplist_full) <- c("DNR_3", "DOX_3","EPI_3","MTX_3","TRZ_3","DNR_24", "DOX_24","EPI_24","MTX_24","TRZ_24")
+# toplist_6 <-map_df(toplist_full, ~as.data.frame(.x), .id="trt_time")
+# 
+# toplist_6 <- toplist_6 %>% 
+#   separate(trt_time, into= c("trt","time"), sep = "_") %>% 
+#   mutate(trt=factor(trt, levels = c("DOX","EPI","DNR","MTX","TRZ"))) %>% 
+#   mutate(time = factor(time, levels = c("3", "24"), labels = c("3 hours", "24 hours")))
+# saveRDS(toplist_6, "data/toplist_6.RDS")
 
 
 ```
@@ -791,6 +802,116 @@ PCA_info_anno_all  %>%
         axis.title = element_text(size = 12, color = "black"))
 
 ```
+### PCA of trt, time, indv for full set
+```{r PCAfull segments}
+
+facs <- c("indv", "trt", "time")
+names(facs) <- c("Individual", "Treatment", "Time")
+drug1 <- c("DOX","EPI", "DNR", "MTX", "TRZ", "VEH")##for changing shapes and colors
+time <- rep(c("24h", "3h"),36) %>% factor(., levels = c("3h","24h"))
+##gglistmaking
+for (f in facs) {
+  # PC1 v PC2
+  pca_plot(PCA_info_anno_all, col_var = f, shape_var = time,
+           title = names(facs)[which(facs == f)])
+  print(last_plot())
+  
+  # Plot f versus PC1 and PC2
+  f_v_pc1 <- arrangeGrob(plot_versus_pc(PCA_info_anno_all, 1, f))
+  f_v_pc2 <- arrangeGrob(plot_versus_pc(PCA_info_anno_all, 2, f))
+  grid.arrange(f_v_pc1, f_v_pc2, ncol = 2, top = names(facs)[which(facs == f)])
+  # summary(plot_versus_pc(PCA_info_anno_all, 1, f))
+  # summary(plot_versus_pc(PCA_info_anno_all, 2, f))
+ 
+}
+
+
+
+
+
+
+
+```
+### Magnitude of Response full set
+```{r Magresp full set}
+toplist_6 <- readRDS("data/toplist_6.RDS")
+
+toplist_6 %>% 
+  group_by(time, trt) %>% 
+  mutate(sigcount = if_else(adj.P.Val < 0.05,'sig','notsig'))%>%
+  count(sigcount) %>% 
+  pivot_wider(id_cols = c(time,trt), names_from=sigcount, values_from=n) %>% 
+  mutate(prop = sig/(sig+notsig)*100) %>% 
+  mutate(prop=if_else(is.na(prop),0,prop)) %>% 
+  ggplot(., aes(x=trt, y= prop))+
+  geom_col(aes(fill=trt))+
+  geom_text(aes(label = sprintf("%.2f",prop)),
+            position=position_dodge(0.9),vjust=-.2 )+
+  scale_fill_manual(values =drug_pal)+
+  guides(fill=guide_legend(title = "Treatment"))+
+  facet_wrap(~time)+#labeller = (time = facettimelabel) )+
+  theme_bw()+
+  xlab("")+
+  ylab("Percentage DAR peaks")+
+  theme_bw()+
+  ggtitle("Percent DARs (adj. P value <0.05)")+
+  scale_y_continuous(expand=expansion(c(0.02,.2)))+
+  theme(plot.title = element_text(size = rel(1.5), hjust = 0.5),
+        axis.title = element_text(size = 15, color = "black"),
+        # axis.ticks = element_line(linewidth = 1.5),
+        # axis.line = element_line(linewidth = 1.5),
+        strip.background = element_rect(fill = "transparent"),
+        axis.text.x = element_text(size = 8, color = "white", angle = 0),
+        axis.text.y = element_text(size = 8, color = "black", angle = 0),
+        strip.text.x = element_text(size = 12, color = "black", face = "bold"))
+
+toplist_6 %>% 
+  group_by(time, trt) %>% 
+  ggplot(., aes(x=trt, y=logFC))+
+  geom_boxplot(aes(fill=trt))+
+  ggpubr::fill_palette(palette =drug_pal)+
+  guides(fill=guide_legend(title = "Treatment"))+
+  # facet_wrap(sigcount~time)+
+  theme_bw()+
+  xlab("")+
+  ylab(expression("Log"[2]*" fold change"))+
+  theme_bw()+
+  facet_wrap(~time)+
+  theme(plot.title = element_text(size = rel(1.5), hjust = 0.5),
+        axis.title = element_text(size = 15, color = "black"),
+        # axis.ticks = element_line(linewidth = 1.5),
+        # axis.line = element_line(linewidth = 1.5),
+        strip.background = element_rect(fill = "transparent"),
+        axis.text.x = element_blank(),
+        strip.text.x = element_text(size = 12, color = "black", face = "bold"))
+
+toplist_6 %>% 
+  group_by(time, trt) %>% 
+  dplyr::filter(trt != "TRZ") %>%
+  ggplot(., aes( x=(adj.P.Val)))+
+  geom_histogram(aes(y=..density..), colour="black", fill="white")+
+  geom_density(alpha=.2, fill="#FF6666")+
+  theme_bw()+
+  ggtitle("adj.P.Value density by time/trt")+
+  facet_wrap(time~trt)
+
+toplist_6 %>% 
+  group_by(time, trt) %>% 
+  # dplyr::filter(trt == "DOX") %>% 
+  ggplot(., aes( x=(P.Value)))+
+  geom_histogram(aes(y=..density..), colour="black", fill="white")+
+  geom_density(alpha=.2, fill="#FF6666")+
+  theme_bw()+
+  ggtitle("P.Value density by time/trt")+
+  facet_wrap(time~trt)
+
+
+
+```
+
+
+
+
 
 ### Analysis without Indv 4 and 5
 #### Heatmap log2cpm
@@ -961,6 +1082,15 @@ V.EPI_24.top_n45= topTable(efit2_n45, coef=8, adjust.method="BH", number=Inf, so
 V.MTX_24.top_n45= topTable(efit2_n45, coef=9, adjust.method="BH", number=Inf, sort.by="p")
 V.TRZ_24.top_n45= topTable(efit2_n45, coef=10, adjust.method="BH", number=Inf, sort.by="p")
 
+# toplist_full_n45  <- list(V.DNR_3.top_n45, V.DOX_3.top_n45,V.EPI_3.top_n45,V.MTX_3.top_n45,V.TRZ_3.top_n45,V.DNR_24.top_n45, V.DOX_24.top_n45,V.EPI_24.top_n45,V.MTX_24.top_n45,V.TRZ_24.top_n45)
+# names(toplist_full_n45) <- c("DNR_3", "DOX_3","EPI_3","MTX_3","TRZ_3","DNR_24", "DOX_24","EPI_24","MTX_24","TRZ_24")
+# toplist_n45 <-map_df(toplist_full_n45, ~as.data.frame(.x), .id="trt_time")
+# 
+# toplist_n45 <- toplist_n45 %>%
+#   separate(trt_time, into= c("trt","time"), sep = "_") %>%
+#   mutate(trt=factor(trt, levels = c("DOX","EPI","DNR","MTX","TRZ"))) %>%
+#   mutate(time = factor(time, levels = c("3", "24"), labels = c("3 hours", "24 hours")))
+# saveRDS(toplist_n45, "data/toplist_n45.RDS")
 
 ```
 
@@ -1144,7 +1274,7 @@ log_filt_hc_n45 %>%
 
 
 
-### Volcano plots of peaks
+### Volcano plots of peaks (n45)
 
 ```{r volcano plots n45}
 library(cowplot)
@@ -1262,3 +1392,110 @@ PCA_info_anno_n45  %>%
         axis.title = element_text(size = 12, color = "black"))
 
 ```
+
+### PCA of trt, time, indv w/o 4 and 5
+
+
+```{r PCAtrt time indv n45}
+
+facs <- c("indv", "trt", "time")
+names(facs) <- c("Individual", "Treatment", "Time")
+drug1 <- c("DOX","EPI", "DNR", "MTX", "TRZ", "VEH")##for changing shapes and colors
+time <- rep(c("24h", "3h"),24) %>% factor(., levels = c("3h","24h"))
+##gglistmaking
+for (f in facs) {
+  # PC1 v PC2
+  pca_plot(PCA_info_anno_n45, col_var = f, shape_var = time,
+           title = names(facs)[which(facs == f)])
+  print(last_plot())
+  
+  # Plot f versus PC1 and PC2
+  f_v_pc1 <- arrangeGrob(plot_versus_pc(PCA_info_anno_n45, 1, f))
+  f_v_pc2 <- arrangeGrob(plot_versus_pc(PCA_info_anno_n45, 2, f))
+  grid.arrange(f_v_pc1, f_v_pc2, ncol = 2, top = names(facs)[which(facs == f)])
+  # summary(plot_versus_pc(PCA_info_anno_all, 1, f))
+  # summary(plot_versus_pc(PCA_info_anno_all, 2, f))
+ 
+}
+
+```
+
+### Magnitude of Response
+
+```{r magresp_45}
+toplist_n45 <- readRDS("data/toplist_n45.RDS")
+toplist_n45 %>% 
+  group_by(time, trt) %>% 
+  mutate(sigcount = if_else(adj.P.Val < 0.05,'sig','notsig'))%>%
+  count(sigcount) %>% 
+  pivot_wider(id_cols = c(time,trt), names_from=sigcount, values_from=n) %>% 
+  mutate(prop = sig/(sig+notsig)*100) %>% 
+  mutate(prop=if_else(is.na(prop),0,prop)) %>% 
+  ggplot(., aes(x=trt, y= prop))+
+  geom_col(aes(fill=trt))+
+  geom_text(aes(label = sprintf("%.2f",prop)),
+            position=position_dodge(0.9),vjust=-.2 )+
+  scale_fill_manual(values =drug_pal)+
+  guides(fill=guide_legend(title = "Treatment"))+
+  facet_wrap(~time)+#labeller = (time = facettimelabel) )+
+  theme_bw()+
+  xlab("")+
+  ylab("Percentage DAR peaks")+
+  theme_bw()+
+  ggtitle("Percent DARs (adj. P value <0.05)")+
+  scale_y_continuous(expand=expansion(c(0.02,.2)))+
+  theme(plot.title = element_text(size = rel(1.5), hjust = 0.5),
+        axis.title = element_text(size = 15, color = "black"),
+        # axis.ticks = element_line(linewidth = 1.5),
+        # axis.line = element_line(linewidth = 1.5),
+        strip.background = element_rect(fill = "transparent"),
+        axis.text.x = element_text(size = 8, color = "white", angle = 0),
+        axis.text.y = element_text(size = 8, color = "black", angle = 0),
+        strip.text.x = element_text(size = 12, color = "black", face = "bold"))
+
+toplist_n45 %>% 
+  group_by(time, trt) %>% 
+  ggplot(., aes(x=trt, y=logFC))+
+  geom_boxplot(aes(fill=trt))+
+  ggpubr::fill_palette(palette =drug_pal)+
+  guides(fill=guide_legend(title = "Treatment"))+
+  # facet_wrap(sigcount~time)+
+  theme_bw()+
+  xlab("")+
+  ylab(expression("Log"[2]*" fold change"))+
+  theme_bw()+
+  facet_wrap(~time)+
+  theme(plot.title = element_text(size = rel(1.5), hjust = 0.5),
+        axis.title = element_text(size = 15, color = "black"),
+        # axis.ticks = element_line(linewidth = 1.5),
+        # axis.line = element_line(linewidth = 1.5),
+        strip.background = element_rect(fill = "transparent"),
+        axis.text.x = element_blank(),
+        strip.text.x = element_text(size = 12, color = "black", face = "bold"))
+
+
+
+toplist_n45 %>% 
+  group_by(time, trt) %>% 
+  dplyr::filter(trt != "TRZ") %>%
+  ggplot(., aes( x=(adj.P.Val)))+
+ geom_histogram(aes(y=..density..), colour="black", fill="white")+
+  geom_density(alpha=.2, fill="#FF6666")+
+  theme_bw()+
+  ggtitle("adj.P.Value density by time/trt")+
+  facet_wrap(time~trt)
+
+toplist_n45 %>% 
+  group_by(time, trt) %>% 
+  # dplyr::filter(trt == "DOX") %>% 
+  ggplot(., aes( x=(P.Value)))+
+  geom_histogram(aes(y=..density..), colour="black", fill="white")+
+  geom_density(alpha=.2, fill="#FF6666")+
+  theme_bw()+
+  ggtitle("P.Value density by time/trt")+
+  facet_wrap(time~trt)
+
+
+```
+
+
