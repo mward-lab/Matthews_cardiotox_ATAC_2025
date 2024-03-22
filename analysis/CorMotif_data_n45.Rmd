@@ -38,11 +38,11 @@ library(kableExtra)
 library(RColorBrewer)
 # library(gprofiler2)
 # library(qvalue)
-# library(ChIPseeker)
-# library("TxDb.Hsapiens.UCSC.hg38.knownGene")
-# library("org.Hs.eg.db")
+library(ChIPseeker)
+library("TxDb.Hsapiens.UCSC.hg38.knownGene")
+library("org.Hs.eg.db")
 # library(ATACseqQC)
-# library(rtracklayer)
+library(rtracklayer)
 library(edgeR)
 library(ggfortify)
 library(limma)
@@ -56,6 +56,9 @@ library(scales)
 library(Cormotif)
 library(BiocParallel)
 library(ggpubr)
+library(devtools)
+# install_github('davetang/bedr')
+library(bedr)
 ```
 
 ```{r echo=TRUE, file='code/corMotifcustom.R'}
@@ -190,11 +193,11 @@ Cormotif::plotMotif(cormotif_initial_n45_he)
 
 
 ```
-
+Doing the analysis on the filtered set,  just like the full set.
 
 ```{r pulling out the groups}
 
-motif_prob_n45 <- read.csv("output/cormotif_probability_45_list.csv")
+motif_prob_n45 <- read.csv("data/cormotif_probability_45_list_he.csv")
 motif_prob_n45 <- motif_prob_n45 %>% 
   column_to_rownames('X')
 clust1_n45 <- motif_prob_n45 %>%
@@ -213,8 +216,139 @@ clust4_n45 <- motif_prob_n45 %>%
   as.data.frame() %>%
   filter(V4>0.5) %>% 
   rownames
+# backGL_n45_he <- row.names(motif_prob_n45)
+# saveRDS(backGL_n45_he,"data/background_n45_he_peaks.RDS")
+
+# unclassified_n45 <- setdiff(backGL_n45_he,union(clust1_n45,union(clust2_n45,union(clust4_n45,clust3_n45))))
+# 
+# motif_list_n45 <- list("NR_n45"=clust1_n45,"LR_n45"=clust2_n45,"EAR_n45"=clust3_n45,"ESR_n45"=clust4_n45,"unclassified_n45"=unclassified_n45, "backGL_n45_he"=backGL_n45_he)
+# saveRDS(motif_list_n45,"data/motif_list_n45.RDS")
+# saveRDS(unclassified_n45,"data/unclassified_n45_set_peaks.RDS")
+
+```
+
+
+
+Seems to be grouping like RNA-seq. I am using the same nomenclature.  I filter each column of the likelihood of belonging to the cluster by > 0.5-  This causes some number discrepancies in overall.
+- Clust1 has `r length(clust1_n45)` regions and is the ~No Response~ set.
+- Clust2 has `r length(clust2_n45)` regions and is the ~Late-Response~ set.
+- Clust3 has `r length(clust3_n45)` regions and is the ~Early-Acute Response~ set.
+- Clust4 has `r length(clust4_n45)` regions and is the ~Early-Sustained Response~ set.
+
+These contain `r length(clust1_n45)+length(clust2_n45)+length(clust3_n45) + length(clust4_n45)` total peaks out of `r length(my_hc_filtered_counts_he_n45[[1]])` for approximately `r (length(clust1_n45)+length(clust2_n45)+length(clust3_n45)+length(clust4_n45))/length(my_hc_filtered_counts_he_n45[[1]]) *100` percent of all peaks accounted for.
+
+
+
+
+```{r assessment of each cluster}
+
+txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
+
+# loadFile_peakCall <- function(){
+#  file <- choose.files()
+#  file <- readPeakFile(file, header = FALSE)
+#  return(file)
+# }
+# 
+# prepGRangeObj <- function(seek_object){
+#  seek_object$Peaks = seek_object$V4
+#  seek_object$level = seek_object$V5
+#  seek_object$V4 = seek_object$V5 = NULL
+#  return(seek_object)
+# }
+motif_list_n45 <- readRDS("data/motif_list_n45.RDS")
+list2env(motif_list_n45, envir= .GlobalEnv)
+
+TSS = getBioRegion(TxDb=txdb, upstream=2000, downstream=2000, by = "gene", 
+                   type = "start_site")
+##converting lists to dataframes as bed files
+# EAR %>%
+  # 
+  # data.frame("EAR_n45" = EAR_n45) %>%
+  #   mutate(name =EAR_n45) %>%
+  # separate(EAR_n45, into = c( "chr","start","end")) %>%
+  #   # mutate(strand=".") %>%
+  #   mutate(start=as.integer(start), end=as.integer(end)) %>%
+  #   dplyr::select(chr, start,end,name) %>%
+  #   na.omit() %>%
+  #   # unite(.,col="start-end",start, end,sep = "-") %>%
+  #   write.table(.,file = "data/EAR_n45.bed", row.names =FALSE,col.name=FALSE)
+  # 
+  # 
+  # data.frame("unclassified_n45" = unclassified_n45) %>%
+  #   mutate(name =unclassified_n45) %>%
+  # separate(unclassified_n45, into = c( "chr","start","end")) %>%
+  #   # mutate(strand=".") %>%
+  #   mutate(start=as.integer(start), end=as.integer(end)) %>%
+  #   dplyr::select(chr, start,end,name) %>%
+  #   na.omit() %>%
+  #   # unite(.,col="start-end",start, end,sep = "-") %>%
+  #   write.table(.,file = "data/unclassified_n45.bed", row.names =FALSE,col.name=FALSE)
+  # 
+  # 
+  # data.frame("background_n45" = backGL_n45_he) %>%
+  #   mutate(name =background_n45) %>%
+  # separate(background_n45, into = c( "chr","start","end")) %>%
+  #   # mutate(strand=".") %>%
+  #   mutate(start=as.integer(start), end=as.integer(end)) %>%
+  #   dplyr::select(chr, start,end,name) %>%
+  #   na.omit() %>%
+  #   # unite(.,col="start-end",start, end,sep = "-") %>%
+  #   write.table(.,file = "data/background_n45.bed", row.names =FALSE,col.name=FALSE)
+  # 
+  # # 
+  # data.frame("ESR_n45" = ESR_n45) %>%
+  #   mutate(name =ESR_n45) %>%
+  # separate(ESR_n45, into = c( "chr","start","end")) %>%
+  #   # mutate(strand=".") %>%
+  #   mutate(start=as.integer(start), end=as.integer(end)) %>%
+  #   dplyr::select(chr, start,end,name) %>%
+  #   na.omit() %>%
+  #   # unite(.,col="start-end",start, end,sep = "-") %>%
+  #   write.table(.,file = "data/ESR_n45.bed", row.names =FALSE,col.name=FALSE)
+  # 
+  # data.frame("LR_n45" = LR_n45) %>%
+  #   mutate(name =LR_n45) %>%
+  # separate(LR_n45, into = c( "chr","start","end")) %>%
+  #   # mutate(strand=".") %>%
+  #   mutate(start=as.integer(start), end=as.integer(end)) %>%
+  #   dplyr::select(chr, start,end,name) %>%
+  #   na.omit() %>%
+  #   # unite(.,col="start-end",start, end,sep = "-") %>%
+  #   write.table(.,file = "data/LR_n45.bed", row.names =FALSE,col.name=FALSE)
+  # 
+  # data.frame("NR_n45" = NR_n45) %>%
+  #   mutate(name =NR_n45) %>%
+  # separate(NR_n45, into = c( "chr","start","end")) %>%
+  #   # mutate(strand=".") %>%
+  #   mutate(start=as.integer(start), end=as.integer(end)) %>%
+  #   dplyr::select(chr, start,end,name) %>%
+  #   na.omit() %>%
+  #   # unite(.,col="start-end",start, end,sep = "-") %>%
+  #   write.table(.,file = "data/NR_n45.bed", row.names =FALSE,col.name=FALSE)
+
+# # 
+# EAR_n45_gr <- bed_to_granges("data/EAR_n45.bed")
+# ESR_n45_gr <- bed_to_granges("data/ESR_n45.bed")
+# LR_n45_gr <- bed_to_granges("data/LR_n45.bed")
+# NR_n45_gr <- bed_to_granges("data/NR_n45.bed")
+# unclassified_n45_gr <- bed_to_granges("data/unclassified_n45.bed")
+# background_n45_gr <- bed_to_granges("data/background_n45.bed")
+
+# mylist <- list(EAR_n45_gr,ESR_n45_gr,LR_n45_gr,NR_n45_gr,unclassified_gr,background_gr)
+# peakAnnoList<- lapply(mylist, annotatePeak, tssRegion =c(-2000,2000), TxDb= txdb)
+# names(peakAnnoList) <- c("EAR_n45_gr","ESR_n45_gr","LR_n45_gr","NR_n45_gr","unclassified_gr","background_gr")
+# saveRDS(peakAnnoList, "data/peakAnnoList_n45_motif.RDS")
+
+peakAnnoList_n45_motif <- readRDS("data/peakAnnoList_n45_motif.RDS")
+plotAnnoBar(peakAnnoList_n45_motif, main = "Genomic Feature Distribution, CorMotif")+ggtitle ("Genomic Feature Distribution, CorMotif n45")
+##Epi_list_tagMatrix title was just because I was too lazy to change the name
+# Epi_list_tagMatrix = lapply(Ind6_peaks, getTagMatrix, windows = TSS)
+# saveRDS(Epi_list_tagMatrix, "data/Ind6_TSS_peaks.RDS")
 
 
 ```
+
+
 
 

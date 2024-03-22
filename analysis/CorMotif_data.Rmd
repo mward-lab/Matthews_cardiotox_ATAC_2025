@@ -38,11 +38,11 @@ library(kableExtra)
 library(RColorBrewer)
 # library(gprofiler2)
 # library(qvalue)
-# library(ChIPseeker)
-# library("TxDb.Hsapiens.UCSC.hg38.knownGene")
-# library("org.Hs.eg.db")
+library(ChIPseeker)
+library("TxDb.Hsapiens.UCSC.hg38.knownGene")
+library("org.Hs.eg.db")
 # library(ATACseqQC)
-# library(rtracklayer)
+library(rtracklayer)
 library(edgeR)
 library(ggfortify)
 library(limma)
@@ -56,6 +56,9 @@ library(scales)
 library(Cormotif)
 library(BiocParallel)
 library(ggpubr)
+library(devtools)
+# install_github('davetang/bedr')
+library(bedr)
 ```
 
 ```{r echo=TRUE, file='code/corMotifcustom.R'}
@@ -64,7 +67,7 @@ library(ggpubr)
 ## Data import and set up
 
 The first time I ran this data, I used all of the high confidence peaks.   
-```{r setting up data}
+```{r setting up data, message=FALSE, warning=FALSE}
 high_conf_peak_counts <- read.csv("data/high_conf_peak_counts.csv", row.names = 1)
 
 
@@ -105,7 +108,7 @@ y_TMM_cpm <- cpm(high_conf_peak_counts, log = TRUE)
 rownames(y_TMM_cpm) <- rownames(high_conf_peak_counts)
 colnames(y_TMM_cpm) <- label
 # y_TMM_cpm
-set.seed(31415)
+# set.seed(31415)
 # cormotif_initial <- cormotiffit(exprs = y_TMM_cpm,
 #                                 groupid = groupid,
 #                                 compid = compid,
@@ -138,7 +141,7 @@ Study breakdown: 1 = DNR_3, 2 = DOX_3, 3 = EPI_3, 4 = MTX_3, 5 = TRZ_3
 I realized  I may need to run the cormotif with JUST the highly expressed set of highconf (hc) peaks and
 therefore reran cormotif on the set with log2cpm rowmeans > 0.
 
-```{r hc high expressed motif}
+```{r hc high expressed motif, message=FALSE, warning=FALSE}
 
 high_conf_peak_counts <- read.csv("data/high_conf_peak_counts.csv", row.names = 1)
 my_hc_counts <- high_conf_peak_counts %>% 
@@ -191,7 +194,7 @@ gene_prob_tran_he <- cormotif_initial_he$bestmotif$p.post
 rownames(gene_prob_tran_he) <- rownames(y_TMM_cpm_he)
 motif_prob_he <- cormotif_initial_he$bestmotif$clustlike
 rownames(motif_prob_he) <- rownames(y_TMM_cpm_he)
-write.csv(motif_prob_he,"data/cormotif_probability_all_6_list_he.csv")
+# write.csv(motif_prob_he,"data/cormotif_probability_all_6_list_he.csv")
 
 Cormotif::plotIC(cormotif_initial_he)
 Cormotif::plotMotif(cormotif_initial_he)
@@ -212,33 +215,160 @@ legend('bottomleft',fill=myColors, legend =rev(c("0", "0.1", "0.2", "0.3", "0.4"
 This filtering left me with `r length(my_hc_filtered_counts[[1]])` peaks.
 
 
-
+Doing the analysis on the filtered set
 
 
 ```{r pulling out the groups}
 
-motif_prob <- read.csv("data/cormotif_probability_all_6_list.csv")
-motif_prob <- motif_prob %>% 
-  column_to_rownames('X')
-clust1 <- motif_prob %>%
+motif_prob_he <- read.csv("data/cormotif_probability_all_6_list_he.csv", row.names = 1)
+
+clust1 <- motif_prob_he %>%
   as.data.frame() %>%
   filter(V1>0.5) %>% 
   rownames
-clust2 <- motif_prob %>%
+clust2 <- motif_prob_he %>%
   as.data.frame() %>%
   filter(V2>0.5) %>% 
   rownames
-clust3 <- motif_prob %>%
+clust3 <- motif_prob_he %>%
   as.data.frame() %>%
   filter(V3>0.5) %>% 
   rownames
-clust4 <- motif_prob %>%
+clust4 <- motif_prob_he %>%
   as.data.frame() %>%
   filter(V4>0.5) %>% 
   rownames
+backGL_full_he <- row.names(motif_prob_he)
+# saveRDS(backGL_full_he,"data/full_he_peak_names.RDS")
+
+unclassified_full <- setdiff(backGL_full_he,union(clust1,union(clust2,union(clust4,clust3))))
+
+motif_list_full <- list("NR"=clust1,"ESR"=clust2,"EAR"=clust3,"LR"=clust4)
+# saveRDS(motif_list_full,"data/motif_list_full")
+# saveRDS(unclassified_full,"data/unclassified_full_set_peaks.RDS")
+```
+
+
+Seems to be grouping like RNA-seq. I am using the same nomenclature.  I filter each column of the likelihood of belonging to the cluster by > 0.5-  This causes some number discrepancies in overall.
+- Clust1 has `r length(clust1)` regions and is the ~No Response~ set.
+- Clust2 has `r length(clust2)` regions and is the ~Early-Sustained Response~ set.
+- Clust3 has `r length(clust3)` regions and is the ~Early-Acute Response~ set.
+- Clust4 has `r length(clust4)` regions and is the ~Late-Response~ set.
+
+These contain `r length(clust1)+length(clust2)+length(clust3) + length(clust4)` total peaks out of `r length(my_hc_filtered_counts[[1]])` for approximately `r (length(clust1)+length(clust2)+length(clust3)+length(clust4))/length(my_hc_filtered_counts[[1]]) *100` percent of all peaks accounted for.
+
+
+```{r assessment of each cluster}
+
+txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
+
+# loadFile_peakCall <- function(){
+#  file <- choose.files()
+#  file <- readPeakFile(file, header = FALSE)
+#  return(file)
+# }
+# 
+# prepGRangeObj <- function(seek_object){
+#  seek_object$Peaks = seek_object$V4
+#  seek_object$level = seek_object$V5
+#  seek_object$V4 = seek_object$V5 = NULL
+#  return(seek_object)
+# }
+list2env(motif_list_full, envir= .GlobalEnv)
+
+TSS = getBioRegion(TxDb=txdb, upstream=2000, downstream=2000, by = "gene", 
+                   type = "start_site")
+##converting lists to dataframes as bed files
+# EAR %>%
+  
+  # data.frame("EAR" = EAR) %>%
+  #   mutate(name =EAR) %>%
+  # separate(EAR, into = c( "chr","start","end")) %>%
+  #   # mutate(strand=".") %>%
+  #   mutate(start=as.integer(start), end=as.integer(end)) %>%
+  #   dplyr::select(chr, start,end,name) %>%
+  #   na.omit() %>%
+  #   # unite(.,col="start-end",start, end,sep = "-") %>%
+  #   write.table(.,file = "data/EAR_full.bed", row.names =FALSE,col.name=FALSE)
+  # 
+  # 
+  # data.frame("unclassified_full" = unclassified_full) %>%
+  #   mutate(name =unclassified_full) %>%
+  # separate(unclassified_full, into = c( "chr","start","end")) %>%
+  #   # mutate(strand=".") %>%
+  #   mutate(start=as.integer(start), end=as.integer(end)) %>%
+  #   dplyr::select(chr, start,end,name) %>%
+  #   na.omit() %>%
+  #   # unite(.,col="start-end",start, end,sep = "-") %>%
+  #   write.table(.,file = "data/unclassified_full.bed", row.names =FALSE,col.name=FALSE)
+  
+  # 
+  # data.frame("background_he" = backGL_full_he) %>%
+  #   mutate(name =background_he) %>%
+  # separate(background_he, into = c( "chr","start","end")) %>%
+  #   # mutate(strand=".") %>%
+  #   mutate(start=as.integer(start), end=as.integer(end)) %>%
+  #   dplyr::select(chr, start,end,name) %>%
+  #   na.omit() %>%
+  #   # unite(.,col="start-end",start, end,sep = "-") %>%
+  #   write.table(.,file = "data/background_he.bed", row.names =FALSE,col.name=FALSE)
+  # # 
+  # 
+  # data.frame("ESR" = ESR) %>% 
+  #   mutate(name =ESR) %>% 
+  # separate(ESR, into = c( "chr","start","end")) %>%
+  #   # mutate(strand=".") %>% 
+  #   mutate(start=as.integer(start), end=as.integer(end)) %>%
+  #   dplyr::select(chr, start,end,name) %>% 
+  #   na.omit() %>% 
+  #   # unite(.,col="start-end",start, end,sep = "-") %>% 
+  #   write.table(.,file = "data/ESR_full.bed", row.names =FALSE,col.name=FALSE)
+  # 
+  # data.frame("LR" = LR) %>% 
+  #   mutate(name =LR) %>% 
+  # separate(LR, into = c( "chr","start","end")) %>%
+  #   # mutate(strand=".") %>% 
+  #   mutate(start=as.integer(start), end=as.integer(end)) %>%
+  #   dplyr::select(chr, start,end,name) %>% 
+  #   na.omit() %>% 
+  #   # unite(.,col="start-end",start, end,sep = "-") %>% 
+  #   write.table(.,file = "data/LR_full.bed", row.names =FALSE,col.name=FALSE)
+  # 
+  # data.frame("NR" = NR) %>% 
+  #   mutate(name =NR) %>% 
+  # separate(NR, into = c( "chr","start","end")) %>%
+  #   # mutate(strand=".") %>% 
+  #   mutate(start=as.integer(start), end=as.integer(end)) %>%
+  #   dplyr::select(chr, start,end,name) %>% 
+  #   na.omit() %>% 
+  #   # unite(.,col="start-end",start, end,sep = "-") %>% 
+  #   write.table(.,file = "data/NR_full.bed", row.names =FALSE,col.name=FALSE)
+
+# 
+# EAR_full_gr <- bed_to_granges("data/EAR_full.bed")
+# ESR_full_gr <- bed_to_granges("data/ESR_full.bed")
+# LR_full_gr <- bed_to_granges("data/LR_full.bed")
+# NR_full_gr <- bed_to_granges("data/NR_full.bed")
+# unclassified_gr <- bed_to_granges("data/unclassified_full.bed")
+# background_gr <- bed_to_granges("data/background_he.bed")
+# 
+# mylist <- list(EAR_full_gr,ESR_full_gr,LR_full_gr,NR_full_gr,unclassified_gr,background_gr)
+# peakAnnoList<- lapply(mylist, annotatePeak, tssRegion =c(-2000,2000), TxDb= txdb)
+# names(peakAnnoList) <- c("EAR_full_gr","ESR_full_gr","LR_full_gr","NR_full_gr","unclassified_gr","background_gr")
+# saveRDS(peakAnnoList, "data/peakAnnoList_full_motif.RDS")
+
+peakAnnoList_full_motif <- readRDS("data/peakAnnoList_full_motif.RDS")
+plotAnnoBar(peakAnnoList_full_motif, main = "Genomic Feature Distribution, CorMotif")+ggtitle ("Genomic Feature Distribution, CorMotif")
+##Epi_list_tagMatrix title was just because I was too lazy to change the name
+# Epi_list_tagMatrix = lapply(Ind6_peaks, getTagMatrix, windows = TSS)
+# saveRDS(Epi_list_tagMatrix, "data/Ind6_TSS_peaks.RDS")
 
 
 ```
+
+
+
+
 
 
 
