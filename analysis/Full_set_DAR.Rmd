@@ -37,18 +37,23 @@ library(kableExtra)
 library(RColorBrewer)
 # library(gprofiler2)
 # library(qvalue)
-# library(ChIPseeker)
-# library("TxDb.Hsapiens.UCSC.hg38.knownGene")
-# library("org.Hs.eg.db")
+library(ChIPseeker)
+library("TxDb.Hsapiens.UCSC.hg38.knownGene")
+library("org.Hs.eg.db")
 # library(ATACseqQC)
-# library(rtracklayer)
+library(rtracklayer)
 library(gridExtra)
 library(edgeR)
 library(ggfortify)
 library(limma)
+library(ggVennDiagram)
+library(devtools)
+# install_github('davetang/bedr')
+library(bedr)
 ```
 
 
+### Evaluation of change in peaks
 This page is for DAR analysis using all individuals 1, 2, 3, 4, 5, and 6.
 
 ```{r functions to have}
@@ -135,35 +140,41 @@ x_axis_labels = function(labels, every_nth = 1, ...) {
 ```{r data loading}
 high_conf_peak_counts <- read.csv("data/high_conf_peaks_bl_counts.txt", row.names = 1)
 my_hc_filtered_counts <-  readRDS("data/my_hc_filt_counts.RDS")
-
+log_filt_hc_full <- cpm(my_hc_filtered_counts, log = TRUE) %>% as.data.frame()
 efit2 <- readRDS("data/filt_Peaks_efit2_bl.RDS")
-
+# group_full <- c(rep(c("DNR_24","DNR_3","DOX_24","DOX_3","EPI_24","EPI_3","MTX_24","MTX_3","TRZ_24","TRZ_3","VEH_24", "VEH_3"),6))
 ```
 
 
 ```{r filtering to he}
 
-V.DNR_3.top= topTable(efit2, coef=1, adjust.method="BH", number=Inf, sort.by="p")
-V.DOX_3.top= topTable(efit2, coef=2, adjust.method="BH", number=Inf, sort.by="p")
-V.EPI_3.top= topTable(efit2, coef=3, adjust.method="BH", number=Inf, sort.by="p")
-V.MTX_3.top= topTable(efit2, coef=4, adjust.method="BH", number=Inf, sort.by="p")
-V.TRZ_3.top= topTable(efit2, coef=5, adjust.method="BH", number=Inf, sort.by="p")
-V.DNR_24.top= topTable(efit2, coef=6, adjust.method="BH", number=Inf, sort.by="p")
-V.DOX_24.top= topTable(efit2, coef=7, adjust.method="BH", number=Inf, sort.by="p")
-V.EPI_24.top= topTable(efit2, coef=8, adjust.method="BH", number=Inf, sort.by="p")
-V.MTX_24.top= topTable(efit2, coef=9, adjust.method="BH", number=Inf, sort.by="p")
-V.TRZ_24.top= topTable(efit2, coef=10, adjust.method="BH", number=Inf, sort.by="p")
+V.DNR_3.top= topTable(efit2, coef=1, adjust.method="BH", number=Inf, sort.by="p")%>% rownames_to_column("peak")
+V.DOX_3.top= topTable(efit2, coef=2, adjust.method="BH", number=Inf, sort.by="p")%>% rownames_to_column("peak")
+V.EPI_3.top= topTable(efit2, coef=3, adjust.method="BH", number=Inf, sort.by="p")%>% rownames_to_column("peak")
+V.MTX_3.top= topTable(efit2, coef=4, adjust.method="BH", number=Inf, sort.by="p")%>% rownames_to_column("peak")
+V.TRZ_3.top= topTable(efit2, coef=5, adjust.method="BH", number=Inf, sort.by="p")%>% rownames_to_column("peak")
+V.DNR_24.top= topTable(efit2, coef=6, adjust.method="BH", number=Inf, sort.by="p")%>% rownames_to_column("peak")
+V.DOX_24.top= topTable(efit2, coef=7, adjust.method="BH", number=Inf, sort.by="p")%>% rownames_to_column("peak")
+V.EPI_24.top= topTable(efit2, coef=8, adjust.method="BH", number=Inf, sort.by="p")%>% rownames_to_column("peak")
+V.MTX_24.top= topTable(efit2, coef=9, adjust.method="BH", number=Inf, sort.by="p")%>% rownames_to_column("peak")
+V.TRZ_24.top= topTable(efit2, coef=10, adjust.method="BH", number=Inf, sort.by="p")%>% rownames_to_column("peak")
 
-toplist_full  <- list(V.DNR_3.top, V.DOX_3.top,V.EPI_3.top,V.MTX_3.top,V.TRZ_3.top,V.DNR_24.top, V.DOX_24.top,V.EPI_24.top,V.MTX_24.top,V.TRZ_24.top)
+toplist_full <- list(V.DNR_3.top, V.DOX_3.top,V.EPI_3.top,V.MTX_3.top,V.TRZ_3.top,V.DNR_24.top, V.DOX_24.top,V.EPI_24.top,V.MTX_24.top,V.TRZ_24.top)
 names(toplist_full) <- c("DNR_3", "DOX_3","EPI_3","MTX_3","TRZ_3","DNR_24", "DOX_24","EPI_24","MTX_24","TRZ_24")
-
+# toplist_6 <-map_df(toplist_full, ~as.data.frame(.x), .id="trt_time")
+# # #
+# toplist_6 <- toplist_6 %>%
+#   separate(trt_time, into= c("trt","time"), sep = "_") %>%
+#   mutate(trt=factor(trt, levels = c("DOX","EPI","DNR","MTX","TRZ"))) %>%
+#   mutate(time = factor(time, levels = c("3", "24"), labels = c("3 hours", "24 hours")))
+# saveRDS(toplist_6,"data/toplist_6.RDS")
 toplist_6 <- readRDS("data/toplist_6.RDS")
-
+# saveRDS(toplist_full,"data/toplist_full_DAR_6.RDS")
 
 ```
 
 
-
+### DAR Breakdown
 ```{r prop by trt}
 
 toplist_6 %>% 
@@ -196,6 +207,8 @@ toplist_6 %>%
         strip.text.x = element_text(size = 12, color = "black", face = "bold"))
 ```
 
+
+### Magnitude of response
 ```{r respmag}
 toplist_6 %>% 
   group_by(time, trt) %>% 
@@ -219,17 +232,8 @@ toplist_6 %>%
 
 ```
 
-
+### Pvalue histogram
 ```{r pvalue histograms}
-toplist_6 %>% 
-  group_by(time, trt) %>% 
-  dplyr::filter(trt != "TRZ") %>%
-  ggplot(., aes( x=(adj.P.Val)))+
-  geom_histogram(aes(y=..density..), colour="black", fill="white")+
-  geom_density(alpha=.2, fill="#FF6666")+
-  theme_bw()+
-  ggtitle("adj.P.Value density by time/trt")+
-  facet_wrap(time~trt)
 
 toplist_6 %>% 
   group_by(time, trt) %>% 
@@ -243,4 +247,493 @@ toplist_6 %>%
 ```
 
 
+
+
+### Venn Diagrams
+```{r trttime Venn}
+
+toplist_full <- readRDS("data/toplist_full_DAR_6.RDS")
+siglist_full <- readRDS("data/siglist_full.RDS")
+# sigDNR_3_full = V.DNR_3.top[V.DNR_3.top$adj.P.Val < 0.05 , ] 
+# sigDOX_3_full = V.DOX_3.top[V.DOX_3.top$adj.P.Val < 0.05 , ]
+# sigEPI_3_full = V.EPI_3.top[V.EPI_3.top$adj.P.Val < 0.05 , ]
+# sigMTX_3_full = V.MTX_3.top[V.MTX_3.top$adj.P.Val < 0.05 , ]
+# sigTRZ_3_full = V.TRZ_3.top[V.TRZ_3.top$adj.P.Val < 0.05 , ]
+# sigDNR_24_full = V.DNR_24.top[V.DNR_24.top$adj.P.Val < 0.05 , ]
+# sigDOX_24_full = V.DOX_24.top[V.DOX_24.top$adj.P.Val < 0.05 , ] 
+# sigEPI_24_full = V.EPI_24.top[V.EPI_24.top$adj.P.Val < 0.05 , ]
+# sigMTX_24_full = V.MTX_24.top[V.MTX_24.top$adj.P.Val < 0.05 ,]
+# sigTRZ_24_full = V.TRZ_24.top[V.TRZ_24.top$adj.P.Val < 0.05 ,]
+
+# 
+# # 
+# siglist_full <- list(sigDNR_3_full, sigDOX_3_full, sigEPI_3_full, sigMTX_3_full, sigTRZ_3_full,
+#                     sigDNR_24_full,sigDOX_24_full ,sigEPI_24_full ,sigMTX_24_full ,sigTRZ_24_full )
+# names(siglist_full) <- c("DNR_3_full", "DOX_3_full","EPI_3_full","MTX_3_full","TRZ_3_full","DNR_24_full", "DOX_24_full","EPI_24_full","MTX_24_full","TRZ_24_full")
+# saveRDS(siglist_full, "data/siglist_full.RDS")
+siglist_full_peaks <- lapply(siglist_full, "[",1)
+three_hour_full <-siglist_full_peaks[1:4]
+
+ggVennDiagram(list(three_hour_full$DNR_3_full$peak,three_hour_full$DOX_3_full$peak,three_hour_full$EPI_3_full$peak,three_hour_full$MTX_3_full$peak), category.names = c("DNR","DOX","EPI","MTX"))
+
+ggVennDiagram(list(siglist_full_peaks$DNR_24_full$peak,siglist_full_peaks$DOX_24_full$peak,siglist_full_peaks$EPI_24_full$peak,siglist_full_peaks$MTX_24_full$peak), category.names = c("DNR","DOX","EPI","MTX"))
+
+
+
+
+```
+Examples of genes for each data set:
+#### DOX
+
+```{r DAR by trt DOX }
+
+toplist_6 %>% 
+  dplyr::filter(peak %in% siglist_full_peaks$DOX_3_full$peak) %>% 
+  ggplot(., aes(x=trt, y=logFC))+
+  geom_boxplot(aes(fill=trt))+
+  ggpubr::fill_palette(palette =drug_pal)+
+  guides(fill=guide_legend(title = "Treatment"))+
+  # facet_wrap(sigcount~time)+
+  theme_bw()+
+  xlab("")+
+  ggtitle("DOX specific log2Foldchange at 3 hours")+
+  ylab(expression("Log"[2]*" fold change"))+
+  theme_bw()+
+  facet_wrap(~time)+
+  theme(plot.title = element_text(size = rel(1.5), hjust = 0.5),
+        axis.title = element_text(size = 15, color = "black"),
+        # axis.ticks = element_line(linewidth = 1.5),
+        # axis.line = element_line(linewidth = 1.5),
+        strip.background = element_rect(fill = "transparent"),
+        axis.text.x = element_blank(),
+        strip.text.x = element_text(size = 12, color = "black", face = "bold"))
+
+
+toplist_6 %>% 
+  dplyr::filter(peak %in% siglist_full_peaks$DOX_24_full$peak) %>% 
+  ggplot(., aes(x=trt, y=logFC))+
+  geom_boxplot(aes(fill=trt))+
+  ggpubr::fill_palette(palette =drug_pal)+
+  guides(fill=guide_legend(title = "Treatment"))+
+  # facet_wrap(sigcount~time)+
+  theme_bw()+
+  xlab("")+
+  ggtitle("DOX specific log2Foldchange at 24 hours")+
+  ylab(expression("Log"[2]*" fold change"))+
+  theme_bw()+
+  facet_wrap(~time)+
+  theme(plot.title = element_text(size = rel(1.5), hjust = 0.5),
+        axis.title = element_text(size = 15, color = "black"),
+        # axis.ticks = element_line(linewidth = 1.5),
+        # axis.line = element_line(linewidth = 1.5),
+        strip.background = element_rect(fill = "transparent"),
+        axis.text.x = element_blank(),
+        strip.text.x = element_text(size = 12, color = "black", face = "bold"))
+
+
+```
+
+
+
+```{r DOXexpressionboxplot}
+###filter out names of top 3 peaks in DOX 3 and 24
+
+DOX_3_top3_full <-V.DOX_3.top[1:3,1]
+
+log_filt_hc_full %>%  
+  dplyr::filter(row.names(.) %in% DOX_3_top3_full) %>% 
+  mutate(Peak = row.names(.)) %>% 
+  pivot_longer(cols = !Peak, names_to = "sample", values_to = "counts") %>% 
+  separate("sample", into = c("indv","trt","time")) %>% 
+  mutate(time=factor(time, levels = c("3h","24h"))) %>% 
+  mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
+  ggplot(., aes (x = time, y=counts))+
+  geom_boxplot(aes(fill=trt))+
+  facet_wrap(Peak~.)+
+  ggtitle("top 3 DAR in 3 hour DOX")+
+  scale_fill_manual(values = drug_pal)
+
+
+DOX_24_top3_full <-V.DOX_24.top[1:3,1]
+
+log_filt_hc_full %>%  
+  dplyr::filter(row.names(.) %in% DOX_24_top3_full) %>% 
+  mutate(Peak = row.names(.)) %>% 
+  pivot_longer(cols = !Peak, names_to = "sample", values_to = "counts") %>% 
+  separate("sample", into = c("indv","trt","time")) %>% 
+  mutate(time=factor(time, levels = c("3h","24h"))) %>% 
+  mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
+  ggplot(., aes (x = time, y=counts))+
+  geom_boxplot(aes(fill=trt))+
+  facet_wrap(Peak~.)+
+  ggtitle("top 3 DAR in 24 hour DOX")+
+  scale_fill_manual(values = drug_pal)
+
+
+```
+
+
+
+#### EPI
+
+```{r DAR by trt EPI }
+
+toplist_6 %>% 
+  dplyr::filter(peak %in% siglist_full_peaks$EPI_3_full$peak) %>% 
+  ggplot(., aes(x=trt, y=logFC))+
+  geom_boxplot(aes(fill=trt))+
+  ggpubr::fill_palette(palette =drug_pal)+
+  guides(fill=guide_legend(title = "Treatment"))+
+  # facet_wrap(sigcount~time)+
+  theme_bw()+
+  xlab("")+
+  ggtitle("EPI specific log2Foldchange at 3 hours")+
+  ylab(expression("Log"[2]*" fold change"))+
+  theme_bw()+
+  facet_wrap(~time)+
+  theme(plot.title = element_text(size = rel(1.5), hjust = 0.5),
+        axis.title = element_text(size = 15, color = "black"),
+        # axis.ticks = element_line(linewidth = 1.5),
+        # axis.line = element_line(linewidth = 1.5),
+        strip.background = element_rect(fill = "transparent"),
+        axis.text.x = element_blank(),
+        strip.text.x = element_text(size = 12, color = "black", face = "bold"))
+
+
+toplist_6 %>% 
+  dplyr::filter(peak %in% siglist_full_peaks$EPI_24_full$peak) %>% 
+  ggplot(., aes(x=trt, y=logFC))+
+  geom_boxplot(aes(fill=trt))+
+  ggpubr::fill_palette(palette =drug_pal)+
+  guides(fill=guide_legend(title = "Treatment"))+
+  # facet_wrap(sigcount~time)+
+  theme_bw()+
+  xlab("")+
+  ggtitle("EPI specific log2Foldchange at 24 hours")+
+  ylab(expression("Log"[2]*" fold change"))+
+  theme_bw()+
+  facet_wrap(~time)+
+  theme(plot.title = element_text(size = rel(1.5), hjust = 0.5),
+        axis.title = element_text(size = 15, color = "black"),
+        # axis.ticks = element_line(linewidth = 1.5),
+        # axis.line = element_line(linewidth = 1.5),
+        strip.background = element_rect(fill = "transparent"),
+        axis.text.x = element_blank(),
+        strip.text.x = element_text(size = 12, color = "black", face = "bold"))
+
+
+```
+
+```{r EPIbox}
+
+EPI_3_top3_full <- V.EPI_3.top[1:3,1]
+
+log_filt_hc_full %>%  
+  dplyr::filter(row.names(.) %in% EPI_3_top3_full) %>% 
+  mutate(Peak = row.names(.)) %>% 
+  pivot_longer(cols = !Peak, names_to = "sample", values_to = "counts") %>% 
+  separate("sample", into = c("indv","trt","time")) %>% 
+  mutate(time=factor(time, levels = c("3h","24h"))) %>% 
+  mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
+  ggplot(., aes (x = time, y=counts))+
+  geom_boxplot(aes(fill=trt))+
+  facet_wrap(Peak~.)+
+  ggtitle("top 3 DAR in 3 hour EPI")+
+  scale_fill_manual(values = drug_pal)
+
+
+EPI_24_top3_full <-V.EPI_24.top[1:3,1]
+
+log_filt_hc_full %>%  
+  dplyr::filter(row.names(.) %in% EPI_24_top3_full) %>% 
+  mutate(Peak = row.names(.)) %>% 
+  pivot_longer(cols = !Peak, names_to = "sample", values_to = "counts") %>% 
+  separate("sample", into = c("indv","trt","time")) %>% 
+  mutate(time=factor(time, levels = c("3h","24h"))) %>% 
+  mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
+  ggplot(., aes (x = time, y=counts))+
+  geom_boxplot(aes(fill=trt))+
+  facet_wrap(Peak~.)+
+  ggtitle("top 3 DAR in 24 hour EPI")+
+  scale_fill_manual(values = drug_pal)
+
+
+```
+
+#### DNR
+
+```{r DAR by trt DNR }
+
+toplist_6 %>% 
+  dplyr::filter(peak %in% siglist_full_peaks$DNR_3_full$peak) %>% 
+  ggplot(., aes(x=trt, y=logFC))+
+  geom_boxplot(aes(fill=trt))+
+  ggpubr::fill_palette(palette =drug_pal)+
+  guides(fill=guide_legend(title = "Treatment"))+
+  # facet_wrap(sigcount~time)+
+  theme_bw()+
+  xlab("")+
+  ggtitle("DNR specific log2Foldchange at 3 hours")+
+  ylab(expression("Log"[2]*" fold change"))+
+  theme_bw()+
+  facet_wrap(~time)+
+  theme(plot.title = element_text(size = rel(1.5), hjust = 0.5),
+        axis.title = element_text(size = 15, color = "black"),
+        # axis.ticks = element_line(linewidth = 1.5),
+        # axis.line = element_line(linewidth = 1.5),
+        strip.background = element_rect(fill = "transparent"),
+        axis.text.x = element_blank(),
+        strip.text.x = element_text(size = 12, color = "black", face = "bold"))
+
+
+toplist_6 %>% 
+  dplyr::filter(peak %in% siglist_full_peaks$DNR_24_full$peak) %>% 
+  ggplot(., aes(x=trt, y=logFC))+
+  geom_boxplot(aes(fill=trt))+
+  ggpubr::fill_palette(palette =drug_pal)+
+  guides(fill=guide_legend(title = "Treatment"))+
+  # facet_wrap(sigcount~time)+
+  theme_bw()+
+  xlab("")+
+  ggtitle("DNR specific log2Foldchange at 24 hours")+
+  ylab(expression("Log"[2]*" fold change"))+
+  theme_bw()+
+  facet_wrap(~time)+
+  theme(plot.title = element_text(size = rel(1.5), hjust = 0.5),
+        axis.title = element_text(size = 15, color = "black"),
+        # axis.ticks = element_line(linewidth = 1.5),
+        # axis.line = element_line(linewidth = 1.5),
+        strip.background = element_rect(fill = "transparent"),
+        axis.text.x = element_blank(),
+        strip.text.x = element_text(size = 12, color = "black", face = "bold"))
+
+
+```
+
+
+```{r DNR expression}
+DNR_3_top3_full <- V.DNR_3.top[1:3,1]
+
+
+log_filt_hc_full %>% 
+  dplyr::filter(row.names(.) %in% DNR_3_top3_full) %>% 
+  mutate(Peak = row.names(.)) %>% 
+  pivot_longer(cols = !Peak, names_to = "sample", values_to = "counts") %>% 
+  separate("sample", into = c("indv","trt","time")) %>% 
+  mutate(time=factor(time, levels = c("3h","24h"))) %>% 
+  mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
+  ggplot(., aes (x = time, y=counts))+
+  geom_boxplot(aes(fill=trt))+
+  facet_wrap(Peak~.)+
+  ggtitle("top 3 DAR in 3 hour DNR")+
+  scale_fill_manual(values = drug_pal)
+
+
+DNR_24_top3_full <- V.DNR_24.top[1:3,1]
+
+
+log_filt_hc_full %>% 
+  dplyr::filter(row.names(.) %in% DNR_24_top3_full) %>% 
+  mutate(Peak = row.names(.)) %>% 
+  pivot_longer(cols = !Peak, names_to = "sample", values_to = "counts") %>% 
+  separate("sample", into = c("indv","trt","time")) %>% 
+  mutate(time=factor(time, levels = c("3h","24h"))) %>% 
+  mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
+  ggplot(., aes (x = time, y=counts))+
+  geom_boxplot(aes(fill=trt))+
+  facet_wrap(Peak~.)+
+  ggtitle("top 3 DAR in 24 hour DNR")+
+  scale_fill_manual(values = drug_pal)
+
+```
+
+
+#### MTX
+
+```{r DAR by trt MTX }
+
+toplist_6 %>% 
+  dplyr::filter(peak %in% siglist_full_peaks$MTX_3_full$peak) %>% 
+  ggplot(., aes(x=trt, y=logFC))+
+  geom_boxplot(aes(fill=trt))+
+  ggpubr::fill_palette(palette =drug_pal)+
+  guides(fill=guide_legend(title = "Treatment"))+
+  # facet_wrap(sigcount~time)+
+  theme_bw()+
+  xlab("")+
+  ggtitle("MTX specific log2Foldchange at 3 hours")+
+  ylab(expression("Log"[2]*" fold change"))+
+  theme_bw()+
+  facet_wrap(~time)+
+  theme(plot.title = element_text(size = rel(1.5), hjust = 0.5),
+        axis.title = element_text(size = 15, color = "black"),
+        # axis.ticks = element_line(linewidth = 1.5),
+        # axis.line = element_line(linewidth = 1.5),
+        strip.background = element_rect(fill = "transparent"),
+        axis.text.x = element_blank(),
+        strip.text.x = element_text(size = 12, color = "black", face = "bold"))
+
+
+toplist_6 %>% 
+  dplyr::filter(peak %in% siglist_full_peaks$MTX_24_full$peak) %>% 
+  ggplot(., aes(x=trt, y=logFC))+
+  geom_boxplot(aes(fill=trt))+
+  ggpubr::fill_palette(palette =drug_pal)+
+  guides(fill=guide_legend(title = "Treatment"))+
+  # facet_wrap(sigcount~time)+
+  theme_bw()+
+  xlab("")+
+  ggtitle("MTX specific log2Foldchange at 24 hours")+
+  ylab(expression("Log"[2]*" fold change"))+
+  theme_bw()+
+  facet_wrap(~time)+
+  theme(plot.title = element_text(size = rel(1.5), hjust = 0.5),
+        axis.title = element_text(size = 15, color = "black"),
+        # axis.ticks = element_line(linewidth = 1.5),
+        # axis.line = element_line(linewidth = 1.5),
+        strip.background = element_rect(fill = "transparent"),
+        axis.text.x = element_blank(),
+        strip.text.x = element_text(size = 12, color = "black", face = "bold"))
+
+
+```
+
+
+```{r MTXboxplot}
+
+MTX_3_top3_full <- V.MTX_3.top[1:3,1]
+
+log_filt_hc_full %>%  
+  dplyr::filter(row.names(.) %in% MTX_3_top3_full) %>% 
+  mutate(Peak = row.names(.)) %>% 
+  pivot_longer(cols = !Peak, names_to = "sample", values_to = "counts") %>% 
+  separate("sample", into = c("indv","trt","time")) %>% 
+  mutate(time=factor(time, levels = c("3h","24h"))) %>% 
+  mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
+  ggplot(., aes (x = time, y=counts))+
+  geom_boxplot(aes(fill=trt))+
+  facet_wrap(Peak~.)+
+  ggtitle("top 3 DAR in 3 hour MTX")+
+  scale_fill_manual(values = drug_pal)
+
+
+MTX_24_top3_full <- V.MTX_24.top[1:3,1]
+
+log_filt_hc_full %>%  
+  dplyr::filter(row.names(.) %in% MTX_24_top3_full) %>% 
+  mutate(Peak = row.names(.)) %>% 
+  pivot_longer(cols = !Peak, names_to = "sample", values_to = "counts") %>% 
+  separate("sample", into = c("indv","trt","time")) %>% 
+  mutate(time=factor(time, levels = c("3h","24h"))) %>% 
+  mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
+  ggplot(., aes (x = time, y=counts))+
+  geom_boxplot(aes(fill=trt))+
+  facet_wrap(Peak~.)+
+  ggtitle("top 3 DAR in 24 hour MTX")+
+  scale_fill_manual(values = drug_pal)
+
+
+```
+
+
+### Distal elements
+```{r examin distal elements, message=FALSE, warning=FALSE}
+# 
+# data.frame("DOX_3_full" = siglist_full_peaks$DOX_3_full$peak) %>%
+#     mutate(name =DOX_3_full) %>%
+#   separate(DOX_3_full, into = c( "chr","start","end")) %>%
+#       mutate(start=as.integer(start), end=as.integer(end)) %>%
+#     dplyr::select(chr, start,end,name) %>%
+#     na.omit() %>%
+#     write.table(.,file = "data/full_bedfiles/DOX_3_full.bed", row.names =FALSE,col.name=FALSE)
+# 
+# data.frame("EPI_3_full" = siglist_full_peaks$EPI_3_full$peak) %>%
+#     mutate(name =EPI_3_full) %>%
+#   separate(EPI_3_full, into = c( "chr","start","end")) %>%
+#       mutate(start=as.integer(start), end=as.integer(end)) %>%
+#     dplyr::select(chr, start,end,name) %>%
+#     na.omit() %>%
+#     write.table(.,file = "data/full_bedfiles/EPI_3_full.bed", row.names =FALSE,col.name=FALSE)
+# 
+# 
+# data.frame("DNR_3_full" = siglist_full_peaks$DNR_3_full$peak) %>%
+#     mutate(name = DNR_3_full) %>%
+#   separate(DNR_3_full, into = c( "chr","start","end")) %>%
+#       mutate(start=as.integer(start), end=as.integer(end)) %>%
+#     dplyr::select(chr, start,end,name) %>%
+#     na.omit() %>%
+#     write.table(.,file = "data/full_bedfiles/DNR_3_full.bed", row.names =FALSE,col.name=FALSE)
+# 
+# 
+# data.frame("MTX_3_full" = siglist_full_peaks$MTX_3_full$peak) %>%
+#     mutate(name =MTX_3_full) %>%
+#   separate(MTX_3_full, into = c( "chr","start","end")) %>%
+#       mutate(start=as.integer(start), end=as.integer(end)) %>%
+#     dplyr::select(chr, start,end,name) %>%
+#     na.omit() %>%
+#     write.table(.,file = "data/full_bedfiles/MTX_3_full.bed", row.names =FALSE,col.name=FALSE)
+# 
+# 
+# data.frame("DOX_24_full" = siglist_full_peaks$DOX_24_full$peak) %>%
+#     mutate(name =DOX_24_full) %>%
+#   separate(DOX_24_full, into = c( "chr","start","end")) %>%
+#       mutate(start=as.integer(start), end=as.integer(end)) %>%
+#     dplyr::select(chr, start,end,name) %>%
+#     na.omit() %>%
+#     write.table(.,file = "data/full_bedfiles/DOX_24_full.bed", row.names =FALSE,col.name=FALSE)
+# data.frame("EPI_24_full" = siglist_full_peaks$EPI_24_full$peak) %>%
+#     mutate(name =EPI_24_full) %>%
+#   separate(EPI_24_full, into = c( "chr","start","end")) %>%
+#       mutate(start=as.integer(start), end=as.integer(end)) %>%
+#     dplyr::select(chr, start,end,name) %>%
+#     na.omit() %>%
+#     write.table(.,file = "data/full_bedfiles/EPI_24_full.bed", row.names =FALSE,col.name=FALSE)
+# data.frame("DNR_24_full" = siglist_full_peaks$DNR_24_full$peak) %>%
+#     mutate(name =DNR_24_full) %>%
+#   separate(DNR_24_full, into = c( "chr","start","end")) %>%
+#       mutate(start=as.integer(start), end=as.integer(end)) %>%
+#     dplyr::select(chr, start,end,name) %>%
+#     na.omit() %>%
+#     write.table(.,file = "data/full_bedfiles/DNR_24_full.bed", row.names =FALSE,col.name=FALSE)
+# 
+# 
+# data.frame("MTX_24_full" = siglist_full_peaks$MTX_24_full$peak) %>%
+#     mutate(name =MTX_24_full) %>%
+#   separate(MTX_24_full, into = c( "chr","start","end")) %>%
+#       mutate(start=as.integer(start), end=as.integer(end)) %>%
+#     dplyr::select(chr, start,end,name) %>%
+#     na.omit() %>%
+#     write.table(.,file = "data/full_bedfiles/MTX_24_full.bed", row.names =FALSE,col.name=FALSE)
+# #
+# txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
+# TSS = getBioRegion(TxDb=txdb, upstream=2000, downstream=2000, by = "gene",
+#                    type = "start_site")
+# 
+# DOX_3_full_gr <- bed_to_granges("data/full_bedfiles/DOX_3_full.bed")
+# EPI_3_full_gr <- bed_to_granges("data/full_bedfiles/EPI_3_full.bed")
+# DNR_3_full_gr <- bed_to_granges("data/full_bedfiles/DNR_3_full.bed")
+# MTX_3_full_gr <- bed_to_granges("data/full_bedfiles/MTX_3_full.bed")
+# MTX_24_full_gr <- bed_to_granges("data/full_bedfiles/MTX_24_full.bed")
+# EPI_24_full_gr <- bed_to_granges("data/full_bedfiles/EPI_24_full.bed")
+# DNR_24_full_gr <- bed_to_granges("data/full_bedfiles/DNR_24_full.bed")
+# DOX_24_full_gr <- bed_to_granges("data/full_bedfiles/DOX_24_full.bed")
+
+
+# my_list_3_full<-list(DOX_3_full_gr,EPI_3_full_gr,DNR_3_full_gr,MTX_3_full_gr)
+# peakAnnoList_3_full<- lapply(my_list_3_full, annotatePeak, tssRegion =c(-2000,2000), TxDb= txdb)
+# names(peakAnnoList_3_full) <- c("DOX_3_full" ,"EPI_3_full", "DNR_3_full", "MTX_3_full")
+# saveRDS(peakAnnoList_3_full, "data/peakAnnoList_3_full.RDS")
+
+# my_list_24_full<-list(DOX_24_full_gr,EPI_24_full_gr,DNR_24_full_gr,MTX_24_full_gr)
+# peakAnnoList_24_full<- lapply(my_list_24_full, annotatePeak, tssRegion =c(-2000,2000), TxDb= txdb)
+# names(peakAnnoList_24_full) <- c("DOX_24_full" ,"EPI_24_full", "DNR_24_full", "MTX_24_full")
+# saveRDS(peakAnnoList_24_full, "data/peakAnnoList_24_full.RDS")
+peakAnnoList_3_full <- readRDS("data/peakAnnoList_3_full.RDS")
+peakAnnoList_24_full<- readRDS("data/peakAnnoList_24_full.RDS")
+
+plotAnnoBar(peakAnnoList_3_full) +ggtitle ("Genomic Feature Distribution, CorMotif 3 hours full")
+
+plotAnnoBar(peakAnnoList_24_full) +ggtitle ("Genomic Feature Distribution, CorMotif 24 hours full")
+
+```
 

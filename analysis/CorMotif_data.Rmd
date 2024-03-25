@@ -5,7 +5,6 @@ date: "`r Sys.Date()`"
 output: html_document
 ---
 
-
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(
 	echo = TRUE,
@@ -64,9 +63,11 @@ library(bedr)
 ```{r echo=TRUE, file='code/corMotifcustom.R'}
 
 ```
+
 ## Data import and set up
 
-The first time I ran this data, I used all of the high confidence peaks.   
+The first time I ran this data, I used all of the high confidence peaks.
+
 ```{r setting up data, message=FALSE, warning=FALSE}
 high_conf_peak_counts <- read.csv("data/high_conf_peak_counts.csv", row.names = 1)
 
@@ -135,11 +136,10 @@ legend('bottomleft',fill=myColors, legend =rev(c("0", "0.1", "0.2", "0.3", "0.4"
 
 total number of peaks = `r length(high_conf_peak_counts[[1]])`.
 
-Study breakdown: 1 = DNR_3, 2 = DOX_3, 3 = EPI_3, 4 = MTX_3, 5 = TRZ_3  
-                6 = DNR_24, 7 = DOX_24, 8 = EPI_24, 9 = MTX_24, 10 = TRZ_24
+Study breakdown: 1 = DNR_3, 2 = DOX_3, 3 = EPI_3, 4 = MTX_3, 5 = TRZ_3\
+6 = DNR_24, 7 = DOX_24, 8 = EPI_24, 9 = MTX_24, 10 = TRZ_24
 
-I realized  I may need to run the cormotif with JUST the highly expressed set of highconf (hc) peaks and
-therefore reran cormotif on the set with log2cpm rowmeans > 0.
+I realized I may need to run the cormotif with JUST the highly expressed set of highconf (hc) peaks and therefore reran cormotif on the set with log2cpm rowmeans \> 0.
 
 ```{r hc high expressed motif, message=FALSE, warning=FALSE}
 
@@ -212,11 +212,10 @@ legend('bottomleft',fill=myColors, legend =rev(c("0", "0.1", "0.2", "0.3", "0.4"
 
 
 ```
+
 This filtering left me with `r length(my_hc_filtered_counts[[1]])` peaks.
 
-
 Doing the analysis on the filtered set
-
 
 ```{r pulling out the groups}
 
@@ -248,15 +247,17 @@ motif_list_full <- list("NR"=clust1,"ESR"=clust2,"EAR"=clust3,"LR"=clust4)
 # saveRDS(unclassified_full,"data/unclassified_full_set_peaks.RDS")
 ```
 
+Seems to be grouping like RNA-seq. I am using the same nomenclature. I filter each column of the likelihood of belonging to the cluster by \> 0.5- This causes some number discrepancies in overall.
 
-Seems to be grouping like RNA-seq. I am using the same nomenclature.  I filter each column of the likelihood of belonging to the cluster by > 0.5-  This causes some number discrepancies in overall.
-- Clust1 has `r length(clust1)` regions and is the ~No Response~ set.
-- Clust2 has `r length(clust2)` regions and is the ~Early-Sustained Response~ set.
-- Clust3 has `r length(clust3)` regions and is the ~Early-Acute Response~ set.
-- Clust4 has `r length(clust4)` regions and is the ~Late-Response~ set.
+-    - Clust1 has `r length(clust1)` regions and is the **No Response** set.
+
+-    - Clust2 has `r length(clust2)` regions and is the **Early-Sustained Response** set.
+
+-   \- Clust3 has `r length(clust3)` regions and is the **Early-Acute Response** set.
+
+-    - Clust4 has `r length(clust4)` regions and is the **Late-Response** set.
 
 These contain `r length(clust1)+length(clust2)+length(clust3) + length(clust4)` total peaks out of `r length(my_hc_filtered_counts[[1]])` for approximately `r (length(clust1)+length(clust2)+length(clust3)+length(clust4))/length(my_hc_filtered_counts[[1]]) *100` percent of all peaks accounted for.
-
 
 ```{r assessment of each cluster}
 
@@ -345,12 +346,12 @@ TSS = getBioRegion(TxDb=txdb, upstream=2000, downstream=2000, by = "gene",
   #   write.table(.,file = "data/NR_full.bed", row.names =FALSE,col.name=FALSE)
 
 # 
-# EAR_full_gr <- bed_to_granges("data/EAR_full.bed")
-# ESR_full_gr <- bed_to_granges("data/ESR_full.bed")
-# LR_full_gr <- bed_to_granges("data/LR_full.bed")
-# NR_full_gr <- bed_to_granges("data/NR_full.bed")
-# unclassified_gr <- bed_to_granges("data/unclassified_full.bed")
-# background_gr <- bed_to_granges("data/background_he.bed")
+# EAR_full_gr <- bed_to_granges("data/n45_bedfiles/EAR_full.bed")
+# ESR_full_gr <- bed_to_granges("data/n45_bedfiles/ESR_full.bed")
+# LR_full_gr <- bed_to_granges("data/n45_bedfiles/LR_full.bed")
+# NR_full_gr <- bed_to_granges("data/n45_bedfiles/NR_full.bed")
+# unclassified_gr <- bed_to_granges("data/n45_bedfiles/unclassified_full.bed")
+# background_gr <- bed_to_granges("data/n45_bedfiles/background_he.bed")
 # 
 # mylist <- list(EAR_full_gr,ESR_full_gr,LR_full_gr,NR_full_gr,unclassified_gr,background_gr)
 # peakAnnoList<- lapply(mylist, annotatePeak, tssRegion =c(-2000,2000), TxDb= txdb)
@@ -367,8 +368,182 @@ plotAnnoBar(peakAnnoList_full_motif, main = "Genomic Feature Distribution, CorMo
 ```
 
 
+```{r fullset cormotif lfc EAR}
+
+my_hc_filtered_counts <-  readRDS("data/my_hc_filt_counts.RDS")
+log_filt_hc_full <- cpm(my_hc_filtered_counts, log = TRUE) %>% as.data.frame()
+drug_pal <- c("#8B006D","#DF707E","#F1B72B", "#3386DD","#707031","#41B333")
+
+log_filt_hc_full %>% 
+ #  rownames_to_column("peak") %>% 
+ #  dplyr::filter(peak %in% motif_list_full$EAR) 
+ # log_filt_hc %>% 
+  dplyr::filter(row.names(.) %in% motif_list_full$EAR[c(1,2,3)]) %>% 
+  mutate(Peak = row.names(.)) %>% 
+  pivot_longer(cols = !Peak, names_to = "sample", values_to = "counts") %>% 
+  separate("sample", into = c("indv","trt","time")) %>% 
+  mutate(time=factor(time, levels = c("3h","24h"))) %>% 
+  mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
+  ggplot(., aes (x = time, y=counts))+
+  geom_boxplot(aes(fill=trt))+
+  facet_wrap(Peak~.)+
+  ggtitle("log2cpm in EAR peaks")+
+  scale_fill_manual(values = drug_pal)
+
+
+```
+
+
+```{r mlfc EAR}
+toplist_6 <- readRDS("data/toplist_6.RDS")
+
+
+toplist_6 %>% 
+ #  rownames_to_column("peak") %>% 
+ #  dplyr::filter(peak %in% motif_list_full$EAR) 
+ # log_filt_hc %>% 
+  dplyr::filter(peak %in% motif_list_full$EAR) %>% 
+   mutate(logFC= abs(logFC)) %>% 
+  ggplot(., aes (x = time, y=logFC))+
+  geom_boxplot(aes(fill=trt))+
+  # facet_wrap(Peak~.)+
+  ggtitle("logFC in EAR peaks")+
+  scale_fill_manual(values = drug_pal)+
+  theme_bw()
+
+
+```
 
 
 
+```{r ESR boxplot, eval =FALSE}
+
+log_filt_hc_full %>% 
+ #  rownames_to_column("peak") %>% 
+ #  dplyr::filter(peak %in% motif_list_full$EAR) 
+ # log_filt_hc %>% 
+  dplyr::filter(row.names(.) %in% motif_list_full$ESR[c(1,2,3)]) %>% 
+  mutate(Peak = row.names(.)) %>% 
+  pivot_longer(cols = !Peak, names_to = "sample", values_to = "counts") %>% 
+  separate("sample", into = c("indv","trt","time")) %>% 
+  mutate(time=factor(time, levels = c("3h","24h"))) %>% 
+  mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
+  ggplot(., aes (x = time, y=counts))+
+  geom_boxplot(aes(fill=trt))+
+  facet_wrap(Peak~.)+
+  ggtitle("log2cpm in ESR peaks")+
+  scale_fill_manual(values = drug_pal)
+
+
+```
+
+
+
+```{r mlfc ESR}
+
+
+
+toplist_6 %>% 
+ #  rownames_to_column("peak") %>% 
+ #  dplyr::filter(peak %in% motif_list_full$EAR) 
+ # log_filt_hc %>% 
+  dplyr::filter(peak %in% motif_list_full$ESR) %>% 
+   mutate(logFC= abs(logFC)) %>% 
+  ggplot(., aes (x = time, y=logFC))+
+  geom_boxplot(aes(fill=trt))+
+  # facet_wrap(Peak~.)+
+  ggtitle("logFC in ESR peaks")+
+  scale_fill_manual(values = drug_pal)+
+  theme_bw()
+
+
+```
+
+
+```{r LR boxplot, eval = FALSE}
+
+log_filt_hc_full %>% 
+ #  rownames_to_column("peak") %>% 
+ #  dplyr::filter(peak %in% motif_list_full$EAR) 
+ # log_filt_hc %>% 
+  dplyr::filter(row.names(.) %in% motif_list_full$LR[c(1,2,3)]) %>% 
+  mutate(Peak = row.names(.)) %>% 
+  pivot_longer(cols = !Peak, names_to = "sample", values_to = "counts") %>% 
+  separate("sample", into = c("indv","trt","time")) %>% 
+  mutate(time=factor(time, levels = c("3h","24h"))) %>% 
+  mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
+  ggplot(., aes (x = time, y=counts))+
+  geom_boxplot(aes(fill=trt))+
+  facet_wrap(Peak~.)+
+  ggtitle("log2cpm in LR peaks")+
+  scale_fill_manual(values = drug_pal)
+
+
+```
+
+
+```{r mlfc LR}
+
+toplist_6 %>% 
+ #  rownames_to_column("peak") %>% 
+ #  dplyr::filter(peak %in% motif_list_full$EAR) 
+ # log_filt_hc %>% 
+  dplyr::filter(peak %in% motif_list_full$LR) %>% 
+   mutate(logFC= abs(logFC)) %>% 
+  ggplot(., aes (x = time, y=logFC))+
+  geom_boxplot(aes(fill=trt))+
+  # facet_wrap(Peak~.)+
+  ggtitle("logFC in LR peaks")+
+  scale_fill_manual(values = drug_pal)+
+  theme_bw()
+
+
+```
+
+
+
+```{r NR boxplot, eval=FALSE}
+
+log_filt_hc_full %>% 
+ #  rownames_to_column("peak") %>% 
+ #  dplyr::filter(peak %in% motif_list_full$EAR) 
+ # log_filt_hc %>% 
+  dplyr::filter(row.names(.) %in% motif_list_full$NR[c(1,2,3)]) %>% 
+  mutate(Peak = row.names(.)) %>% 
+  pivot_longer(cols = !Peak, names_to = "sample", values_to = "counts") %>% 
+  separate("sample", into = c("indv","trt","time")) %>% 
+  mutate(time=factor(time, levels = c("3h","24h"))) %>% 
+  mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
+  ggplot(., aes (x = time, y=counts))+
+  geom_boxplot(aes(fill=trt))+
+  facet_wrap(Peak~.)+
+  ggtitle("log2cpm in NR peaks")+
+  scale_fill_manual(values = drug_pal)
+
+
+```
+
+
+
+```{r mlfc NR}
+
+
+
+toplist_6 %>% 
+ #  rownames_to_column("peak") %>% 
+ #  dplyr::filter(peak %in% motif_list_full$EAR) 
+ # log_filt_hc %>% 
+  dplyr::filter(peak %in% motif_list_full$NR) %>% 
+  mutate(logFC= abs(logFC)) %>% 
+  
+  ggplot(., aes (x = time, y=logFC))+
+  geom_boxplot(aes(fill=trt))+
+  # facet_wrap(Peak~.)+
+  ggtitle("logFC in NR peaks")+
+  scale_fill_manual(values = drug_pal)+
+  theme_bw()
+
+
+```
 
 
