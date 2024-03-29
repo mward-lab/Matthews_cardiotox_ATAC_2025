@@ -49,9 +49,11 @@ library(ggfortify)
 library(limma)
 library(ggVennDiagram)
 library(devtools)
-# install_github('davetang/bedr')
+install_github('davetang/bedr')
 library(bedr)
 ```
+
+
 ```{r functions to have}
 drug_pal <- c("#8B006D","#DF707E","#F1B72B", "#3386DD","#707031","#41B333")
 pca_plot <-
@@ -203,9 +205,9 @@ toplist_n45 %>%
   facet_wrap(~time)+#labeller = (time = facettimelabel) )+
   theme_bw()+
   xlab("")+
-  ylab("Percentage DAR peaks")+
+  ylab("Percentage DAR ")+
   theme_bw()+
-  ggtitle("Percent DARs (adj. P value <0.05)")+
+  ggtitle("Percent DARs (adj. P value <0.05) out of 151,800 regions")+
   scale_y_continuous(expand=expansion(c(0.02,.2)))+
   theme(plot.title = element_text(size = rel(1.5), hjust = 0.5),
         axis.title = element_text(size = 15, color = "black"),
@@ -291,9 +293,16 @@ siglist_n45 <- readRDS("data/siglist_n45.RDS")
 siglist_n45_peaks <- lapply(siglist_n45, "[",1)
 three_hour_n45 <-siglist_n45_peaks[1:4]
 
-ggVennDiagram(list(three_hour_n45$DNR_3_n45$peak,three_hour_n45$DOX_3_n45$peak,three_hour_n45$EPI_3_n45$peak,three_hour_n45$MTX_3_n45$peak), category.names = c("DNR","DOX","EPI","MTX"))
+ggVennDiagram(list(three_hour_n45$DNR_3_n45$peak,three_hour_n45$DOX_3_n45$peak,three_hour_n45$EPI_3_n45$peak,three_hour_n45$MTX_3_n45$peak), 
+              category.names = c("DNR","DOX","EPI","MTX"), 
+              label = "count")+
+  labs(title = "Three hour DAR by treatment")+
+  theme(plot.title = element_text(size = rel(1.5), hjust = 0.5))
 
-ggVennDiagram(list(siglist_n45_peaks$DNR_24_n45$peak,siglist_n45_peaks$DOX_24_n45$peak,siglist_n45_peaks$EPI_24_n45$peak,siglist_n45_peaks$MTX_24_n45$peak), category.names = c("DNR","DOX","EPI","MTX"))
+ggVennDiagram(list(siglist_n45_peaks$DNR_24_n45$peak,siglist_n45_peaks$DOX_24_n45$peak,siglist_n45_peaks$EPI_24_n45$peak,siglist_n45_peaks$MTX_24_n45$peak),
+              category.names = c("DNR","DOX","EPI","MTX"), label = "count")+
+  labs(title = "24 hour DAR by treatment")+
+  theme(plot.title = element_text(size = rel(1.5), hjust = 0.5))
 
 
 
@@ -750,9 +759,9 @@ log_filt_hc_n45 %>%
 peakAnnoList_3_n45 <- readRDS("data/peakAnnoList_3_n45.RDS")
 peakAnnoList_24_n45<- readRDS("data/peakAnnoList_24_n45.RDS")
 
-plotAnnoBar(peakAnnoList_3_n45) +ggtitle ("Genomic Feature Distribution, CorMotif 3 hours n45")
+plotAnnoBar(peakAnnoList_3_n45) +ggtitle ("Genomic Feature Distribution, DAR 3 hours n45")
 
-plotAnnoBar(peakAnnoList_24_n45) +ggtitle ("Genomic Feature Distribution, CorMotif 24 hours n45")
+plotAnnoBar(peakAnnoList_24_n45) +ggtitle ("Genomic Feature Distribution, DAR 24 hours n45")
 
 ```
 

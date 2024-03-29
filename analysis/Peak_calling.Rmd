@@ -1258,7 +1258,7 @@ Ind2_TSS_peaks_plot <- readRDS("data/Ind2_TSS_peaks.RDS")
 plotAvgProf(Ind2_TSS_peaks_plot[c(1,3,5,7,9,11)], xlim=c(-3000, 3000), conf = 0.01, ylab = "Count Frequency")+ ggtitle("3 hour Individual 2" )
 # + coord_cartesian(xlim = c(-100,1000))
 
-plotAvgProf(Ind2_TSS_peaks_plot[c(2,4,6,8,10,12)], xlim=c(-3000, 3000),ylab = "Count Frequency")+ ggtitle("24 hour Individual 2" )+ coord_cartesian(xlim = c(-100,500))
+plotAvgProf(Ind2_TSS_peaks_plot[c(2,4,6,8,10,12)], xlim=c(-3000, 3000),ylab = "Count Frequency")+ ggtitle("24 hour Individual 2" )#+ coord_cartesian(xlim = c(-100,500))
 
 ```
 
@@ -1555,6 +1555,37 @@ tsse$TSSEscore
 tsse
 summary(tsse$values)
 ```
+
+## TSSE
+
+```{r TSSE score}
+
+allTSSE <- readRDS( "data/all_TSSE_scores.RDS")
+allTSSE %>% as.data.frame() %>% 
+  rownames_to_column("sample") %>% 
+  separate(sample, into = c("indv","trt","time"), sep= "_") %>%
+  mutate(trt= factor(trt, levels = c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
+  mutate(time = factor(time, levels = c("3","24"),labels = c("3 hours","24 hours"))) %>% 
+  ggplot(., aes(x= time, y= V1, group = indv))+
+
+   # geom_col(position= "dodge",aes(fill=trt)) %>%
+  geom_jitter(aes(col = trt, size = 1.5, alpha = 0.5) ,  position=position_jitter(0.25))+
+  geom_hline(yintercept=5, linetype = 3)+
+    geom_hline(yintercept=7)+
+  facet_wrap(~indv)+
+   theme_bw()+
+  ggtitle("TSS enrichment scores")+
+   scale_color_manual(values=drug_pal_fac)
+
+
+
+
+
+
+
+```
+
+
 
 ## Heatmap of log2 cpm in peaks using MergedPeakfile
 
