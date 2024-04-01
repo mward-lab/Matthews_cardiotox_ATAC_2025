@@ -29,10 +29,10 @@ library(tidyverse)
 # library(ggsignif)
 # library(cowplot)
 # library(ggpubr)
-# library(scales)
+
 # library(sjmisc)
 library(kableExtra)
-# library(broom)
+library(broom)
 # library(biomaRt)
 library(RColorBrewer)
 # library(gprofiler2)
@@ -63,9 +63,62 @@ library(bedr)
 ```{r echo=TRUE, file='code/corMotifcustom.R'}
 
 ```
+##### functions
+```{r functions}
+
+bed_to_granges <- function(file){
+   df <- read.table(file,
+                    header=F,
+                    stringsAsFactors=F)
+ 
+   if(length(df) > 6){
+      df <- df[,-c(7:length(df))]
+   }
+ 
+   if(length(df)<3){
+      stop("File has less than 3 columns")
+   }
+ 
+   header <- c('chr','start','end','id','score','strand')
+   names(df) <- header[1:length(names(df))]
+ 
+   if('strand' %in% colnames(df)){
+      df$strand <- gsub(pattern="[^+-]+", replacement = '*', x = df$strand)
+   }
+ 
+   library("GenomicRanges")
+ 
+   if(length(df)==3){
+      gr <- with(df, GRanges(chr, IRanges(start, end)))
+   } else if (length(df)==4){
+      gr <- with(df, GRanges(chr, IRanges(start, end), id=id))
+   } else if (length(df)==5){
+      gr <- with(df, GRanges(chr, IRanges(start, end), id=id, score=score))
+   } else if (length(df)==6){
+      gr <- with(df, GRanges(chr, IRanges(start, end), id=id, score=score, strand=strand))
+   }
+   return(gr)
+}
+
+# 
+# 
+# write_bed <- function(gr, path = "", ucsc_name = F) {
+#   # Makes a bed file from a granges object
+#   # name.col and score.col not working yet.
+#   df <- gr %>%
+#     as.data.frame() %>%
+#     dplyr::select(seqnames, start, end)
+#   if (ucsc_name != "") {
+#     cat(paste0("track name=\"",ucsc_name,"\"\n"), file = path)
+#   }
+#   write.table(df, file = path, append = T,
+#               quote = F, sep = "\t", row.names = F, col.names = F)
+# }
+
+
+```
 
 ```{r without4 and 5 setting up data}
-
 high_conf_peak_counts <- read.csv("data/high_conf_peak_counts.csv", row.names = 1)
 
 
@@ -130,6 +183,9 @@ legend('bottomleft',fill=myColors, legend =rev(c("0", "0.1", "0.2", "0.3", "0.4"
 Study breakdown: 1 = DNR_3, 2 = DOX_3, 3 = EPI_3, 4 = MTX_3, 5 = TRZ_3\
 6 = DNR_24, 7 = DOX_24, 8 = EPI_24, 9 = MTX_24, 10 = TRZ_24
 
+
+### Cormotif with out blacklisted regions and with peaks considered to be highly expressed:
+
 ```{r he peaks n45}
 
 high_conf_peak_counts <- read.csv("data/high_conf_peak_counts.csv", row.names = 1)
@@ -183,7 +239,7 @@ cormotif_initial_n45_he <- readRDS("data/cormotif_full_4_run_he.RDS")
 gene_prob_tran_n45_he <- cormotif_initial_n45_he$bestmotif$p.post
 rownames(gene_prob_tran_n45_he) <- rownames(my_hc_filtered_counts_he_n45)
 motif_prob_n45_he <- cormotif_initial_n45_he$bestmotif$clustlike
-rownames(motif_prob_n45_he) <- rownames(my_hc_filtered_counts_he_n45)
+rownames(motif_prob_n45_he) <- rownames(gene_prob_tran_n45_he)
 # write.csv(motif_prob_n45_he,"data/cormotif_probability_45_list_he.csv")
 
 Cormotif::plotIC(cormotif_initial_n45_he)
@@ -197,7 +253,9 @@ Doing the analysis on the filtered set, just like the full set.
 ```{r pulling out the groups}
 
 motif_prob_n45 <- read.csv("data/cormotif_probability_45_list_he.csv")
-motif_prob_n45 <- motif_prob_n45 %>% 
+
+motif_prob_n45 <- motif_prob_n45 %>%
+  filter(!if_any(everything(), ~ grepl('^chrUn', .))) %>%
   column_to_rownames('X')
 clust1_n45 <- motif_prob_n45 %>%
   as.data.frame() %>%
@@ -215,11 +273,11 @@ clust4_n45 <- motif_prob_n45 %>%
   as.data.frame() %>%
   filter(V4>0.5) %>% 
   rownames
-# backGL_n45_he <- row.names(motif_prob_n45)
+# backGL_n45_he <- row.names(motif_prob_n45_he)
 # saveRDS(backGL_n45_he,"data/background_n45_he_peaks.RDS")
 
 # unclassified_n45 <- setdiff(backGL_n45_he,union(clust1_n45,union(clust2_n45,union(clust4_n45,clust3_n45))))
-# 
+# # 
 # motif_list_n45 <- list("NR_n45"=clust1_n45,"LR_n45"=clust2_n45,"EAR_n45"=clust3_n45,"ESR_n45"=clust4_n45,"unclassified_n45"=unclassified_n45, "backGL_n45_he"=backGL_n45_he)
 # saveRDS(motif_list_n45,"data/motif_list_n45.RDS")
 # saveRDS(unclassified_n45,"data/unclassified_n45_set_peaks.RDS")
@@ -240,6 +298,7 @@ These contain `r length(clust1_n45)+length(clust2_n45)+length(clust3_n45) + leng
 
 ```{r assessment of each cluster}
 
+
 txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
 
 # loadFile_peakCall <- function(){
@@ -259,72 +318,126 @@ list2env(motif_list_n45, envir= .GlobalEnv)
 
 TSS = getBioRegion(TxDb=txdb, upstream=2000, downstream=2000, by = "gene", 
                    type = "start_site")
+
+###~This code is how I transformed data frames into bedfiles initially.  I used info
+### ~from the blog of Dave Tang about granges objects
+
 ##converting lists to dataframes as bed files
-# # EAR %>%
+# 
 # data.frame("EAR_n45" = EAR_n45) %>%
 #   mutate(name =EAR_n45) %>%
 # separate(EAR_n45, into = c( "chr","start","end")) %>%
 #   # mutate(strand=".") %>%
 #   mutate(start=as.integer(start), end=as.integer(end)) %>%
 #   dplyr::select(chr, start,end,name) %>%
-#   na.omit() %>%
-#   # unite(.,col="start-end",start, end,sep = "-") %>%
-#   write.table(.,file = "data/n45_bedfiles/EAR_n45.bed", row.names =FALSE,col.name=FALSE,append = TRUE, quote = FALSE)
 # 
+#   # unite(.,col="start-end",start, end,sep = "-") %>%
+#   write.table(.,file = "data/n45_bedfiles/EAR_n45.bed", row.names =FALSE,col.name=FALSE,append = FALSE, quote = FALSE)
+
 #   #
+# # test <-
 #   data.frame("unclassified_n45" = unclassified_n45) %>%
 #     mutate(name =unclassified_n45) %>%
+#   filter(!if_any(everything(), ~ grepl('^chrUn', .))) %>%
 #   separate(unclassified_n45, into = c( "chr","start","end")) %>%
-#     # mutate(strand=".") %>%
 #     mutate(start=as.integer(start), end=as.integer(end)) %>%
-#     dplyr::select(chr, start,end,name) %>%
-#     na.omit() %>%
-#     # unite(.,col="start-end",start, end,sep = "-") %>%
-#     write.table(.,file = "data/n45_bedfiles/unclassified_n45.bed", row.names =FALSE,col.name=FALSE,append = TRUE, quote = FALSE)
-# 
-#   #
-#   data.frame("background_n45" = backGL_n45_he) %>%
-#     mutate(name =background_n45) %>%
-#   separate(background_n45, into = c( "chr","start","end")) %>%
-#     # mutate(strand=".") %>%
-#     mutate(start=as.integer(start), end=as.integer(end)) %>%
-#     dplyr::select(chr, start,end,name) %>%
-#     na.omit() %>%
-#     # unite(.,col="start-end",start, end,sep = "-") %>%
-#     write.table(.,file = "data/n45_bedfiles/background_n45.bed",row.names =FALSE,col.name=FALSE,append = TRUE, quote = FALSE)
-# 
-#   # #
+#     na.omit(.) %>% 
+#     # dplyr::select(chr, start,end,name) %>%
+#     write.table(.,file = "data/n45_bedfiles/unclassified_n45.bed", row.names =FALSE,col.name=FALSE,append = FALSE, quote = FALSE)
+# #
+# #   #
+
+  # data.frame("background_n45" = backGL_n45_he) %>%
+  #   mutate(name =background_n45) %>%
+  # separate(background_n45, into = c( "chr","start","end"))%>%
+  #   filter(!if_any(everything(), ~ grepl('^chrUn', .))) %>%
+  #   # mutate(strand=".") %>%
+  #   mutate(start=as.integer(start), end=as.integer(end)) %>%
+  #   na.omit(.) %>% 
+  #   dplyr::select(chr, start,end,name) %>%
+  #   
+  #       write.table(.,file = "data/n45_bedfiles/background_n45.bed",row.names =FALSE,col.name=FALSE,append = FALSE, quote = FALSE)
+
+# #   # #
 #   data.frame("ESR_n45" = ESR_n45) %>%
 #     mutate(name =ESR_n45) %>%
 #   separate(ESR_n45, into = c( "chr","start","end")) %>%
 #     # mutate(strand=".") %>%
 #     mutate(start=as.integer(start), end=as.integer(end)) %>%
 #     dplyr::select(chr, start,end,name) %>%
-#     na.omit() %>%
+#     na.omit(.) %>% 
 #     # unite(.,col="start-end",start, end,sep = "-") %>%
-#     write.table(.,file = "data/n45_bedfiles/ESR_n45.bed", row.names =FALSE,col.name=FALSE,append = TRUE, quote = FALSE)
+#     write.table(.,file = "data/n45_bedfiles/ESR_n45.bed", row.names =FALSE,col.name=FALSE,append = FALSE, quote = FALSE)
+# # 
+  # data.frame("LR_n45" = LR_n45) %>%
+  #   mutate(name =LR_n45) %>%
+  # separate(LR_n45, into = c( "chr","start","end")) %>%
+  #   mutate(start=as.integer(start), end=as.integer(end)) %>%
+  #   dplyr::select(chr, start,end,name) %>%
+  #   na.omit(.) %>% 
+  #    # unite(.,col="start-end",start, end,sep = "-") %>%
+  #   write.table(.,file = "data/n45_bedfiles/LR_n45.bed", row.names =FALSE,col.name=FALSE,append = FALSE, quote = FALSE)
+#
+# data.frame("NR_n45" = NR_n45) %>%
+#   mutate(name =NR_n45) %>%
+# separate(NR_n45, into = c( "chr","start","end")) %>%
 # 
-#   data.frame("LR_n45" = LR_n45) %>%
-#     mutate(name =LR_n45) %>%
-#   separate(LR_n45, into = c( "chr","start","end")) %>%
-#     # mutate(strand=".") %>%
-#     mutate(start=as.integer(start), end=as.integer(end)) %>%
-#     dplyr::select(chr, start,end,name) %>%
-#     na.omit() %>%
-#     # unite(.,col="start-end",start, end,sep = "-") %>%
-#     write.table(.,file = "data/n45_bedfiles/LR_n45.bed", row.names =FALSE,col.name=FALSE,append = TRUE, quote = FALSE)
+#   mutate(start=as.integer(start), end=as.integer(end)) %>%
+#   na.omit(.) %>% 
+#   dplyr::select(chr, start,end,name) %>%
 # 
-#   data.frame("NR_n45" = NR_n45) %>%
-#     mutate(name =NR_n45) %>%
-#   separate(NR_n45, into = c( "chr","start","end")) %>%
-#     # mutate(strand=".") %>%
-#     mutate(start=as.integer(start), end=as.integer(end)) %>%
-#     dplyr::select(chr, start,end,name) %>%
-#     na.omit() %>%
-#     # unite(.,col="start-end",start, end,sep = "-") %>%
-#     write.table(.,file = "data/n45_bedfiles/NR_n45.bed", row.names =FALSE,col.name=FALSE,append = TRUE, quote = FALSE)
+#   # unite(.,col="start-end",start, end,sep = "-") %>%
+#   write.table(.,file = "data/n45_bedfiles/NR_n45.bed", row.names =FALSE,col.name=FALSE,append = FALSE, quote = FALSE)
+
+### ~Once I converted to bed files via dave tang's method, I then reimported those dataframes as granges 
+### ~ formatted files.  NOTE:  the bed file were not usable and therefore had to export them again
+###  ~ I have this process "kind-of written out" here::
+
+# To make bed file in R as export:
 # 
-# # #
+# suppressPackageStartupMessages(library(GenomicRanges))
+# suppressPackageStartupMessages(library(rtracklayer))
+# suppressPackageStartupMessages(library(tidyverse))
+# 
+# # data 
+# bed <- data.frame(chrom=c(rep("Chr1",5)),
+#                   chromStart=c(18915152,24199229,73730,81430,89350),
+#                   chromEnd=c(18915034,24199347,74684,81550,89768), 
+#                   strand=c("-","+","+","+","+"))
+# 
+# # transform such as always chromStart < chromEnd
+# bed2 <- bed |> 
+# transform(chromStart=ifelse(chromStart>chromEnd,chromEnd,chromStart),
+#           chromEnd= ifelse(chromEnd<chromStart,chromStart,chromEnd))
+# 
+# # Genomic Ranges 
+# bed3 <- GenomicRanges::makeGRangesFromDataFrame(bed2)
+# head(bed3)
+# #> GRanges object with 5 ranges and 0 metadata columns:
+# #>       seqnames            ranges strand
+# #>          <Rle>         <IRanges>  <Rle>
+# #>   [1]     Chr1 18915034-18915152      -
+# #>   [2]     Chr1 24199229-24199347      +
+# #>   [3]     Chr1       73730-74684      +
+# #>   [4]     Chr1       81430-81550      +
+# #>   [5]     Chr1       89350-89768      +
+# #>   -------
+# #>   seqinfo: 1 sequence from an unspecified genome; no seqlengths
+# 
+# # rtracklayer 
+# bed4 <- rtracklayer::export(bed3, format="bed", ignore.strand = FALSE)
+# bed4
+# #> [1] "Chr1\t18915033\t18915152\t.\t0\t-" "Chr1\t24199228\t24199347\t.\t0\t+"
+# #> [3] "Chr1\t73729\t74684\t.\t0\t+"       "Chr1\t81429\t81550\t.\t0\t+"      
+# #> [5] "Chr1\t89349\t89768\t.\t0\t+"
+# 
+# # write it as a bed file
+# # this is essential to make sure that this works properly 
+# write.table(bed4, "test.bed", sep="\t", col.names=FALSE, row.names = FALSE, append = TRUE, quote = FALSE) 
+
+
+### ~importing via Dave Tang process:
+
 # EAR_n45_gr <- bed_to_granges("data/n45_bedfiles/EAR_n45.bed")
 # ESR_n45_gr <- bed_to_granges("data/n45_bedfiles/ESR_n45.bed")
 # LR_n45_gr <- bed_to_granges("data/n45_bedfiles/LR_n45.bed")
@@ -332,7 +445,9 @@ TSS = getBioRegion(TxDb=txdb, upstream=2000, downstream=2000, by = "gene",
 # unclassified_n45_gr <- bed_to_granges("data/n45_bedfiles/unclassified_n45.bed")
 # background_n45_gr <- bed_to_granges("data/n45_bedfiles/background_n45.bed")
 
-# mylist <- list(EAR_n45_gr,ESR_n45_gr,LR_n45_gr,NR_n45_gr,unclassified_gr,background_gr)
+### ~made these granges filies into a list to annotate and do future analysis
+
+# mylist <- list(EAR_n45_gr,ESR_n45_gr,LR_n45_gr,NR_n45_gr,unclassified_n45_gr,background_n45_gr)
 # peakAnnoList<- lapply(mylist, annotatePeak, tssRegion =c(-2000,2000), TxDb= txdb)
 # names(peakAnnoList) <- c("EAR_n45_gr","ESR_n45_gr","LR_n45_gr","NR_n45_gr","unclassified_gr","background_gr")
 # saveRDS(peakAnnoList, "data/peakAnnoList_n45_motif.RDS")
@@ -340,16 +455,13 @@ TSS = getBioRegion(TxDb=txdb, upstream=2000, downstream=2000, by = "gene",
 peakAnnoList_n45_motif <- readRDS("data/peakAnnoList_n45_motif.RDS")
 plotAnnoBar(peakAnnoList_n45_motif[1:4], main = "Genomic Feature Distribution, CorMotif")+
   ggtitle ("Genomic Feature Distribution, Individuals 1,2,3,6")
-##Epi_list_tagMatrix title was just because I was too lazy to change the name
-# Epi_list_tagMatrix = lapply(Ind6_peaks, getTagMatrix, windows = TSS)
-# saveRDS(Epi_list_tagMatrix, "data/Ind6_TSS_peaks.RDS")
 
 
 ```
 
+### EAR examples of top 3 peaks
 
-
-```{r fullset cormotif lfc EAR}
+```{r partial set cormotif lfc EAR}
 
 my_hc_filtered_counts_n45 <- readRDS("data/my_hc_filt_counts_n45.RDS")
 log_filt_hc_n45 <- cpm(my_hc_filtered_counts_n45, log = TRUE) %>% as.data.frame()
@@ -374,7 +486,7 @@ log_filt_hc_n45 %>%
 
 ```
 
-
+#### EAR log fold change peaks
 ```{r mlfc EAR}
 toplist_n45<- readRDS("data/toplist_n45.RDS")
 
@@ -396,7 +508,7 @@ toplist_n45 %>%
 ```
 
 
-
+### ESR examples of top 3 peaks
 ```{r ESR boxplot, eval =FALSE}
 
 log_filt_hc_n45 %>% 
@@ -419,7 +531,7 @@ log_filt_hc_n45 %>%
 ```
 
 
-
+#### ESR log fold change peaks
 ```{r mlfc ESR}
 
 
@@ -440,14 +552,14 @@ toplist_n45 %>%
 
 ```
 
-
+### LR examples of top 3 peaks
 ```{r LR boxplot, eval = FALSE}
 
 log_filt_hc_n45 %>% 
  #  rownames_to_column("peak") %>% 
  #  dplyr::filter(peak %in% motif_list_n45$EAR) 
  # log_filt_hc %>% 
-  dplyr::filter(row.names(.) %in%LR[c(1,2,3)]) %>% 
+  dplyr::filter(row.names(.) %in%LR_n45[c(1,2,3)]) %>% 
   mutate(Peak = row.names(.)) %>% 
   pivot_longer(cols = !Peak, names_to = "sample", values_to = "counts") %>% 
   separate("sample", into = c("indv","trt","time")) %>% 
@@ -462,7 +574,7 @@ log_filt_hc_n45 %>%
 
 ```
 
-
+#### LR log fold change peaks
 ```{r mlfc LR}
 
 toplist_n45 %>% 
@@ -482,14 +594,14 @@ toplist_n45 %>%
 ```
 
 
-
+### NR examples of top 3 peaks
 ```{r NR boxplot, eval=FALSE}
 
 log_filt_hc_n45 %>% 
  #  rownames_to_column("peak") %>% 
  #  dplyr::filter(peak %in% motif_list_n45$EAR) 
  # log_filt_hc %>% 
-  dplyr::filter(row.names(.) %in% NR[c(1,2,3)]) %>% 
+  dplyr::filter(row.names(.) %in% NR_n45[c(1,2,3)]) %>% 
   mutate(Peak = row.names(.)) %>% 
   pivot_longer(cols = !Peak, names_to = "sample", values_to = "counts") %>% 
   separate("sample", into = c("indv","trt","time")) %>% 
@@ -504,7 +616,7 @@ log_filt_hc_n45 %>%
 
 ```
 
-
+#### NR log fold change peaks
 
 ```{r mlfc NR}
 
@@ -527,29 +639,8 @@ toplist_n45 %>%
 ```
 
 
-###lfc
+### Log 2 FC of all motifs
 ```{r mlfcall}
-
-
-
-log_filt_hc_n45 %>% 
- #  rownames_to_column("peak") %>% 
- #  dplyr::filter(peak %in% motif_list_n45$EAR) 
- # log_filt_hc %>% 
-  dplyr::filter(row.names(.) %in% NR_n45[c(1,2,3)]) %>% 
-  mutate(Peak = row.names(.)) %>% 
-  pivot_longer(cols = !Peak, names_to = "sample", values_to = "counts") %>% 
-  separate("sample", into = c("indv","trt","time")) %>% 
-  mutate(time=factor(time, levels = c("3h","24h"))) %>% 
-  mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
-  ggplot(., aes (x = time, y=counts))+
-  geom_boxplot(aes(fill=trt))+
-  facet_wrap(Peak~.)+
-  ggtitle("log2cpm in NR peaks")+
-  scale_fill_manual(values = drug_pal)
-
-
-
 mean_lfc <-
   toplist_n45 %>% as.data.frame() %>% 
   mutate(NR = if_else(peak %in% NR_n45,"y","no")) %>% 
@@ -593,24 +684,354 @@ mean_lfc %>%
 
 ```
 
+```{r pie chart}
+
+Set <- c("EAR", "ESR","LR", "NR")
+gene_num <- c(7321,15665,41759,83658)
+fills <- c("#F8766D",  "#00BFC4","#7CAE00", "#C77CFF")
+
+pie_chartdata <- data.frame(Set, gene_num, fills)
+ 
+    # pie(gene_num,labels =Set )      
+
+pie_chartdata <- pie_chartdata %>% 
+   mutate(prop = gene_num / sum(pie_chartdata$gene_num) *100) %>%
+  mutate(ypos = (prop)+ 0.5*prop )
 
 
+pie_chartdata %>% 
+  ggplot(.,aes(x="",y=gene_num, fill=Set))+
+  geom_col(width =1) +
+  coord_polar("y", pi/2)+
+  theme_void()+
+  ggtitle("Distribution of genes for each set")+
+  geom_text(aes(label = paste0(Set," (",gene_num,")")),
+                position = position_stack(vjust =.45)) +
+  theme(legend.position="none") +
+  theme(plot.title = element_text(size = rel(1.5), hjust = 0.5))
 
-#### Venn
-```{r venn of gene overlap}
-
-shorterlist <- peakAnnoList_n45_motif[c(1:4)]
-genes= lapply(shorterlist, function(i) as.data.frame(i)$geneId)
-vennplot(genes)
-plotDistToTSS(peakAnnoList_n45_motif[c(1:4)])+ ggtitle("n45 peaks from TSS")
 ```
 
 
 
-<!-- shorterlist <- peakAnnoList_n45_motif[1:4] -->
-<!-- > genes= lapply(shorterlist, function(i) as.data.frame(i)$geneId) -->
-<!-- > vennplot(genes) -->
-<!-- > shorterlist <- peakAnnoList_n45_motif[c(1:4,6)] -->
-<!-- > genes= lapply(shorterlist, function(i) as.data.frame(i)$geneId) -->
-<!-- > vennplot(genes) -->
-<!-- >  -->
+#### Locations of all peaks by motif around TSS 
+```{r venn of gene overlap}
+# 
+# shorterlist <- peakAnnoList_n45_motif[c(1:4)]
+# genes= lapply(shorterlist, function(i) as.data.frame(i)$geneId)
+# vennplot(genes)
+plotDistToTSS(peakAnnoList_n45_motif[c(1:4)])+ ggtitle("n45 peaks from TSS")
+```
+
+```{r more work}
+
+# goal is to examine tss and non tss peaks using these granges files
+## first I will get the background peaks list (highly epxerssed peaks)
+All_he_peaks_n45  <- as.data.frame(peakAnnoList_n45_motif$background_gr) 
+
+All_he_peaks_n45 %>% 
+  mutate(TSS_peak= if_else(abs(distanceToTSS)<1001,"yes","no")) %>% 
+  dplyr::select(id,TSS_peak) %>% 
+  mutate(ESR = if_else(id %in% ESR_n45, "yes", "no"),
+         EAR = if_else(id %in% EAR_n45, "yes", "no"),
+         LR = if_else(id %in% LR_n45, "yes", "no"),
+         NR = if_else(id %in% NR_n45, "yes", "no"),
+         sanity = if_else(id %in% backGL_n45_he, "yes", "no"))  %>% 
+  mutate(ESR=factor(ESR, levels= c("yes","no")),
+         EAR=factor(EAR, levels= c("yes","no")),
+         LR=factor(LR, levels= c("yes","no")),
+         NR=factor(NR, levels= c("yes","no")), 
+         sanity=factor(sanity, levels= c("yes","no")),
+         TSS_peak=factor(TSS_peak, levels = c ("yes","no"))) %>% 
+  group_by(ESR,TSS_peak, EAR, LR, NR, sanity) %>% 
+  tally() %>% 
+  pivot_wider(id_cols = c(ESR,EAR,NR,LR,sanity), names_from = TSS_peak, names_glue = "TSS_peak_{TSS_peak}", values_from = n) %>% 
+  mutate(total= TSS_peak_yes + TSS_peak_no)
+
+TSS_counts_n45 <- data.frame( group=c("ESR","EAR","LR","NR","sanity"),
+                              TSS_peak=c(2475,1606,5134,19118,587),
+                              not_TSS_peak= c(13190, 5715, 36625,64540,2685),
+                              Total_peaks=c(15665,7321,41759,83658,3272))
+    
+  TSS_counts_n45 
+
+```
+
+### TSS proportions
+```{r column of percent TSS}
+
+TSS_counts_n45 %>% 
+  dplyr::filter(group != "sanity") %>% 
+  mutate(group=factor(group, levels = c("EAR","ESR","LR","NR"))) %>% 
+  # mutate(percent=TSS_peak/Total_peaks*100) %>% 
+  pivot_longer(., cols=c(TSS_peak, not_TSS_peak), names_to="Peak_type", values_to= "counts") %>% 
+   mutate(percent=counts/Total_peaks*100) %>% 
+  ggplot(., aes(x=group,y= percent, fill= Peak_type)) +
+  geom_col()+
+   geom_text(aes(label =sprintf("%.1f %%",percent)), position = "stack",vjust= 2)+
+
+  theme_classic()
+  
+```
+
+
+#### Chi square test
+```{r chi square}
+chimatrix <- TSS_counts_n45 %>% 
+  dplyr::filter(group != "sanity") %>% 
+  mutate(group=factor(group, levels = c("EAR","ESR","LR","NR"))) %>% 
+  column_to_rownames("group") %>% 
+  dplyr::select(TSS_peak, not_TSS_peak) %>% 
+  as.matrix() 
+  
+
+EARtest <- chisq.test(chimatrix[c(2,4),],correct = FALSE)#$p.value
+ESRtest <- chisq.test(chimatrix[c(1,4),], correct = FALSE)#$p.value
+LRtest <- chisq.test(chimatrix[c(3,4),], correct = FALSE)#$p.value
+NRtest <- chisq.test(chimatrix[c(4,4),], correct = FALSE)#$p.value
+
+print("EAR chi pvalue")
+EARtest
+print("ESR chi pvalue")
+ESRtest
+print("LR chi pvalue")
+LRtest
+```
+
+```{r more work2}
+
+All_he_peaks_n45 %>% 
+  mutate(distal_peak= if_else(abs(distanceToTSS)>4999,"yes","no")) %>% 
+  dplyr::select(id,distal_peak) %>% 
+  mutate(ESR = if_else(id %in% ESR_n45, "yes", "no"),
+         EAR = if_else(id %in% EAR_n45, "yes", "no"),
+         LR = if_else(id %in% LR_n45, "yes", "no"),
+         NR = if_else(id %in% NR_n45, "yes", "no"),
+         sanity = if_else(id %in% backGL_n45_he, "yes", "no"))  %>% 
+  mutate(ESR=factor(ESR, levels= c("yes","no")),
+         EAR=factor(EAR, levels= c("yes","no")),
+         LR=factor(LR, levels= c("yes","no")),
+         NR=factor(NR, levels= c("yes","no")), 
+         sanity=factor(sanity, levels= c("yes","no")),
+         distal_peak=factor(distal_peak, levels = c ("yes","no"))) %>% 
+  group_by(ESR,distal_peak, EAR, LR, NR, sanity) %>% 
+  tally() %>% 
+  pivot_wider(id_cols = c(EAR,ESR,LR,NR,sanity), names_from = distal_peak, names_glue = "distal_peak_{distal_peak}", values_from = n) %>% 
+  mutate(total= distal_peak_yes + distal_peak_no)
+
+distal_counts_n45 <- data.frame( group=c("EAR","ESR","LR","NR","sanity"),
+                              distal_peak=c(4615,10351,30273,53144,2218),
+                              not_distal_peak= c(2706,5314, 11486,30514,1054),
+                              Total_peaks=c(7321,15665,41759,83658,3272))
+    
+
+
+```
+
+### Distal proportions
+```{r column of percent distal}
+
+distal_counts_n45 %>% 
+  dplyr::filter(group != "sanity") %>% 
+  mutate(group=factor(group, levels = c("EAR","ESR","LR","NR"))) %>% 
+  # mutate(percent=distal_peak/Total_peaks*100) %>% 
+  pivot_longer(., cols=c(distal_peak, not_distal_peak), names_to="Peak_type", values_to= "counts") %>% 
+   mutate(percent=counts/Total_peaks*100) %>% 
+  mutate(Peak_type= factor(Peak_type, levels = c("not_distal_peak","distal_peak"))) %>% 
+  ggplot(., aes(x=group,y= percent, fill= Peak_type)) +
+  geom_col()+
+   geom_text(aes(label =sprintf("%.1f %%",percent)), position = "stack",vjust= 2)+
+
+  theme_classic()
+  
+```
+
+
+
+#### Chi square test distal
+```{r chi square distal}
+chimatrix2 <- distal_counts_n45 %>% 
+  dplyr::filter(group != "sanity") %>% 
+  # mutate(group=factor(group, levels = c("EAR","ESR","LR","NR"))) %>% 
+  column_to_rownames("group") %>% 
+  dplyr::select(distal_peak, not_distal_peak) %>% 
+  as.matrix() 
+  
+
+EARtest2 <- chisq.test(chimatrix2[c(1,4),],correct = FALSE)#$p.value
+ESRtest2 <- chisq.test(chimatrix2[c(2,4),], correct = FALSE)#$p.value
+LRtest2 <- chisq.test(chimatrix2[c(3,4),], correct = FALSE)#$p.value
+NRtest2 <- chisq.test(chimatrix2[c(4,4),], correct = FALSE)#$p.value
+
+print("EAR chi pvalue")
+EARtest2
+print("ESR chi pvalue")
+ESRtest2
+print("LR chi pvalue")
+LRtest2
+```
+### Exporting peak files to bed format for meme suite
+
+
+```{r exporting TSSpeaks}
+list2env(peakAnnoList_n45_motif, envir = .GlobalEnv)
+##split into granges objects
+###make dataframe of each EAR,ESR,LR,NR promoters
+
+EAR_df <- as.data.frame(peakAnnoList_n45_motif$EAR_n45_gr)
+EAR_promotor <- EAR_df %>% 
+  dplyr::filter(annotation=="Promoter (<=1kb)")
+EAR_promo_gr <-  GRanges(EAR_promotor)
+
+# rtracklayer::export.bed(EAR_promo_gr, con="data/n45_bedfiles/EAR_promo.bed", format="bed", ignore.strand = FALSE)
+ESR_df <- as.data.frame(peakAnnoList_n45_motif$ESR_n45_gr)
+ESR_promotor <- ESR_df %>% 
+  dplyr::filter(annotation=="Promoter (<=1kb)")
+LR_df <- as.data.frame(peakAnnoList_n45_motif$LR_n45_gr)
+LR_promotor <- LR_df %>% 
+  dplyr::filter(annotation=="Promoter (<=1kb)")
+NR_df <- as.data.frame(peakAnnoList_n45_motif$NR_n45_gr)
+NR_promotor <- NR_df %>% 
+  dplyr::filter(annotation=="Promoter (<=1kb)")
+  
+
+```
+
+
+
+### RNA-seq and highly-expressed DARs
+
+```{r HEDAR and DEGRNA}
+
+##working with motif enriched genes: first step, get DEGs for motif EAR, ESR, LR, and NR in entrezid
+##second step: get dARs in entrezid
+##third step: select only those expressed in both sets and view LFC of both.
+
+### importing supplemental table 13 from my paper Matthews,et al., PLOS Genetics, 2024, to make a gene list, then importing toplistall to get LFC for them.
+
+# write.csv(S13Table, "data/other_papers/S13Table_Matthews2024.csv")
+S13Table <- read.csv( "data/other_papers/S13Table_Matthews2024.csv",row.names = 1)
+##14021
+
+EAR_RNA <- S13Table %>% 
+  dplyr::filter(MOTIF=="EAR") %>% 
+  dplyr::select(ENTREZID)
+ESR_RNA <- S13Table %>% 
+  dplyr::filter(MOTIF=="ESR")%>% 
+  dplyr::select(ENTREZID)
+LR_RNA <- S13Table %>% 
+  dplyr::filter(MOTIF=="LR")%>% 
+  dplyr::select(ENTREZID)
+NR_RNA <- S13Table %>% 
+  dplyr::filter(MOTIF=="NR")%>% 
+  dplyr::select(ENTREZID)
+
+
+EAR_promoter_peaks <- intersect(EAR_promotor$geneId,EAR_RNA$ENTREZID)
+ESR_promoter_peaks <- intersect(ESR_promotor$geneId,ESR_RNA$ENTREZID)
+LR_promoter_peaks <- intersect(LR_promotor$geneId,LR_RNA$ENTREZID)
+NR_promoter_peaks <- intersect(NR_promotor$geneId,NR_RNA$ENTREZID)
+
+toplistall_RNA <- readRDS("data/other_papers/toplistall_RNA.RDS")
+
+
+```
+  There are `r length (EAR_promoter_peaks)` genes that overlap between DAR and DEG in the EAR motif. There are `r length (ESR_promoter_peaks)` genes that overlap between DAR and DEG in the ESR motif.  
+  
+  There are `r length (LR_promoter_peaks)` genes that overlap between DAR and DEG in the LR motif.  
+  
+  There are `r length( NR_promoter_peaks)` genes that overlap between DAR and DEG in the NR motif.
+
+
+
+```{r LFCvLFC plots}
+# install.packages(c('tidyverse','devtools','gghalves'))
+
+# devtools::install_github('smin95/smplot2', force = TRUE)
+library(smplot2)
+
+ toplistall_RNA %>% 
+  dplyr:: filter(ENTREZID %in% EAR_promoter_peaks) %>% 
+  dplyr::select(time:ENTREZID,logFC) %>% 
+  rename(id="trt") %>% 
+  rownames_to_column("id")
+
+EAR_df %>% 
+  dplyr::filter(geneId %in% EAR_promoter_peaks) %>% 
+  dplyr::select(id,geneId) %>% 
+  left_join(.,toplist_n45, by = c("id"="peak" )) %>% 
+  dplyr::select(id:logFC) %>% 
+  rename(geneId="ENTREZID") %>% 
+  full_join(., (toplistall_RNA %>% 
+  dplyr:: filter(ENTREZID %in% EAR_promoter_peaks) %>% 
+  dplyr::select(time:ENTREZID,logFC) %>% mutate(time=factor(time, levels= c("3_hours","24_hours"), labels = c("3 hours","24 hours"))) %>% 
+  rename(id="trt")), by= c("ENTREZID", "trt","time")) %>% 
+  ggplot(., aes(x=logFC.x,y =logFC.y))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  sm_statCorr(corr_method = 'pearson')+
+facet_wrap(~time)
+  
+
+
+
+```
+
+```{r ESRlfc vlfc}
+
+ESR_df %>% 
+  dplyr::filter(geneId %in% ESR_promoter_peaks) %>% 
+  dplyr::select(id,geneId) %>% 
+  left_join(.,toplist_n45, by = c("id"="peak" )) %>% 
+  dplyr::select(id:logFC) %>% 
+  rename(geneId="ENTREZID") %>% 
+  full_join(., (toplistall_RNA %>% 
+  dplyr:: filter(ENTREZID %in% ESR_promoter_peaks) %>% 
+  dplyr::select(time:ENTREZID,logFC) %>% mutate(time=factor(time, levels= c("3_hours","24_hours"), labels = c("3 hours","24 hours"))) %>% 
+  rename(id="trt")), by= c("ENTREZID", "trt","time")) %>% 
+  ggplot(., aes(x=logFC.x,y =logFC.y))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  sm_statCorr(corr_method = 'pearson')+
+facet_wrap(~time)
+
+
+
+LR_df %>% 
+  dplyr::filter(geneId %in% LR_promoter_peaks) %>% 
+  dplyr::select(id,geneId) %>% 
+  left_join(.,toplist_n45, by = c("id"="peak" )) %>% 
+  dplyr::select(id:logFC) %>% 
+  rename(geneId="ENTREZID") %>% 
+  full_join(., (toplistall_RNA %>% 
+  dplyr:: filter(ENTREZID %in% LR_promoter_peaks) %>% 
+  dplyr::select(time:ENTREZID,logFC) %>% mutate(time=factor(time, levels= c("3_hours","24_hours"), labels = c("3 hours","24 hours"))) %>% 
+  rename(id="trt")), by= c("ENTREZID", "trt","time")) %>% 
+  ggplot(., aes(x=logFC.x,y =logFC.y))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  sm_statCorr(corr_method = 'pearson')+
+facet_wrap(~time)
+
+
+
+NR_df %>% 
+  dplyr::filter(geneId %in% NR_promoter_peaks) %>% 
+  dplyr::select(id,geneId) %>% 
+  left_join(.,toplist_n45, by = c("id"="peak" )) %>% 
+  dplyr::select(id:logFC) %>% 
+  rename(geneId="ENTREZID") %>% 
+  full_join(., (toplistall_RNA %>% 
+  dplyr:: filter(ENTREZID %in% NR_promoter_peaks) %>% 
+  dplyr::select(time:ENTREZID,logFC) %>% mutate(time=factor(time, levels= c("3_hours","24_hours"), labels = c("3 hours","24 hours"))) %>% 
+  rename(id="trt")), by= c("ENTREZID", "trt","time")) %>% 
+  na.omit() %>% 
+  ggplot(., aes(x=logFC.x,y =logFC.y))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  sm_statCorr(corr_method = 'pearson')+
+facet_wrap(~time)
+
+```
+
+
