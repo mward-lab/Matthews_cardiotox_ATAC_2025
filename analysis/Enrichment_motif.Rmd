@@ -1,0 +1,281 @@
+---
+title: "Enrichment_motif"
+author: "ERM"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE,
+	warning = FALSE
+)
+```
+
+```{css, echo=FALSE}
+pre {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+pre[class] {
+  max-height: 200px;
+}
+```
+
+```{r  package loading}
+library(tidyverse)
+# library(ggsignif)
+# library(cowplot)
+# library(ggpubr)
+
+# library(sjmisc)
+library(kableExtra)
+library(broom)
+# library(biomaRt)
+library(RColorBrewer)
+# library(gprofiler2)
+# library(qvalue)
+library(ChIPseeker)
+library("TxDb.Hsapiens.UCSC.hg38.knownGene")
+library("org.Hs.eg.db")
+# library(ATACseqQC)
+library(rtracklayer)
+library(edgeR)
+library(ggfortify)
+library(limma)
+library(readr)
+library(BiocGenerics)
+library(gridExtra)
+library(VennDiagram)
+library(scales)
+# library(ggVennDiagram)
+library(Cormotif)
+library(BiocParallel)
+library(ggpubr)
+library(devtools)
+# install_github('davetang/bedr')
+library(bedr)
+```
+
+```{r import data}
+Knowles_4 <- readRDS("data/Knowles_4.RDS")
+Knowles_5 <- readRDS("data/Knowles_5.RDS")
+Knowles_6 <- readRDS("data/Knowles_6.RDS")
+SNP_supp_schneider <- readRDS("data/SNP_supp_schneider.RDS")
+peakAnnoList_n45_motif <- readRDS("data/peakAnnoList_n45_motif.RDS")
+list2env(peakAnnoList_n45_motif, envir = .GlobalEnv)
+###How I made the granges files for overlaps
+Knowles_4 <- Knowles_4 %>%
+  na.omit() %>%
+  mutate(start=pos-25, end=pos+25) %>%
+  dplyr::select(chr, start,end, RSID, gene,pos) %>%
+  GRanges()
+# 
+Knowles_5 <- Knowles_5 %>%
+  na.omit() %>%
+  mutate(start=pos-25, end=pos+25) %>%
+  dplyr::select(chr, start,end, RSID, gene,pos) %>%
+  GRanges()
+
+ Knowles_6 <- Knowles_6 %>%
+  na.omit() %>%
+  mutate(start=pos-25, end=pos+25) %>%
+  dplyr::select(chr, start,end, gene,pos) %>%
+  GRanges()
+ 
+  SNP_supp_schneider <-  SNP_supp_schneider %>%
+    na.omit() %>%
+    rename(X1="chr", X2 = "pos", X4="RSID") %>%
+    mutate(start=pos-25, end=pos+25) %>%
+   dplyr::select(chr, start,end, RSID,pos) %>%
+    GRanges()
+
+##split into granges objects
+###make dataframe of each EAR,ESR,LR,NR promoters
+
+EAR_df <- as.data.frame(peakAnnoList_n45_motif$EAR_n45_gr)
+# EAR_promotor <- EAR_df %>% 
+#   dplyr::filter(annotation=="Promoter (<=1kb)")
+EAR_df_gr <-  GRanges(EAR_df)
+
+# rtracklayer::export.bed(EAR_promo_gr, con="data/n45_bedfiles/EAR_promo.bed", format="bed", ignore.strand = FALSE)
+ESR_df <- as.data.frame(peakAnnoList_n45_motif$ESR_n45_gr)
+# ESR_promotor <- ESR_df %>% 
+#   dplyr::filter(annotation=="Promoter (<=1kb)")
+ESR_df_gr <-  GRanges(ESR_df)
+ # rtracklayer::export.bed(ESR_promo_gr, con="data/n45_bedfiles/ESR_promo.bed", format="bed", ignore.strand = FALSE)
+ 
+LR_df <- as.data.frame(peakAnnoList_n45_motif$LR_n45_gr)
+# LR_promotor <- LR_df %>% 
+#   dplyr::filter(annotation=="Promoter (<=1kb)")
+LR_df_gr <-  GRanges(LR_df)
+ # rtracklayer::export.bed(LR_promo_gr, con="data/n45_bedfiles/LR_promo.bed", format="bed", ignore.strand = FALSE)
+ # LR_promotor %>% 
+ #   dplyr::filter(geneChr==6)
+
+NR_df <- as.data.frame(peakAnnoList_n45_motif$NR_n45_gr)
+# NR_promotor <- NR_df %>% 
+#   dplyr::filter(annotation=="Promoter (<=1kb)")
+  
+NR_df_gr <-  GRanges(NR_df)
+```
+
+Checking for enrichment:
+
+I have made 25 bp +/- files for each of the data sets using the eQTL or SNP location.
+
+```{r overlaps}
+findOverlaps(EAR_df_gr, Knowles_4)
+findOverlaps(ESR_df_gr, Knowles_4)
+findOverlaps(LR_df_gr, Knowles_4)
+findOverlaps(NR_df_gr, Knowles_4)
+
+findOverlaps(EAR_df_gr, Knowles_5)
+findOverlaps(ESR_df_gr, Knowles_5)
+findOverlaps(LR_df_gr, Knowles_5)
+findOverlaps(NR_df_gr, Knowles_5)
+
+
+findOverlaps(EAR_df_gr, Knowles_6)
+findOverlaps(ESR_df_gr, Knowles_6)
+findOverlaps(LR_df_gr, Knowles_6)
+findOverlaps(NR_df_gr, Knowles_6)
+
+findOverlaps(EAR_df_gr, SNP_supp_schneider)
+findOverlaps(ESR_df_gr, SNP_supp_schneider)
+findOverlaps(LR_df_gr, SNP_supp_schneider)
+findOverlaps(NR_df_gr, SNP_supp_schneider)
+
+
+
+
+```
+
+report:
+
+| motif       | K_4(500) | K_5(359) | K_6(447) | schn_g(112) |
+|-------------|----------|----------|----------|-------------|
+| EAR (7321)  | 0        | 1        | 0        | 0           |
+| ESR (15665) | 3        | 2        | 2        | 0           |
+| LR (41759)  | 14       | 10       | 9        | 1           |
+| NR (83658)  | 32       | 15       | 19       | 2           |
+
+: number of intersections between groups
+
+These numbers are different than the original lists from which they derived. This is normally due to running `na.omit()` on the data frame before GRanges transformation.\
+\### GWAS
+
+I downloaded 5 different trait associated lists from the GWAS catalog
+
+trait 1, 11 associations with trait **cardiotoxicity**
+
+trait 2, 1068 associations with trait **cardiac arrhythmia**
+
+trait 3, 40 associations with trait **response to anthracycline-based chemotherapy**
+
+trait 4, 6139 associations with trait **heart disease**
+
+trait 5, 447 associations with trait **heart failure**
+
+```{r GWAS info}
+
+
+##finding GWAS for Hearfailure: I used several traits from the GWAS database:
+##1_cardiotoxicity  11 associations   gwas_1
+gwas_1 <- readRDS("data/gwas_1_dataframe.RDS")
+##2_ cardiac arrhythmia  1068 associations   gwas_2
+gwas_2 <- readRDS("data/gwas_2_dataframe.RDS")
+##3_ Anthracycline_response   40 gwas_3
+gwas_3 <- readRDS("data/gwas_3_dataframe.RDS")
+
+##4_ heart disease (biggest # of associations 6139) 
+gwas_4 <- readRDS("data/gwas_4_dataframe.RDS")
+
+##5_ heart_failure gwas_5
+gwas_5 <- readRDS("data/gwas_5_dataframe.RDS")
+
+gwas_1_gr <- gwas_1 %>% 
+  dplyr::select(CHR_ID,CHR_POS,SNPS) %>% 
+  mutate(start=CHR_POS-25, end=CHR_POS+25, chr=paste0("chr",CHR_ID)) %>%
+  dplyr::select(chr, start,end, SNPS,CHR_POS) %>%
+   na.omit() %>% 
+  GRanges()
+
+gwas_2_gr <- gwas_2 %>% 
+  dplyr::select(CHR_ID,CHR_POS,SNPS) %>% 
+  mutate(start=CHR_POS-25, end=CHR_POS+25, chr=paste0("chr",CHR_ID)) %>%
+  dplyr::select(chr, start,end, SNPS,CHR_POS) %>%
+  na.omit() %>% 
+  GRanges()
+
+gwas_3_gr <- gwas_3 %>% 
+  dplyr::select(CHR_ID,CHR_POS,SNPS) %>% 
+  mutate(start=CHR_POS-25, end=CHR_POS+25, chr=paste0("chr",CHR_ID)) %>%
+  dplyr::select(chr, start,end, SNPS,CHR_POS) %>%
+   na.omit() %>% 
+  GRanges()
+
+gwas_4_gr <-  gwas_4 %>% 
+  dplyr::select(CHR_ID,CHR_POS,SNPS) %>% 
+  mutate(CHR_POS= as.integer(CHR_POS)) %>% 
+  mutate(start=CHR_POS-25, end=CHR_POS+25, chr=paste0("chr",CHR_ID))%>%
+  dplyr::select(chr, start,end, SNPS,CHR_POS) %>%
+   na.omit() %>% 
+  GRanges()
+
+gwas_5_gr <- gwas_5 %>% 
+  dplyr::select(CHR_ID,CHR_POS,SNPS) %>% 
+  mutate(start=CHR_POS-25, end=CHR_POS+25, chr=paste0("chr",CHR_ID)) %>%
+  dplyr::select(chr, start,end, SNPS,CHR_POS) %>%
+   na.omit() %>% 
+  GRanges()
+
+# gwas_2[(is.na(gwas_2$CHR_POS)),]
+```
+
+wfl```{r gwas overlaps}
+findOverlaps(EAR_df_gr, gwas_1_gr)
+findOverlaps(ESR_df_gr, gwas_1_gr)
+findOverlaps(LR_df_gr, gwas_1_gr)
+findOverlaps(NR_df_gr, gwas_1_gr)
+
+findOverlaps(EAR_df_gr, gwas_2_gr)
+findOverlaps(ESR_df_gr, gwas_2_gr)
+findOverlaps(LR_df_gr,  gwas_2_gr)
+findOverlaps(NR_df_gr, gwas_2_gr)
+
+
+findOverlaps(EAR_df_gr, gwas_3_gr)
+findOverlaps(ESR_df_gr, gwas_3_gr)
+findOverlaps(LR_df_gr, gwas_3_gr)
+findOverlaps(NR_df_gr, gwas_3_gr)
+
+findOverlaps(EAR_df_gr, gwas_4_gr)
+findOverlaps(ESR_df_gr, gwas_4_gr)
+findOverlaps(LR_df_gr, gwas_4_gr)
+findOverlaps(NR_df_gr, gwas_4_gr)
+
+findOverlaps(EAR_df_gr, gwas_5_gr)
+findOverlaps(ESR_df_gr, gwas_5_gr)
+findOverlaps(LR_df_gr, gwas_5_gr)
+findOverlaps(NR_df_gr, gwas_5_gr)
+
+
+
+
+
+
+```
+
+| motif       | gwas_1 (11) | gwas_2 (1061) | gwas_3 (39) | gwas_4 (6052) | gwas_5 (445) |
+|-------------|-------------|---------------|-------------|---------------|--------------|
+| EAR (7321)  | 0           | 2             | 0           | 17            | 1            |
+| ESR (15665) | 0           | 30            | 0           | 55            | 2            |
+| LR (41759)  | 2           | 29            | 4           | 186           | 16           |
+| NR (83658)  | 0           | 91            | 0           | 292           | 11           |
+
+: gwas trait enrichment
+
+These numbers are different than the original lists from which they derived. This is normally due to running `na.omit()` on the data frame before GRanges transformation.
