@@ -59,31 +59,55 @@ library(devtools)
 library(bedr)
 ```
 
+
+### Knowles supp data check
 ```{r import data}
-Knowles_4 <- readRDS("data/Knowles_4.RDS")
+Knowles_4<- readRDS("data/Knowles_4.RDS")
 Knowles_5 <- readRDS("data/Knowles_5.RDS")
 Knowles_6 <- readRDS("data/Knowles_6.RDS")
 SNP_supp_schneider <- readRDS("data/SNP_supp_schneider.RDS")
 peakAnnoList_n45_motif <- readRDS("data/peakAnnoList_n45_motif.RDS")
 list2env(peakAnnoList_n45_motif, envir = .GlobalEnv)
 ###How I made the granges files for overlaps
+Knowles_4_noext <- Knowles_4 %>%
+  na.omit() %>%
+  mutate(start=pos, end=pos+1) %>%
+  dplyr::select(chr, start,end, RSID, gene,pos) %>%
+  GRanges()
+
+
 Knowles_4 <- Knowles_4 %>%
   na.omit() %>%
   mutate(start=pos-25, end=pos+25) %>%
   dplyr::select(chr, start,end, RSID, gene,pos) %>%
   GRanges()
+
+
 # 
+Knowles_5_noext <- Knowles_5 %>%
+  na.omit() %>%
+  mutate(start=pos, end=pos+1) %>%
+  dplyr::select(chr, start,end, RSID, gene,pos) %>%
+  GRanges()
+
 Knowles_5 <- Knowles_5 %>%
   na.omit() %>%
   mutate(start=pos-25, end=pos+25) %>%
   dplyr::select(chr, start,end, RSID, gene,pos) %>%
   GRanges()
 
+Knowles_6_noext <- Knowles_6 %>%
+  na.omit() %>%
+  mutate(start=pos, end=pos+1) %>%
+  dplyr::select(chr, start,end, gene,pos) %>%
+  GRanges()
+ 
  Knowles_6 <- Knowles_6 %>%
   na.omit() %>%
   mutate(start=pos-25, end=pos+25) %>%
   dplyr::select(chr, start,end, gene,pos) %>%
   GRanges()
+ 
  
   SNP_supp_schneider <-  SNP_supp_schneider %>%
     na.omit() %>%
@@ -124,9 +148,10 @@ NR_df_gr <-  GRanges(NR_df)
 
 Checking for enrichment:
 
-I have made 25 bp +/- files for each of the data sets using the eQTL or SNP location.
+I have made 25 bp +/- files for each of the data sets using the eQTL or SNP location. I also
+made a 1bp no extensin file for each of the data sets using the eQTL or SNP location as start and end as +1.
 
-```{r overlaps}
+```{r overlaps, include=FALSE}
 findOverlaps(EAR_df_gr, Knowles_4)
 findOverlaps(ESR_df_gr, Knowles_4)
 findOverlaps(LR_df_gr, Knowles_4)
@@ -151,6 +176,24 @@ findOverlaps(NR_df_gr, SNP_supp_schneider)
 
 
 
+findOverlaps(EAR_df_gr, Knowles_4_noext)
+findOverlaps(ESR_df_gr, Knowles_4_noext)
+findOverlaps(LR_df_gr, Knowles_4_noext)
+findOverlaps(NR_df_gr, Knowles_4_noext)
+
+findOverlaps(EAR_df_gr, Knowles_5_noext)
+findOverlaps(ESR_df_gr, Knowles_5_noext)
+findOverlaps(LR_df_gr, Knowles_5_noext)
+findOverlaps(NR_df_gr, Knowles_5_noext)
+
+
+findOverlaps(EAR_df_gr, Knowles_6_noext)
+findOverlaps(ESR_df_gr, Knowles_6_noext)
+findOverlaps(LR_df_gr, Knowles_6_noext)
+findOverlaps(NR_df_gr, Knowles_6_noext)
+
+
+
 ```
 
 report:
@@ -164,8 +207,28 @@ report:
 
 : number of intersections between groups
 
+
+report:
+
+| motif       | K_4(500) | K_5(359) | K_6(447) |
+|-------------|----------|----------|----------|
+| EAR (7321)  | 0        | 1        | 0        | 
+| ESR (15665) | 3        | 2        | 2        | 
+| LR (41759)  | 13       | 9        | 8        | 
+| NR (83658)  | 30       | 15       | 19       | 
+
+: number of intersections between groups without extension
+
 These numbers are different than the original lists from which they derived. This is normally due to running `na.omit()` on the data frame before GRanges transformation.\
-\### GWAS
+
+
+
+
+
+
+
+
+### GWAS
 
 I downloaded 5 different trait associated lists from the GWAS catalog
 
@@ -178,6 +241,11 @@ trait 3, 40 associations with trait **response to anthracycline-based chemothera
 trait 4, 6139 associations with trait **heart disease**
 
 trait 5, 447 associations with trait **heart failure**
+
+
+
+
+
 
 ```{r GWAS info}
 
@@ -203,9 +271,24 @@ gwas_1_gr <- gwas_1 %>%
    na.omit() %>% 
   GRanges()
 
+gwas_1_gr_noext <- gwas_1 %>% 
+  dplyr::select(CHR_ID,CHR_POS,SNPS) %>% 
+  mutate(start=CHR_POS, end=CHR_POS+1, chr=paste0("chr",CHR_ID)) %>%
+  dplyr::select(chr, start,end, SNPS,CHR_POS) %>%
+   na.omit() %>% 
+  GRanges()
+
 gwas_2_gr <- gwas_2 %>% 
   dplyr::select(CHR_ID,CHR_POS,SNPS) %>% 
-  mutate(start=CHR_POS-25, end=CHR_POS+25, chr=paste0("chr",CHR_ID)) %>%
+   mutate(start=CHR_POS-25, end=CHR_POS+25, chr=paste0("chr",CHR_ID)) %>%
+  dplyr::select(chr, start,end, SNPS,CHR_POS) %>%
+  na.omit() %>% 
+  GRanges()
+
+
+gwas_2_gr_noext <- gwas_2 %>% 
+  dplyr::select(CHR_ID,CHR_POS,SNPS) %>% 
+  mutate(start=CHR_POS, end=CHR_POS+1, chr=paste0("chr",CHR_ID)) %>%
   dplyr::select(chr, start,end, SNPS,CHR_POS) %>%
   na.omit() %>% 
   GRanges()
@@ -213,6 +296,12 @@ gwas_2_gr <- gwas_2 %>%
 gwas_3_gr <- gwas_3 %>% 
   dplyr::select(CHR_ID,CHR_POS,SNPS) %>% 
   mutate(start=CHR_POS-25, end=CHR_POS+25, chr=paste0("chr",CHR_ID)) %>%
+  dplyr::select(chr, start,end, SNPS,CHR_POS) %>%
+   na.omit() %>% 
+  GRanges()
+gwas_3_gr_noext <- gwas_3 %>% 
+  dplyr::select(CHR_ID,CHR_POS,SNPS) %>% 
+   mutate(start=CHR_POS, end=CHR_POS+1, chr=paste0("chr",CHR_ID)) %>%
   dplyr::select(chr, start,end, SNPS,CHR_POS) %>%
    na.omit() %>% 
   GRanges()
@@ -225,9 +314,24 @@ gwas_4_gr <-  gwas_4 %>%
    na.omit() %>% 
   GRanges()
 
+gwas_4_gr_noext <-  gwas_4 %>% 
+  dplyr::select(CHR_ID,CHR_POS,SNPS) %>% 
+  mutate(CHR_POS= as.integer(CHR_POS)) %>% 
+   mutate(start=CHR_POS, end=CHR_POS+1, chr=paste0("chr",CHR_ID)) %>%
+  dplyr::select(chr, start,end, SNPS,CHR_POS) %>%
+   na.omit() %>% 
+  GRanges()
+
 gwas_5_gr <- gwas_5 %>% 
   dplyr::select(CHR_ID,CHR_POS,SNPS) %>% 
   mutate(start=CHR_POS-25, end=CHR_POS+25, chr=paste0("chr",CHR_ID)) %>%
+  dplyr::select(chr, start,end, SNPS,CHR_POS) %>%
+   na.omit() %>% 
+  GRanges()
+
+gwas_5_gr_noext <- gwas_5 %>% 
+  dplyr::select(CHR_ID,CHR_POS,SNPS) %>% 
+  mutate(start=CHR_POS, end=CHR_POS+1, chr=paste0("chr",CHR_ID)) %>%
   dplyr::select(chr, start,end, SNPS,CHR_POS) %>%
    na.omit() %>% 
   GRanges()
@@ -263,7 +367,31 @@ findOverlaps(LR_df_gr, gwas_5_gr)
 findOverlaps(NR_df_gr, gwas_5_gr)
 
 
+findOverlaps(EAR_df_gr, gwas_1_gr_noext)
+findOverlaps(ESR_df_gr, gwas_1_gr_noext)
+findOverlaps(LR_df_gr, gwas_1_gr_noext)
+findOverlaps(NR_df_gr, gwas_1_gr_noext)
 
+findOverlaps(EAR_df_gr, gwas_2_gr_noext)
+findOverlaps(ESR_df_gr, gwas_2_gr_noext)
+findOverlaps(LR_df_gr,  gwas_2_gr_noext)
+findOverlaps(NR_df_gr, gwas_2_gr_noext)
+
+
+findOverlaps(EAR_df_gr, gwas_3_gr_noext)
+findOverlaps(ESR_df_gr, gwas_3_gr_noext)
+findOverlaps(LR_df_gr, gwas_3_gr_noext)
+findOverlaps(NR_df_gr, gwas_3_gr_noext)
+
+findOverlaps(EAR_df_gr, gwas_4_gr_noext)
+findOverlaps(ESR_df_gr, gwas_4_gr_noext)
+findOverlaps(LR_df_gr, gwas_4_gr_noext)
+findOverlaps(NR_df_gr, gwas_4_gr_noext)
+
+findOverlaps(EAR_df_gr, gwas_5_gr_noext)
+findOverlaps(ESR_df_gr, gwas_5_gr_noext)
+findOverlaps(LR_df_gr, gwas_5_gr_noext)
+findOverlaps(NR_df_gr, gwas_5_gr_noext)
 
 
 
@@ -278,4 +406,17 @@ findOverlaps(NR_df_gr, gwas_5_gr)
 
 : gwas trait enrichment
 
+
+| motif       | gwas_1 (11) | gwas_2 (1061) | gwas_3 (39) | gwas_4 (6052) | gwas_5 (445) |
+|-------------|-------------|---------------|-------------|---------------|--------------|
+| EAR (7321)  | 0           | 2             | 0           | 17            | 0            |
+| ESR (15665) | 0           | 30            | 0           | 55            | 2            |
+| LR (41759)  | 2           | 29            | 4           | 182           | 15           |
+| NR (83658)  | 0           | 90            | 0           | 278           | 11           |
+
+: gwas trait enrichment with no extension
+
+
 These numbers are different than the original lists from which they derived. This is normally due to running `na.omit()` on the data frame before GRanges transformation.
+
+
