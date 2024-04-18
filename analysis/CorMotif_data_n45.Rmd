@@ -273,11 +273,11 @@ clust4_n45 <- motif_prob_n45 %>%
   as.data.frame() %>%
   filter(V4>0.5) %>% 
   rownames
-# backGL_n45_he <- row.names(motif_prob_n45_he)
+# backGL_n45_he <- row.names(motif_prob_n45)
 # saveRDS(backGL_n45_he,"data/background_n45_he_peaks.RDS")
 
 # unclassified_n45 <- setdiff(backGL_n45_he,union(clust1_n45,union(clust2_n45,union(clust4_n45,clust3_n45))))
-# # 
+# #
 # motif_list_n45 <- list("NR_n45"=clust1_n45,"LR_n45"=clust2_n45,"EAR_n45"=clust3_n45,"ESR_n45"=clust4_n45,"unclassified_n45"=unclassified_n45, "backGL_n45_he"=backGL_n45_he)
 # saveRDS(motif_list_n45,"data/motif_list_n45.RDS")
 # saveRDS(unclassified_n45,"data/unclassified_n45_set_peaks.RDS")
@@ -691,7 +691,7 @@ mean_lfc %>%
 ```{r pie chart}
 
 Set <- c("EAR", "ESR","LR", "NR")
-gene_num <- c(7321,15665,41759,83658)
+gene_num <- c(7321,15667,41767,83741)
 fills <- c("#F8766D",  "#00BFC4","#7CAE00", "#C77CFF")
 
 pie_chartdata <- data.frame(Set, gene_num, fills)
@@ -899,7 +899,8 @@ LR_promotor <- LR_df %>%
   dplyr::filter(annotation=="Promoter (<=1kb)")
 LR_promo_gr <-  GRanges(LR_promotor)
  # rtracklayer::export.bed(LR_promo_gr, con="data/n45_bedfiles/LR_promo.bed", format="bed", ignore.strand = FALSE)
- 
+ # LR_promotor %>% 
+ #   dplyr::filter(geneChr==6)
 
 NR_df <- as.data.frame(peakAnnoList_n45_motif$NR_n45_gr)
 NR_promotor <- NR_df %>% 
@@ -1067,6 +1068,7 @@ EAR_df %>%
   left_join(.,toplist_n45, by = c("id"="peak" )) %>% 
   dplyr::select(id:logFC) %>% 
   rename(geneId="ENTREZID") %>% 
+   na.omit() %>% 
   left_join(., (toplistall_RNA %>% 
   # dplyr:: filter(ENTREZID %in% EAR_promotor$geneId) %>%
   dplyr::select(time:ENTREZID,logFC) %>% mutate(time=factor(time, levels= c("3_hours","24_hours"), labels = c("3 hours","24 hours"))) %>% 
@@ -1091,6 +1093,7 @@ ESR_df %>%
   left_join(.,toplist_n45, by = c("id"="peak" )) %>% 
   dplyr::select(id:logFC) %>% 
   rename(geneId="ENTREZID") %>% 
+   na.omit() %>% 
   left_join(., (toplistall_RNA %>% 
   # dplyr:: filter(ENTREZID %in% ESR_promoter_peaks) %>% 
   dplyr::select(time:ENTREZID,logFC) %>% mutate(time=factor(time, levels= c("3_hours","24_hours"), labels = c("3 hours","24 hours"))) %>% 
@@ -1142,3 +1145,81 @@ facet_wrap(~time+trt, nrow =2, ncol = 5)
 
 ```
 
+
+```{r testing enhancers, eval=FALSE, include=FALSE}
+
+NR_EH <- subsetByOverlaps((NR_df %>% GRanges(.)),EH_list_gr)
+
+enhancer_list_126UHK <- read_tsv("data/enhancer_list_ENCFF126UHK.bed")
+
+EH_list_gr <- enhancer_list_126UHK %>% 
+  GRanges(.)
+
+# # tagMatrixList <- lapply(list(EAR_n45_gr, ESR_n45_gr, LR_n45_gr, NR_n45_gr),getTagMatrix, windows = TSS)
+# 
+# 
+# TTS_matrix <- getTagMatrix(peakAnnoList_3_n45[[4]], 
+#                            TxDb = txdb,
+#                            upstream = 3000,
+#                            downstream = 3000, 
+#                            type = "start_site",
+#                            by = "gene",
+#                            weightCol = "V5")
+# 
+# plotPeakProf(tagMatrix = TTS_matrix, conf = 0.95)
+test <- as.data.frame(NR_EH$annotation)
+test %>% 
+  dplyr::filter(NR_EH$annotation =="Distal Intergenic")
+  count()
+
+"Promoter (<=1kb)")
+      
+      NR_EH %>% 
+        dplyr::filter(annotation=="Promoter (<=1kb)")
+
+```
+### ATAC and RNA genes in common
+
+```{r comparisonvenns}
+### Looking at overall expression between neargenes in EAR,ESR,LR, and NR to RNA-genes that are EAR,ESR,LR, NR.
+
+# motif_list_n45 <- readRDS("data/motif_list_n45.RDS")
+# list2env(motif_list_n45, envir= .GlobalEnv)
+
+EAR_df <- as.data.frame(peakAnnoList_n45_motif$EAR_n45_gr)
+ESR_df <- as.data.frame(peakAnnoList_n45_motif$ESR_n45_gr)
+LR_df <- as.data.frame(peakAnnoList_n45_motif$LR_n45_gr)
+NR_df <- as.data.frame(peakAnnoList_n45_motif$NR_n45_gr)
+
+# EAR_RNA$ENTREZID
+# ESR_RNA$ENTREZID
+# LR_RNA$ENTREZID
+# NR_RNA$ENTREZID
+# 
+# list1 <- EAR_df$geneId
+# list2 <- EAR_RNA$ENTREZID
+
+ggVennDiagram::ggVennDiagram(list(unique(as.integer(EAR_df$geneId)),EAR_RNA$ENTREZID),category.names = c("ATAC","RNA"))+
+  scale_x_continuous(expand = expansion(mult = .2))+
+  scale_fill_gradient(low = "red4", high = "cornflowerblue")+
+  labs(title = "EAR motifs in ATAC and RNA")+
+  theme(plot.title = element_text(size = rel(1.5), hjust = 0.5))
+
+ggVennDiagram::ggVennDiagram(list(unique(as.integer(ESR_df$geneId)),ESR_RNA$ENTREZID),category.names = c("ATAC","RNA"))+
+  scale_x_continuous(expand = expansion(mult = .2))+
+  scale_fill_gradient(low = "red1", high = "cornflowerblue")+
+  labs(title = "ESR motifs in ATAC and RNA")+
+  theme(plot.title = element_text(size = rel(1.5), hjust = 0.5))
+
+ggVennDiagram::ggVennDiagram(list(unique(as.integer(LR_df$geneId)),LR_RNA$ENTREZID),category.names = c("ATAC","RNA"))+
+  scale_x_continuous(expand = expansion(mult = .2))+
+  scale_fill_gradient(low = "red2", high = "cornflowerblue")+
+  labs(title = "LR motifs in ATAC and RNA")+
+  theme(plot.title = element_text(size = rel(1.5), hjust = 0.5))
+
+ggVennDiagram::ggVennDiagram(list(unique(as.integer(NR_df$geneId)),NR_RNA$ENTREZID),category.names = c("ATAC","RNA"))+
+  scale_x_continuous(expand = expansion(mult = .2))+
+  scale_fill_gradient(low = "red3", high = "cornflowerblue")+
+  labs(title = "NR motifs in ATAC and RNA")+
+  theme(plot.title = element_text(size = rel(1.5), hjust = 0.5))
+```
