@@ -59,8 +59,8 @@ library(devtools)
 library(bedr)
 ```
 
-
 ### Knowles supp data check
+
 ```{r import data}
 Knowles_4<- readRDS("data/Knowles_4.RDS")
 Knowles_5 <- readRDS("data/Knowles_5.RDS")
@@ -111,7 +111,8 @@ Knowles_6_noext <- Knowles_6 %>%
  
   SNP_supp_schneider <-  SNP_supp_schneider %>%
     na.omit() %>%
-    rename(X1="chr", X2 = "pos", X4="RSID") %>%
+     rename(X1="chr",X2= "pos",X4="RSID") %>%
+    # rename("chr"=X1, "pos" =X2,"RSID" =X4) %>%
     mutate(start=pos-25, end=pos+25) %>%
    dplyr::select(chr, start,end, RSID,pos) %>%
     GRanges()
@@ -148,8 +149,7 @@ NR_df_gr <-  GRanges(NR_df)
 
 Checking for enrichment:
 
-I have made 25 bp +/- files for each of the data sets using the eQTL or SNP location. I also
-made a 1bp no extensin file for each of the data sets using the eQTL or SNP location as start and end as +1.
+I have made 25 bp +/- files for each of the data sets using the eQTL or SNP location. I also made a 1bp no extensin file for each of the data sets using the eQTL or SNP location as start and end as +1.
 
 ```{r overlaps, include=FALSE}
 findOverlaps(EAR_df_gr, Knowles_4)
@@ -168,10 +168,10 @@ findOverlaps(ESR_df_gr, Knowles_6)
 findOverlaps(LR_df_gr, Knowles_6)
 findOverlaps(NR_df_gr, Knowles_6)
 
-findOverlaps(EAR_df_gr, SNP_supp_schneider)
-findOverlaps(ESR_df_gr, SNP_supp_schneider)
-findOverlaps(LR_df_gr, SNP_supp_schneider)
-findOverlaps(NR_df_gr, SNP_supp_schneider)
+# findOverlaps(EAR_df_gr, SNP_supp_schneider)
+# findOverlaps(ESR_df_gr, SNP_supp_schneider)
+# findOverlaps(LR_df_gr, SNP_supp_schneider)
+# findOverlaps(NR_df_gr, SNP_supp_schneider)
 
 
 
@@ -207,26 +207,18 @@ report:
 
 : number of intersections between groups
 
-
 report:
 
 | motif       | K_4(500) | K_5(359) | K_6(447) |
 |-------------|----------|----------|----------|
-| EAR (7321)  | 0        | 1        | 0        | 
-| ESR (15665) | 3        | 2        | 2        | 
-| LR (41759)  | 13       | 9        | 8        | 
-| NR (83658)  | 30       | 15       | 19       | 
+| EAR (7321)  | 0        | 1        | 0        |
+| ESR (15665) | 3        | 2        | 2        |
+| LR (41759)  | 13       | 9        | 8        |
+| NR (83658)  | 30       | 15       | 19       |
 
 : number of intersections between groups without extension
 
 These numbers are different than the original lists from which they derived. This is normally due to running `na.omit()` on the data frame before GRanges transformation.\
-
-
-
-
-
-
-
 
 ### GWAS
 
@@ -241,11 +233,6 @@ trait 3, 40 associations with trait **response to anthracycline-based chemothera
 trait 4, 6139 associations with trait **heart disease**
 
 trait 5, 447 associations with trait **heart failure**
-
-
-
-
-
 
 ```{r GWAS info}
 
@@ -263,6 +250,45 @@ gwas_4 <- readRDS("data/gwas_4_dataframe.RDS")
 
 ##5_ heart_failure gwas_5
 gwas_5 <- readRDS("data/gwas_5_dataframe.RDS")
+
+##6 Coronary artery disease
+CAD_gwas <- readRDS( "data/CAD_gwas_dataframe.RDS")
+
+MI_gwas <- readRDS("data/MI_gwas.RDS")
+
+CAD_gwas_gr <- CAD_gwas %>%
+  dplyr::select(CHR_ID,CHR_POS,SNPS) %>% 
+  mutate(CHR_ID=as.numeric(CHR_ID), CHR_POS=as.numeric(CHR_POS)) %>% 
+  na.omit(.) %>% 
+  mutate(start=CHR_POS-25, end=CHR_POS+25, chr=paste0("chr",CHR_ID)) %>%
+  dplyr::select(chr, start,end, SNPS,CHR_POS) %>%
+   GRanges(.)
+
+CAD_gwas_gr_noext <- CAD_gwas %>% 
+  dplyr::select(CHR_ID,CHR_POS,SNPS) %>% 
+  mutate(CHR_ID=as.numeric(CHR_ID), CHR_POS=as.numeric(CHR_POS)) %>% 
+  na.omit(.) %>% 
+  mutate(start=CHR_POS-25, end=CHR_POS+25, chr=paste0("chr",CHR_ID)) %>%
+  dplyr::select(chr, start,end, SNPS,CHR_POS) %>%
+   GRanges(.)
+
+
+MI_gwas_gr <- MI_gwas %>%
+  dplyr::select(CHR_ID,CHR_POS,SNPS) %>% 
+  mutate(CHR_ID=as.numeric(CHR_ID), CHR_POS=as.numeric(CHR_POS)) %>% 
+  na.omit(.) %>% 
+  mutate(start=CHR_POS-25, end=CHR_POS+25, chr=paste0("chr",CHR_ID)) %>%
+  dplyr::select(chr, start,end, SNPS,CHR_POS) %>%
+   GRanges(.)
+
+MI_gwas_gr_noext <- MI_gwas %>% 
+  dplyr::select(CHR_ID,CHR_POS,SNPS) %>% 
+  mutate(CHR_ID=as.numeric(CHR_ID), CHR_POS=as.numeric(CHR_POS)) %>% 
+  na.omit(.) %>% 
+  mutate(start=CHR_POS-25, end=CHR_POS+25, chr=paste0("chr",CHR_ID)) %>%
+  dplyr::select(chr, start,end, SNPS,CHR_POS) %>%
+   GRanges(.)
+
 
 gwas_1_gr <- gwas_1 %>% 
   dplyr::select(CHR_ID,CHR_POS,SNPS) %>% 
@@ -339,7 +365,7 @@ gwas_5_gr_noext <- gwas_5 %>%
 # gwas_2[(is.na(gwas_2$CHR_POS)),]
 ```
 
-```{r gwas overlaps}
+```{r gwas overlaps, include=FALSE}
 findOverlaps(EAR_df_gr, gwas_1_gr)
 findOverlaps(ESR_df_gr, gwas_1_gr)
 findOverlaps(LR_df_gr, gwas_1_gr)
@@ -366,57 +392,854 @@ findOverlaps(ESR_df_gr, gwas_5_gr)
 findOverlaps(LR_df_gr, gwas_5_gr)
 findOverlaps(NR_df_gr, gwas_5_gr)
 
+findOverlaps(EAR_df_gr, CAD_gwas_gr)
+findOverlaps(ESR_df_gr,  CAD_gwas_gr)
+findOverlaps(LR_df_gr,  CAD_gwas_gr)
+findOverlaps(NR_df_gr,  CAD_gwas_gr)
 
-findOverlaps(EAR_df_gr, gwas_1_gr_noext)
-findOverlaps(ESR_df_gr, gwas_1_gr_noext)
-findOverlaps(LR_df_gr, gwas_1_gr_noext)
-findOverlaps(NR_df_gr, gwas_1_gr_noext)
+findOverlaps(EAR_df_gr, MI_gwas_gr)
+findOverlaps(ESR_df_gr,  MI_gwas_gr)
+findOverlaps(LR_df_gr,  MI_gwas_gr)
+findOverlaps(NR_df_gr,  MI_gwas_gr)
 
-findOverlaps(EAR_df_gr, gwas_2_gr_noext)
-findOverlaps(ESR_df_gr, gwas_2_gr_noext)
-findOverlaps(LR_df_gr,  gwas_2_gr_noext)
-findOverlaps(NR_df_gr, gwas_2_gr_noext)
+EAR_g1_ol <- findOverlaps(EAR_df_gr, gwas_1_gr_noext)
+ESR_g1_ol <-findOverlaps(ESR_df_gr, gwas_1_gr_noext)
+LR_g1_ol <-findOverlaps(LR_df_gr, gwas_1_gr_noext)
+NR_g1_ol <-findOverlaps(NR_df_gr, gwas_1_gr_noext)
+
+EAR_g2_ol <-findOverlaps(EAR_df_gr, gwas_2_gr_noext)
+ESR_g2_ol <-findOverlaps(ESR_df_gr, gwas_2_gr_noext)
+LR_g2_ol <-findOverlaps(LR_df_gr,  gwas_2_gr_noext)
+NR_g2_ol <-findOverlaps(NR_df_gr, gwas_2_gr_noext)
 
 
-findOverlaps(EAR_df_gr, gwas_3_gr_noext)
-findOverlaps(ESR_df_gr, gwas_3_gr_noext)
-findOverlaps(LR_df_gr, gwas_3_gr_noext)
-findOverlaps(NR_df_gr, gwas_3_gr_noext)
+EAR_g3_ol <-findOverlaps(EAR_df_gr, gwas_3_gr_noext)
+ESR_g3_ol <-findOverlaps(ESR_df_gr, gwas_3_gr_noext)
+LR_g3_ol <-findOverlaps(LR_df_gr, gwas_3_gr_noext)
+NR_g3_ol <-findOverlaps(NR_df_gr, gwas_3_gr_noext)
 
-findOverlaps(EAR_df_gr, gwas_4_gr_noext)
-findOverlaps(ESR_df_gr, gwas_4_gr_noext)
-findOverlaps(LR_df_gr, gwas_4_gr_noext)
-findOverlaps(NR_df_gr, gwas_4_gr_noext)
+EAR_g4_ol <-findOverlaps(EAR_df_gr, gwas_4_gr_noext)
+EAR_g4_ol <-findOverlaps(ESR_df_gr, gwas_4_gr_noext)
+EAR_g4_ol <-findOverlaps(LR_df_gr, gwas_4_gr_noext)
+EAR_g4_ol <-findOverlaps(NR_df_gr, gwas_4_gr_noext)
 
-findOverlaps(EAR_df_gr, gwas_5_gr_noext)
-findOverlaps(ESR_df_gr, gwas_5_gr_noext)
-findOverlaps(LR_df_gr, gwas_5_gr_noext)
-findOverlaps(NR_df_gr, gwas_5_gr_noext)
+EAR_g5_ol <-findOverlaps(EAR_df_gr, gwas_5_gr_noext)
+EAR_g5_ol <-findOverlaps(ESR_df_gr, gwas_5_gr_noext)
+EAR_g5_ol <-findOverlaps(LR_df_gr, gwas_5_gr_noext)
+EAR_g5_ol <-findOverlaps(NR_df_gr, gwas_5_gr_noext)
+
+EAR_CAD_ol <-findOverlaps(EAR_df_gr, CAD_gwas_gr_noext)
+EAR_CAD_ol <-findOverlaps(ESR_df_gr,  CAD_gwas_gr_noext)
+EAR_CAD_ol <-findOverlaps(LR_df_gr,  CAD_gwas_gr_noext)
+EAR_CAD_ol <-findOverlaps(NR_df_gr,  CAD_gwas_gr_noext)
+
+findOverlaps(EAR_df_gr, MI_gwas_gr_noext)
+findOverlaps(ESR_df_gr,  MI_gwas_gr_noext)
+findOverlaps(LR_df_gr,  MI_gwas_gr_noext)
+findOverlaps(NR_df_gr,  MI_gwas_gr_noext)
+
+
+```
+
+| motif       | gwas_1 (11) | gwas_2 (1061) | gwas_3 (39) | gwas_4 (6052) | gwas_5 (445) | CAD_gwas (3482) |    |---------|---------|---------|---------|---------|---------|---------|---------|
+| EAR (7321)  | 0           | 2             | 0           | 17            | 1            | 12              |  
+| ESR (15665) | 0           | 30            | 0           | 55            | 2            | 17              | 
+| LR (41759)  | 2           | 29            | 4           | 186           | 16           | 116             | 
+| NR (83658)  | 0           | 91            | 0           | 292           | 11           | 146             |   
+
+: gwas trait enrichment
+
+| motif       | gwas_1 (11) | gwas_2 (1061) | gwas_3 (39) | gwas_4 (6052) | gwas_5 (445) | CAD_gwas (3482) | MI_gwas (399)|    
+|---------|---------|---------|---------|---------|---------|---------|---------|---------|
+| EAR (7321)  | 0           | 2             | 0           | 17            | 0            | 12 |1|              |     
+| ESR (15665) | 0           | 30            | 0           | 55            | 2            | 17  |0|            |     
+| LR (41759)  | 2           | 29            | 4           | 182           | 15           | 116  |15|           |     
+| NR (83658)  | 0           | 90            | 0           | 278           | 11           | 146  |19|           |     
+
+: gwas trait enrichment with no extension
+
+These numbers are different than the original lists from which they derived. This is normally due to running `na.omit()` on the data frame before GRanges transformation. \#### chisquare tests
+
+```{r chi numbers}
+chitest_gwas2_EAR <- matrix(c(2,7319,90,83568), ncol=2, byrow=TRUE)
+chitest_gwas2_ESR <- matrix(c(30,15635,90,83568), ncol=2, byrow=TRUE)
+chitest_gwas2_LR <- matrix(c(20,41739,90,83568), ncol=2, byrow=TRUE)
+chisq.test(chitest_gwas2_EAR)
+chisq.test(chitest_gwas2_ESR)
+chisq.test(chitest_gwas2_LR)
+
+
+
+chitest_gwas4_EAR <- matrix(c(17,7304,292,83366), ncol=2, byrow=TRUE)
+chitest_gwas4_ESR <- matrix(c(55,15610,292,83366), ncol=2, byrow=TRUE)
+chitest_gwas4_LR <- matrix(c(186,41573,292,83366), ncol=2, byrow=TRUE)
+chisq.test(chitest_gwas4_EAR)
+chisq.test(chitest_gwas4_ESR)
+chisq.test(chitest_gwas4_LR)
+
+
+chitest_K4_EAR <- matrix(c(0,7321,32,83626), ncol=2, byrow=TRUE)
+chitest_K4_ESR <- matrix(c(3,15662,32,83626), ncol=2, byrow=TRUE)
+chitest_K4_LR <- matrix(c(14,417545,32,83626), ncol=2, byrow=TRUE)
+chisq.test(chitest_K4_EAR)
+chisq.test(chitest_K4_ESR)
+chisq.test(chitest_K4_LR)
+
+
+chitest_K5_EAR <- matrix(c(1,7320,15,83643), ncol=2, byrow=TRUE)
+chitest_K5_ESR <- matrix(c(2,15663,15,83643), ncol=2, byrow=TRUE)
+chitest_K5_LR <- matrix(c(10,41749,15,83643), ncol=2, byrow=TRUE)
+chisq.test(chitest_K5_EAR)
+chisq.test(chitest_K5_ESR)
+chisq.test(chitest_K5_LR)
+
+
+chitest_K6_EAR <- matrix(c(0,7321,19,83639), ncol=2, byrow=TRUE)
+chitest_K6_ESR <- matrix(c(2,15663,19,83639), ncol=2, byrow=TRUE)
+chitest_K6_LR <- matrix(c(9,41750,19,83639), ncol=2, byrow=TRUE)
+chisq.test(chitest_K6_EAR)
+chisq.test(chitest_K6_ESR)
+chisq.test(chitest_K6_LR)
+
+chitest_CAD_EAR <- matrix(c(12,7309,146,83512), ncol=2, byrow=TRUE)
+chitest_CAD_ESR <- matrix(c(17,15648,146,83512), ncol=2, byrow=TRUE)
+chitest_CAD_LR <- matrix(c(116,41643,146,83512), ncol=2, byrow=TRUE)
+chisq.test(chitest_CAD_EAR)
+chisq.test(chitest_CAD_ESR)
+chisq.test(chitest_CAD_LR)
 
 
 
 ```
 
-| motif       | gwas_1 (11) | gwas_2 (1061) | gwas_3 (39) | gwas_4 (6052) | gwas_5 (445) |
-|-------------|-------------|---------------|-------------|---------------|--------------|
-| EAR (7321)  | 0           | 2             | 0           | 17            | 1            |
-| ESR (15665) | 0           | 30            | 0           | 55            | 2            |
-| LR (41759)  | 2           | 29            | 4           | 186           | 16           |
-| NR (83658)  | 0           | 91            | 0           | 292           | 11           |
 
-: gwas trait enrichment
+```{r subsetoverlap to check for peaks/nearestgene}
+##sub-setting  peaks that overlap with at least 1 SNP in gwas2 noext
+
+EAR_g2_sol <- as.data.frame(subsetByOverlaps(EAR_df_gr, gwas_2_gr_noext))
+# subsetByOverlaps(gwas_2_gr_noext, ESR_df_gr)
+ESR_g2_sol <- as.data.frame(subsetByOverlaps(ESR_df_gr, gwas_2_gr_noext))
+LR_g2_sol <- as.data.frame(subsetByOverlaps(LR_df_gr,  gwas_2_gr_noext))
+NR_g2_sol <- as.data.frame(subsetByOverlaps(NR_df_gr, gwas_2_gr_noext))
+
+EAR_g4_sol <- as.data.frame(subsetByOverlaps(EAR_df_gr, gwas_4_gr_noext))
+ESR_g4_sol <- as.data.frame(subsetByOverlaps(ESR_df_gr, gwas_4_gr_noext))
+LR_g4_sol <- as.data.frame(subsetByOverlaps(LR_df_gr,  gwas_4_gr_noext))
+NR_g4_sol <- as.data.frame(subsetByOverlaps(NR_df_gr, gwas_4_gr_noext))
+
+EAR_g1_sol <- as.data.frame(subsetByOverlaps(EAR_df_gr, gwas_1_gr_noext))
+
+ESR_g1_sol <- as.data.frame(subsetByOverlaps(ESR_df_gr, gwas_1_gr_noext))
+LR_g1_sol <- as.data.frame(subsetByOverlaps(LR_df_gr,  gwas_1_gr_noext))
+NR_g1_sol <- as.data.frame(subsetByOverlaps(NR_df_gr, gwas_1_gr_noext))
 
 
-| motif       | gwas_1 (11) | gwas_2 (1061) | gwas_3 (39) | gwas_4 (6052) | gwas_5 (445) |
-|-------------|-------------|---------------|-------------|---------------|--------------|
-| EAR (7321)  | 0           | 2             | 0           | 17            | 0            |
-| ESR (15665) | 0           | 30            | 0           | 55            | 2            |
-| LR (41759)  | 2           | 29            | 4           | 182           | 15           |
-| NR (83658)  | 0           | 90            | 0           | 278           | 11           |
+EAR_g3_sol <- as.data.frame(subsetByOverlaps(EAR_df_gr, gwas_3_gr_noext))
 
-: gwas trait enrichment with no extension
+ESR_g3_sol <- as.data.frame(subsetByOverlaps(ESR_df_gr, gwas_3_gr_noext))
+LR_g3_sol <- as.data.frame(subsetByOverlaps(LR_df_gr,  gwas_3_gr_noext))
+NR_g3_sol <- as.data.frame(subsetByOverlaps(NR_df_gr, gwas_3_gr_noext))
+
+EAR_g5_sol <- as.data.frame(subsetByOverlaps(EAR_df_gr, gwas_5_gr_noext))
+
+ESR_g5_sol <- as.data.frame(subsetByOverlaps(ESR_df_gr, gwas_5_gr_noext))
+LR_g5_sol <- as.data.frame(subsetByOverlaps(LR_df_gr,  gwas_5_gr_noext))
+NR_g5_sol <- as.data.frame(subsetByOverlaps(NR_df_gr, gwas_5_gr_noext))
+
+EAR_MI_sol <- as.data.frame(subsetByOverlaps(EAR_df_gr, MI_gwas_gr))
+
+ESR_MI_sol <- as.data.frame(subsetByOverlaps(ESR_df_gr, MI_gwas_gr))
+LR_MI_sol <- as.data.frame(subsetByOverlaps(LR_df_gr,  MI_gwas_gr))
+NR_MI_sol <- as.data.frame(subsetByOverlaps(NR_df_gr, MI_gwas_gr))
+
+EAR_CAD_sol <- as.data.frame(subsetByOverlaps(EAR_df_gr, CAD_gwas_gr))
+
+ESR_CAD_sol <- as.data.frame(subsetByOverlaps(ESR_df_gr, CAD_gwas_gr))
+LR_CAD_sol <- as.data.frame(subsetByOverlaps(LR_df_gr,  CAD_gwas_gr))
+NR_CAD_sol <- as.data.frame(subsetByOverlaps(NR_df_gr, CAD_gwas_gr))
+
+###Now I can pull the geneID list and see if genes are DE from RNAseq data
+
+toplistall_RNA <- readRDS("data/other_papers/toplistall_RNA.RDS") 
+
+###Because of how I applied the DEG system in RNA-seq analysis, the lFC is opposite of the 
+###counts.   I did trt-veh instead of veh-trt.  therefore I need to multiply lfc by -1 to get t
+###the right correlation.
+
+toplistall_RNA <- toplistall_RNA %>% 
+  mutate(logFC = logFC*(-1))
+
+RNA_expresed_genes <- toplistall_RNA %>% 
+  # dplyr::filter(adj.P.Val <0.05) %>% 
+   mutate(expression = if_else(logFC<0,"down","up")) %>% 
+  dplyr::select(ENTREZID,SYMBOL,expression) %>% 
+  # dplyr::select(ENTREZID,SYMBOL) %>% 
+  unique(.)  
+RNA_expresed_genes_DE <- toplistall_RNA %>% 
+  dplyr::filter(adj.P.Val <0.05) %>%
+  mutate(expression = if_else(logFC<0,"down","up")) %>% 
+  dplyr::select(ENTREZID,SYMBOL,expression) %>% 
+  unique(.)  
+
+RNA_expresed_genes %>% 
+  dplyr::filter(ENTREZID %in% NR_g4_sol$geneID)
+
+NR_g2_list <- intersect(RNA_expresed_genes$ENTREZID,NR_g2_sol$geneId)
+LR_g2_list <- intersect(RNA_expresed_genes$ENTREZID,LR_g2_sol$geneId)
+ESR_g2_list <- intersect(RNA_expresed_genes$ENTREZID,ESR_g2_sol$geneId)
+EAR_g2_list <- intersect(RNA_expresed_genes$ENTREZID,EAR_g2_sol$geneId)
+g2_motif_list <-list(NR=data.frame(NR_g2_list), LR=data.frame(LR_g2_list),ESR=data.frame(ESR_g2_list),EAR=data.frame(EAR_g2_list))
+g2_motif_df <- g2_motif_list %>%  map_df(c, .id = "src") %>%
+  mutate(ENTREZID=if_else(!is.na(EAR_g2_list),EAR_g2_list,if_else(!is.na(ESR_g2_list),ESR_g2_list, if_else(!is.na(LR_g2_list), LR_g2_list,NR_g2_list))))%>%
+  dplyr::select(src,ENTREZID)
+NR_g4_list <-intersect(RNA_expresed_genes$ENTREZID,NR_g4_sol$geneId)
+LR_g4_list <- intersect(RNA_expresed_genes$ENTREZID,LR_g4_sol$geneId)
+ESR_g4_list <- intersect(RNA_expresed_genes$ENTREZID,ESR_g4_sol$geneId)
+EAR_g4_list <- intersect(RNA_expresed_genes$ENTREZID,EAR_g4_sol$geneId)
+
+g4_motif_list <-list(NR=data.frame(NR_g4_list), LR=data.frame(LR_g4_list),ESR=data.frame(ESR_g4_list),EAR=data.frame(EAR_g4_list))
+g4_motif_df <- g4_motif_list %>%  map_df(c, .id = "src") %>%
+  mutate(ENTREZID=if_else(!is.na(EAR_g4_list),EAR_g4_list,if_else(!is.na(ESR_g4_list),ESR_g4_list, if_else(!is.na(LR_g4_list), LR_g4_list,NR_g4_list))))%>%
+  dplyr::select(src,ENTREZID)
+
+RNA_expresed_genes_DE %>% 
+  dplyr::filter(ENTREZID %in% intersect(RNA_expresed_genes_DE$ENTREZID,LR_g4_sol$geneId)) %>% 
+   rowid_to_column("row_name") %>% 
+  kable(., caption= "RNA DE genes expresssed in LR DARs that contain SNPs associated with Heart disease") %>% 
+    kable_paper("striped", full_width = TRUE) %>%
+  kable_styling(full_width = FALSE, font_size = 16) %>%
+  scroll_box(height = "800px")
+
+RNA_expresed_genes_DE %>% 
+  dplyr::filter(ENTREZID %in% intersect(RNA_expresed_genes_DE$ENTREZID,LR_g2_sol$geneId)) %>% 
+   rowid_to_column("row_name") %>% 
+  kable(., caption= "RNA DE genes expresssed in LR DARs that contain SNPs associated with Cardiac arrhythmia") %>% 
+    kable_paper("striped", full_width = TRUE) %>%
+  kable_styling(full_width = FALSE, font_size = 16) %>%
+  scroll_box(height = "800px")
 
 
-These numbers are different than the original lists from which they derived. This is normally due to running `na.omit()` on the data frame before GRanges transformation.
+RNA_expresed_genes_DE %>% 
+  dplyr::filter(ENTREZID %in% intersect(RNA_expresed_genes_DE$ENTREZID,ESR_g4_sol$geneId)) %>% 
+   rowid_to_column("row_name") %>% 
+  kable(., caption= "RNA DE genes expresssed in ESR DARs that contain SNPs associated with Heart disease") %>% 
+    kable_paper("striped", full_width = TRUE) %>%
+  kable_styling(full_width = FALSE, font_size = 16) %>%
+  scroll_box(height = "800px")
+
+RNA_expresed_genes_DE %>% 
+  dplyr::filter(ENTREZID %in% intersect(RNA_expresed_genes_DE$ENTREZID,ESR_g2_sol$geneId)) %>% 
+   rowid_to_column("row_name") %>% 
+  kable(., caption= "RNA DE genes expresssed in ESR DARs that contain SNPs associated with Cardiac arrhythmia") %>% 
+    kable_paper("striped", full_width = TRUE) %>%
+  kable_styling(full_width = FALSE, font_size = 16) %>%
+  scroll_box(height = "800px")
 
 
+RNA_expresed_genes_DE %>% 
+  dplyr::filter(ENTREZID %in% intersect(RNA_expresed_genes_DE$ENTREZID,EAR_g4_sol$geneId)) %>% 
+   rowid_to_column("row_name") %>% 
+  kable(., caption= "RNA DE genes expresssed in EAR DARs that contain SNPs associated with Heart disease") %>% 
+    kable_paper("striped", full_width = TRUE) %>%
+  kable_styling(full_width = FALSE, font_size = 16) %>%
+  scroll_box(height = "800px")
+
+RNA_expresed_genes%>% 
+  # dplyr::filter(ENTREZID %in% intersect(RNA_expresed_genes$ENTREZID,EAR_g2_sol$geneId)) %>% 
+   dplyr::filter(ENTREZID =="79804") %>% 
+   rowid_to_column("row_name") %>%
+  kable(., caption= "RNA genes expresssed in EAR DARs that contain SNPs associated with Cardiac arrhythmia") %>% 
+    kable_paper("striped", full_width = TRUE) %>%
+  kable_styling(full_width = FALSE, font_size = 16) %>%
+  scroll_box(height = "800px")
+
+
+
+```
+
+
+```{r DAR and RNAseq}
+drug_pal <- c("#8B006D","#DF707E","#F1B72B", "#3386DD","#707031","#41B333")
+##Here my focus is to find nearest genes that are DAR and see if they are DEGs
+toplist_n45 <- readRDS("data/toplist_n45.RDS")
+
+# toplist_n45 %>% 
+#   dplyr::filter(peak=="chr4.173529475.173530537") %>% 
+#  ggplot(., aes(x=trt, y=logFC))+
+#   geom_boxplot(aes(fill=trt))+
+#   ggpubr::fill_palette(palette =drug_pal)+
+#   guides(fill=guide_legend(title = "Treatment"))+
+#   # facet_wrap(sigcount~time)+
+#   theme_bw()+
+#   xlab("")+
+#   ggtitle("chr4.173529475.173530537 region of  HAND2-AS1")+
+#   ylab(expression("Log"[2]*" fold change"))+
+#   theme_bw()+
+#   facet_wrap(~time)+
+#   theme(plot.title = element_text(size = rel(1.5), hjust = 0.5),
+#         axis.title = element_text(size = 15, color = "black"),
+#         # axis.ticks = element_line(linewidth = 1.5),
+#         # axis.line = element_line(linewidth = 1.5),
+#         strip.background = element_rect(fill = "transparent"),
+#         axis.text.x = element_blank(),
+#         strip.text.x = element_text(size = 12, color = "black", face = "bold"))
+
+
+toplist_n45 %>% 
+  dplyr::filter(peak=="chr6.36678380.36679788") %>%
+ ggplot(., aes(x=trt, y=logFC))+
+  geom_boxplot(aes(fill=trt))+
+  ggpubr::fill_palette(palette =drug_pal)+
+  guides(fill=guide_legend(title = "Treatment"))+
+  # facet_wrap(sigcount~time)+
+  theme_bw()+
+  xlab("")+
+  ggtitle("chr6  36678380-36679788 CDKN1a")+
+  ylab(expression("Log"[2]*" fold change"))+
+  theme_bw()+
+  facet_wrap(~time)+
+  theme(plot.title = element_text(size = rel(1.5), hjust = 0.5),
+        axis.title = element_text(size = 15, color = "black"),
+        # axis.ticks = element_line(linewidth = 1.5),
+        # axis.line = element_line(linewidth = 1.5),
+        strip.background = element_rect(fill = "transparent"),
+        axis.text.x = element_blank(),
+        strip.text.x = element_text(size = 12, color = "black", face = "bold"))
+
+
+
+toplist_n45 %>% 
+  dplyr::filter(peak %in% EAR_g2_sol$id) %>% 
+ ggplot(., aes(x=trt, y=abs(logFC)))+
+  geom_boxplot(aes(fill=trt))+
+  ggpubr::fill_palette(palette =drug_pal)+
+  guides(fill=guide_legend(title = "Treatment"))+
+  # facet_wrap(sigcount~time)+
+  theme_bw()+
+  xlab("")+
+  ggtitle("absolute lfc of DARs in EAR in cardiac arrhythmia")+
+  ylab(expression("Log"[2]*" fold change"))+
+  theme_bw()+
+  facet_wrap(~time)+
+  theme(plot.title = element_text(size = rel(1.5), hjust = 0.5),
+        axis.title = element_text(size = 15, color = "black"),
+        # axis.ticks = element_line(linewidth = 1.5),
+        # axis.line = element_line(linewidth = 1.5),
+        strip.background = element_rect(fill = "transparent"),
+        axis.text.x = element_blank(),
+        strip.text.x = element_text(size = 12, color = "black", face = "bold"))
+
+toplist_n45 %>% 
+  dplyr::filter(peak %in% ESR_g2_sol$id) %>% 
+ ggplot(., aes(x=trt, y=abs(logFC)))+
+  geom_boxplot(aes(fill=trt))+
+  ggpubr::fill_palette(palette =drug_pal)+
+  guides(fill=guide_legend(title = "Treatment"))+
+  # facet_wrap(sigcount~time)+
+  theme_bw()+
+  xlab("")+
+  ggtitle("absolute lfc of DARs in ESR in cardiac arrhythmia")+
+  ylab(expression("Log"[2]*" fold change"))+
+  theme_bw()+
+  facet_wrap(~time)+
+  theme(plot.title = element_text(size = rel(1.5), hjust = 0.5),
+        axis.title = element_text(size = 15, color = "black"),
+        # axis.ticks = element_line(linewidth = 1.5),
+        # axis.line = element_line(linewidth = 1.5),
+        strip.background = element_rect(fill = "transparent"),
+        axis.text.x = element_blank(),
+        strip.text.x = element_text(size = 12, color = "black", face = "bold"))
+
+
+toplist_n45 %>% 
+  dplyr::filter(peak %in% LR_g2_sol$id) %>% 
+ ggplot(., aes(x=trt, y=abs(logFC)))+
+  geom_boxplot(aes(fill=trt))+
+  ggpubr::fill_palette(palette =drug_pal)+
+  guides(fill=guide_legend(title = "Treatment"))+
+  # facet_wrap(sigcount~time)+
+  theme_bw()+
+  xlab("")+
+  ggtitle("absolute lfc of DARs in LR in cardiac arrhythmia")+
+  ylab(expression("Log"[2]*" fold change"))+
+  theme_bw()+
+  facet_wrap(~time)+
+  theme(plot.title = element_text(size = rel(1.5), hjust = 0.5),
+        axis.title = element_text(size = 15, color = "black"),
+        # axis.ticks = element_line(linewidth = 1.5),
+        # axis.line = element_line(linewidth = 1.5),
+        strip.background = element_rect(fill = "transparent"),
+        axis.text.x = element_blank(),
+        strip.text.x = element_text(size = 12, color = "black", face = "bold"))
+
+
+```
+
+
+###  Pie charts of the SNPs
+
+```{r  piechart noext }
+
+Set <- c("EAR", "ESR","LR", "NR")
+gene_num_ARR <- c(2,30,29,90)
+gene_num_HD <- c(17,55,182,278)
+gene_num_CAD <- c(12,17,116,146)
+gene_num_MI <- c(1,0,15,19)
+fills <- c("#F8766D",  "#00BFC4","#7CAE00", "#C77CFF")
+
+pie_chartdata_ARR <- data.frame(Set, gene_num_ARR, fills)
+pie_chartdata_HD <- data.frame(Set, gene_num_HD, fills)
+pie_chartdata_CAD <- data.frame(Set, gene_num_CAD, fills)
+pie_chartdata_MI <- data.frame(Set, gene_num_MI, fills)
+
+ 
+    # pie(gene_num,labels =Set )      
+pie_chartdata_ARR <- pie_chartdata_ARR %>% 
+   mutate(prop = gene_num_ARR / sum(pie_chartdata_ARR$gene_num_ARR) *100) %>%
+  mutate(ypos = (prop)+ 0.5*prop )
+pie_chartdata_HD <- pie_chartdata_HD %>% 
+   mutate(prop = gene_num_HD / sum(pie_chartdata_HD$gene_num_HD) *100) %>%
+  mutate(ypos = (prop)+ 0.5*prop )
+pie_chartdata_CAD <- pie_chartdata_CAD %>% 
+   mutate(prop = gene_num_CAD / sum(pie_chartdata_CAD$gene_num_CAD) *100) %>%
+  mutate(ypos = (prop)+ 0.5*prop )
+pie_chartdata_MI <- pie_chartdata_MI %>% 
+   mutate(prop = gene_num_MI / sum(pie_chartdata_MI$gene_num_MI) *100) %>%
+  mutate(ypos = (prop)+ 0.5*prop )
+
+pie_chartdata_ARR %>% 
+  ggplot(.,aes(x="",y=gene_num_ARR, fill=Set))+
+  geom_col(width =1) +
+  coord_polar("y", pi/2)+
+  theme_void()+
+  ggtitle("Distribution of cardiac arrhythmia SNPs in DARs")+
+  geom_text(aes(label = paste0(Set," (",gene_num_ARR,")")),
+                position = position_stack(vjust =.45)) +
+  theme(legend.position="none") +
+  theme(plot.title = element_text(size = rel(1.5), hjust = 0.5))
+
+pie_chartdata_HD %>% 
+  ggplot(.,aes(x="",y=gene_num_HD, fill=Set))+
+  geom_col(width =1) +
+  coord_polar("y", pi/2)+
+  theme_void()+
+  ggtitle("Distribution of heart disease SNPs in DARs")+
+  geom_text(aes(label = paste0(Set," (",gene_num_HD,")")),
+                position = position_stack(vjust =.45)) +
+  theme(legend.position="none") +
+  theme(plot.title = element_text(size = rel(1.5), hjust = 0.5))
+
+
+pie_chartdata_CAD %>% 
+  ggplot(.,aes(x="",y=gene_num_CAD, fill=Set))+
+  geom_col(width =1) +
+  coord_polar("y", pi/2)+
+  theme_void()+
+  ggtitle("Distribution of coronary artery disease SNPs in DARs")+
+  geom_text(aes(label = paste0(Set," (",gene_num_CAD,")")),
+                position = position_stack(vjust =.45)) +
+  theme(legend.position="none") +
+  theme(plot.title = element_text(size = rel(1.5), hjust = 0.5))
+
+pie_chartdata_MI %>% 
+  ggplot(.,aes(x="",y=gene_num_MI, fill=Set))+
+  geom_col(width =1) +
+  coord_polar("y", pi/2)+
+  theme_void()+
+  ggtitle("Distribution of myocardial infarction SNPs in DARs")+
+  geom_text(aes(label = paste0(Set," (",gene_num_MI,")")),
+                position = position_stack(vjust =.45)) +
+  theme(legend.position="none") +
+  theme(plot.title = element_text(size = rel(1.5), hjust = 0.5))
+```
+
+
+```{r expressionDE chart}
+
+### Code to express # of DE vs non DE genes associated with SNPs found in DARs
+
+# toplist_n45 <- readRDS("data/toplist_n45.RDS")
+# 
+# toplist_n45 %>% 
+#   mutate(DAR= if_else(adj.P.Val<0.05,"DAR","notDAR")) 
+         
+
+
+GWAS_2_DAR_df <- EAR_g2_sol %>%
+  mutate(DE_g2= if_else(geneId %in% intersect(RNA_expresed_genes_DE$ENTREZID,ESR_g2_sol$geneId),"DE",
+                        if_else(geneId %in% intersect(RNA_expresed_genes_DE$ENTREZID,EAR_g2_sol$geneId),"DE",
+                                if_else(geneId %in% intersect(RNA_expresed_genes_DE$ENTREZID,LR_g2_sol$geneId),"DE",
+                                        if_else(geneId %in% intersect(RNA_expresed_genes_DE$ENTREZID,NR_g2_sol$geneId), "notDE","NE"))))) %>%
+  mutate(id="EAR") %>% 
+
+bind_rows(
+
+ESR_g2_sol %>% 
+   mutate(DE_g2= if_else(geneId %in% intersect(RNA_expresed_genes_DE$ENTREZID,ESR_g2_sol$geneId),"DE",
+                        if_else(geneId %in% intersect(RNA_expresed_genes_DE$ENTREZID,EAR_g2_sol$geneId),"DE",
+                                if_else(geneId %in% intersect(RNA_expresed_genes_DE$ENTREZID,LR_g2_sol$geneId),"DE",
+                                        if_else(geneId %in% intersect(RNA_expresed_genes_DE$ENTREZID,NR_g2_sol$geneId), "notDE","NE")))))%>%
+  mutate(id="ESR")) %>% 
+  bind_rows(
+LR_g2_sol %>%
+  mutate(DE_g2= if_else(geneId %in% intersect(RNA_expresed_genes_DE$ENTREZID,ESR_g2_sol$geneId),"DE",
+                        if_else(geneId %in% intersect(RNA_expresed_genes_DE$ENTREZID,EAR_g2_sol$geneId),"DE",
+                                if_else(geneId %in% intersect(RNA_expresed_genes_DE$ENTREZID,LR_g2_sol$geneId),"DE",
+                                        if_else(geneId %in% intersect(RNA_expresed_genes_DE$ENTREZID,NR_g2_sol$geneId), "notDE","NE")))))%>%
+  mutate(id="LR")) %>% 
+  bind_rows(
+NR_g2_sol %>%
+   mutate(DE_g2= if_else(geneId %in% intersect(RNA_expresed_genes_DE$ENTREZID,ESR_g2_sol$geneId),"DE",
+                        if_else(geneId %in% intersect(RNA_expresed_genes_DE$ENTREZID,EAR_g2_sol$geneId),"DE",
+                                if_else(geneId %in% intersect(RNA_expresed_genes_DE$ENTREZID,LR_g2_sol$geneId),"DE",
+                                        if_else(geneId %in% intersect(RNA_expresed_genes_DE$ENTREZID,NR_g2_sol$geneId), "notDE","NE")))))%>%
+  mutate(id="NR"))
+         
+    
+GWAS_4_DAR_df <- EAR_g4_sol %>%
+  mutate(DE_g2= if_else(geneId %in% 
+                          intersect(RNA_expresed_genes_DE$ENTREZID,ESR_g4_sol$geneId),"DE",
+                        if_else(geneId %in% 
+                                  intersect(RNA_expresed_genes_DE$ENTREZID,EAR_g4_sol$geneId),"DE",
+                                if_else(geneId %in% 
+                                          intersect(RNA_expresed_genes_DE$ENTREZID, LR_g4_sol$geneId),"DE",
+                                        if_else(geneId %in% 
+                                                  intersect(RNA_expresed_genes_DE$ENTREZID, NR_g4_sol$geneId), "notDE","NE"))))) %>%
+  mutate(id="EAR") %>% 
+bind_rows(
+  ESR_g4_sol %>% 
+    mutate(DE_g2= if_else(geneId %in%
+                            intersect(RNA_expresed_genes_DE$ENTREZID,ESR_g4_sol$geneId),"DE",
+                          if_else(geneId %in% 
+                                    intersect(RNA_expresed_genes_DE$ENTREZID,EAR_g4_sol$geneId),"DE",
+                                if_else(geneId %in% 
+                                      intersect(RNA_expresed_genes_DE$ENTREZID,LR_g4_sol$geneId),"DE",
+                                        if_else(geneId %in% 
+                                          intersect(RNA_expresed_genes_DE$ENTREZID,NR_g4_sol$geneId), "notDE","NE")))))%>%
+    mutate(id="ESR")) %>% 
+  bind_rows(
+    LR_g4_sol %>%
+      mutate(DE_g2= if_else(geneId %in% 
+                              intersect(RNA_expresed_genes_DE$ENTREZID,ESR_g4_sol$geneId),"DE",
+                        if_else(geneId %in% 
+                                  intersect(RNA_expresed_genes_DE$ENTREZID,EAR_g4_sol$geneId),"DE",
+                                if_else(geneId %in% 
+                                        intersect(RNA_expresed_genes_DE$ENTREZID, LR_g4_sol$geneId),"DE",
+                                        if_else(geneId %in% 
+                                                  intersect(RNA_expresed_genes_DE$ENTREZID, NR_g4_sol$geneId), "notDE","NE")))))%>%
+      mutate(id="LR")) %>% 
+  bind_rows(
+    NR_g4_sol %>%
+      mutate(DE_g2= if_else(geneId %in% 
+                              intersect(RNA_expresed_genes_DE$ENTREZID,ESR_g4_sol$geneId),"DE",
+                        if_else(geneId %in% 
+                                  intersect(RNA_expresed_genes_DE$ENTREZID,EAR_g4_sol$geneId),"DE",
+                                if_else(geneId %in% 
+                                          intersect(RNA_expresed_genes_DE$ENTREZID, LR_g4_sol$geneId),"DE",
+                                        if_else(geneId %in% 
+                                                  intersect(RNA_expresed_genes_DE$ENTREZID, NR_g4_sol$geneId), "notDE","NE")))))%>%
+      mutate(id="NR"))
+
+
+
+GWAS_1_DAR_df <- EAR_g1_sol %>%
+  mutate(DE_g2= if_else(geneId %in% 
+                          intersect(RNA_expresed_genes_DE$ENTREZID,ESR_g1_sol$geneId),"DE",
+                        if_else(geneId %in% 
+                                  intersect(RNA_expresed_genes_DE$ENTREZID,EAR_g1_sol$geneId),"DE",
+                                if_else(geneId %in% 
+                                          intersect(RNA_expresed_genes_DE$ENTREZID, LR_g1_sol$geneId),"DE",
+                                        if_else(geneId %in% 
+                                                  intersect(RNA_expresed_genes_DE$ENTREZID, NR_g1_sol$geneId), "notDE","NE"))))) %>%
+  mutate(id="EAR") %>% 
+bind_rows(
+  ESR_g1_sol %>% 
+    mutate(DE_g2= if_else(geneId %in%
+                            intersect(RNA_expresed_genes_DE$ENTREZID,ESR_g1_sol$geneId),"DE",
+                          if_else(geneId %in% 
+                                    intersect(RNA_expresed_genes_DE$ENTREZID,EAR_g1_sol$geneId),"DE",
+                                if_else(geneId %in% 
+                                      intersect(RNA_expresed_genes_DE$ENTREZID,LR_g1_sol$geneId),"DE",
+                                        if_else(geneId %in% 
+                                          intersect(RNA_expresed_genes_DE$ENTREZID,NR_g1_sol$geneId), "notDE","NE")))))%>%
+    mutate(id="ESR")) %>% 
+  bind_rows(
+    LR_g1_sol %>%
+      mutate(DE_g2= if_else(geneId %in% 
+                              intersect(RNA_expresed_genes_DE$ENTREZID,ESR_g1_sol$geneId),"DE",
+                        if_else(geneId %in% 
+                                  intersect(RNA_expresed_genes_DE$ENTREZID,EAR_g1_sol$geneId),"DE",
+                                if_else(geneId %in% 
+                                        intersect(RNA_expresed_genes_DE$ENTREZID, LR_g1_sol$geneId),"DE",
+                                        if_else(geneId %in% 
+                                                  intersect(RNA_expresed_genes_DE$ENTREZID, NR_g1_sol$geneId), "notDE","NE")))))%>%
+      mutate(id="LR")) %>% 
+  bind_rows(
+    NR_g1_sol %>%
+      mutate(DE_g2= if_else(geneId %in% 
+                              intersect(RNA_expresed_genes_DE$ENTREZID,ESR_g1_sol$geneId),"DE",
+                        if_else(geneId %in% 
+                                  intersect(RNA_expresed_genes_DE$ENTREZID,EAR_g1_sol$geneId),"DE",
+                                if_else(geneId %in% 
+                                          intersect(RNA_expresed_genes_DE$ENTREZID, LR_g1_sol$geneId),"DE",
+                                        if_else(geneId %in% 
+                                                  intersect(RNA_expresed_genes_DE$ENTREZID, NR_g1_sol$geneId), "notDE","NE")))))%>%
+      mutate(id="NR"))
+
+GWAS_3_DAR_df <- EAR_g3_sol %>%
+  mutate(DE_g2= if_else(geneId %in% 
+                          intersect(RNA_expresed_genes_DE$ENTREZID,ESR_g3_sol$geneId),"DE",
+                        if_else(geneId %in% 
+                                  intersect(RNA_expresed_genes_DE$ENTREZID,EAR_g3_sol$geneId),"DE",
+                                if_else(geneId %in% 
+                                          intersect(RNA_expresed_genes_DE$ENTREZID, LR_g3_sol$geneId),"DE",
+                                        if_else(geneId %in% 
+                                                  intersect(RNA_expresed_genes_DE$ENTREZID, NR_g3_sol$geneId), "notDE","NE"))))) %>%
+  mutate(id="EAR") %>% 
+bind_rows(
+  ESR_g3_sol %>% 
+    mutate(DE_g2= if_else(geneId %in%
+                            intersect(RNA_expresed_genes_DE$ENTREZID,ESR_g3_sol$geneId),"DE",
+                          if_else(geneId %in% 
+                                    intersect(RNA_expresed_genes_DE$ENTREZID,EAR_g3_sol$geneId),"DE",
+                                if_else(geneId %in% 
+                                      intersect(RNA_expresed_genes_DE$ENTREZID,LR_g3_sol$geneId),"DE",
+                                        if_else(geneId %in% 
+                                          intersect(RNA_expresed_genes_DE$ENTREZID,NR_g3_sol$geneId), "notDE","NE")))))%>%
+    mutate(id="ESR")) %>% 
+  bind_rows(
+    LR_g3_sol %>%
+      mutate(DE_g2= if_else(geneId %in% 
+                              intersect(RNA_expresed_genes_DE$ENTREZID,ESR_g3_sol$geneId),"DE",
+                        if_else(geneId %in% 
+                                  intersect(RNA_expresed_genes_DE$ENTREZID,EAR_g3_sol$geneId),"DE",
+                                if_else(geneId %in% 
+                                        intersect(RNA_expresed_genes_DE$ENTREZID, LR_g3_sol$geneId),"DE",
+                                        if_else(geneId %in% 
+                                                  intersect(RNA_expresed_genes_DE$ENTREZID, NR_g3_sol$geneId), "notDE","NE")))))%>%
+      mutate(id="LR")) %>% 
+  bind_rows(
+    NR_g3_sol %>%
+      mutate(DE_g2= if_else(geneId %in% 
+                              intersect(RNA_expresed_genes_DE$ENTREZID,ESR_g3_sol$geneId),"DE",
+                        if_else(geneId %in% 
+                                  intersect(RNA_expresed_genes_DE$ENTREZID,EAR_g3_sol$geneId),"DE",
+                                if_else(geneId %in% 
+                                          intersect(RNA_expresed_genes_DE$ENTREZID, LR_g3_sol$geneId),"DE",
+                                        if_else(geneId %in% 
+                                                  intersect(RNA_expresed_genes_DE$ENTREZID, NR_g3_sol$geneId), "notDE","NE")))))%>%
+      mutate(id="NR"))
+
+GWAS_5_DAR_df <- EAR_g5_sol %>%
+  mutate(DE_g2= if_else(geneId %in% 
+                          intersect(RNA_expresed_genes_DE$ENTREZID,ESR_g5_sol$geneId),"DE",
+                        if_else(geneId %in% 
+                                  intersect(RNA_expresed_genes_DE$ENTREZID,EAR_g5_sol$geneId),"DE",
+                                if_else(geneId %in% 
+                                          intersect(RNA_expresed_genes_DE$ENTREZID, LR_g5_sol$geneId),"DE",
+                                        if_else(geneId %in% 
+                                                  intersect(RNA_expresed_genes_DE$ENTREZID, NR_g5_sol$geneId), "notDE","NE"))))) %>%
+  mutate(id="EAR") %>% 
+bind_rows(
+  ESR_g5_sol %>% 
+    mutate(DE_g2= if_else(geneId %in%
+                            intersect(RNA_expresed_genes_DE$ENTREZID,ESR_g5_sol$geneId),"DE",
+                          if_else(geneId %in% 
+                                    intersect(RNA_expresed_genes_DE$ENTREZID,EAR_g5_sol$geneId),"DE",
+                                if_else(geneId %in% 
+                                      intersect(RNA_expresed_genes_DE$ENTREZID,LR_g5_sol$geneId),"DE",
+                                        if_else(geneId %in% 
+                                          intersect(RNA_expresed_genes_DE$ENTREZID,NR_g5_sol$geneId), "notDE","NE")))))%>%
+    mutate(id="ESR")) %>% 
+  bind_rows(
+    LR_g5_sol %>%
+      mutate(DE_g2= if_else(geneId %in% 
+                              intersect(RNA_expresed_genes_DE$ENTREZID,ESR_g5_sol$geneId),"DE",
+                        if_else(geneId %in% 
+                                  intersect(RNA_expresed_genes_DE$ENTREZID,EAR_g5_sol$geneId),"DE",
+                                if_else(geneId %in% 
+                                        intersect(RNA_expresed_genes_DE$ENTREZID, LR_g5_sol$geneId),"DE",
+                                        if_else(geneId %in% 
+                                                  intersect(RNA_expresed_genes_DE$ENTREZID, NR_g5_sol$geneId), "notDE","NE")))))%>%
+      mutate(id="LR")) %>% 
+  bind_rows(
+    NR_g5_sol %>%
+      mutate(DE_g2= if_else(geneId %in% 
+                              intersect(RNA_expresed_genes_DE$ENTREZID,ESR_g5_sol$geneId),"DE",
+                        if_else(geneId %in% 
+                                  intersect(RNA_expresed_genes_DE$ENTREZID,EAR_g5_sol$geneId),"DE",
+                                if_else(geneId %in% 
+                                          intersect(RNA_expresed_genes_DE$ENTREZID, LR_g5_sol$geneId),"DE",
+                                        if_else(geneId %in% 
+                                                  intersect(RNA_expresed_genes_DE$ENTREZID, NR_g5_sol$geneId), "notDE","NE")))))%>%
+      mutate(id="NR"))
+
+
+
+GWAS_MI_DAR_df <- EAR_MI_sol %>%
+  mutate(DE_g2= if_else(geneId %in% 
+                          intersect(RNA_expresed_genes_DE$ENTREZID,ESR_MI_sol$geneId),"DE",
+                        if_else(geneId %in% 
+                                  intersect(RNA_expresed_genes_DE$ENTREZID,EAR_MI_sol$geneId),"DE",
+                                if_else(geneId %in% 
+                                          intersect(RNA_expresed_genes_DE$ENTREZID, LR_MI_sol$geneId),"DE",
+                                        if_else(geneId %in% 
+                                                  intersect(RNA_expresed_genes_DE$ENTREZID, NR_MI_sol$geneId), "notDE","NE"))))) %>%
+  mutate(id="EAR") %>% 
+bind_rows(
+  ESR_MI_sol %>% 
+    mutate(DE_g2= if_else(geneId %in%
+                            intersect(RNA_expresed_genes_DE$ENTREZID,ESR_MI_sol$geneId),"DE",
+                          if_else(geneId %in% 
+                                    intersect(RNA_expresed_genes_DE$ENTREZID,EAR_MI_sol$geneId),"DE",
+                                if_else(geneId %in% 
+                                      intersect(RNA_expresed_genes_DE$ENTREZID,LR_MI_sol$geneId),"DE",
+                                        if_else(geneId %in% 
+                                          intersect(RNA_expresed_genes_DE$ENTREZID,NR_MI_sol$geneId), "notDE","NE")))))%>%
+    mutate(id="ESR")) %>% 
+  bind_rows(
+    LR_MI_sol %>%
+      mutate(DE_g2= if_else(geneId %in% 
+                              intersect(RNA_expresed_genes_DE$ENTREZID,ESR_MI_sol$geneId),"DE",
+                        if_else(geneId %in% 
+                                  intersect(RNA_expresed_genes_DE$ENTREZID,EAR_MI_sol$geneId),"DE",
+                                if_else(geneId %in% 
+                                        intersect(RNA_expresed_genes_DE$ENTREZID, LR_MI_sol$geneId),"DE",
+                                        if_else(geneId %in% 
+                                                  intersect(RNA_expresed_genes_DE$ENTREZID, NR_MI_sol$geneId), "notDE","NE")))))%>%
+      mutate(id="LR")) %>% 
+  bind_rows(
+    NR_MI_sol %>%
+      mutate(DE_g2= if_else(geneId %in% 
+                              intersect(RNA_expresed_genes_DE$ENTREZID,ESR_MI_sol$geneId),"DE",
+                        if_else(geneId %in% 
+                                  intersect(RNA_expresed_genes_DE$ENTREZID,EAR_MI_sol$geneId),"DE",
+                                if_else(geneId %in% 
+                                          intersect(RNA_expresed_genes_DE$ENTREZID, LR_MI_sol$geneId),"DE",
+                                        if_else(geneId %in% 
+                                                  intersect(RNA_expresed_genes_DE$ENTREZID, NR_MI_sol$geneId), "notDE","NE")))))%>%
+      mutate(id="NR"))
+
+
+
+
+GWAS_CAD_DAR_df <- EAR_CAD_sol %>%
+  mutate(DE_g2= if_else(geneId %in% 
+                          intersect(RNA_expresed_genes_DE$ENTREZID,ESR_CAD_sol$geneId),"DE",
+                        if_else(geneId %in% 
+                                  intersect(RNA_expresed_genes_DE$ENTREZID,EAR_CAD_sol$geneId),"DE",
+                                if_else(geneId %in% 
+                                          intersect(RNA_expresed_genes_DE$ENTREZID, LR_CAD_sol$geneId),"DE",
+                                        if_else(geneId %in% 
+                                                  intersect(RNA_expresed_genes_DE$ENTREZID, NR_CAD_sol$geneId), "notDE","NE"))))) %>%
+  mutate(id="EAR") %>% 
+bind_rows(
+  ESR_CAD_sol %>% 
+    mutate(DE_g2= if_else(geneId %in%
+                            intersect(RNA_expresed_genes_DE$ENTREZID,ESR_CAD_sol$geneId),"DE",
+                          if_else(geneId %in% 
+                                    intersect(RNA_expresed_genes_DE$ENTREZID,EAR_CAD_sol$geneId),"DE",
+                                if_else(geneId %in% 
+                                      intersect(RNA_expresed_genes_DE$ENTREZID,LR_CAD_sol$geneId),"DE",
+                                        if_else(geneId %in% 
+                                          intersect(RNA_expresed_genes_DE$ENTREZID,NR_CAD_sol$geneId), "notDE","NE")))))%>%
+    mutate(id="ESR")) %>% 
+  bind_rows(
+    LR_CAD_sol %>%
+      mutate(DE_g2= if_else(geneId %in% 
+                              intersect(RNA_expresed_genes_DE$ENTREZID,ESR_CAD_sol$geneId),"DE",
+                        if_else(geneId %in% 
+                                  intersect(RNA_expresed_genes_DE$ENTREZID,EAR_CAD_sol$geneId),"DE",
+                                if_else(geneId %in% 
+                                        intersect(RNA_expresed_genes_DE$ENTREZID, LR_CAD_sol$geneId),"DE",
+                                        if_else(geneId %in% 
+                                                  intersect(RNA_expresed_genes_DE$ENTREZID, NR_CAD_sol$geneId), "notDE","NE")))))%>%
+      mutate(id="LR")) %>% 
+  bind_rows(
+    NR_CAD_sol %>%
+      mutate(DE_g2= if_else(geneId %in% 
+                              intersect(RNA_expresed_genes_DE$ENTREZID,ESR_CAD_sol$geneId),"DE",
+                        if_else(geneId %in% 
+                                  intersect(RNA_expresed_genes_DE$ENTREZID,EAR_CAD_sol$geneId),"DE",
+                                if_else(geneId %in% 
+                                          intersect(RNA_expresed_genes_DE$ENTREZID, LR_CAD_sol$geneId),"DE",
+                                        if_else(geneId %in% 
+                                                  intersect(RNA_expresed_genes_DE$ENTREZID, NR_CAD_sol$geneId), "notDE","NE")))))%>%
+      mutate(id="NR"))
+         
+         
+
+```
+```{r  motifDAR enrichment}
+GWAS_2_DAR_df %>% 
+  dplyr::filter(DE_g2=="DE")
+
+GWAS_4_DAR_df %>% 
+  dplyr::filter(DE_g2=="DE")
+
+GWAS_MI_DAR_df %>% 
+  dplyr::filter(DE_g2=="DE")
+
+GWAS_CAD_DAR_df %>% 
+  dplyr::filter(DE_g2=="DE")
+
+```
+```{r CDKn1a log2cpm DAR-RNa}
+my_hc_filtered_counts_n45 <- readRDS("data/my_hc_filt_counts_n45.RDS")
+log_filt_hc_n45 <- cpm(my_hc_filtered_counts_n45, log = TRUE) %>% as.data.frame()
+drug_pal <- c("#8B006D","#DF707E","#F1B72B", "#3386DD","#707031","#41B333")
+
+log_filt_hc_n45 %>% 
+ #  rownames_to_column("peak") %>% 
+ #  dplyr::filter(peak %in% motif_list_n45$EAR) 
+ # log_filt_hc %>% 
+  dplyr::filter(row.names(.)=="chr6.36678380.36679788") %>% 
+  mutate(Peak = row.names(.)) %>% 
+  pivot_longer(cols = !Peak, names_to = "sample", values_to = "counts") %>% 
+  separate("sample", into = c("indv","trt","time")) %>% 
+  mutate(time=factor(time, levels = c("3h","24h"))) %>% 
+  mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
+  ggplot(., aes (x = time, y=counts))+
+  geom_boxplot(aes(fill=trt))+
+  # facet_wrap(Peak~.)+
+  ggtitle("log2cpm in peak with SNP CDKN1a")+
+  scale_fill_manual(values = drug_pal)+
+  theme_bw()+
+  theme(plot.title = element_text(size = rel(1.5), hjust = 0.5),
+        axis.title = element_text(size = 15, color = "black"),
+        # axis.ticks = element_line(linewidth = 1.5),
+        # axis.line = element_line(linewidth = 1.5),
+        strip.background = element_rect(fill = "transparent"),
+        axis.text.x = element_blank(),
+        strip.text.x = element_text(size = 12, color = "black", face = "bold"))
+Counts_RNA_ERMatthews <- readRDS("data/other_papers/Counts_RNA_ERMatthews.RDS")
+# Counts_RNA_ERMatthews <-  
+Counts_RNA_ERMatthews %>% 
+  column_to_rownames("ENTREZID") %>% 
+  cpm(.,log = TRUE) %>% 
+  as.data.frame() %>% 
+  rownames_to_column("expr") %>%
+  filter(expr == 1026) %>% 
+  pivot_longer(cols =!expr , names_to = "sample", values_to = "counts") %>% 
+  separate("sample", into = c("trt","indv","time")) %>% 
+  mutate(time=factor(time, levels = c("3h","24h"))) %>% 
+  mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
+  ggplot(., aes (x = time, y=counts))+
+  geom_boxplot(aes(fill=trt))+
+  # facet_wrap(Peak~.)+
+  ggtitle("log2cpm RNA in ESR CDKN1a")+
+  scale_fill_manual(values = drug_pal)+
+  theme_bw()+
+  theme(plot.title = element_text(size = rel(1.5), hjust = 0.5),
+        axis.title = element_text(size = 15, color = "black"),
+        # axis.ticks = element_line(linewidth = 1.5),
+        # axis.line = element_line(linewidth = 1.5),
+        strip.background = element_rect(fill = "transparent"),
+        axis.text.x = element_blank(),
+        strip.text.x = element_text(size = 12, color = "black", face = "bold"))
+  
+  
+
+
+
+```
