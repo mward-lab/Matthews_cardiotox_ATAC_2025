@@ -1,0 +1,3134 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+
+<meta name="author" content="ERM" />
+
+<meta name="date" content="2024-05-03" />
+
+<title>Jaspar_enrichment</title>
+
+<script src="site_libs/header-attrs-2.26/header-attrs.js"></script>
+<script src="site_libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="site_libs/bootstrap-3.3.5/css/cosmo.min.css" rel="stylesheet" />
+<script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
+<style>h1 {font-size: 34px;}
+       h1.title {font-size: 38px;}
+       h2 {font-size: 30px;}
+       h3 {font-size: 24px;}
+       h4 {font-size: 18px;}
+       h5 {font-size: 16px;}
+       h6 {font-size: 12px;}
+       code {color: inherit; background-color: rgba(0, 0, 0, 0.04);}
+       pre:not([class]) { background-color: white }</style>
+<script src="site_libs/jqueryui-1.13.2/jquery-ui.min.js"></script>
+<link href="site_libs/tocify-1.9.1/jquery.tocify.css" rel="stylesheet" />
+<script src="site_libs/tocify-1.9.1/jquery.tocify.js"></script>
+<script src="site_libs/navigation-1.1/tabsets.js"></script>
+<link href="site_libs/highlightjs-9.12.0/textmate.css" rel="stylesheet" />
+<script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+<script src="site_libs/kePrint-0.0.1/kePrint.js"></script>
+<link href="site_libs/lightable-0.0.1/lightable.css" rel="stylesheet" />
+<link href="site_libs/font-awesome-6.4.2/css/all.min.css" rel="stylesheet" />
+<link href="site_libs/font-awesome-6.4.2/css/v4-shims.min.css" rel="stylesheet" />
+
+<link rel="icon" href="https://github.com/workflowr/workflowr-assets/raw/main/img/reproducible.png">
+<!-- Add a small amount of space between sections. -->
+<style type="text/css">
+div.section {
+  padding-top: 12px;
+}
+</style>
+
+
+
+<style type="text/css">
+  code{white-space: pre-wrap;}
+  span.smallcaps{font-variant: small-caps;}
+  span.underline{text-decoration: underline;}
+  div.column{display: inline-block; vertical-align: top; width: 50%;}
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+  ul.task-list{list-style: none;}
+    </style>
+
+<style type="text/css">code{white-space: pre;}</style>
+<script type="text/javascript">
+if (window.hljs) {
+  hljs.configure({languages: []});
+  hljs.initHighlightingOnLoad();
+  if (document.readyState && document.readyState === "complete") {
+    window.setTimeout(function() { hljs.initHighlighting(); }, 0);
+  }
+}
+</script>
+
+
+
+
+
+
+
+
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+img {
+  max-width:100%;
+}
+.tabbed-pane {
+  padding-top: 12px;
+}
+.html-widget {
+  margin-bottom: 20px;
+}
+button.code-folding-btn:focus {
+  outline: none;
+}
+summary {
+  display: list-item;
+}
+details > summary > p:only-child {
+  display: inline;
+}
+pre code {
+  padding: 0;
+}
+</style>
+
+
+<style type="text/css">
+.dropdown-submenu {
+  position: relative;
+}
+.dropdown-submenu>.dropdown-menu {
+  top: 0;
+  left: 100%;
+  margin-top: -6px;
+  margin-left: -1px;
+  border-radius: 0 6px 6px 6px;
+}
+.dropdown-submenu:hover>.dropdown-menu {
+  display: block;
+}
+.dropdown-submenu>a:after {
+  display: block;
+  content: " ";
+  float: right;
+  width: 0;
+  height: 0;
+  border-color: transparent;
+  border-style: solid;
+  border-width: 5px 0 5px 5px;
+  border-left-color: #cccccc;
+  margin-top: 5px;
+  margin-right: -10px;
+}
+.dropdown-submenu:hover>a:after {
+  border-left-color: #adb5bd;
+}
+.dropdown-submenu.pull-left {
+  float: none;
+}
+.dropdown-submenu.pull-left>.dropdown-menu {
+  left: -100%;
+  margin-left: 10px;
+  border-radius: 6px 0 6px 6px;
+}
+</style>
+
+<script type="text/javascript">
+// manage active state of menu based on current page
+$(document).ready(function () {
+  // active menu anchor
+  href = window.location.pathname
+  href = href.substr(href.lastIndexOf('/') + 1)
+  if (href === "")
+    href = "index.html";
+  var menuAnchor = $('a[href="' + href + '"]');
+
+  // mark the anchor link active (and if it's in a dropdown, also mark that active)
+  var dropdown = menuAnchor.closest('li.dropdown');
+  if (window.bootstrap) { // Bootstrap 4+
+    menuAnchor.addClass('active');
+    dropdown.find('> .dropdown-toggle').addClass('active');
+  } else { // Bootstrap 3
+    menuAnchor.parent().addClass('active');
+    dropdown.addClass('active');
+  }
+
+  // Navbar adjustments
+  var navHeight = $(".navbar").first().height() + 15;
+  var style = document.createElement('style');
+  var pt = "padding-top: " + navHeight + "px; ";
+  var mt = "margin-top: -" + navHeight + "px; ";
+  var css = "";
+  // offset scroll position for anchor links (for fixed navbar)
+  for (var i = 1; i <= 6; i++) {
+    css += ".section h" + i + "{ " + pt + mt + "}\n";
+  }
+  style.innerHTML = "body {" + pt + "padding-bottom: 40px; }\n" + css;
+  document.head.appendChild(style);
+});
+</script>
+
+<!-- tabsets -->
+
+<style type="text/css">
+.tabset-dropdown > .nav-tabs {
+  display: inline-table;
+  max-height: 500px;
+  min-height: 44px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.tabset-dropdown > .nav-tabs > li.active:before, .tabset-dropdown > .nav-tabs.nav-tabs-open:before {
+  content: "\e259";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li.active:before {
+  content: "\e258";
+  font-family: 'Glyphicons Halflings';
+  border: none;
+}
+
+.tabset-dropdown > .nav-tabs > li.active {
+  display: block;
+}
+
+.tabset-dropdown > .nav-tabs > li > a,
+.tabset-dropdown > .nav-tabs > li > a:focus,
+.tabset-dropdown > .nav-tabs > li > a:hover {
+  border: none;
+  display: inline-block;
+  border-radius: 4px;
+  background-color: transparent;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li {
+  display: block;
+  float: none;
+}
+
+.tabset-dropdown > .nav-tabs > li {
+  display: none;
+}
+</style>
+
+<!-- code folding -->
+
+
+
+<style type="text/css">
+
+#TOC {
+  margin: 25px 0px 20px 0px;
+}
+@media (max-width: 768px) {
+#TOC {
+  position: relative;
+  width: 100%;
+}
+}
+
+@media print {
+.toc-content {
+  /* see https://github.com/w3c/csswg-drafts/issues/4434 */
+  float: right;
+}
+}
+
+.toc-content {
+  padding-left: 30px;
+  padding-right: 40px;
+}
+
+div.main-container {
+  max-width: 1200px;
+}
+
+div.tocify {
+  width: 20%;
+  max-width: 260px;
+  max-height: 85%;
+}
+
+@media (min-width: 768px) and (max-width: 991px) {
+  div.tocify {
+    width: 25%;
+  }
+}
+
+@media (max-width: 767px) {
+  div.tocify {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+.tocify ul, .tocify li {
+  line-height: 20px;
+}
+
+.tocify-subheader .tocify-item {
+  font-size: 0.90em;
+}
+
+.tocify .list-group-item {
+  border-radius: 0px;
+}
+
+
+</style>
+
+
+
+</head>
+
+<body>
+
+
+<div class="container-fluid main-container">
+
+
+<!-- setup 3col/9col grid for toc_float and main content  -->
+<div class="row">
+<div class="col-xs-12 col-sm-4 col-md-3">
+<div id="TOC" class="tocify">
+</div>
+</div>
+
+<div class="toc-content col-xs-12 col-sm-8 col-md-9">
+
+
+
+
+<div class="navbar navbar-default  navbar-fixed-top" role="navigation">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-bs-toggle="collapse" data-target="#navbar" data-bs-target="#navbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="index.html">ATAC_learning</a>
+    </div>
+    <div id="navbar" class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+        <li>
+  <a href="index.html">Home</a>
+</li>
+<li>
+  <a href="about.html">About</a>
+</li>
+<li>
+  <a href="license.html">License</a>
+</li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        <li>
+  <a href="https://github.com/reneeisnowhere/ATAC_learning">
+    <span class="fab fa-github"></span>
+     
+    Source code
+  </a>
+</li>
+      </ul>
+    </div><!--/.nav-collapse -->
+  </div><!--/.container -->
+</div><!--/.navbar -->
+
+<div id="header">
+
+
+
+<h1 class="title toc-ignore">Jaspar_enrichment</h1>
+<h4 class="author">ERM</h4>
+<h4 class="date">2024-05-03</h4>
+
+</div>
+
+
+<p>
+<button type="button" class="btn btn-default btn-workflowr btn-workflowr-report" data-toggle="collapse" data-target="#workflowr-report">
+<span class="glyphicon glyphicon-list" aria-hidden="true"></span>
+workflowr <span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span>
+</button>
+</p>
+<div id="workflowr-report" class="collapse">
+<ul class="nav nav-tabs">
+<li class="active">
+<a data-toggle="tab" href="#summary">Summary</a>
+</li>
+<li>
+<a data-toggle="tab" href="#checks"> Checks <span
+class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span>
+</a>
+</li>
+<li>
+<a data-toggle="tab" href="#versions">Past versions</a>
+</li>
+</ul>
+<div class="tab-content">
+<div id="summary" class="tab-pane fade in active">
+<p>
+<strong>Last updated:</strong> 2024-05-03
+</p>
+<p>
+<strong>Checks:</strong> <span
+class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> 7
+<span class="glyphicon glyphicon-exclamation-sign text-danger"
+aria-hidden="true"></span> 0
+</p>
+<p>
+<strong>Knit directory:</strong> <code>ATAC_learning/</code> <span
+class="glyphicon glyphicon-question-sign" aria-hidden="true"
+title="This is the local directory in which the code in this file was executed.">
+</span>
+</p>
+<p>
+This reproducible <a href="https://rmarkdown.rstudio.com">R Markdown</a>
+analysis was created with <a
+  href="https://github.com/workflowr/workflowr">workflowr</a> (version
+1.7.1). The <em>Checks</em> tab describes the reproducibility checks
+that were applied when the results were created. The <em>Past
+versions</em> tab lists the development history.
+</p>
+<hr>
+</div>
+<div id="checks" class="tab-pane fade">
+<div id="workflowr-checks" class="panel-group">
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRMarkdownfilestronguptodate">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>R Markdown file:</strong> up-to-date
+</a>
+</p>
+</div>
+<div id="strongRMarkdownfilestronguptodate"
+class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great! Since the R Markdown file has been committed to the Git
+repository, you know the exact version of the code that produced these
+results.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongEnvironmentstrongempty">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Environment:</strong> empty </a>
+</p>
+</div>
+<div id="strongEnvironmentstrongempty" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great job! The global environment was empty. Objects defined in the
+global environment can affect the analysis in your R Markdown file in
+unknown ways. For reproduciblity it’s best to always run the code in an
+empty environment.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongSeedstrongcodesetseed20231016code">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Seed:</strong>
+<code>set.seed(20231016)</code> </a>
+</p>
+</div>
+<div id="strongSeedstrongcodesetseed20231016code"
+class="panel-collapse collapse">
+<div class="panel-body">
+<p>The command <code>set.seed(20231016)</code> was run prior to running
+the code in the R Markdown file. Setting a seed ensures that any results
+that rely on randomness, e.g. subsampling or permutations, are
+reproducible.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongSessioninformationstrongrecorded">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Session information:</strong>
+recorded </a>
+</p>
+</div>
+<div id="strongSessioninformationstrongrecorded"
+class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great job! Recording the operating system, R version, and package
+versions is critical for reproducibility.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongCachestrongnone">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Cache:</strong> none </a>
+</p>
+</div>
+<div id="strongCachestrongnone" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Nice! There were no cached chunks for this analysis, so you can be
+confident that you successfully produced the results during this
+run.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongFilepathsstrongrelative">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>File paths:</strong> relative </a>
+</p>
+</div>
+<div id="strongFilepathsstrongrelative" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great job! Using relative paths to the files within your workflowr
+project makes it easier to run your code on other machines.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomreneeisnowhereATAClearningtreec58f48cadf8044ec5f0185a23ba57a8607e76c32targetblankc58f48ca">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Repository version:</strong>
+<a href="https://github.com/reneeisnowhere/ATAC_learning/tree/c58f48cadf8044ec5f0185a23ba57a8607e76c32" target="_blank">c58f48c</a>
+</a>
+</p>
+</div>
+<div
+id="strongRepositoryversionstrongahrefhttpsgithubcomreneeisnowhereATAClearningtreec58f48cadf8044ec5f0185a23ba57a8607e76c32targetblankc58f48ca"
+class="panel-collapse collapse">
+<div class="panel-body">
+<p>
+Great! You are using Git for version control. Tracking code development
+and connecting the code version to the results is critical for
+reproducibility.
+</p>
+<p>
+The results in this page were generated with repository version
+<a href="https://github.com/reneeisnowhere/ATAC_learning/tree/c58f48cadf8044ec5f0185a23ba57a8607e76c32" target="_blank">c58f48c</a>.
+See the <em>Past versions</em> tab to see a history of the changes made
+to the R Markdown and HTML files.
+</p>
+<p>
+Note that you need to be careful to ensure that all relevant files for
+the analysis have been committed to Git prior to generating the results
+(you can use <code>wflow_publish</code> or
+<code>wflow_git_commit</code>). workflowr only checks the R Markdown
+file, but you know if there are other scripts or data files that it
+depends on. Below is the status of the Git repository when the results
+were generated:
+</p>
+<pre><code>
+Ignored files:
+    Ignored:    .RData
+    Ignored:    .Rhistory
+    Ignored:    .Rproj.user/
+    Ignored:    data/All_merged_peaks.tsv
+    Ignored:    data/CAD_gwas_dataframe.RDS
+    Ignored:    data/DEG_toplist_sep_n45.RDS
+    Ignored:    data/FRiP_first_run.txt
+    Ignored:    data/Frip_1_reads.csv
+    Ignored:    data/Frip_2_reads.csv
+    Ignored:    data/Frip_3_reads.csv
+    Ignored:    data/Frip_4_reads.csv
+    Ignored:    data/Frip_5_reads.csv
+    Ignored:    data/Frip_6_reads.csv
+    Ignored:    data/GO_KEGG_analysis/
+    Ignored:    data/Ind1_75DA24h_dedup_peaks.csv
+    Ignored:    data/Ind1_TSS_peaks.RDS
+    Ignored:    data/Ind1_firstfragment_files.txt
+    Ignored:    data/Ind1_fragment_files.txt
+    Ignored:    data/Ind1_peaks_list.RDS
+    Ignored:    data/Ind1_summary.txt
+    Ignored:    data/Ind2_TSS_peaks.RDS
+    Ignored:    data/Ind2_fragment_files.txt
+    Ignored:    data/Ind2_peaks_list.RDS
+    Ignored:    data/Ind2_summary.txt
+    Ignored:    data/Ind3_TSS_peaks.RDS
+    Ignored:    data/Ind3_fragment_files.txt
+    Ignored:    data/Ind3_peaks_list.RDS
+    Ignored:    data/Ind3_summary.txt
+    Ignored:    data/Ind4_79B24h_dedup_peaks.csv
+    Ignored:    data/Ind4_TSS_peaks.RDS
+    Ignored:    data/Ind4_V24h_fraglength.txt
+    Ignored:    data/Ind4_fragment_files.txt
+    Ignored:    data/Ind4_fragment_filesN.txt
+    Ignored:    data/Ind4_peaks_list.RDS
+    Ignored:    data/Ind4_summary.txt
+    Ignored:    data/Ind5_TSS_peaks.RDS
+    Ignored:    data/Ind5_fragment_files.txt
+    Ignored:    data/Ind5_fragment_filesN.txt
+    Ignored:    data/Ind5_peaks_list.RDS
+    Ignored:    data/Ind5_summary.txt
+    Ignored:    data/Ind6_TSS_peaks.RDS
+    Ignored:    data/Ind6_fragment_files.txt
+    Ignored:    data/Ind6_peaks_list.RDS
+    Ignored:    data/Ind6_summary.txt
+    Ignored:    data/Knowles_4.RDS
+    Ignored:    data/Knowles_5.RDS
+    Ignored:    data/Knowles_6.RDS
+    Ignored:    data/MI_gwas.RDS
+    Ignored:    data/SNP_supp_schneider.RDS
+    Ignored:    data/all_TSSE_scores.RDS
+    Ignored:    data/aln_run1_results.txt
+    Ignored:    data/anno_ind1_DA24h.RDS
+    Ignored:    data/anno_ind4_V24h.RDS
+    Ignored:    data/background_n45_he_peaks.RDS
+    Ignored:    data/cardiac_muscle_FRIP.csv
+    Ignored:    data/cardiomyocyte_FRIP.csv
+    Ignored:    data/cormotif_full_4_run.RDS
+    Ignored:    data/cormotif_full_4_run_he.RDS
+    Ignored:    data/cormotif_full_6_run.RDS
+    Ignored:    data/cormotif_full_6_run_he.RDS
+    Ignored:    data/cormotif_probability_45_list.csv
+    Ignored:    data/cormotif_probability_45_list_he.csv
+    Ignored:    data/cormotif_probability_all_6_list.csv
+    Ignored:    data/cormotif_probability_all_6_list_he.csv
+    Ignored:    data/embryo_heart_FRIP.csv
+    Ignored:    data/enhancer_list_ENCFF126UHK.bed
+    Ignored:    data/filt_Peaks_efit2.RDS
+    Ignored:    data/filt_Peaks_efit2_bl.RDS
+    Ignored:    data/filt_Peaks_efit2_n45.RDS
+    Ignored:    data/first_Peaksummarycounts.csv
+    Ignored:    data/first_run_frag_counts.txt
+    Ignored:    data/full_bedfiles/
+    Ignored:    data/gene_ref.csv
+    Ignored:    data/gwas_1_dataframe.RDS
+    Ignored:    data/gwas_2_dataframe.RDS
+    Ignored:    data/gwas_3_dataframe.RDS
+    Ignored:    data/gwas_4_dataframe.RDS
+    Ignored:    data/gwas_5_dataframe.RDS
+    Ignored:    data/high_conf_peak_counts.csv
+    Ignored:    data/high_conf_peak_counts.txt
+    Ignored:    data/high_conf_peaks_bl_counts.txt
+    Ignored:    data/high_conf_peaks_counts.txt
+    Ignored:    data/hits_files/
+    Ignored:    data/ind1_DA24hpeaks.RDS
+    Ignored:    data/ind1_TSSE.RDS
+    Ignored:    data/ind2_TSSE.RDS
+    Ignored:    data/ind3_TSSE.RDS
+    Ignored:    data/ind4_TSSE.RDS
+    Ignored:    data/ind4_V24hpeaks.RDS
+    Ignored:    data/ind5_TSSE.RDS
+    Ignored:    data/ind6_TSSE.RDS
+    Ignored:    data/initial_complete_stats_run1.txt
+    Ignored:    data/left_ventricle_FRIP.csv
+    Ignored:    data/mergedPeads.gff
+    Ignored:    data/mergedPeaks.gff
+    Ignored:    data/motif_list_full
+    Ignored:    data/motif_list_n45
+    Ignored:    data/motif_list_n45.RDS
+    Ignored:    data/multiqc_fastqc_run1.txt
+    Ignored:    data/multiqc_fastqc_run2.txt
+    Ignored:    data/multiqc_genestat_run1.txt
+    Ignored:    data/multiqc_genestat_run2.txt
+    Ignored:    data/my_hc_filt_counts.RDS
+    Ignored:    data/my_hc_filt_counts_n45.RDS
+    Ignored:    data/n45_bedfiles/
+    Ignored:    data/n45_files
+    Ignored:    data/other_papers/
+    Ignored:    data/peakAnnoList_1.RDS
+    Ignored:    data/peakAnnoList_2.RDS
+    Ignored:    data/peakAnnoList_24_full.RDS
+    Ignored:    data/peakAnnoList_24_n45.RDS
+    Ignored:    data/peakAnnoList_3.RDS
+    Ignored:    data/peakAnnoList_3_full.RDS
+    Ignored:    data/peakAnnoList_3_n45.RDS
+    Ignored:    data/peakAnnoList_4.RDS
+    Ignored:    data/peakAnnoList_5.RDS
+    Ignored:    data/peakAnnoList_6.RDS
+    Ignored:    data/peakAnnoList_full_motif.RDS
+    Ignored:    data/peakAnnoList_n45_motif.RDS
+    Ignored:    data/siglist_full.RDS
+    Ignored:    data/siglist_n45.RDS
+    Ignored:    data/testnames.txt
+    Ignored:    data/toplist_6.RDS
+    Ignored:    data/toplist_full.RDS
+    Ignored:    data/toplist_full_DAR_6.RDS
+    Ignored:    data/toplist_n45.RDS
+    Ignored:    data/trimmed_seq_length.csv
+    Ignored:    data/unclassified_full_set_peaks.RDS
+    Ignored:    data/unclassified_n45_set_peaks.RDS
+    Ignored:    data/xstreme/
+    Ignored:    trimmed_Ind1_75DA24h_S7.nodup.splited.bam/
+
+Untracked files:
+    Untracked:  EAR_2_plot.pdf
+    Untracked:  ESR_1_plot.pdf
+    Untracked:  Firstcorr plotATAC.pdf
+    Untracked:  IND1_2_3_6_corrplot.pdf
+    Untracked:  LR_3_plot.pdf
+    Untracked:  NR_1_plot.pdf
+    Untracked:  analysis/my_hc_filt_counts.csv
+    Untracked:  code/IGV_snapshot_code.R
+    Untracked:  code/LongDARlist.R
+    Untracked:  code/TSSE.R
+    Untracked:  code/corMotifcustom.R
+    Untracked:  code/just_for_Fun.R
+    Untracked:  code/toplist_assembly.R
+    Untracked:  lcpm_filtered_corplot.pdf
+    Untracked:  log2cpmfragcount.pdf
+    Untracked:  output/cormotif_probability_45_list.csv
+    Untracked:  output/cormotif_probability_all_6_list.csv
+    Untracked:  splited/
+    Untracked:  trimmed_Ind1_75DA24h_S7.nodup.fragment.size.distribution.pdf
+    Untracked:  trimmed_Ind1_75DA3h_S1.nodup.fragment.size.distribution.pdf
+
+Unstaged changes:
+    Modified:   analysis/CorMotif_data_n45.Rmd
+    Modified:   analysis/Enrichment_motif.Rmd
+    Modified:   analysis/Peak_analysis.Rmd
+    Modified:   analysis/Smaller_set_DAR.Rmd
+    Modified:   analysis/index.Rmd
+
+</code></pre>
+<p>
+Note that any generated files, e.g. HTML, png, CSS, etc., are not
+included in this status report because it is ok for generated content to
+have uncommitted changes.
+</p>
+</div>
+</div>
+</div>
+</div>
+<hr>
+</div>
+<div id="versions" class="tab-pane fade">
+
+<p>
+These are the previous versions of the repository in which changes were
+made to the R Markdown (<code>analysis/Jaspar_motif.Rmd</code>) and HTML
+(<code>docs/Jaspar_motif.html</code>) files. If you’ve configured a
+remote Git repository (see <code>?wflow_git_remote</code>), click on the
+hyperlinks in the table below to view the files as they were in that
+past version.
+</p>
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+File
+</th>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+<th>
+Message
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+Rmd
+</td>
+<td>
+<a href="https://github.com/reneeisnowhere/ATAC_learning/blob/c58f48cadf8044ec5f0185a23ba57a8607e76c32/analysis/Jaspar_motif.Rmd" target="_blank">c58f48c</a>
+</td>
+<td>
+reneeisnowhere
+</td>
+<td>
+2024-05-03
+</td>
+<td>
+first updates
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<hr>
+</div>
+</div>
+</div>
+<style type="text/css">
+pre {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+pre[class] {
+  max-height: 200px;
+}
+</style>
+<pre class="r"><code>library(tidyverse)
+# library(ggsignif)
+# library(cowplot)
+# library(ggpubr)
+
+# library(sjmisc)
+library(kableExtra)
+library(broom)
+# library(biomaRt)
+library(RColorBrewer)
+# library(gprofiler2)
+# library(qvalue)
+library(ChIPseeker)
+library(&quot;TxDb.Hsapiens.UCSC.hg38.knownGene&quot;)
+library(&quot;org.Hs.eg.db&quot;)
+# library(ATACseqQC)
+library(rtracklayer)
+library(edgeR)
+library(ggfortify)
+library(limma)
+library(readr)
+library(BiocGenerics)
+library(gridExtra)
+library(VennDiagram)
+library(scales)
+# library(ggVennDiagram)
+library(Cormotif)
+library(BiocParallel)
+library(ggpubr)
+library(devtools)
+# install_github(&#39;davetang/bedr&#39;)
+library(bedr)
+library(JASPAR2022)
+library(TFBSTools)
+library(MotifDb)
+library(BSgenome.Hsapiens.UCSC.hg38)</code></pre>
+<pre class="r"><code># xstreme_ESR_v_NR &lt;-ESR_v_NR_full_xstreme %&gt;%
+#   slice_head(n = length(.$ID)-3)
+# saveRDS(xstreme_ESR_v_NR, &quot;data/xstreme/xstreme_ESR_v_NR.RDS&quot;)
+
+
+xstreme_EAR_v_NR &lt;- readRDS(&quot;data/xstreme/xstreme_EAR_v_NR.RDS&quot;)
+
+xstreme_ESR_v_NR &lt;-readRDS(&quot;data/xstreme/xstreme_ESR_v_NR.RDS&quot;) 
+
+xstreme_LR_v_NR &lt;- readRDS(&quot;data/xstreme/xstreme_LR_v_NR.RDS&quot;)
+# 
+# xstreme_EAR_v_LR &lt;- readRDS(&quot;data/xstreme/xstreme_EAR_v_LR.RDS&quot;)
+# 
+# xstreme_ESR_v_LR &lt;- readRDS(&quot;data/xstreme/xstreme_ESR_v_LR.RDS&quot;)
+
+
+
+# saveRDS(ESR_streme_sites, &quot;data/xstreme/ESR_streme_sites.RDS&quot;)
+# ESR_binding_sites &lt;- ESR_streme_sites %&gt;% 
+#   dplyr::select(seq_ID:site_Sequence,motif_ID, motif_ALT_ID) %&gt;% 
+#   rename(seq_ID = &quot;seqnames&quot;,site_Start = &quot;start&quot;, site_End = &quot;end&quot;) %&gt;% 
+#   dplyr::filter(!is.na(seqnames)) %&gt;% 
+#    GRanges()
+# rtracklayer::export.bed(ESR_binding_sites , con=&quot;data/n45_bedfiles/ESR_binding_sites.bed&quot;, format=&quot;bed&quot;, ignore.strand = FALSE)</code></pre>
+<pre class="r"><code>xstreme_EAR_v_NR %&gt;% 
+  dplyr::select(SIM_MOTIF,ALT_ID, ID,EVALUE) %&gt;% 
+  arrange(.,EVALUE) %&gt;% 
+  separate(SIM_MOTIF, into= c(&quot;SIM_MOTIF&quot;, &quot;NAME&quot;), sep= &quot; &quot;) %&gt;% 
+  dplyr::filter(., EVALUE&lt;0.05) %&gt;% 
+  kable(., caption = &quot;Enriched motifs  (EVALUE &lt; 0.05) in EAR v NR&quot;) %&gt;%
+  kable_paper(&quot;striped&quot;, full_width = TRUE) %&gt;%
+  kable_styling(full_width = FALSE, font_size = 16) %&gt;%
+  scroll_box(height = &quot;500px&quot;)</code></pre>
+<div
+style="border: 1px solid #ddd; padding: 0px; overflow-y: scroll; height:500px; ">
+<table class=" lightable-paper lightable-striped table" style="font-family: &quot;Arial Narrow&quot;, arial, helvetica, sans-serif; margin-left: auto; margin-right: auto; font-size: 16px; width: auto !important; margin-left: auto; margin-right: auto;">
+<caption style="font-size: initial !important;">
+Enriched motifs (EVALUE &lt; 0.05) in EAR v NR
+</caption>
+<thead>
+<tr>
+<th style="text-align:left;position: sticky; top:0; background-color: #FFFFFF;">
+SIM_MOTIF
+</th>
+<th style="text-align:left;position: sticky; top:0; background-color: #FFFFFF;">
+NAME
+</th>
+<th style="text-align:left;position: sticky; top:0; background-color: #FFFFFF;">
+ALT_ID
+</th>
+<th style="text-align:left;position: sticky; top:0; background-color: #FFFFFF;">
+ID
+</th>
+<th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;">
+EVALUE
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+TGTGTRTGTGTGTGT
+</td>
+<td style="text-align:left;">
+NA
+</td>
+<td style="text-align:left;">
+MEME-2
+</td>
+<td style="text-align:left;">
+TGTGTRTGTGTGTGT
+</td>
+<td style="text-align:right;">
+0.00e+00
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+MA0682.2
+</td>
+<td style="text-align:left;">
+(PITX1)
+</td>
+<td style="text-align:left;">
+MEME-1
+</td>
+<td style="text-align:left;">
+GCTGGGATTACAGGC
+</td>
+<td style="text-align:right;">
+0.00e+00
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+MA1125.1
+</td>
+<td style="text-align:left;">
+(ZNF384)
+</td>
+<td style="text-align:left;">
+MEME-3
+</td>
+<td style="text-align:left;">
+TTTTTTTTTTTTWKT
+</td>
+<td style="text-align:right;">
+0.00e+00
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+MA1596.1
+</td>
+<td style="text-align:left;">
+(ZNF460)
+</td>
+<td style="text-align:left;">
+MEME-4
+</td>
+<td style="text-align:left;">
+CTCRGCCTCCCRARK
+</td>
+<td style="text-align:right;">
+0.00e+00
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+MA0508.3
+</td>
+<td style="text-align:left;">
+(PRDM1)
+</td>
+<td style="text-align:left;">
+MEME-5
+</td>
+<td style="text-align:left;">
+RGAGRGAGRGA
+</td>
+<td style="text-align:right;">
+0.00e+00
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+MA1973.1
+</td>
+<td style="text-align:left;">
+(ZKSCAN3)
+</td>
+<td style="text-align:left;">
+MEME-6
+</td>
+<td style="text-align:left;">
+CCAGCCTGGGCRACA
+</td>
+<td style="text-align:right;">
+0.00e+00
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+MA0119.1
+</td>
+<td style="text-align:left;">
+(NFIC::TLX1)
+</td>
+<td style="text-align:left;">
+MEME-8
+</td>
+<td style="text-align:left;">
+GGCRYGGTGGCTCAY
+</td>
+<td style="text-align:right;">
+1.00e-07
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+MA1721.1
+</td>
+<td style="text-align:left;">
+(ZNF93)
+</td>
+<td style="text-align:left;">
+MEME-7
+</td>
+<td style="text-align:left;">
+GSGGCGGSGGCGGSG
+</td>
+<td style="text-align:right;">
+8.00e-07
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+TTGCAGTGAGCYGAG
+</td>
+<td style="text-align:left;">
+NA
+</td>
+<td style="text-align:left;">
+MEME-9
+</td>
+<td style="text-align:left;">
+TTGCAGTGAGCYGAG
+</td>
+<td style="text-align:right;">
+2.40e-05
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+1-AGATGACA
+</td>
+<td style="text-align:left;">
+NA
+</td>
+<td style="text-align:left;">
+STREME-1
+</td>
+<td style="text-align:left;">
+1-AGATGACA
+</td>
+<td style="text-align:right;">
+3.55e-02
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+MA0805.1
+</td>
+<td style="text-align:left;">
+(TBX1)
+</td>
+<td style="text-align:left;">
+STREME-2
+</td>
+<td style="text-align:left;">
+2-TCACACAT
+</td>
+<td style="text-align:right;">
+3.73e-02
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<pre class="r"><code>xstreme_ESR_v_NR %&gt;% 
+  dplyr::select(SIM_MOTIF,ALT_ID, ID,EVALUE) %&gt;% 
+  arrange(.,EVALUE) %&gt;% 
+  separate(SIM_MOTIF, into= c(&quot;SIM_MOTIF&quot;, &quot;NAME&quot;), sep= &quot; &quot;) %&gt;% 
+  dplyr::filter(., EVALUE&lt;0.05) %&gt;% 
+  kable(., caption = &quot;Enriched motifs  (EVALUE &lt; 0.05) in ESR v NR&quot;) %&gt;%
+  kable_paper(&quot;striped&quot;, full_width = TRUE) %&gt;%
+  kable_styling(full_width = FALSE, font_size = 16) %&gt;%
+  scroll_box(height = &quot;800px&quot;)</code></pre>
+<div
+style="border: 1px solid #ddd; padding: 0px; overflow-y: scroll; height:800px; ">
+<table class=" lightable-paper lightable-striped table" style="font-family: &quot;Arial Narrow&quot;, arial, helvetica, sans-serif; margin-left: auto; margin-right: auto; font-size: 16px; width: auto !important; margin-left: auto; margin-right: auto;">
+<caption style="font-size: initial !important;">
+Enriched motifs (EVALUE &lt; 0.05) in ESR v NR
+</caption>
+<thead>
+<tr>
+<th style="text-align:left;position: sticky; top:0; background-color: #FFFFFF;">
+SIM_MOTIF
+</th>
+<th style="text-align:left;position: sticky; top:0; background-color: #FFFFFF;">
+NAME
+</th>
+<th style="text-align:left;position: sticky; top:0; background-color: #FFFFFF;">
+ALT_ID
+</th>
+<th style="text-align:left;position: sticky; top:0; background-color: #FFFFFF;">
+ID
+</th>
+<th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;">
+EVALUE
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+GTGTGTGTRTGTGTG
+</td>
+<td style="text-align:left;">
+NA
+</td>
+<td style="text-align:left;">
+MEME-3
+</td>
+<td style="text-align:left;">
+GTGTGTGTRTGTGTG
+</td>
+<td style="text-align:right;">
+0.0000
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+MA1990.1
+</td>
+<td style="text-align:left;">
+(Gli1)
+</td>
+<td style="text-align:left;">
+MEME-1
+</td>
+<td style="text-align:left;">
+TGGTGTGTGGTGTGT
+</td>
+<td style="text-align:right;">
+0.0000
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+TGTGTGYGTGTGTGT
+</td>
+<td style="text-align:left;">
+NA
+</td>
+<td style="text-align:left;">
+MEME-5
+</td>
+<td style="text-align:left;">
+TGTGTGYGTGTGTGT
+</td>
+<td style="text-align:right;">
+0.0000
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+MA1155.1
+</td>
+<td style="text-align:left;">
+(ZSCAN4)
+</td>
+<td style="text-align:left;">
+MEME-2
+</td>
+<td style="text-align:left;">
+GTGTGTGTGTGTG
+</td>
+<td style="text-align:right;">
+0.0000
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+CCCTCAYCRAGWCCC
+</td>
+<td style="text-align:left;">
+NA
+</td>
+<td style="text-align:left;">
+MEME-6
+</td>
+<td style="text-align:left;">
+CCCTCAYCRAGWCCC
+</td>
+<td style="text-align:right;">
+0.0000
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+MA1125.1
+</td>
+<td style="text-align:left;">
+(ZNF384)
+</td>
+<td style="text-align:left;">
+MEME-4
+</td>
+<td style="text-align:left;">
+MAAAAAAAAAAAAAA
+</td>
+<td style="text-align:right;">
+0.0000
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+TGTGTGYATGTGTGT
+</td>
+<td style="text-align:left;">
+NA
+</td>
+<td style="text-align:left;">
+MEME-9
+</td>
+<td style="text-align:left;">
+TGTGTGYATGTGTGT
+</td>
+<td style="text-align:right;">
+0.0000
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+MA0812.1
+</td>
+<td style="text-align:left;">
+(TFAP2B)
+</td>
+<td style="text-align:left;">
+MEME-10
+</td>
+<td style="text-align:left;">
+CCWGCCTSRGCCWCM
+</td>
+<td style="text-align:right;">
+0.0000
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+AGRCGCTCCTCACTT
+</td>
+<td style="text-align:left;">
+NA
+</td>
+<td style="text-align:left;">
+MEME-7
+</td>
+<td style="text-align:left;">
+AGRCGCTCCTCACTT
+</td>
+<td style="text-align:right;">
+0.0000
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+MA0682.2
+</td>
+<td style="text-align:left;">
+(PITX1)
+</td>
+<td style="text-align:left;">
+MEME-8
+</td>
+<td style="text-align:left;">
+GCTGGGATTACAGGC
+</td>
+<td style="text-align:right;">
+0.0000
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+MA1107.2
+</td>
+<td style="text-align:left;">
+(KLF9)
+</td>
+<td style="text-align:left;">
+STREME-1
+</td>
+<td style="text-align:left;">
+1-CCCACACC
+</td>
+<td style="text-align:right;">
+0.0208
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+2-CAGACACAT
+</td>
+<td style="text-align:left;">
+NA
+</td>
+<td style="text-align:left;">
+STREME-2
+</td>
+<td style="text-align:left;">
+2-CAGACACAT
+</td>
+<td style="text-align:right;">
+0.0460
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+3-GACTGCCTCCTCA
+</td>
+<td style="text-align:left;">
+NA
+</td>
+<td style="text-align:left;">
+STREME-3
+</td>
+<td style="text-align:left;">
+3-GACTGCCTCCTCA
+</td>
+<td style="text-align:right;">
+0.0470
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+MA1710.1
+</td>
+<td style="text-align:left;">
+(ZNF257)
+</td>
+<td style="text-align:left;">
+STREME-4
+</td>
+<td style="text-align:left;">
+4-CCTCCTGCCTCAKYM
+</td>
+<td style="text-align:right;">
+0.0470
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<pre class="r"><code>xstreme_LR_v_NR %&gt;% 
+  dplyr::select(SIM_MOTIF,ALT_ID, ID,EVALUE) %&gt;% 
+  arrange(.,EVALUE) %&gt;% 
+  separate(SIM_MOTIF, into= c(&quot;SIM_MOTIF&quot;, &quot;NAME&quot;), sep= &quot; &quot;) %&gt;% 
+  dplyr::filter(., EVALUE&lt;0.05) %&gt;% 
+  kable(., caption = &quot;Enriched motifs  (EVALUE &lt; 0.05) in LR v NR&quot;) %&gt;%
+  kable_paper(&quot;striped&quot;, full_width = TRUE) %&gt;%
+  kable_styling(full_width = FALSE, font_size = 16) %&gt;%
+  scroll_box(height = &quot;800px&quot;)</code></pre>
+<div
+style="border: 1px solid #ddd; padding: 0px; overflow-y: scroll; height:800px; ">
+<table class=" lightable-paper lightable-striped table" style="font-family: &quot;Arial Narrow&quot;, arial, helvetica, sans-serif; margin-left: auto; margin-right: auto; font-size: 16px; width: auto !important; margin-left: auto; margin-right: auto;">
+<caption style="font-size: initial !important;">
+Enriched motifs (EVALUE &lt; 0.05) in LR v NR
+</caption>
+<thead>
+<tr>
+<th style="text-align:left;position: sticky; top:0; background-color: #FFFFFF;">
+SIM_MOTIF
+</th>
+<th style="text-align:left;position: sticky; top:0; background-color: #FFFFFF;">
+NAME
+</th>
+<th style="text-align:left;position: sticky; top:0; background-color: #FFFFFF;">
+ALT_ID
+</th>
+<th style="text-align:left;position: sticky; top:0; background-color: #FFFFFF;">
+ID
+</th>
+<th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;">
+EVALUE
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+MA1125.1
+</td>
+<td style="text-align:left;">
+(ZNF384)
+</td>
+<td style="text-align:left;">
+MEME-1
+</td>
+<td style="text-align:left;">
+AAAAWAAAAAAAWWA
+</td>
+<td style="text-align:right;">
+0.000000
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+AYACACATAYACACA
+</td>
+<td style="text-align:left;">
+NA
+</td>
+<td style="text-align:left;">
+MEME-3
+</td>
+<td style="text-align:left;">
+AYACACATAYACACA
+</td>
+<td style="text-align:right;">
+0.000000
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+MA1125.1
+</td>
+<td style="text-align:left;">
+(ZNF384)
+</td>
+<td style="text-align:left;">
+MEME-2
+</td>
+<td style="text-align:left;">
+AAAAAAAAAAAAAAA
+</td>
+<td style="text-align:right;">
+0.000000
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+MA1547.2
+</td>
+<td style="text-align:left;">
+(PITX2)
+</td>
+<td style="text-align:left;">
+MEME-5
+</td>
+<td style="text-align:left;">
+TAATCCCAGCACTTT
+</td>
+<td style="text-align:right;">
+0.000000
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+MA1125.1
+</td>
+<td style="text-align:left;">
+(ZNF384)
+</td>
+<td style="text-align:left;">
+MEME-4
+</td>
+<td style="text-align:left;">
+AAAAADAAAAA
+</td>
+<td style="text-align:right;">
+0.000000
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+TGTGTGGTRTGKKGT
+</td>
+<td style="text-align:left;">
+NA
+</td>
+<td style="text-align:left;">
+MEME-7
+</td>
+<td style="text-align:left;">
+TGTGTGGTRTGKKGT
+</td>
+<td style="text-align:right;">
+0.000000
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+MA0477.2
+</td>
+<td style="text-align:left;">
+(FOSL1)
+</td>
+<td style="text-align:left;">
+STREME-1
+</td>
+<td style="text-align:left;">
+1-DDATGASTCATHH
+</td>
+<td style="text-align:right;">
+0.000000
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+MA1101.2
+</td>
+<td style="text-align:left;">
+(BACH2)
+</td>
+<td style="text-align:left;">
+MEME-6
+</td>
+<td style="text-align:left;">
+AAWGGGATGAKTCAY
+</td>
+<td style="text-align:right;">
+0.000000
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+MA0052.4
+</td>
+<td style="text-align:left;">
+(MEF2A)
+</td>
+<td style="text-align:left;">
+MEME-8
+</td>
+<td style="text-align:left;">
+ATTTATTTTWA
+</td>
+<td style="text-align:right;">
+0.000300
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+MA0610.1
+</td>
+<td style="text-align:left;">
+(DMRT3)
+</td>
+<td style="text-align:left;">
+STREME-2
+</td>
+<td style="text-align:left;">
+2-AATACA
+</td>
+<td style="text-align:right;">
+0.000485
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+3-WCATGW
+</td>
+<td style="text-align:left;">
+NA
+</td>
+<td style="text-align:left;">
+STREME-3
+</td>
+<td style="text-align:left;">
+3-WCATGW
+</td>
+<td style="text-align:right;">
+0.000669
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+4-ATAKMTAT
+</td>
+<td style="text-align:left;">
+NA
+</td>
+<td style="text-align:left;">
+STREME-4
+</td>
+<td style="text-align:left;">
+4-ATAKMTAT
+</td>
+<td style="text-align:right;">
+0.007690
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+MA1124.1
+</td>
+<td style="text-align:left;">
+(ZNF24)
+</td>
+<td style="text-align:left;">
+STREME-5
+</td>
+<td style="text-align:left;">
+5-TSATKCA
+</td>
+<td style="text-align:right;">
+0.008060
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+MA1487.2
+</td>
+<td style="text-align:left;">
+(FOXE1)
+</td>
+<td style="text-align:left;">
+STREME-6
+</td>
+<td style="text-align:left;">
+6-CAAACAA
+</td>
+<td style="text-align:right;">
+0.009990
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+MA0018.4
+</td>
+<td style="text-align:left;">
+(CREB1)
+</td>
+<td style="text-align:left;">
+STREME-7
+</td>
+<td style="text-align:left;">
+7-ACATCA
+</td>
+<td style="text-align:right;">
+0.026300
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+8-ACTTAT
+</td>
+<td style="text-align:left;">
+NA
+</td>
+<td style="text-align:left;">
+STREME-8
+</td>
+<td style="text-align:left;">
+8-ACTTAT
+</td>
+<td style="text-align:right;">
+0.044600
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<pre class="r"><code># xstreme_EAR_v_LR %&gt;% 
+#   dplyr::select(SIM_MOTIF,ALT_ID, ID,SITES,EVALUE) %&gt;% 
+#   arrange(.,EVALUE) %&gt;% 
+#   separate(SIM_MOTIF, into= c(&quot;SIM_MOTIF&quot;, &quot;NAME&quot;), sep= &quot; &quot;) %&gt;% 
+#   dplyr::filter(., EVALUE&lt;0.05) %&gt;% 
+#   kable(., caption = &quot;Enriched motifs  (EVALUE &lt; 0.05) in EAR v LR&quot;) %&gt;%
+#   kable_paper(&quot;striped&quot;, full_width = TRUE) %&gt;%
+#   kable_styling(full_width = FALSE, font_size = 16) %&gt;%
+#   scroll_box(height = &quot;800px&quot;)
+# 
+# 
+# xstreme_ESR_v_LR %&gt;% 
+#   dplyr::select(SIM_MOTIF,ALT_ID, ID,SITES,EVALUE) %&gt;% 
+#   arrange(.,EVALUE) %&gt;% 
+#   separate(SIM_MOTIF, into= c(&quot;SIM_MOTIF&quot;, &quot;NAME&quot;), sep= &quot; &quot;) %&gt;% 
+#   dplyr::filter(., EVALUE&lt;0.05) %&gt;% 
+#   kable(., caption = &quot;Enriched motifs  (EVALUE &lt; 0.05) in ESR v LR&quot;) %&gt;%
+#   kable_paper(&quot;striped&quot;, full_width = TRUE) %&gt;%
+#   kable_styling(full_width = FALSE, font_size = 16) %&gt;%
+#   scroll_box(height = &quot;800px&quot;)</code></pre>
+<div id="enriched-motifs" class="section level3">
+<h3>enriched motifs</h3>
+<pre class="r"><code># xstreme_EAR_v_NR %&gt;% 
+#   dplyr::select(CLUSTER, SITES,SIM_MOTIF,ALT_ID, ID,EVALUE) %&gt;% 
+#   dplyr::filter(., EVALUE&lt;0.05) %&gt;% 
+#   separate(SIM_MOTIF, into= c(&quot;SIM_MOTIF&quot;, &quot;NAME&quot;), sep= &quot; &quot;) %&gt;% 
+#   # arrange(.,EVALUE) %&gt;% 
+#   mutate(log10Evalue= log10(EVALUE)*(-1)) %&gt;% 
+#   mutate(motif_name= gsub(&quot;[()]&quot;,&quot;&quot;,NAME), mrc=&quot;EAR&quot;) %&gt;% 
+#   bind_rows(., (xstreme_ESR_v_NR %&gt;% 
+#   dplyr::select(CLUSTER, SITES,SIM_MOTIF,ALT_ID, ID,EVALUE) %&gt;% 
+#   dplyr::filter(., EVALUE&lt;0.05) %&gt;% 
+#   separate(SIM_MOTIF, into= c(&quot;SIM_MOTIF&quot;, &quot;NAME&quot;), sep= &quot; &quot;) %&gt;% 
+#   # arrange(.,EVALUE) %&gt;% 
+#   mutate(log10Evalue= log10(EVALUE)*(-1)) %&gt;% 
+#   mutate(motif_name= gsub(&quot;[()]&quot;,&quot;&quot;,NAME), mrc=&quot;ESR&quot;))) %&gt;% 
+#   bind_rows(., (xstreme_LR_v_NR %&gt;% 
+#   dplyr::select(CLUSTER, SITES,SIM_MOTIF,ALT_ID, ID,EVALUE) %&gt;% 
+#   dplyr::filter(., EVALUE&lt;0.05) %&gt;% 
+#   separate(SIM_MOTIF, into= c(&quot;SIM_MOTIF&quot;, &quot;NAME&quot;), sep= &quot; &quot;) %&gt;% 
+#   # arrange(.,EVALUE) %&gt;% 
+#   mutate(log10Evalue= log10(EVALUE)*(-1)) %&gt;% 
+  # mutate(motif_name= gsub(&quot;[()]&quot;,&quot;&quot;,NAME), mrc=&quot;LR&quot;))) %&gt;% 
+  # dplyr::filter(!is.na(motif_name)) %&gt;% 
+  # # group_by(mrc) %&gt;% 
+  #  dplyr::arrange(.,desc(log10Evalue)) %&gt;% 
+  # mutate(mrc=factor(mrc, levels = c(&quot;EAR&quot;, &quot;ESR&quot;, &quot;LR&quot;))) %&gt;% 
+  # ggplot(., aes (x= log10Evalue, y= reorder(motif_name, log10Evalue), fill=mrc)) +
+  # geom_col()+
+  # facet_wrap(~mrc)
+
+xstreme_EAR_v_NR %&gt;% 
+  dplyr::select(CLUSTER, SITES,SIM_MOTIF,ALT_ID, ID,EVALUE) %&gt;% 
+  dplyr::filter(., EVALUE&lt;0.05) %&gt;% 
+  separate(SIM_MOTIF, into= c(&quot;SIM_MOTIF&quot;, &quot;NAME&quot;), sep= &quot; &quot;) %&gt;% 
+  arrange(.,EVALUE) %&gt;%
+  mutate(log10Evalue= log10(EVALUE)*(-1)) %&gt;% 
+  mutate(motif_name= gsub(&quot;[()]&quot;,&quot;&quot;,NAME), mrc=&quot;EAR&quot;) %&gt;% 
+dplyr::filter(!is.na(motif_name)) %&gt;% 
+  # group_by(mrc) %&gt;% 
+   dplyr::arrange(.,desc(log10Evalue)) %&gt;% 
+ggplot(., aes (x= log10Evalue, y= reorder(motif_name,log10Evalue))) +
+  geom_col(fill=&quot;red&quot;) +
+  theme_classic()+
+  xlim(0,140)</code></pre>
+<p><img src="figure/Jaspar_motif.Rmd/enriched%20motifs%20EAR-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>xstreme_ESR_v_NR %&gt;% 
+  dplyr::select(CLUSTER, SITES,SIM_MOTIF,ALT_ID, ID,EVALUE) %&gt;% 
+  dplyr::filter(., EVALUE&lt;0.05) %&gt;% 
+  separate(SIM_MOTIF, into= c(&quot;SIM_MOTIF&quot;, &quot;NAME&quot;), sep= &quot; &quot;) %&gt;% 
+  arrange(.,EVALUE) %&gt;%
+  mutate(log10Evalue= log10(EVALUE)*(-1)) %&gt;% 
+  mutate(motif_name= gsub(&quot;[()]&quot;,&quot;&quot;,NAME), mrc=&quot;EAR&quot;) %&gt;% 
+dplyr::filter(!is.na(motif_name)) %&gt;% 
+  # group_by(mrc) %&gt;% 
+   dplyr::arrange(.,desc(log10Evalue)) %&gt;% 
+ggplot(., aes (x= log10Evalue, y= reorder(motif_name,log10Evalue), fill=mrc)) +
+  geom_col(fill=&quot;blue&quot;) +
+  theme_classic()</code></pre>
+<p><img src="figure/Jaspar_motif.Rmd/enriched%20motifs%20EAR-2.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>xstreme_LR_v_NR %&gt;% 
+  dplyr::select(CLUSTER, SITES,SIM_MOTIF,ALT_ID, ID,EVALUE) %&gt;% 
+  dplyr::filter(., EVALUE&lt;0.05) %&gt;% 
+  separate(SIM_MOTIF, into= c(&quot;SIM_MOTIF&quot;, &quot;NAME&quot;), sep= &quot; &quot;) %&gt;% 
+  arrange(.,EVALUE) %&gt;%
+  mutate(log10Evalue= log10(EVALUE)*(-1)) %&gt;% 
+  mutate(motif_name= gsub(&quot;[()]&quot;,&quot;&quot;,NAME), mrc=&quot;EAR&quot;) %&gt;% 
+dplyr::filter(!is.na(motif_name)) %&gt;% 
+  # group_by(mrc) %&gt;% 
+   dplyr::arrange(.,desc(log10Evalue)) %&gt;% 
+ggplot(., aes (x= log10Evalue, y= reorder(motif_name,log10Evalue), fill=mrc)) +
+  geom_col(fill=&quot;green&quot;) +
+  theme_classic()</code></pre>
+<p><img src="figure/Jaspar_motif.Rmd/enriched%20motifs%20EAR-3.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>## can I see if anyof these genes are in expression data:
+
+toplistall_RNA &lt;- readRDS(&quot;data/other_papers/toplistall_RNA.RDS&quot;) 
+###Because of how I applied the DEG system in RNA-seq analysis, the lFC is opposite of the 
+###counts.   I did trt-veh instead of veh-trt.  therefore I need to multiply lfc by -1 to get t
+###the right correlation.
+
+toplistall_RNA &lt;- toplistall_RNA %&gt;% 
+  mutate(logFC = logFC*(-1))
+# 
+# motifgenes_EAR_v_LR &lt;- xstreme_EAR_v_LR %&gt;% 
+#   dplyr::select(SIM_MOTIF,ALT_ID, ID,SITES,EVALUE) %&gt;% 
+#   arrange(.,EVALUE) %&gt;% 
+#   separate(SIM_MOTIF, into= c(&quot;SIM_MOTIF&quot;, &quot;NAME&quot;), sep= &quot; &quot;) %&gt;% 
+#   dplyr::filter(., EVALUE&lt;0.05) %&gt;% 
+#   mutate(motif_name= gsub(&quot;[()]&quot;,&quot;&quot;,NAME)) %&gt;% 
+#   dplyr::select(SIM_MOTIF,motif_name) %&gt;% 
+#   unique()
+# 
+# motifgenes_ESR_v_LR &lt;- xstreme_ESR_v_LR %&gt;% 
+#   dplyr::select(SIM_MOTIF,ALT_ID, ID,SITES,EVALUE) %&gt;% 
+#   arrange(.,EVALUE) %&gt;% 
+#   separate(SIM_MOTIF, into= c(&quot;SIM_MOTIF&quot;, &quot;NAME&quot;), sep= &quot; &quot;) %&gt;% 
+#   dplyr::filter(., EVALUE&lt;0.05) %&gt;% 
+#   mutate(motif_name= gsub(&quot;[()]&quot;,&quot;&quot;,NAME)) %&gt;% 
+#    dplyr::select(SIM_MOTIF,motif_name) %&gt;% 
+#   unique()
+
+motifgenes_EAR_v_NR &lt;- xstreme_EAR_v_NR %&gt;% 
+  dplyr::select(SIM_MOTIF,ALT_ID, ID,SITES,EVALUE) %&gt;% 
+  arrange(.,EVALUE) %&gt;% 
+  separate(SIM_MOTIF, into= c(&quot;SIM_MOTIF&quot;, &quot;NAME&quot;), sep= &quot; &quot;) %&gt;% 
+  dplyr::filter(., EVALUE&lt;0.05) %&gt;% 
+  mutate(motif_name= gsub(&quot;[()]&quot;,&quot;&quot;,NAME)) %&gt;% 
+   dplyr::select(SIM_MOTIF,motif_name,SITES) %&gt;% 
+  unique()
+
+motifgenes_ESR_v_NR &lt;- xstreme_ESR_v_NR %&gt;% 
+  dplyr::select(SIM_MOTIF,ALT_ID, ID,SITES,EVALUE) %&gt;% 
+  arrange(.,EVALUE) %&gt;% 
+  separate(SIM_MOTIF, into= c(&quot;SIM_MOTIF&quot;, &quot;NAME&quot;), sep= &quot; &quot;) %&gt;% 
+  dplyr::filter(., EVALUE&lt;0.05) %&gt;% 
+  mutate(motif_name= gsub(&quot;[()]&quot;,&quot;&quot;,NAME)) %&gt;% 
+   dplyr::select(SIM_MOTIF,motif_name,SITES) %&gt;% 
+  unique()
+
+
+motifgenes_LR_v_NR &lt;- xstreme_LR_v_NR %&gt;% 
+  dplyr::select(SIM_MOTIF,ALT_ID, ID,SITES,EVALUE) %&gt;% 
+  arrange(.,EVALUE) %&gt;% 
+  separate(SIM_MOTIF, into= c(&quot;SIM_MOTIF&quot;, &quot;NAME&quot;), sep= &quot; &quot;) %&gt;% 
+  dplyr::filter(., EVALUE&lt;0.05) %&gt;% 
+  mutate(motif_name= gsub(&quot;[()]&quot;,&quot;&quot;,NAME)) %&gt;% 
+   dplyr::select(SIM_MOTIF,motif_name) %&gt;% 
+  unique()
+# intersect(motifgenes_EAR_v_LR$SIM_MOTIF, motifgenes_ESR_v_LR$SIM_MOTIF
+#           )</code></pre>
+<pre class="r"><code>peakAnnoList_n45_motif &lt;- readRDS(&quot;data/peakAnnoList_n45_motif.RDS&quot;)
+list2env(peakAnnoList_n45_motif, envir = .GlobalEnv)</code></pre>
+<pre><code>&lt;environment: R_GlobalEnv&gt;</code></pre>
+<pre class="r"><code>EAR_df &lt;- as.data.frame(peakAnnoList_n45_motif$EAR_n45_gr)
+EAR_df_gr &lt;-  GRanges(EAR_df)
+
+ESR_df &lt;- as.data.frame(peakAnnoList_n45_motif$ESR_n45_gr)
+ESR_df_gr &lt;-  GRanges(ESR_df)
+
+LR_df &lt;- as.data.frame(peakAnnoList_n45_motif$LR_n45_gr)
+LR_df_gr &lt;-  GRanges(LR_df)
+ 
+NR_df &lt;- as.data.frame(peakAnnoList_n45_motif$NR_n45_gr)
+NR_df_gr &lt;-  GRanges(NR_df)
+
+
+ESR_peaks_resized = resize(ESR_df_gr, width = 2000, fix=&#39;center&#39;)
+EAR_peaks_resized = resize(EAR_df_gr, width = 2000, fix=&#39;center&#39;)
+LR_peaks_resized = resize(LR_df_gr, width = 2000, fix=&#39;center&#39;)
+NR_peaks_resized = resize(NR_df_gr, width = 2000, fix=&#39;center&#39;)
+
+
+
+ESR_peaks_resized_500 = resize(ESR_df_gr, width = 1000, fix=&#39;center&#39;)
+EAR_peaks_resized_500 = resize(EAR_df_gr, width = 1000, fix=&#39;center&#39;)
+LR_peaks_resized_500 = resize(LR_df_gr, width = 1000, fix=&#39;center&#39;)
+NR_peaks_resized_500 = resize(NR_df_gr, width = 1000, fix=&#39;center&#39;)
+# ESR_peaks_resized_site = resize(ESR_df_gr,  fix=&#39;center&#39;)
+
+seq_ESR = getSeq(BSgenome.Hsapiens.UCSC.hg38, ESR_peaks_resized)
+seq_EAR = getSeq(BSgenome.Hsapiens.UCSC.hg38, EAR_peaks_resized)
+seq_LR = getSeq(BSgenome.Hsapiens.UCSC.hg38, LR_peaks_resized)
+seq_NR = getSeq(BSgenome.Hsapiens.UCSC.hg38, NR_peaks_resized)
+
+seq_ESR_500 = getSeq(BSgenome.Hsapiens.UCSC.hg38, ESR_peaks_resized_500)
+seq_EAR_500 = getSeq(BSgenome.Hsapiens.UCSC.hg38, EAR_peaks_resized_500)
+seq_LR_500 = getSeq(BSgenome.Hsapiens.UCSC.hg38, LR_peaks_resized_500)
+seq_NR_500 = getSeq(BSgenome.Hsapiens.UCSC.hg38, NR_peaks_resized_500)
+
+seq_ESR_norm = getSeq(BSgenome.Hsapiens.UCSC.hg38, ESR_df_gr)
+seq_EAR_norm = getSeq(BSgenome.Hsapiens.UCSC.hg38, EAR_df_gr)
+seq_LR_norm = getSeq(BSgenome.Hsapiens.UCSC.hg38, LR_df_gr)
+seq_NR_norm = getSeq(BSgenome.Hsapiens.UCSC.hg38, NR_df_gr)</code></pre>
+<div id="foxd3" class="section level4">
+<h4>FOXD3</h4>
+<pre class="r"><code># motifs_FOXD3 = query(query(MotifDb, &#39;Hsapiens&#39;), &#39;FOXD3&#39;)
+# FOXD3_motif &lt;- motifs_FOXD3$`Hsapiens-jaspar2022-FOXD3-MA0041.2`
+
+
+# FOXD3_pwm = PWMatrix(
+#     ID = &#39;FOXD3&#39;,
+#     profileMatrix = FOXD3_motif)
+hits_ESR_FOXD3 &lt;- readRDS(&quot;data/hits_files/FOXD3_hits_ESR.RDS&quot;)
+
+hits_ESR_FOXD3_500 &lt;- readRDS(&quot;data/hits_files/FOXD3_hits_ESR_500.RDS&quot;)
+# hits = searchSeq(FOXD3_pwm, seq_ESR_500, min.score=&quot;80%&quot;, strand=&quot;*&quot;)
+# hits_ESR_500 &lt;- hits
+# hits_ESR_500 &lt;- as.data.frame(hits_ESR_500)
+# saveRDS(hits_ESR_500,&quot;data/hits_files/FOXD3_hits_ESR_500.RDS&quot;)
+# hits_ESR_FOXD3 %&gt;% 
+#   mutate(position=start-1000) %&gt;% 
+#   ggplot(.,aes(position))+
+#   geom_density(size=2) +
+#   theme_bw() +
+#   geom_vline(xintercept = 0, linetype=2, color=&#39;red&#39;, size=2) +
+#   xlab(&#39;Position around the FOXD3 peaks&#39;) +
+#   ylab(&#39;Per position percentage\nof motif occurrence&#39;) +
+#   ggtitle(&quot;ESR: FOXD3 binding&quot;)+
+#   theme(
+#     axis.text = element_text(size=10, face=&#39;bold&#39;),
+#     axis.title = element_text(size=14,face=&quot;bold&quot;),
+#     plot.title = element_text(hjust = 0.5))
+
+hits_EAR_FOXD3 &lt;- readRDS(&quot;data/hits_files/FOXD3_hits_EAR.RDS&quot;)
+# hits_EAR &lt;- searchSeq(FOXD3_pwm, seq_EAR, min.score=&quot;80%&quot;, strand=&quot;*&quot;)
+# hits_EAR &lt;- as.data.frame(hits_EAR)
+# saveRDS(hits_EAR,&quot;data/hits_files/FOXD3_hits_EAR.RDS&quot;)
+# 
+# hits_EAR_FOXD3 %&gt;% 
+#   mutate(position=start-1000) %&gt;% 
+#   ggplot(.,aes(position))+
+#   geom_density(size=2) +
+#   theme_bw() +
+#   geom_vline(xintercept = 0, linetype=2, color=&#39;red&#39;, size=2) +
+#   xlab(&#39;Position around the FOXD3 peaks&#39;) +
+#   ylab(&#39;Per position percentage\nof motif occurrence&#39;) +
+#   ggtitle(&quot;EAR: FOXD3 binding&quot;)+
+#   theme(
+#     axis.text = element_text(size=10, face=&#39;bold&#39;),
+#     axis.title = element_text(size=14,face=&quot;bold&quot;),
+#     plot.title = element_text(hjust = 0.5))
+
+hits_LR_FOXD3 &lt;- readRDS(&quot;data/hits_files/FOXD3_hits_LR.RDS&quot;)
+# hits_LR &lt;- searchSeq(FOXD3_pwm, seq_LR, min.score=&quot;80%&quot;, strand=&quot;*&quot;)
+# hits_LR &lt;- as.data.frame(hits_LR)
+# saveRDS(hits_LR,&quot;data/hits_files/FOXD3_hits_LR.RDS&quot;)
+
+# hits_LR_FOXD3 %&gt;% 
+#   mutate(position=start-1000) %&gt;% 
+#   ggplot(.,aes(position))+
+#   geom_density(size=2) +
+#   theme_bw() +
+#   geom_vline(xintercept = 0, linetype=2, color=&#39;red&#39;, size=2) +
+#   xlab(&#39;Position around the FOXD3 peaks&#39;) +
+#   ylab(&#39;Per position percentage\nof motif occurrence&#39;) +
+#   ggtitle(&quot;LR: FOXD3 binding&quot;)+
+#   theme(
+#     axis.text = element_text(size=10, face=&#39;bold&#39;),
+#     axis.title = element_text(size=14,face=&quot;bold&quot;),
+#     plot.title = element_text(hjust = 0.5))
+hits_NR_FOXD3 &lt;- readRDS(&quot;data/hits_files/FOXD3_hits_NR.RDS&quot;)
+# hits_NR &lt;- searchSeq(FOXD3_pwm, seq_NR, min.score=&quot;80%&quot;, strand=&quot;*&quot;)
+# hits_NR &lt;- as.data.frame(hits_NR)
+# saveRDS(hits_NR,&quot;data/hits_files/FOXD3_hits_NR.RDS&quot;)
+
+hits_NR_FOXD3 %&gt;% 
+  mutate(position=start-1000) %&gt;% 
+  mutate(id_mrc=&quot;NR&quot;) %&gt;% 
+  rbind(.,(hits_LR_FOXD3 %&gt;% mutate(position=start-1000) %&gt;% 
+  mutate(id_mrc=&quot;LR&quot;))) %&gt;% 
+   rbind(.,(hits_ESR_FOXD3 %&gt;% mutate(position=start-1000) %&gt;% 
+  mutate(id_mrc=&quot;ESR&quot;))) %&gt;% 
+   rbind(.,(hits_ESR_FOXD3_500 %&gt;% mutate(position=start-500) %&gt;% 
+  mutate(id_mrc=&quot;ESR_500&quot;))) %&gt;% 
+   rbind(.,(hits_EAR_FOXD3 %&gt;% mutate(position=start-1000) %&gt;% 
+  mutate(id_mrc=&quot;EAR&quot;))) %&gt;% 
+  ggplot(.,aes(position, color = id_mrc))+
+  geom_density(size=1.5) +
+  # geom_density(data=hits_LR_FOXD3, aes(position))+
+  theme_bw() +
+  geom_vline(xintercept = 0, linetype=2, color=&#39;red&#39;, size=2) +
+  xlab(&#39;Position around the FOXD3 peaks&#39;) +
+  ylab(&#39;Per position percentage\nof motif occurrence&#39;) +
+  ggtitle(&quot;Chromatin accessibility around FOXD3 binding site&quot;)+
+  theme(
+    axis.text = element_text(size=10, face=&#39;bold&#39;),
+    axis.title = element_text(size=14,face=&quot;bold&quot;),
+    plot.title = element_text(hjust = 0.5))</code></pre>
+<p><img src="figure/Jaspar_motif.Rmd/FOXD3%20motif-1.png" width="672" style="display: block; margin: auto;" />
+#### ZNF384</p>
+<pre class="r"><code># motifs_ZNF384 = query(query(MotifDb, &#39;Hsapiens&#39;), &#39;ZNF384&#39;)
+# ZNF384_motif &lt;- motifs_ZNF384$`Hsapiens-jaspar2022-ZNF384-MA1125.1`
+# # 
+# # 
+# ZNF384_pwm = PWMatrix(
+#     ID = &#39;ZNF384&#39;,
+#     profileMatrix = ZNF384_motif)
+hits_ESR_ZNF384 &lt;- readRDS(&quot;data/hits_files/ZNF384_hits_ESR.RDS&quot;)
+# hits = searchSeq(ZNF384_pwm, seq_ESR, min.score=&quot;80%&quot;, strand=&quot;*&quot;)
+# hits_ESR &lt;- hits
+# hits_ESR &lt;- as.data.frame(hits_ESR)
+# saveRDS(hits_ESR,&quot;data/hits_files/ZNF384_hits_ESR.RDS&quot;)
+hits_ESR_ZNF384 %&gt;%
+  mutate(position=start-1000) %&gt;%
+  ggplot(.,aes(position))+
+  geom_density(size=2) +
+  theme_bw() +
+  geom_vline(xintercept = 0, linetype=2, color=&#39;red&#39;, size=2) +
+  xlab(&#39;Position around the ZNF384 peaks&#39;) +
+  ylab(&#39;Per position percentage\nof motif occurrence&#39;) +
+  ggtitle(&quot;ESR: ZNF384 binding&quot;)+
+  theme(
+    axis.text = element_text(size=10, face=&#39;bold&#39;),
+    axis.title = element_text(size=14,face=&quot;bold&quot;),
+    plot.title = element_text(hjust = 0.5))</code></pre>
+<p><img src="figure/Jaspar_motif.Rmd/ZNF384-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>hits_EAR_ZNF384 &lt;- readRDS(&quot;data/hits_files/ZNF384_hits_EAR.RDS&quot;)
+# hits_EAR &lt;- searchSeq(ZNF384_pwm, seq_EAR, min.score=&quot;80%&quot;, strand=&quot;*&quot;)
+# hits_EAR &lt;- as.data.frame(hits_EAR)
+# saveRDS(hits_EAR,&quot;data/hits_files/ZNF384_hits_EAR.RDS&quot;)
+
+hits_EAR_ZNF384 %&gt;%
+  mutate(position=start-1000) %&gt;%
+  ggplot(.,aes(position))+
+  geom_density(size=2) +
+  theme_bw() +
+  geom_vline(xintercept = 0, linetype=2, color=&#39;red&#39;, size=2) +
+  xlab(&#39;Position around the ZNF384 peaks&#39;) +
+  ylab(&#39;Per position percentage\nof motif occurrence&#39;) +
+  ggtitle(&quot;EAR: ZNF384 binding&quot;)+
+  theme(
+    axis.text = element_text(size=10, face=&#39;bold&#39;),
+    axis.title = element_text(size=14,face=&quot;bold&quot;),
+    plot.title = element_text(hjust = 0.5))</code></pre>
+<p><img src="figure/Jaspar_motif.Rmd/ZNF384-2.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>hits_LR_ZNF384 &lt;- readRDS(&quot;data/hits_files/ZNF384_hits_LR.RDS&quot;)
+# hits_LR &lt;- searchSeq(ZNF384_pwm, seq_LR, min.score=&quot;80%&quot;, strand=&quot;*&quot;)
+# hits_LR &lt;- as.data.frame(hits_LR)
+# saveRDS(hits_LR,&quot;data/hits_files/ZNF384_hits_LR.RDS&quot;)
+
+# hits_LR_ZNF384 %&gt;% 
+#   mutate(position=start-1000) %&gt;% 
+#   ggplot(.,aes(position))+
+#   geom_density(size=2) +
+#   theme_bw() +
+#   geom_vline(xintercept = 0, linetype=2, color=&#39;red&#39;, size=2) +
+#   xlab(&#39;Position around the ZNF384 peaks&#39;) +
+#   ylab(&#39;Per position percentage\nof motif occurrence&#39;) +
+#   ggtitle(&quot;LR: ZNF384 binding&quot;)+
+#   theme(
+#     axis.text = element_text(size=10, face=&#39;bold&#39;),
+#     axis.title = element_text(size=14,face=&quot;bold&quot;),
+#     plot.title = element_text(hjust = 0.5))
+hits_NR_ZNF384 &lt;- readRDS(&quot;data/hits_files/ZNF384_hits_NR.RDS&quot;)
+# hits_NR &lt;- searchSeq(ZNF384_pwm, seq_NR, min.score=&quot;80%&quot;, strand=&quot;*&quot;)
+# hits_NR &lt;- as.data.frame(hits_NR)
+# saveRDS(hits_NR,&quot;data/hits_files/ZNF384_hits_NR.RDS&quot;)
+
+hits_NR_ZNF384 %&gt;%
+  mutate(position=start-1000) %&gt;%
+  mutate(id_mrc=&quot;NR&quot;) %&gt;%
+  rbind(.,(hits_LR_ZNF384 %&gt;% mutate(position=start-1000) %&gt;%
+  mutate(id_mrc=&quot;LR&quot;))) %&gt;%
+   rbind(.,(hits_ESR_ZNF384 %&gt;% mutate(position=start-1000) %&gt;%
+  mutate(id_mrc=&quot;ESR&quot;))) %&gt;%
+   rbind(.,(hits_EAR_ZNF384 %&gt;% mutate(position=start-1000) %&gt;%
+  mutate(id_mrc=&quot;EAR&quot;))) %&gt;%
+  ggplot(.,aes(position, color = id_mrc))+
+  geom_density(size=1.5) +
+  # geom_density(data=hits_LR_ZNF384, aes(position))+
+  theme_bw() +
+  geom_vline(xintercept = 0, linetype=2, color=&#39;red&#39;, size=2) +
+  xlab(&#39;Position around the ZNF384 peaks&#39;) +
+  ylab(&#39;Per position percentage\nof motif occurrence&#39;) +
+  ggtitle(&quot;Chromatin accessibility around ZNF384 binding site&quot;)+
+  theme(
+    axis.text = element_text(size=10, face=&#39;bold&#39;),
+    axis.title = element_text(size=14,face=&quot;bold&quot;),
+    plot.title = element_text(hjust = 0.5))</code></pre>
+<p><img src="figure/Jaspar_motif.Rmd/ZNF384-3.png" width="672" style="display: block; margin: auto;" /></p>
+</div>
+<div id="zkscan3" class="section level4">
+<h4>ZKSCAN3</h4>
+<pre class="r"><code>motifs_ZKSCAN3 = query(query(MotifDb, &#39;Hsapiens&#39;), &#39;ZKSCAN3&#39;)
+ZKSCAN3_motif &lt;- motifs_ZKSCAN3$`Hsapiens-jaspar2022-ZKSCAN3-MA1973.1`
+#
+#
+ZKSCAN3_pwm = PWMatrix(
+    ID = &#39;ZKSCAN3&#39;,
+    profileMatrix = ZKSCAN3_motif)
+hits_ESR_ZKSCAN3 &lt;- readRDS(&quot;data/hits_files/ZKSCAN3_hits_ESR.RDS&quot;)
+ hits_ESR_ZKSCAN3_norm&lt;-readRDS(&quot;data/hits_files/ZKSCAN3_hits_ESR_norm.RDS&quot;)
+
+# hits = searchSeq(ZKSCAN3_pwm, seq_ESR_norm, min.score=&quot;80%&quot;, strand=&quot;*&quot;)
+# hits_ESR &lt;- hits
+# hits_ESR &lt;- as.data.frame(hits_ESR)
+# saveRDS(hits_ESR,&quot;data/hits_files/ZKSCAN3_hits_ESR_norm.RDS&quot;)
+# 
+hits_ESR_ZKSCAN3_norm %&gt;%
+  mutate(position=start-1611.5) %&gt;%
+  ggplot(.,aes(position))+
+  geom_density(size=2) +
+  theme_bw() +
+  geom_vline(xintercept = 0, linetype=2, color=&#39;red&#39;, size=2) +
+  xlab(&#39;Position around the ZKSCAN3 peaks&#39;) +
+  ylab(&#39;Per position percentage\nof motif occurrence&#39;) +
+  ggtitle(&quot;ESR: ZKSCAN3 binding&quot;)+
+  theme(
+    axis.text = element_text(size=10, face=&#39;bold&#39;),
+    axis.title = element_text(size=14,face=&quot;bold&quot;),
+    plot.title = element_text(hjust = 0.5))</code></pre>
+<p><img src="figure/Jaspar_motif.Rmd/ZKSCAN3-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>hits_EAR_ZKSCAN3 &lt;- readRDS(&quot;data/hits_files/ZKSCAN3_hits_EAR.RDS&quot;)
+# hits_EAR &lt;- searchSeq(ZKSCAN3_pwm, seq_EAR, min.score=&quot;80%&quot;, strand=&quot;*&quot;)
+# hits_EAR &lt;- as.data.frame(hits_EAR)
+# saveRDS(hits_EAR,&quot;data/hits_files/ZKSCAN3_hits_EAR.RDS&quot;)
+
+# hits_EAR_ZKSCAN3 %&gt;%
+#   mutate(position=start-1000) %&gt;%
+#   ggplot(.,aes(position))+
+#   geom_density(size=2) +
+#   theme_bw() +
+#   geom_vline(xintercept = 0, linetype=2, color=&#39;red&#39;, size=2) +
+#   xlab(&#39;Position around the ZKSCAN3 peaks&#39;) +
+#   ylab(&#39;Per position percentage\nof motif occurrence&#39;) +
+#   ggtitle(&quot;EAR: ZKSCAN3 binding&quot;)+
+#   theme(
+#     axis.text = element_text(size=10, face=&#39;bold&#39;),
+#     axis.title = element_text(size=14,face=&quot;bold&quot;),
+#     plot.title = element_text(hjust = 0.5))
+
+hits_LR_ZKSCAN3 &lt;- readRDS(&quot;data/hits_files/ZKSCAN3_hits_LR.RDS&quot;)
+# hits_LR &lt;- searchSeq(ZKSCAN3_pwm, seq_LR, min.score=&quot;80%&quot;, strand=&quot;*&quot;)
+# hits_LR &lt;- as.data.frame(hits_LR)
+# saveRDS(hits_LR,&quot;data/hits_files/ZKSCAN3_hits_LR.RDS&quot;)
+
+# hits_LR_ZKSCAN3 %&gt;%
+#   mutate(position=start-1000) %&gt;%
+#   ggplot(.,aes(position))+
+#   geom_density(size=2) +
+#   theme_bw() +
+#   geom_vline(xintercept = 0, linetype=2, color=&#39;red&#39;, size=2) +
+#   xlab(&#39;Position around the ZKSCAN3 peaks&#39;) +
+#   ylab(&#39;Per position percentage\nof motif occurrence&#39;) +
+#   ggtitle(&quot;LR: ZKSCAN3 binding&quot;)+
+#   theme(
+#     axis.text = element_text(size=10, face=&#39;bold&#39;),
+#     axis.title = element_text(size=14,face=&quot;bold&quot;),
+#     plot.title = element_text(hjust = 0.5))
+hits_NR_ZKSCAN3 &lt;- readRDS(&quot;data/hits_files/ZKSCAN3_hits_NR.RDS&quot;)
+# hits_NR &lt;- searchSeq(ZKSCAN3_pwm, seq_NR, min.score=&quot;80%&quot;, strand=&quot;*&quot;)
+# hits_NR &lt;- as.data.frame(hits_NR)
+# saveRDS(hits_NR,&quot;data/hits_files/ZKSCAN3_hits_NR.RDS&quot;)
+
+# hits_NR_ZKSCAN3 %&gt;%
+#   mutate(position=start-1000) %&gt;%
+#   mutate(id_mrc=&quot;NR&quot;) %&gt;%
+#   rbind(.,(hits_LR_ZKSCAN3 %&gt;% mutate(position=start-1000) %&gt;%
+#   mutate(id_mrc=&quot;LR&quot;))) %&gt;%
+#    rbind(.,(hits_ESR_ZKSCAN3 %&gt;% mutate(position=start-1000) %&gt;%
+#   mutate(id_mrc=&quot;ESR&quot;))) %&gt;%
+#    rbind(.,(hits_EAR_ZKSCAN3 %&gt;% mutate(position=start-1000) %&gt;%
+#   mutate(id_mrc=&quot;EAR&quot;))) %&gt;%
+#   ggplot(.,aes(position, color = id_mrc))+
+#   geom_density(size=1.5) +
+#   # geom_density(data=hits_LR_ZKSCAN3, aes(position))+
+#   theme_bw() +
+#   geom_vline(xintercept = 0, linetype=2, color=&#39;red&#39;, size=2) +
+#   xlab(&#39;Position around the ZKSCAN3 peaks&#39;) +
+#   ylab(&#39;Per position percentage\nof motif occurrence&#39;) +
+#   ggtitle(&quot;Chromatin accessibility around ZKSCAN3 binding site&quot;)+
+#   theme(
+#     axis.text = element_text(size=10, face=&#39;bold&#39;),
+#     axis.title = element_text(size=14,face=&quot;bold&quot;),
+#     plot.title = element_text(hjust = 0.5))</code></pre>
+</div>
+<div id="pitx1" class="section level4">
+<h4>PITX1</h4>
+<pre class="r"><code># 
+# motifs_PITX1 = query(query(MotifDb, &#39;Hsapiens&#39;), &#39;PITX1&#39;)
+#     PITX1_motif &lt;- motifs_PITX1$`Hsapiens-jaspar2022-PITX1-MA0682.2`
+
+
+# PITX1_pwm = PWMatrix(
+#     ID = &#39;PITX1&#39;,
+#     profileMatrix = PITX1_motif)
+hits_ESR_PITX1 &lt;- readRDS(&quot;data/hits_files/PITX1_hits_ESR.RDS&quot;)
+# hits_ESR = searchSeq(PITX1_pwm, seq_ESR, min.score=&quot;80%&quot;, strand=&quot;*&quot;)
+# hits_ESR &lt;- hits
+# hits_ESR &lt;- as.data.frame(hits_ESR)
+# saveRDS(hits_ESR,&quot;data/hits_files/PITX1_hits_ESR.RDS&quot;)
+hits_ESR_PITX1 %&gt;%
+  mutate(position=start-1000) %&gt;%
+  ggplot(.,aes(position))+
+  geom_density(size=2) +
+  theme_bw() +
+  geom_vline(xintercept = 0, linetype=2, color=&#39;red&#39;, size=2) +
+  xlab(&#39;Position around the PITX1 peaks&#39;) +
+  ylab(&#39;Per position percentage\nof motif occurrence&#39;) +
+  ggtitle(&quot;ESR: PITX1 binding&quot;)+
+  theme(
+    axis.text = element_text(size=10, face=&#39;bold&#39;),
+    axis.title = element_text(size=14,face=&quot;bold&quot;),
+    plot.title = element_text(hjust = 0.5))</code></pre>
+<p><img src="figure/Jaspar_motif.Rmd/PITX1-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>hits_EAR_PITX1 &lt;- readRDS(&quot;data/hits_files/PITX1_hits_EAR.RDS&quot;)
+# hits_EAR &lt;- searchSeq(PITX1_pwm, seq_EAR, min.score=&quot;80%&quot;, strand=&quot;*&quot;)
+# hits_EAR &lt;- as.data.frame(hits_EAR)
+# saveRDS(hits_EAR,&quot;data/hits_files/PITX1_hits_EAR.RDS&quot;)
+
+hits_EAR_PITX1 %&gt;%
+  mutate(position=start-1000) %&gt;%
+  ggplot(.,aes(position))+
+  geom_density(size=2) +
+  theme_bw() +
+  geom_vline(xintercept = 0, linetype=2, color=&#39;red&#39;, size=2) +
+  xlab(&#39;Position around the PITX1 peaks&#39;) +
+  ylab(&#39;Per position percentage\nof motif occurrence&#39;) +
+  ggtitle(&quot;EAR: PITX1 binding&quot;)+
+  theme(
+    axis.text = element_text(size=10, face=&#39;bold&#39;),
+    axis.title = element_text(size=14,face=&quot;bold&quot;),
+    plot.title = element_text(hjust = 0.5))</code></pre>
+<p><img src="figure/Jaspar_motif.Rmd/PITX1-2.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>hits_LR_PITX1 &lt;- readRDS(&quot;data/hits_files/PITX1_hits_LR.RDS&quot;)
+# hits_LR &lt;- searchSeq(PITX1_pwm, seq_LR, min.score=&quot;80%&quot;, strand=&quot;*&quot;)
+# hits_LR &lt;- as.data.frame(hits_LR)
+# saveRDS(hits_LR,&quot;data/hits_files/PITX1_hits_LR.RDS&quot;)
+
+hits_LR_PITX1 %&gt;%
+  mutate(position=start-1000) %&gt;%
+  ggplot(.,aes(position))+
+  geom_density(size=2) +
+  theme_bw() +
+  geom_vline(xintercept = 0, linetype=2, color=&#39;red&#39;, size=2) +
+  xlab(&#39;Position around the PITX1  motif&#39;) +
+  ylab(&#39;Per position percentage\nof motif occurrence&#39;) +
+  ggtitle(&quot;LR: PITX1 binding&quot;)+
+  theme(
+    axis.text = element_text(size=10, face=&#39;bold&#39;),
+    axis.title = element_text(size=14,face=&quot;bold&quot;),
+    plot.title = element_text(hjust = 0.5))</code></pre>
+<p><img src="figure/Jaspar_motif.Rmd/PITX1-3.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>hits_NR_PITX1 &lt;- readRDS(&quot;data/hits_files/PITX1_hits_NR.RDS&quot;)
+# hits_NR &lt;- searchSeq(PITX1_pwm, seq_NR, min.score=&quot;80%&quot;, strand=&quot;*&quot;)
+# hits_NR &lt;- as.data.frame(hits_NR)
+# saveRDS(hits_NR,&quot;data/hits_files/PITX1_hits_NR.RDS&quot;)
+
+hits_NR_PITX1 %&gt;%
+  mutate(position=start-1000) %&gt;%
+  mutate(id_mrc=&quot;NR&quot;) %&gt;%
+  rbind(.,(hits_LR_PITX1 %&gt;% mutate(position=start-1000) %&gt;%
+  mutate(id_mrc=&quot;LR&quot;))) %&gt;%
+   rbind(.,(hits_ESR_PITX1 %&gt;% mutate(position=start-1000) %&gt;%
+  mutate(id_mrc=&quot;ESR&quot;))) %&gt;%
+   rbind(.,(hits_EAR_PITX1 %&gt;% mutate(position=start-1000) %&gt;%
+  mutate(id_mrc=&quot;EAR&quot;))) %&gt;%
+  ggplot(.,aes(position, color = id_mrc))+
+  geom_density(size=1.5) +
+  # geom_density(data=hits_LR_PITX1, aes(position))+
+  theme_bw() +
+  geom_vline(xintercept = 0, linetype=2, color=&#39;red&#39;, size=2) +
+  xlab(&#39;Position around the PITX1  motif&#39;) +
+  ylab(&#39;Per position percentage\nof motif occurrence&#39;) +
+  ggtitle(&quot;Chromatin accessibility around PITX1 binding site&quot;)+
+  theme(
+    axis.text = element_text(size=10, face=&#39;bold&#39;),
+    axis.title = element_text(size=14,face=&quot;bold&quot;),
+    plot.title = element_text(hjust = 0.5))</code></pre>
+<p><img src="figure/Jaspar_motif.Rmd/PITX1-4.png" width="672" style="display: block; margin: auto;" /></p>
+</div>
+<div id="tp53" class="section level4">
+<h4>TP53</h4>
+<pre class="r"><code># 
+# motifs_TP53 = query(query(MotifDb, &#39;Hsapiens&#39;), &#39;TP53&#39;)
+#     TP53_motif &lt;- motifs_TP53$`Hsapiens-JASPAR_CORE-TP53-MA0106.1`
+# 
+# 
+# TP53_pwm = PWMatrix(
+#     ID = &#39;TP53&#39;,
+#     profileMatrix = TP53_motif)
+hits_ESR_TP53 &lt;- readRDS(&quot;data/hits_files/TP53_hits_ESR.RDS&quot;)
+# hits_ESR = searchSeq(TP53_pwm, seq_ESR, min.score=&quot;80%&quot;, strand=&quot;*&quot;)
+# hits_ESR &lt;- hits
+# hits_ESR &lt;- as.data.frame(hits_ESR)
+# saveRDS(hits_ESR,&quot;data/hits_files/TP53_hits_ESR.RDS&quot;)
+# hits_ESR_TP53 %&gt;%
+#   mutate(position=start-1000) %&gt;%
+#   ggplot(.,aes(position))+
+#   geom_density(size=2) +
+#   theme_bw() +
+#   geom_vline(xintercept = 0, linetype=2, color=&#39;red&#39;, size=2) +
+#   xlab(&#39;Position around the TP53  motif&#39;) +
+#   ylab(&#39;Per position percentage\nof motif occurrence&#39;) +
+#   ggtitle(&quot;ESR: TP53 binding&quot;)+
+#   theme(
+#     axis.text = element_text(size=10, face=&#39;bold&#39;),
+#     axis.title = element_text(size=14,face=&quot;bold&quot;),
+#     plot.title = element_text(hjust = 0.5))
+
+hits_EAR_TP53 &lt;- readRDS(&quot;data/hits_files/TP53_hits_EAR.RDS&quot;)
+# hits_EAR &lt;- searchSeq(TP53_pwm, seq_EAR, min.score=&quot;80%&quot;, strand=&quot;*&quot;)
+# hits_EAR &lt;- as.data.frame(hits_EAR)
+# saveRDS(hits_EAR,&quot;data/hits_files/TP53_hits_EAR.RDS&quot;)
+
+# hits_EAR_TP53 %&gt;%
+#   mutate(position=start-1000) %&gt;%
+#   ggplot(.,aes(position))+
+#   geom_density(size=2) +
+#   theme_bw() +
+#   geom_vline(xintercept = 0, linetype=2, color=&#39;red&#39;, size=2) +
+#   xlab(&#39;Position around the TP53  motif&#39;) +
+#   ylab(&#39;Per position percentage\nof motif occurrence&#39;) +
+#   ggtitle(&quot;EAR: TP53 binding&quot;)+
+#   theme(
+#     axis.text = element_text(size=10, face=&#39;bold&#39;),
+#     axis.title = element_text(size=14,face=&quot;bold&quot;),
+#     plot.title = element_text(hjust = 0.5))
+
+hits_LR_TP53 &lt;- readRDS(&quot;data/hits_files/TP53_hits_LR.RDS&quot;)
+# hits_LR &lt;- searchSeq(TP53_pwm, seq_LR, min.score=&quot;80%&quot;, strand=&quot;*&quot;)
+# hits_LR &lt;- as.data.frame(hits_LR)
+# saveRDS(hits_LR,&quot;data/hits_files/TP53_hits_LR.RDS&quot;)
+
+# hits_LR_TP53 %&gt;%
+#   mutate(position=start-1000) %&gt;%
+#   ggplot(.,aes(position))+
+#   geom_density(size=2) +
+#   theme_bw() +
+#   geom_vline(xintercept = 0, linetype=2, color=&#39;red&#39;, size=2) +
+#   xlab(&#39;Position around the TP53  motif&#39;) +
+#   ylab(&#39;Per position percentage\nof motif occurrence&#39;) +
+#   ggtitle(&quot;LR: TP53 binding&quot;)+
+#   theme(
+#     axis.text = element_text(size=10, face=&#39;bold&#39;),
+#     axis.title = element_text(size=14,face=&quot;bold&quot;),
+#     plot.title = element_text(hjust = 0.5))
+
+hits_NR_TP53 &lt;- readRDS(&quot;data/hits_files/TP53_hits_NR.RDS&quot;)
+# hits_NR &lt;- searchSeq(TP53_pwm, seq_NR, min.score=&quot;80%&quot;, strand=&quot;*&quot;)
+# hits_NR &lt;- as.data.frame(hits_NR)
+# saveRDS(hits_NR,&quot;data/hits_files/TP53_hits_NR.RDS&quot;)
+
+hits_NR_TP53 %&gt;%
+  mutate(position=start-1000) %&gt;%
+  mutate(id_mrc=&quot;NR&quot;) %&gt;%
+  rbind(.,(hits_LR_TP53 %&gt;% mutate(position=start-1000) %&gt;%
+  mutate(id_mrc=&quot;LR&quot;))) %&gt;%
+   rbind(.,(hits_ESR_TP53 %&gt;% mutate(position=start-1000) %&gt;%
+  mutate(id_mrc=&quot;ESR&quot;))) %&gt;%
+   rbind(.,(hits_EAR_TP53 %&gt;% mutate(position=start-1000) %&gt;%
+  mutate(id_mrc=&quot;EAR&quot;))) %&gt;%
+  ggplot(.,aes(position, color = id_mrc))+
+  geom_density(size=1.5) +
+  # geom_density(data=hits_LR_TP53, aes(position))+
+  theme_bw() +
+  geom_vline(xintercept = 0, linetype=2, color=&#39;red&#39;, size=2) +
+  xlab(&#39;Position around the TP53 motif&#39;) +
+  ylab(&#39;Per position percentage\nof motif occurrence&#39;) +
+  ggtitle(&quot;Chromatin accessibility around TP53 binding site&quot;)+
+  theme(
+    axis.text = element_text(size=10, face=&#39;bold&#39;),
+    axis.title = element_text(size=14,face=&quot;bold&quot;),
+    plot.title = element_text(hjust = 0.5))</code></pre>
+<p><img src="figure/Jaspar_motif.Rmd/TP53-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code># </code></pre>
+</div>
+<div id="nrf1" class="section level4">
+<h4>NRF1</h4>
+<pre class="r"><code># 
+# motifs_NRF1 = query(query(MotifDb, &#39;Hsapiens&#39;), &#39;NRF1&#39;)
+#     NRF1_motif &lt;- motifs_NRF1$`Hsapiens-jaspar2018-NRF1-MA0506.1`
+# # 
+# # 
+# NRF1_pwm = PWMatrix(
+#     ID = &#39;NRF1&#39;,
+#     profileMatrix = NRF1_motif)
+hits_ESR_NRF1 &lt;- readRDS(&quot;data/hits_files/NRF1_hits_ESR.RDS&quot;)
+# hits_ESR = searchSeq(NRF1_pwm, seq_ESR, min.score=&quot;80%&quot;, strand=&quot;*&quot;)
+# hits_ESR &lt;- hits
+# hits_ESR &lt;- as.data.frame(hits_ESR)
+# saveRDS(hits_ESR,&quot;data/hits_files/NRF1_hits_ESR.RDS&quot;)
+# hits_ESR_NRF1 %&gt;%
+#   mutate(position=start-1000) %&gt;%
+#   ggplot(.,aes(position))+
+#   geom_density(size=2) +
+#   theme_bw() +
+#   geom_vline(xintercept = 0, linetype=2, color=&#39;red&#39;, size=2) +
+#   xlab(&#39;Position around the NRF1  motif&#39;) +
+#   ylab(&#39;Per position percentage\nof motif occurrence&#39;) +
+#   ggtitle(&quot;ESR: NRF1 binding&quot;)+
+#   theme(
+#     axis.text = element_text(size=10, face=&#39;bold&#39;),
+#     axis.title = element_text(size=14,face=&quot;bold&quot;),
+#     plot.title = element_text(hjust = 0.5))
+
+hits_EAR_NRF1 &lt;- readRDS(&quot;data/hits_files/NRF1_hits_EAR.RDS&quot;)
+# hits_EAR &lt;- searchSeq(NRF1_pwm, seq_EAR, min.score=&quot;80%&quot;, strand=&quot;*&quot;)
+# hits_EAR &lt;- as.data.frame(hits_EAR)
+# saveRDS(hits_EAR,&quot;data/hits_files/NRF1_hits_EAR.RDS&quot;)
+
+# hits_EAR_NRF1 %&gt;%
+#   mutate(position=start-1000) %&gt;%
+#   ggplot(.,aes(position))+
+#   geom_density(size=2) +
+#   theme_bw() +
+#   geom_vline(xintercept = 0, linetype=2, color=&#39;red&#39;, size=2) +
+#   xlab(&#39;Position around the NRF1  motif&#39;) +
+#   ylab(&#39;Per position percentage\nof motif occurrence&#39;) +
+#   ggtitle(&quot;EAR: NRF1 binding&quot;)+
+#   theme(
+#     axis.text = element_text(size=10, face=&#39;bold&#39;),
+#     axis.title = element_text(size=14,face=&quot;bold&quot;),
+#     plot.title = element_text(hjust = 0.5))
+# 
+hits_LR_NRF1 &lt;- readRDS(&quot;data/hits_files/NRF1_hits_LR.RDS&quot;)
+# hits_LR &lt;- searchSeq(NRF1_pwm, seq_LR, min.score=&quot;80%&quot;, strand=&quot;*&quot;)
+# hits_LR &lt;- as.data.frame(hits_LR)
+# saveRDS(hits_LR,&quot;data/hits_files/NRF1_hits_LR.RDS&quot;)
+
+# hits_LR_NRF1 %&gt;%
+#   mutate(position=start-1000) %&gt;%
+#   ggplot(.,aes(position))+
+#   geom_density(size=2) +
+#   theme_bw() +
+#   geom_vline(xintercept = 0, linetype=2, color=&#39;red&#39;, size=2) +
+#   xlab(&#39;Position around the NRF1  motif&#39;) +
+#   ylab(&#39;Per position percentage\nof motif occurrence&#39;) +
+#   ggtitle(&quot;LR: NRF1 binding&quot;)+
+#   theme(
+#     axis.text = element_text(size=10, face=&#39;bold&#39;),
+#     axis.title = element_text(size=14,face=&quot;bold&quot;),
+#     plot.title = element_text(hjust = 0.5))
+
+hits_NR_NRF1 &lt;- readRDS(&quot;data/hits_files/NRF1_hits_NR.RDS&quot;)
+# hits_NR &lt;- searchSeq(NRF1_pwm, seq_NR, min.score=&quot;80%&quot;, strand=&quot;*&quot;)
+# hits_NR &lt;- as.data.frame(hits_NR)
+# saveRDS(hits_NR,&quot;data/hits_files/NRF1_hits_NR.RDS&quot;)
+
+hits_NR_NRF1 %&gt;%
+  mutate(position=start-1000) %&gt;%
+  mutate(id_mrc=&quot;NR&quot;) %&gt;%
+  rbind(.,(hits_LR_NRF1 %&gt;% mutate(position=start-1000) %&gt;%
+  mutate(id_mrc=&quot;LR&quot;))) %&gt;%
+   rbind(.,(hits_ESR_NRF1 %&gt;% mutate(position=start-1000) %&gt;%
+  mutate(id_mrc=&quot;ESR&quot;))) %&gt;%
+   rbind(.,(hits_EAR_NRF1 %&gt;% mutate(position=start-1000) %&gt;%
+  mutate(id_mrc=&quot;EAR&quot;))) %&gt;%
+  ggplot(.,aes(position, color = id_mrc))+
+  geom_density(size=1.5) +
+  # geom_density(data=hits_LR_NRF1, aes(position))+
+  theme_bw() +
+  geom_vline(xintercept = 0, linetype=2, color=&#39;red&#39;, size=2) +
+  xlab(&#39;Position around the NRF1  motif&#39;) +
+  ylab(&#39;Per position percentage\nof motif occurrence&#39;) +
+  ggtitle(&quot;Chromatin accessibility around NRF1 binding site&quot;)+
+  theme(
+    axis.text = element_text(size=10, face=&#39;bold&#39;),
+    axis.title = element_text(size=14,face=&quot;bold&quot;),
+    plot.title = element_text(hjust = 0.5))</code></pre>
+<p><img src="figure/Jaspar_motif.Rmd/NRF1-1.png" width="672" style="display: block; margin: auto;" /></p>
+</div>
+<div id="nfic_tlx1" class="section level4">
+<h4>NFIC_TLX1</h4>
+<pre class="r"><code># 
+# motifs_NFIC_TLX1 = query(query(MotifDb, &#39;Hsapiens&#39;), &#39;NFIC::TLX1&#39;)
+#     NFIC_TLX1_motif &lt;- motifs_NFIC_TLX1$`Hsapiens-jaspar2022-NFIC::TLX1-MA0119.1`
+# #
+# # # 
+# NFIC_TLX1_pwm = PWMatrix(
+#     ID = &#39;NFIC_TLX1&#39;,
+#     profileMatrix = NFIC_TLX1_motif)
+hits_ESR_NFIC_TLX1 &lt;- readRDS(&quot;data/hits_files/NFIC_TLX1_hits_ESR.RDS&quot;)
+# hits_ESR = searchSeq(NFIC_TLX1_pwm, seq_ESR, min.score=&quot;80%&quot;, strand=&quot;*&quot;)
+# 
+# hits_ESR &lt;- as.data.frame(hits_ESR)
+# saveRDS(hits_ESR,&quot;data/hits_files/NFIC_TLX1_hits_ESR.RDS&quot;)
+# hits_ESR_NFIC_TLX1 %&gt;%
+#   mutate(position=start-1000) %&gt;%
+#   ggplot(.,aes(position))+
+#   geom_density(size=2) +
+#   theme_bw() +
+#   geom_vline(xintercept = 0, linetype=2, color=&#39;red&#39;, size=2) +
+#   xlab(&#39;Position around the NFIC_TLX1  motif&#39;) +
+#   ylab(&#39;Per position percentage\nof motif occurrence&#39;) +
+#   ggtitle(&quot;ESR: NFIC_TLX1 binding&quot;)+
+#   theme(
+#     axis.text = element_text(size=10, face=&#39;bold&#39;),
+#     axis.title = element_text(size=14,face=&quot;bold&quot;),
+#     plot.title = element_text(hjust = 0.5))
+
+hits_EAR_NFIC_TLX1 &lt;- readRDS(&quot;data/hits_files/NFIC_TLX1_hits_EAR.RDS&quot;)
+# hits_EAR &lt;- searchSeq(NFIC_TLX1_pwm, seq_EAR, min.score=&quot;80%&quot;, strand=&quot;*&quot;)
+# hits_EAR &lt;- as.data.frame(hits_EAR)
+# saveRDS(hits_EAR,&quot;data/hits_files/NFIC_TLX1_hits_EAR.RDS&quot;)
+
+# hits_EAR_NFIC_TLX1 %&gt;%
+#   mutate(position=start-1000) %&gt;%
+#   ggplot(.,aes(position))+
+#   geom_density(size=2) +
+#   theme_bw() +
+#   geom_vline(xintercept = 0, linetype=2, color=&#39;red&#39;, size=2) +
+#   xlab(&#39;Position around the NFIC_TLX1  motif&#39;) +
+#   ylab(&#39;Per position percentage\nof motif occurrence&#39;) +
+#   ggtitle(&quot;EAR: NFIC_TLX1 binding&quot;)+
+#   theme(
+#     axis.text = element_text(size=10, face=&#39;bold&#39;),
+#     axis.title = element_text(size=14,face=&quot;bold&quot;),
+#     plot.title = element_text(hjust = 0.5))
+# 
+hits_LR_NFIC_TLX1 &lt;- readRDS(&quot;data/hits_files/NFIC_TLX1_hits_LR.RDS&quot;)
+# hits_LR &lt;- searchSeq(NFIC_TLX1_pwm, seq_LR, min.score=&quot;80%&quot;, strand=&quot;*&quot;)
+# hits_LR &lt;- as.data.frame(hits_LR)
+# saveRDS(hits_LR,&quot;data/hits_files/NFIC_TLX1_hits_LR.RDS&quot;)
+
+# hits_LR_NFIC_TLX1 %&gt;%
+#   mutate(position=start-1000) %&gt;%
+#   ggplot(.,aes(position))+
+#   geom_density(size=2) +
+#   theme_bw() +
+#   geom_vline(xintercept = 0, linetype=2, color=&#39;red&#39;, size=2) +
+#   xlab(&#39;Position around the NFIC_TLX1  motif&#39;) +
+#   ylab(&#39;Per position percentage\nof motif occurrence&#39;) +
+#   ggtitle(&quot;LR: NFIC_TLX1 binding&quot;)+
+#   theme(
+#     axis.text = element_text(size=10, face=&#39;bold&#39;),
+#     axis.title = element_text(size=14,face=&quot;bold&quot;),
+#     plot.title = element_text(hjust = 0.5))
+
+hits_NR_NFIC_TLX1 &lt;- readRDS(&quot;data/hits_files/NFIC_TLX1_hits_NR.RDS&quot;)
+# hits_NR &lt;- searchSeq(NFIC_TLX1_pwm, seq_NR, min.score=&quot;80%&quot;, strand=&quot;*&quot;)
+# hits_NR &lt;- as.data.frame(hits_NR)
+# saveRDS(hits_NR,&quot;data/hits_files/NFIC_TLX1_hits_NR.RDS&quot;)
+
+hits_NR_NFIC_TLX1 %&gt;%
+  mutate(position=start-1000) %&gt;%
+  mutate(id_mrc=&quot;NR&quot;) %&gt;%
+  rbind(.,(hits_LR_NFIC_TLX1 %&gt;% mutate(position=start-1000) %&gt;%
+  mutate(id_mrc=&quot;LR&quot;))) %&gt;%
+   rbind(.,(hits_ESR_NFIC_TLX1 %&gt;% mutate(position=start-1000) %&gt;%
+  mutate(id_mrc=&quot;ESR&quot;))) %&gt;%
+   rbind(.,(hits_EAR_NFIC_TLX1 %&gt;% mutate(position=start-1000) %&gt;%
+  mutate(id_mrc=&quot;EAR&quot;))) %&gt;%
+  ggplot(.,aes(position, color = id_mrc))+
+  geom_density(size=1.5) +
+  # geom_density(data=hits_LR_NFIC_TLX1, aes(position))+
+  theme_bw() +
+  geom_vline(xintercept = 0, linetype=2, color=&#39;red&#39;, size=2) +
+  xlab(&#39;Position around the NFIC_TLX1  motif&#39;) +
+  ylab(&#39;Per position percentage\nof motif occurrence&#39;) +
+  ggtitle(&quot;Chromatin accessibility around NFIC_TLX1 binding site&quot;)+
+  theme(
+    axis.text = element_text(size=10, face=&#39;bold&#39;),
+    axis.title = element_text(size=14,face=&quot;bold&quot;),
+    plot.title = element_text(hjust = 0.5))#+</code></pre>
+<p><img src="figure/Jaspar_motif.Rmd/NFIC_TLX1-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>  # coord_cartesian(xlim= c(-500,500))</code></pre>
+</div>
+<div id="prdm1" class="section level4">
+<h4>PRDM1</h4>
+<pre class="r"><code># 
+# motifs_PRDM1 = query(query(MotifDb, &#39;Hsapiens&#39;), &#39;PRDM1&#39;)
+#     PRDM1_motif &lt;- motifs_PRDM1$`Hsapiens-jaspar2022-PRDM1-MA0508.3`
+# #
+# PRDM1_pwm = PWMatrix(
+#     ID = &#39;PRDM1&#39;,
+#     profileMatrix = PRDM1_motif)
+hits_ESR_PRDM1 &lt;- readRDS(&quot;data/hits_files/PRDM1_hits_ESR.RDS&quot;)
+# hits_ESR = searchSeq(PRDM1_pwm, seq_ESR, min.score=&quot;80%&quot;, strand=&quot;*&quot;)
+# 
+# hits_ESR &lt;- as.data.frame(hits_ESR)
+# saveRDS(hits_ESR,&quot;data/hits_files/PRDM1_hits_ESR.RDS&quot;)
+
+hits_EAR_PRDM1 &lt;- readRDS(&quot;data/hits_files/PRDM1_hits_EAR.RDS&quot;)
+# hits_EAR &lt;- searchSeq(PRDM1_pwm, seq_EAR, min.score=&quot;80%&quot;, strand=&quot;*&quot;)
+# hits_EAR &lt;- as.data.frame(hits_EAR)
+# saveRDS(hits_EAR,&quot;data/hits_files/PRDM1_hits_EAR.RDS&quot;)
+
+
+hits_LR_PRDM1 &lt;- readRDS(&quot;data/hits_files/PRDM1_hits_LR.RDS&quot;)
+# hits_LR &lt;- searchSeq(PRDM1_pwm, seq_LR, min.score=&quot;80%&quot;, strand=&quot;*&quot;)
+# hits_LR &lt;- as.data.frame(hits_LR)
+# saveRDS(hits_LR,&quot;data/hits_files/PRDM1_hits_LR.RDS&quot;)
+
+
+
+hits_NR_PRDM1 &lt;- readRDS(&quot;data/hits_files/PRDM1_hits_NR.RDS&quot;)
+# hits_NR &lt;- searchSeq(PRDM1_pwm, seq_NR, min.score=&quot;80%&quot;, strand=&quot;*&quot;)
+# hits_NR &lt;- as.data.frame(hits_NR)
+# saveRDS(hits_NR,&quot;data/hits_files/PRDM1_hits_NR.RDS&quot;)
+
+hits_NR_PRDM1 %&gt;%
+  mutate(position=start-1000) %&gt;%
+  mutate(id_mrc=&quot;NR&quot;) %&gt;%
+  rbind(.,(hits_LR_PRDM1 %&gt;% mutate(position=start-1000) %&gt;%
+  mutate(id_mrc=&quot;LR&quot;))) %&gt;%
+   rbind(.,(hits_ESR_PRDM1 %&gt;% mutate(position=start-1000) %&gt;%
+  mutate(id_mrc=&quot;ESR&quot;))) %&gt;%
+   rbind(.,(hits_EAR_PRDM1 %&gt;% mutate(position=start-1000) %&gt;%
+  mutate(id_mrc=&quot;EAR&quot;))) %&gt;%
+  ggplot(.,aes(position, color = id_mrc))+
+  geom_density(size=1.5) +
+  # geom_density(data=hits_LR_PRDM1, aes(position))+
+  theme_bw() +
+  geom_vline(xintercept = 0, linetype=2, color=&#39;red&#39;, size=2) +
+  xlab(&#39;Position around the PRDM1  motif&#39;) +
+  ylab(&#39;Per position percentage\nof motif occurrence&#39;) +
+  ggtitle(&quot;Chromatin accessibility around PRDM1 binding site&quot;)+
+  theme(
+    axis.text = element_text(size=10, face=&#39;bold&#39;),
+    axis.title = element_text(size=14,face=&quot;bold&quot;),
+    plot.title = element_text(hjust = 0.5))+
+  coord_cartesian(xlim= c(-250,250))</code></pre>
+<p><img src="figure/Jaspar_motif.Rmd/PRDM1-1.png" width="672" style="display: block; margin: auto;" /></p>
+</div>
+<div id="tbx1" class="section level4">
+<h4>TBX1</h4>
+<pre class="r"><code># 
+# motifs_TBX1 = query(query(MotifDb, &#39;Hsapiens&#39;), &#39;TBX1&#39;)
+#     TBX1_motif &lt;- motifs_TBX1$`Hsapiens-jaspar2022-TBX1-MA0805.1`
+# #
+# #
+# TBX1_pwm = PWMatrix(
+#     ID = &#39;TBX1&#39;,
+#     profileMatrix = TBX1_motif)
+hits_ESR_TBX1 &lt;- readRDS(&quot;data/hits_files/TBX1_hits_ESR.RDS&quot;)
+# hits_ESR = searchSeq(TBX1_pwm, seq_ESR, min.score=&quot;80%&quot;, strand=&quot;*&quot;)
+# 
+# hits_ESR &lt;- as.data.frame(hits_ESR)
+# saveRDS(hits_ESR,&quot;data/hits_files/TBX1_hits_ESR.RDS&quot;)
+# hits_ESR_TBX1 %&gt;%
+#   mutate(position=start-1000) %&gt;%
+#   ggplot(.,aes(position))+
+#   geom_density(size=2) +
+#   theme_bw() +
+#   geom_vline(xintercept = 0, linetype=2, color=&#39;red&#39;, size=2) +
+#   xlab(&#39;Position around the TBX1  motif&#39;) +
+#   ylab(&#39;Per position percentage\nof motif occurrence&#39;) +
+#   ggtitle(&quot;ESR: TBX1 binding&quot;)+
+#   theme(
+#     axis.text = element_text(size=10, face=&#39;bold&#39;),
+#     axis.title = element_text(size=14,face=&quot;bold&quot;),
+#     plot.title = element_text(hjust = 0.5))
+
+hits_EAR_TBX1 &lt;- readRDS(&quot;data/hits_files/TBX1_hits_EAR.RDS&quot;)
+# hits_EAR &lt;- searchSeq(TBX1_pwm, seq_EAR, min.score=&quot;80%&quot;, strand=&quot;*&quot;)
+# hits_EAR &lt;- as.data.frame(hits_EAR)
+# saveRDS(hits_EAR,&quot;data/hits_files/TBX1_hits_EAR.RDS&quot;)
+
+# hits_EAR_TBX1 %&gt;%
+#   mutate(position=start-1000) %&gt;%
+#   ggplot(.,aes(position))+
+#   geom_density(size=2) +
+#   theme_bw() +
+#   geom_vline(xintercept = 0, linetype=2, color=&#39;red&#39;, size=2) +
+#   xlab(&#39;Position around the TBX1  motif&#39;) +
+#   ylab(&#39;Per position percentage\nof motif occurrence&#39;) +
+#   ggtitle(&quot;EAR: TBX1 binding&quot;)+
+#   theme(
+#     axis.text = element_text(size=10, face=&#39;bold&#39;),
+#     axis.title = element_text(size=14,face=&quot;bold&quot;),
+#     plot.title = element_text(hjust = 0.5))
+# 
+hits_LR_TBX1 &lt;- readRDS(&quot;data/hits_files/TBX1_hits_LR.RDS&quot;)
+# hits_LR &lt;- searchSeq(TBX1_pwm, seq_LR, min.score=&quot;80%&quot;, strand=&quot;*&quot;)
+# hits_LR &lt;- as.data.frame(hits_LR)
+# saveRDS(hits_LR,&quot;data/hits_files/TBX1_hits_LR.RDS&quot;)
+
+# hits_LR_TBX1 %&gt;%
+#   mutate(position=start-1000) %&gt;%
+#   ggplot(.,aes(position))+
+#   geom_density(size=2) +
+#   theme_bw() +
+#   geom_vline(xintercept = 0, linetype=2, color=&#39;red&#39;, size=2) +
+#   xlab(&#39;Position around the TBX1  motif&#39;) +
+#   ylab(&#39;Per position percentage\nof motif occurrence&#39;) +
+#   ggtitle(&quot;LR: TBX1 binding&quot;)+
+#   theme(
+#     axis.text = element_text(size=10, face=&#39;bold&#39;),
+#     axis.title = element_text(size=14,face=&quot;bold&quot;),
+#     plot.title = element_text(hjust = 0.5))
+
+hits_NR_TBX1 &lt;- readRDS(&quot;data/hits_files/TBX1_hits_NR.RDS&quot;)
+# hits_NR &lt;- searchSeq(TBX1_pwm, seq_NR, min.score=&quot;80%&quot;, strand=&quot;*&quot;)
+# hits_NR &lt;- as.data.frame(hits_NR)
+# saveRDS(hits_NR,&quot;data/hits_files/TBX1_hits_NR.RDS&quot;)
+
+hits_NR_TBX1 %&gt;%
+  mutate(position=start-1000) %&gt;%
+  mutate(id_mrc=&quot;NR&quot;) %&gt;%
+  rbind(.,(hits_LR_TBX1 %&gt;% mutate(position=start-1000) %&gt;%
+  mutate(id_mrc=&quot;LR&quot;))) %&gt;%
+   rbind(.,(hits_ESR_TBX1 %&gt;% mutate(position=start-1000) %&gt;%
+  mutate(id_mrc=&quot;ESR&quot;))) %&gt;%
+   rbind(.,(hits_EAR_TBX1 %&gt;% mutate(position=start-1000) %&gt;%
+  mutate(id_mrc=&quot;EAR&quot;))) %&gt;%
+  ggplot(.,aes(position, color = id_mrc))+
+  geom_density(size=1.5) +
+  # geom_density(data=hits_LR_TBX1, aes(position))+
+  theme_bw() +
+  geom_vline(xintercept = 0, linetype=2, color=&#39;red&#39;, size=2) +
+  xlab(&#39;Position around the TBX1  motif&#39;) +
+  ylab(&#39;Per position percentage\nof motif occurrence&#39;) +
+  ggtitle(&quot;Chromatin accessibility around TBX1 binding site&quot;)+
+  theme(
+    axis.text = element_text(size=10, face=&#39;bold&#39;),
+    axis.title = element_text(size=14,face=&quot;bold&quot;),
+    plot.title = element_text(hjust = 0.5))+
+  coord_cartesian(xlim= c(-250,250))</code></pre>
+<p><img src="figure/Jaspar_motif.Rmd/TBX1-1.png" width="672" style="display: block; margin: auto;" /></p>
+</div>
+<div id="gli1" class="section level4">
+<h4>GLI1</h4>
+<pre class="r"><code># 
+# motifs_GLI1 = query(query(MotifDb, &#39;Hsapiens&#39;), &#39;GLI1&#39;)
+#     GLI1_motif &lt;- motifs_GLI1$`Hsapiens-HOCOMOCOv10-GLI1_HUMAN.H10MO.C`
+# # # 
+# # # 
+# GLI1_pwm = PWMatrix(
+#     ID = &#39;GLI1&#39;,
+#     profileMatrix = GLI1_motif)
+hits_ESR_GLI1 &lt;- readRDS(&quot;data/hits_files/GLI1_hits_ESR.RDS&quot;)
+# hits_ESR = searchSeq(GLI1_pwm, seq_ESR, min.score=&quot;80%&quot;, strand=&quot;*&quot;)
+# 
+# hits_ESR &lt;- as.data.frame(hits_ESR)
+# saveRDS(hits_ESR,&quot;data/hits_files/GLI1_hits_ESR.RDS&quot;)
+# hits_ESR_GLI1 %&gt;%
+#   mutate(position=start-1000) %&gt;%
+#   ggplot(.,aes(position))+
+#   geom_density(size=2) +
+#   theme_bw() +
+#   geom_vline(xintercept = 0, linetype=2, color=&#39;red&#39;, size=2) +
+#   xlab(&#39;Position around the GLI1  motif&#39;) +
+#   ylab(&#39;Per position percentage\nof motif occurrence&#39;) +
+#   ggtitle(&quot;ESR: GLI1 binding&quot;)+
+#   theme(
+#     axis.text = element_text(size=10, face=&#39;bold&#39;),
+#     axis.title = element_text(size=14,face=&quot;bold&quot;),
+#     plot.title = element_text(hjust = 0.5))
+
+hits_EAR_GLI1 &lt;- readRDS(&quot;data/hits_files/GLI1_hits_EAR.RDS&quot;)
+# hits_EAR &lt;- searchSeq(GLI1_pwm, seq_EAR, min.score=&quot;80%&quot;, strand=&quot;*&quot;)
+# hits_EAR &lt;- as.data.frame(hits_EAR)
+# saveRDS(hits_EAR,&quot;data/hits_files/GLI1_hits_EAR.RDS&quot;)
+
+# hits_EAR_GLI1 %&gt;%
+#   mutate(position=start-1000) %&gt;%
+#   ggplot(.,aes(position))+
+#   geom_density(size=2) +
+#   theme_bw() +
+#   geom_vline(xintercept = 0, linetype=2, color=&#39;red&#39;, size=2) +
+#   xlab(&#39;Position around the GLI1  motif&#39;) +
+#   ylab(&#39;Per position percentage\nof motif occurrence&#39;) +
+#   ggtitle(&quot;EAR: GLI1 binding&quot;)+
+#   theme(
+#     axis.text = element_text(size=10, face=&#39;bold&#39;),
+#     axis.title = element_text(size=14,face=&quot;bold&quot;),
+#     plot.title = element_text(hjust = 0.5))
+# 
+hits_LR_GLI1 &lt;- readRDS(&quot;data/hits_files/GLI1_hits_LR.RDS&quot;)
+# hits_LR &lt;- searchSeq(GLI1_pwm, seq_LR, min.score=&quot;80%&quot;, strand=&quot;*&quot;)
+# hits_LR &lt;- as.data.frame(hits_LR)
+# saveRDS(hits_LR,&quot;data/hits_files/GLI1_hits_LR.RDS&quot;)
+
+# hits_LR_GLI1 %&gt;%
+#   mutate(position=start-1000) %&gt;%
+#   ggplot(.,aes(position))+
+#   geom_density(size=2) +
+#   theme_bw() +
+#   geom_vline(xintercept = 0, linetype=2, color=&#39;red&#39;, size=2) +
+#   xlab(&#39;Position around the GLI1  motif&#39;) +
+#   ylab(&#39;Per position percentage\nof motif occurrence&#39;) +
+#   ggtitle(&quot;LR: GLI1 binding&quot;)+
+#   theme(
+#     axis.text = element_text(size=10, face=&#39;bold&#39;),
+#     axis.title = element_text(size=14,face=&quot;bold&quot;),
+#     plot.title = element_text(hjust = 0.5))
+
+hits_NR_GLI1 &lt;- readRDS(&quot;data/hits_files/GLI1_hits_NR.RDS&quot;)
+# hits_NR &lt;- searchSeq(GLI1_pwm, seq_NR, min.score=&quot;80%&quot;, strand=&quot;*&quot;)
+# hits_NR &lt;- as.data.frame(hits_NR)
+# saveRDS(hits_NR,&quot;data/hits_files/GLI1_hits_NR.RDS&quot;)
+
+hits_NR_GLI1 %&gt;%
+  mutate(position=start-1000) %&gt;%
+  mutate(id_mrc=&quot;NR&quot;) %&gt;%
+  rbind(.,(hits_LR_GLI1 %&gt;% mutate(position=start-1000) %&gt;%
+  mutate(id_mrc=&quot;LR&quot;))) %&gt;%
+   rbind(.,(hits_ESR_GLI1 %&gt;% mutate(position=start-1000) %&gt;%
+  mutate(id_mrc=&quot;ESR&quot;))) %&gt;%
+   rbind(.,(hits_EAR_GLI1 %&gt;% mutate(position=start-1000) %&gt;%
+  mutate(id_mrc=&quot;EAR&quot;))) %&gt;%
+  ggplot(.,aes(position, color = id_mrc))+
+  geom_density(size=1.5) +
+  # geom_density(data=hits_LR_GLI1, aes(position))+
+  theme_bw() +
+  geom_vline(xintercept = 0, linetype=2, color=&#39;red&#39;, size=2) +
+  xlab(&#39;Position around the GLI1  motif&#39;) +
+  ylab(&#39;Per position percentage\nof motif occurrence&#39;) +
+  ggtitle(&quot;Chromatin accessibility around GLI1 binding site&quot;)+
+  theme(
+    axis.text = element_text(size=10, face=&#39;bold&#39;),
+    axis.title = element_text(size=14,face=&quot;bold&quot;),
+    plot.title = element_text(hjust = 0.5))+
+  coord_cartesian(xlim= c(-250,250))</code></pre>
+<p><img src="figure/Jaspar_motif.Rmd/GLI1-1.png" width="672" style="display: block; margin: auto;" /></p>
+</div>
+</div>
+<div id="looking-at-sea-data" class="section level3">
+<h3>Looking at SEA data</h3>
+<br>
+<p>
+<button type="button" class="btn btn-default btn-workflowr btn-workflowr-sessioninfo" data-toggle="collapse" data-target="#workflowr-sessioninfo" style="display: block;">
+<span class="glyphicon glyphicon-wrench" aria-hidden="true"></span>
+Session information
+</button>
+</p>
+<div id="workflowr-sessioninfo" class="collapse">
+<pre class="r"><code>sessionInfo()</code></pre>
+<pre><code>R version 4.3.1 (2023-06-16 ucrt)
+Platform: x86_64-w64-mingw32/x64 (64-bit)
+Running under: Windows 10 x64 (build 19045)
+
+Matrix products: default
+
+
+locale:
+[1] LC_COLLATE=English_United States.utf8 
+[2] LC_CTYPE=English_United States.utf8   
+[3] LC_MONETARY=English_United States.utf8
+[4] LC_NUMERIC=C                          
+[5] LC_TIME=English_United States.utf8    
+
+time zone: America/Chicago
+tzcode source: internal
+
+attached base packages:
+[1] grid      stats4    stats     graphics  grDevices utils     datasets 
+[8] methods   base     
+
+other attached packages:
+ [1] BSgenome.Hsapiens.UCSC.hg38_1.4.5       
+ [2] BSgenome_1.70.2                         
+ [3] BiocIO_1.12.0                           
+ [4] MotifDb_1.44.0                          
+ [5] Biostrings_2.70.3                       
+ [6] XVector_0.42.0                          
+ [7] TFBSTools_1.40.0                        
+ [8] JASPAR2022_0.99.8                       
+ [9] BiocFileCache_2.10.2                    
+[10] dbplyr_2.5.0                            
+[11] bedr_1.0.7                              
+[12] devtools_2.4.5                          
+[13] usethis_2.2.3                           
+[14] ggpubr_0.6.0                            
+[15] BiocParallel_1.36.0                     
+[16] Cormotif_1.48.0                         
+[17] affy_1.80.0                             
+[18] scales_1.3.0                            
+[19] VennDiagram_1.7.3                       
+[20] futile.logger_1.4.3                     
+[21] gridExtra_2.3                           
+[22] ggfortify_0.4.17                        
+[23] edgeR_4.0.16                            
+[24] limma_3.58.1                            
+[25] rtracklayer_1.62.0                      
+[26] org.Hs.eg.db_3.18.0                     
+[27] TxDb.Hsapiens.UCSC.hg38.knownGene_3.18.0
+[28] GenomicFeatures_1.54.4                  
+[29] AnnotationDbi_1.64.1                    
+[30] Biobase_2.62.0                          
+[31] GenomicRanges_1.54.1                    
+[32] GenomeInfoDb_1.38.8                     
+[33] IRanges_2.36.0                          
+[34] S4Vectors_0.40.2                        
+[35] BiocGenerics_0.48.1                     
+[36] ChIPseeker_1.38.0                       
+[37] RColorBrewer_1.1-3                      
+[38] broom_1.0.5                             
+[39] kableExtra_1.4.0                        
+[40] lubridate_1.9.3                         
+[41] forcats_1.0.0                           
+[42] stringr_1.5.1                           
+[43] dplyr_1.1.4                             
+[44] purrr_1.0.2                             
+[45] readr_2.1.5                             
+[46] tidyr_1.3.1                             
+[47] tibble_3.2.1                            
+[48] ggplot2_3.5.1                           
+[49] tidyverse_2.0.0                         
+[50] workflowr_1.7.1                         
+
+loaded via a namespace (and not attached):
+  [1] fs_1.6.4                               
+  [2] matrixStats_1.3.0                      
+  [3] bitops_1.0-7                           
+  [4] DirichletMultinomial_1.44.0            
+  [5] enrichplot_1.22.0                      
+  [6] HDO.db_0.99.1                          
+  [7] httr_1.4.7                             
+  [8] profvis_0.3.8                          
+  [9] tools_4.3.1                            
+ [10] backports_1.4.1                        
+ [11] utf8_1.2.4                             
+ [12] R6_2.5.1                               
+ [13] lazyeval_0.2.2                         
+ [14] urlchecker_1.0.1                       
+ [15] withr_3.0.0                            
+ [16] prettyunits_1.2.0                      
+ [17] preprocessCore_1.64.0                  
+ [18] cli_3.6.2                              
+ [19] formatR_1.14                           
+ [20] scatterpie_0.2.2                       
+ [21] labeling_0.4.3                         
+ [22] sass_0.4.9                             
+ [23] Rsamtools_2.18.0                       
+ [24] systemfonts_1.0.6                      
+ [25] yulab.utils_0.1.4                      
+ [26] R.utils_2.12.3                         
+ [27] DOSE_3.28.2                            
+ [28] svglite_2.1.3                          
+ [29] sessioninfo_1.2.2                      
+ [30] plotrix_3.8-4                          
+ [31] rstudioapi_0.16.0                      
+ [32] RSQLite_2.3.6                          
+ [33] generics_0.1.3                         
+ [34] gridGraphics_0.5-1                     
+ [35] TxDb.Hsapiens.UCSC.hg19.knownGene_3.2.2
+ [36] gtools_3.9.5                           
+ [37] car_3.1-2                              
+ [38] GO.db_3.18.0                           
+ [39] Matrix_1.6-5                           
+ [40] fansi_1.0.6                            
+ [41] abind_1.4-5                            
+ [42] R.methodsS3_1.8.2                      
+ [43] lifecycle_1.0.4                        
+ [44] whisker_0.4.1                          
+ [45] yaml_2.3.8                             
+ [46] carData_3.0-5                          
+ [47] SummarizedExperiment_1.32.0            
+ [48] gplots_3.1.3.1                         
+ [49] qvalue_2.34.0                          
+ [50] SparseArray_1.2.4                      
+ [51] blob_1.2.4                             
+ [52] promises_1.3.0                         
+ [53] crayon_1.5.2                           
+ [54] miniUI_0.1.1.1                         
+ [55] lattice_0.22-6                         
+ [56] cowplot_1.1.3                          
+ [57] annotate_1.80.0                        
+ [58] KEGGREST_1.42.0                        
+ [59] pillar_1.9.0                           
+ [60] knitr_1.46                             
+ [61] fgsea_1.28.0                           
+ [62] rjson_0.2.21                           
+ [63] boot_1.3-30                            
+ [64] codetools_0.2-20                       
+ [65] fastmatch_1.1-4                        
+ [66] glue_1.7.0                             
+ [67] getPass_0.2-4                          
+ [68] ggfun_0.1.4                            
+ [69] remotes_2.5.0                          
+ [70] data.table_1.15.4                      
+ [71] vctrs_0.6.5                            
+ [72] png_0.1-8                              
+ [73] treeio_1.26.0                          
+ [74] testthat_3.2.1.1                       
+ [75] poweRlaw_0.80.0                        
+ [76] gtable_0.3.5                           
+ [77] cachem_1.0.8                           
+ [78] xfun_0.43                              
+ [79] S4Arrays_1.2.1                         
+ [80] mime_0.12                              
+ [81] tidygraph_1.3.1                        
+ [82] pracma_2.4.4                           
+ [83] statmod_1.5.0                          
+ [84] ellipsis_0.3.2                         
+ [85] interactiveDisplayBase_1.40.0          
+ [86] nlme_3.1-164                           
+ [87] ggtree_3.10.1                          
+ [88] bit64_4.0.5                            
+ [89] progress_1.2.3                         
+ [90] filelock_1.0.3                         
+ [91] rprojroot_2.0.4                        
+ [92] bslib_0.7.0                            
+ [93] affyio_1.72.0                          
+ [94] KernSmooth_2.23-22                     
+ [95] splitstackshape_1.4.8                  
+ [96] seqLogo_1.68.0                         
+ [97] colorspace_2.1-0                       
+ [98] DBI_1.2.2                              
+ [99] tidyselect_1.2.1                       
+[100] processx_3.8.4                         
+[101] bit_4.0.5                              
+[102] compiler_4.3.1                         
+[103] curl_5.2.1                             
+[104] git2r_0.33.0                           
+[105] xml2_1.3.6                             
+[106] DelayedArray_0.28.0                    
+[107] shadowtext_0.1.3                       
+[108] caTools_1.18.2                         
+[109] callr_3.7.6                            
+[110] rappdirs_0.3.3                         
+[111] digest_0.6.35                          
+[112] rmarkdown_2.26                         
+[113] htmltools_0.5.8.1                      
+[114] pkgconfig_2.0.3                        
+[115] MatrixGenerics_1.14.0                  
+[116] highr_0.10                             
+[117] fastmap_1.1.1                          
+[118] htmlwidgets_1.6.4                      
+[119] rlang_1.1.3                            
+[120] shiny_1.8.1.1                          
+[121] farver_2.1.1                           
+[122] jquerylib_0.1.4                        
+[123] jsonlite_1.8.8                         
+[124] R.oo_1.26.0                            
+[125] GOSemSim_2.28.1                        
+[126] RCurl_1.98-1.14                        
+[127] magrittr_2.0.3                         
+[128] GenomeInfoDbData_1.2.11                
+[129] ggplotify_0.1.2                        
+[130] patchwork_1.2.0                        
+[131] munsell_0.5.1                          
+[132] Rcpp_1.0.12                            
+[133] ape_5.8                                
+[134] viridis_0.6.5                          
+[135] stringi_1.8.3                          
+[136] ggraph_2.2.1                           
+[137] brio_1.1.5                             
+[138] zlibbioc_1.48.2                        
+[139] MASS_7.3-60.0.1                        
+[140] pkgbuild_1.4.4                         
+[141] AnnotationHub_3.10.1                   
+[142] plyr_1.8.9                             
+[143] parallel_4.3.1                         
+[144] ggrepel_0.9.5                          
+[145] CNEr_1.38.0                            
+[146] graphlayouts_1.1.1                     
+[147] splines_4.3.1                          
+[148] hms_1.1.3                              
+[149] locfit_1.5-9.9                         
+[150] ps_1.7.6                               
+[151] igraph_2.0.3                           
+[152] ggsignif_0.6.4                         
+[153] pkgload_1.3.4                          
+[154] reshape2_1.4.4                         
+[155] biomaRt_2.58.2                         
+[156] TFMPvalue_0.0.9                        
+[157] futile.options_1.0.1                   
+[158] BiocVersion_3.18.1                     
+[159] XML_3.99-0.16.1                        
+[160] evaluate_0.23                          
+[161] lambda.r_1.2.4                         
+[162] BiocManager_1.30.22                    
+[163] tzdb_0.4.0                             
+[164] tweenr_2.0.3                           
+[165] httpuv_1.6.15                          
+[166] polyclip_1.10-6                        
+[167] ggforce_0.4.2                          
+[168] xtable_1.8-4                           
+[169] restfulr_0.0.15                        
+[170] tidytree_0.4.6                         
+[171] rstatix_0.7.2                          
+[172] later_1.3.2                            
+[173] viridisLite_0.4.2                      
+[174] aplot_0.2.2                            
+[175] memoise_2.0.1                          
+[176] GenomicAlignments_1.38.2               
+[177] timechange_0.3.0                       </code></pre>
+</div>
+</div>
+
+
+<!-- Adjust MathJax settings so that all math formulae are shown using
+TeX fonts only; see
+https://docs.mathjax.org/en/latest/web/configuration.html. This will make
+the presentation more consistent at the cost of the webpage sometimes
+taking slightly longer to load. Note that this only works because the
+footer is added to webpages before the MathJax javascript. -->
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    "HTML-CSS": { availableFonts: ["TeX"] }
+  });
+</script>
+
+
+
+
+</div>
+</div>
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+function bootstrapStylePandocTables() {
+  $('tr.odd').parent('tbody').parent('table').addClass('table table-condensed');
+}
+$(document).ready(function () {
+  bootstrapStylePandocTables();
+});
+
+
+</script>
+
+<!-- tabsets -->
+
+<script>
+$(document).ready(function () {
+  window.buildTabsets("TOC");
+});
+
+$(document).ready(function () {
+  $('.tabset-dropdown > .nav-tabs > li').click(function () {
+    $(this).parent().toggleClass('nav-tabs-open');
+  });
+});
+</script>
+
+<!-- code folding -->
+
+<script>
+$(document).ready(function ()  {
+
+    // temporarily add toc-ignore selector to headers for the consistency with Pandoc
+    $('.unlisted.unnumbered').addClass('toc-ignore')
+
+    // move toc-ignore selectors from section div to header
+    $('div.section.toc-ignore')
+        .removeClass('toc-ignore')
+        .children('h1,h2,h3,h4,h5').addClass('toc-ignore');
+
+    // establish options
+    var options = {
+      selectors: "h1,h2,h3",
+      theme: "bootstrap3",
+      context: '.toc-content',
+      hashGenerator: function (text) {
+        return text.replace(/[.\\/?&!#<>]/g, '').replace(/\s/g, '_');
+      },
+      ignoreSelector: ".toc-ignore",
+      scrollTo: 0
+    };
+    options.showAndHide = true;
+    options.smoothScroll = true;
+
+    // tocify
+    var toc = $("#TOC").tocify(options).data("toc-tocify");
+});
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
