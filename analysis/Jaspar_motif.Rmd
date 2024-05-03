@@ -126,7 +126,29 @@ xstreme_LR_v_NR %>%
   kable_paper("striped", full_width = TRUE) %>%
   kable_styling(full_width = FALSE, font_size = 16) %>%
   scroll_box(height = "800px")
+### selecting just the list of names and checking for expression
 
+
+gene_list_SEA <- xstreme_EAR_v_NR %>% 
+  dplyr::select(SIM_MOTIF,ALT_ID, ID,EVALUE) %>% 
+  arrange(.,EVALUE) %>% 
+  separate(SIM_MOTIF, into= c("SIM_MOTIF", "NAME"), sep= " ") %>% 
+  mutate(MCR="EAR") %>% 
+  bind_rows(xstreme_ESR_v_NR %>% 
+  dplyr::select(SIM_MOTIF,ALT_ID, ID,EVALUE) %>% 
+  arrange(.,EVALUE) %>% 
+  separate(SIM_MOTIF, into= c("SIM_MOTIF", "NAME"), sep= " ") %>% 
+ mutate(MCR="ESR")) %>% 
+  bind_rows(xstreme_LR_v_NR %>% 
+  dplyr::select(SIM_MOTIF,ALT_ID, ID,EVALUE) %>% 
+  arrange(.,EVALUE) %>% 
+  separate(SIM_MOTIF, into= c("SIM_MOTIF", "NAME"), sep= " ") %>% 
+    mutate(MCR="LR")) %>% 
+  dplyr::filter(!is.na(NAME)) %>%  
+  mutate(NAME= gsub("[()]","",NAME)) %>% 
+ distinct(NAME)
+  
+  
 
 # xstreme_EAR_v_LR %>% 
 #   dplyr::select(SIM_MOTIF,ALT_ID, ID,SITES,EVALUE) %>% 
@@ -252,6 +274,18 @@ toplistall_RNA <- readRDS("data/other_papers/toplistall_RNA.RDS")
 
 toplistall_RNA <- toplistall_RNA %>% 
   mutate(logFC = logFC*(-1))
+
+RNA_expresed_genes <- toplistall_RNA %>% 
+  # dplyr::filter(adj.P.Val <0.05) %>% 
+   mutate(expression = if_else(logFC<0,"down","up")) %>% 
+  dplyr::select(ENTREZID,SYMBOL,expression) %>% 
+  # dplyr::select(ENTREZID,SYMBOL) %>% 
+  unique(.)  
+RNA_expresed_genes_DE <- toplistall_RNA %>% 
+  dplyr::filter(adj.P.Val <0.05) %>%
+  mutate(expression = if_else(logFC<0,"down","up")) %>% 
+  dplyr::select(ENTREZID,SYMBOL,expression) %>% 
+  unique(.) 
 # 
 # motifgenes_EAR_v_LR <- xstreme_EAR_v_LR %>% 
 #   dplyr::select(SIM_MOTIF,ALT_ID, ID,SITES,EVALUE) %>% 
@@ -298,9 +332,16 @@ motifgenes_LR_v_NR <- xstreme_LR_v_NR %>%
   mutate(motif_name= gsub("[()]","",NAME)) %>% 
    dplyr::select(SIM_MOTIF,motif_name) %>% 
   unique()
-# intersect(motifgenes_EAR_v_LR$SIM_MOTIF, motifgenes_ESR_v_LR$SIM_MOTIF
-#           )
 
+gene_list_SEA %>% 
+  mutate(express_RNA=if_else(NAME %in%  RNA_expresed_genes$SYMBOL,"exp","not_exp"),DE_RNA=if_else(NAME %in% RNA_expresed_genes_DE$SYMBOL,"DE","notDE")) %>%  
+  rowid_to_column("row_name") %>% 
+  kable(., caption= "RNA DE genes expresssed in EAR MRCs that contain SNPs associated with Heart disease") %>% 
+    kable_paper("striped", full_width = TRUE) %>%
+  kable_styling(full_width = FALSE, font_size = 16) %>%
+  scroll_box(height = "800px")
+
+  
 ```
 
 
@@ -351,9 +392,10 @@ seq_NR_norm = getSeq(BSgenome.Hsapiens.UCSC.hg38, NR_df_gr)
 
 
 ```
-#### FOXD3
+###### FOXD3
+**not enriched 
 
-```{r FOXD3 motif}
+```{r FOXD3 motif, eval=FALSE, include=FALSE}
 # motifs_FOXD3 = query(query(MotifDb, 'Hsapiens'), 'FOXD3')
 # FOXD3_motif <- motifs_FOXD3$`Hsapiens-jaspar2022-FOXD3-MA0041.2`
 
@@ -431,8 +473,8 @@ hits_NR_FOXD3 %>%
   mutate(id_mrc="LR"))) %>% 
    rbind(.,(hits_ESR_FOXD3 %>% mutate(position=start-1000) %>% 
   mutate(id_mrc="ESR"))) %>% 
-   rbind(.,(hits_ESR_FOXD3_500 %>% mutate(position=start-500) %>% 
-  mutate(id_mrc="ESR_500"))) %>% 
+  #  rbind(.,(hits_ESR_FOXD3_500 %>% mutate(position=start-500) %>% 
+  # mutate(id_mrc="ESR_500"))) %>% 
    rbind(.,(hits_EAR_FOXD3 %>% mutate(position=start-1000) %>% 
   mutate(id_mrc="EAR"))) %>% 
   ggplot(.,aes(position, color = id_mrc))+
@@ -440,7 +482,7 @@ hits_NR_FOXD3 %>%
   # geom_density(data=hits_LR_FOXD3, aes(position))+
   theme_bw() +
   geom_vline(xintercept = 0, linetype=2, color='red', size=2) +
-  xlab('Position around the FOXD3 peaks') +
+  xlab('Position around the FOXD3 motif') +
   ylab('Per position percentage\nof motif occurrence') +
   ggtitle("Chromatin accessibility around FOXD3 binding site")+
   theme(
@@ -450,6 +492,7 @@ hits_NR_FOXD3 %>%
 
 ```
 #### ZNF384
+enriched in EAR, ESR, LR
 ```{r ZNF384}
 
 # motifs_ZNF384 = query(query(MotifDb, 'Hsapiens'), 'ZNF384')
@@ -464,38 +507,38 @@ hits_ESR_ZNF384 <- readRDS("data/hits_files/ZNF384_hits_ESR.RDS")
 # hits_ESR <- hits
 # hits_ESR <- as.data.frame(hits_ESR)
 # saveRDS(hits_ESR,"data/hits_files/ZNF384_hits_ESR.RDS")
-hits_ESR_ZNF384 %>%
-  mutate(position=start-1000) %>%
-  ggplot(.,aes(position))+
-  geom_density(size=2) +
-  theme_bw() +
-  geom_vline(xintercept = 0, linetype=2, color='red', size=2) +
-  xlab('Position around the ZNF384 peaks') +
-  ylab('Per position percentage\nof motif occurrence') +
-  ggtitle("ESR: ZNF384 binding")+
-  theme(
-    axis.text = element_text(size=10, face='bold'),
-    axis.title = element_text(size=14,face="bold"),
-    plot.title = element_text(hjust = 0.5))
+# hits_ESR_ZNF384 %>%
+#   mutate(position=start-1000) %>%
+#   ggplot(.,aes(position))+
+#   geom_density(size=2) +
+#   theme_bw() +
+#   geom_vline(xintercept = 0, linetype=2, color='red', size=2) +
+#   xlab('Position around the ZNF384 peaks') +
+#   ylab('Per position percentage\nof motif occurrence') +
+#   ggtitle("ESR: ZNF384 binding")+
+#   theme(
+#     axis.text = element_text(size=10, face='bold'),
+#     axis.title = element_text(size=14,face="bold"),
+#     plot.title = element_text(hjust = 0.5))
 
 hits_EAR_ZNF384 <- readRDS("data/hits_files/ZNF384_hits_EAR.RDS")
 # hits_EAR <- searchSeq(ZNF384_pwm, seq_EAR, min.score="80%", strand="*")
 # hits_EAR <- as.data.frame(hits_EAR)
 # saveRDS(hits_EAR,"data/hits_files/ZNF384_hits_EAR.RDS")
 
-hits_EAR_ZNF384 %>%
-  mutate(position=start-1000) %>%
-  ggplot(.,aes(position))+
-  geom_density(size=2) +
-  theme_bw() +
-  geom_vline(xintercept = 0, linetype=2, color='red', size=2) +
-  xlab('Position around the ZNF384 peaks') +
-  ylab('Per position percentage\nof motif occurrence') +
-  ggtitle("EAR: ZNF384 binding")+
-  theme(
-    axis.text = element_text(size=10, face='bold'),
-    axis.title = element_text(size=14,face="bold"),
-    plot.title = element_text(hjust = 0.5))
+# hits_EAR_ZNF384 %>%
+#   mutate(position=start-1000) %>%
+#   ggplot(.,aes(position))+
+#   geom_density(size=2) +
+#   theme_bw() +
+#   geom_vline(xintercept = 0, linetype=2, color='red', size=2) +
+#   xlab('Position around the ZNF384 peaks') +
+#   ylab('Per position percentage\nof motif occurrence') +
+#   ggtitle("EAR: ZNF384 binding")+
+#   theme(
+#     axis.text = element_text(size=10, face='bold'),
+#     axis.title = element_text(size=14,face="bold"),
+#     plot.title = element_text(hjust = 0.5))
 
 hits_LR_ZNF384 <- readRDS("data/hits_files/ZNF384_hits_LR.RDS")
 # hits_LR <- searchSeq(ZNF384_pwm, seq_LR, min.score="80%", strand="*")
@@ -534,7 +577,7 @@ hits_NR_ZNF384 %>%
   # geom_density(data=hits_LR_ZNF384, aes(position))+
   theme_bw() +
   geom_vline(xintercept = 0, linetype=2, color='red', size=2) +
-  xlab('Position around the ZNF384 peaks') +
+  xlab('Position around the ZNF384 motif') +
   ylab('Per position percentage\nof motif occurrence') +
   ggtitle("Chromatin accessibility around ZNF384 binding site")+
   theme(
@@ -550,16 +593,16 @@ hits_NR_ZNF384 %>%
 
 
 #### ZKSCAN3
-
+enriched in EAR
 ```{r ZKSCAN3}
-
-motifs_ZKSCAN3 = query(query(MotifDb, 'Hsapiens'), 'ZKSCAN3')
-ZKSCAN3_motif <- motifs_ZKSCAN3$`Hsapiens-jaspar2022-ZKSCAN3-MA1973.1`
+# 
+# motifs_ZKSCAN3 = query(query(MotifDb, 'Hsapiens'), 'ZKSCAN3')
+# ZKSCAN3_motif <- motifs_ZKSCAN3$`Hsapiens-jaspar2022-ZKSCAN3-MA1973.1`
 #
 #
-ZKSCAN3_pwm = PWMatrix(
-    ID = 'ZKSCAN3',
-    profileMatrix = ZKSCAN3_motif)
+# ZKSCAN3_pwm = PWMatrix(
+#     ID = 'ZKSCAN3',
+#     profileMatrix = ZKSCAN3_motif)
 hits_ESR_ZKSCAN3 <- readRDS("data/hits_files/ZKSCAN3_hits_ESR.RDS")
  hits_ESR_ZKSCAN3_norm<-readRDS("data/hits_files/ZKSCAN3_hits_ESR_norm.RDS")
 
@@ -568,19 +611,19 @@ hits_ESR_ZKSCAN3 <- readRDS("data/hits_files/ZKSCAN3_hits_ESR.RDS")
 # hits_ESR <- as.data.frame(hits_ESR)
 # saveRDS(hits_ESR,"data/hits_files/ZKSCAN3_hits_ESR_norm.RDS")
 # 
-hits_ESR_ZKSCAN3_norm %>%
-  mutate(position=start-1611.5) %>%
-  ggplot(.,aes(position))+
-  geom_density(size=2) +
-  theme_bw() +
-  geom_vline(xintercept = 0, linetype=2, color='red', size=2) +
-  xlab('Position around the ZKSCAN3 peaks') +
-  ylab('Per position percentage\nof motif occurrence') +
-  ggtitle("ESR: ZKSCAN3 binding")+
-  theme(
-    axis.text = element_text(size=10, face='bold'),
-    axis.title = element_text(size=14,face="bold"),
-    plot.title = element_text(hjust = 0.5))
+# hits_ESR_ZKSCAN3_norm %>%
+#   mutate(position=start-1611.5) %>%
+#   ggplot(.,aes(position))+
+#   geom_density(size=2) +
+#   theme_bw() +
+#   geom_vline(xintercept = 0, linetype=2, color='red', size=2) +
+#   xlab('Position around the ZKSCAN3 motif') +
+#   ylab('Per position percentage\nof motif occurrence') +
+#   ggtitle("ESR: ZKSCAN3 binding")+
+#   theme(
+#     axis.text = element_text(size=10, face='bold'),
+#     axis.title = element_text(size=14,face="bold"),
+#     plot.title = element_text(hjust = 0.5))
 
 hits_EAR_ZKSCAN3 <- readRDS("data/hits_files/ZKSCAN3_hits_EAR.RDS")
 # hits_EAR <- searchSeq(ZKSCAN3_pwm, seq_EAR, min.score="80%", strand="*")
@@ -624,27 +667,27 @@ hits_NR_ZKSCAN3 <- readRDS("data/hits_files/ZKSCAN3_hits_NR.RDS")
 # hits_NR <- as.data.frame(hits_NR)
 # saveRDS(hits_NR,"data/hits_files/ZKSCAN3_hits_NR.RDS")
 
-# hits_NR_ZKSCAN3 %>%
-#   mutate(position=start-1000) %>%
-#   mutate(id_mrc="NR") %>%
-#   rbind(.,(hits_LR_ZKSCAN3 %>% mutate(position=start-1000) %>%
-#   mutate(id_mrc="LR"))) %>%
-#    rbind(.,(hits_ESR_ZKSCAN3 %>% mutate(position=start-1000) %>%
-#   mutate(id_mrc="ESR"))) %>%
-#    rbind(.,(hits_EAR_ZKSCAN3 %>% mutate(position=start-1000) %>%
-#   mutate(id_mrc="EAR"))) %>%
-#   ggplot(.,aes(position, color = id_mrc))+
-#   geom_density(size=1.5) +
-#   # geom_density(data=hits_LR_ZKSCAN3, aes(position))+
-#   theme_bw() +
-#   geom_vline(xintercept = 0, linetype=2, color='red', size=2) +
-#   xlab('Position around the ZKSCAN3 peaks') +
-#   ylab('Per position percentage\nof motif occurrence') +
-#   ggtitle("Chromatin accessibility around ZKSCAN3 binding site")+
-#   theme(
-#     axis.text = element_text(size=10, face='bold'),
-#     axis.title = element_text(size=14,face="bold"),
-#     plot.title = element_text(hjust = 0.5))
+hits_NR_ZKSCAN3 %>%
+  mutate(position=start-1000) %>%
+  mutate(id_mrc="NR") %>%
+  rbind(.,(hits_LR_ZKSCAN3 %>% mutate(position=start-1000) %>%
+  mutate(id_mrc="LR"))) %>%
+   rbind(.,(hits_ESR_ZKSCAN3 %>% mutate(position=start-1000) %>%
+  mutate(id_mrc="ESR"))) %>%
+   rbind(.,(hits_EAR_ZKSCAN3 %>% mutate(position=start-1000) %>%
+  mutate(id_mrc="EAR"))) %>%
+  ggplot(.,aes(position, color = id_mrc))+
+  geom_density(size=1.5) +
+  # geom_density(data=hits_LR_ZKSCAN3, aes(position))+
+  theme_bw() +
+  geom_vline(xintercept = 0, linetype=2, color='red', size=2) +
+  xlab('Position around the ZKSCAN3 peaks') +
+  ylab('Per position percentage\nof motif occurrence') +
+  ggtitle("Chromatin accessibility around ZKSCAN3 binding site")+
+  theme(
+    axis.text = element_text(size=10, face='bold'),
+    axis.title = element_text(size=14,face="bold"),
+    plot.title = element_text(hjust = 0.5))
 
 
 
@@ -655,7 +698,7 @@ hits_NR_ZKSCAN3 <- readRDS("data/hits_files/ZKSCAN3_hits_NR.RDS")
 
 
 #### PITX1
-
+ enriched in EAR and ESR
 ```{r PITX1}
 # 
 # motifs_PITX1 = query(query(MotifDb, 'Hsapiens'), 'PITX1')
@@ -755,6 +798,7 @@ hits_NR_PITX1 %>%
 
 
 #### TP53
+not enriched, just curious
 
 ```{r TP53}
 # 
@@ -1124,7 +1168,7 @@ hits_NR_PRDM1 %>%
     axis.text = element_text(size=10, face='bold'),
     axis.title = element_text(size=14,face="bold"),
     plot.title = element_text(hjust = 0.5))+
-  coord_cartesian(xlim= c(-250,250))
+  coord_cartesian(xlim= c(-500,500))
 
 
 
@@ -1228,7 +1272,7 @@ hits_NR_TBX1 %>%
     axis.text = element_text(size=10, face='bold'),
     axis.title = element_text(size=14,face="bold"),
     plot.title = element_text(hjust = 0.5))+
-  coord_cartesian(xlim= c(-250,250))
+  coord_cartesian(xlim= c(-500,500))
 
 ```
 
@@ -1326,9 +1370,122 @@ hits_NR_GLI1 %>%
     axis.text = element_text(size=10, face='bold'),
     axis.title = element_text(size=14,face="bold"),
     plot.title = element_text(hjust = 0.5))+
-  coord_cartesian(xlim= c(-250,250))
+  coord_cartesian(xlim= c(-500,500))
 
 ```
+
+
+
+#### ZNF460
+
+```{r ZNF460}
+# # 
+# motifs_ZNF460 = query(query(MotifDb, 'Hsapiens'), 'ZNF460')
+#     ZNF460_motif <- motifs_ZNF460$`Hsapiens-jaspar2022-ZNF460-MA1596.1`
+# 
+# ZNF460_pwm = PWMatrix(
+#     ID = 'ZNF460',
+#     profileMatrix = ZNF460_motif)
+hits_ESR_ZNF460 <- readRDS("data/hits_files/ZNF460_hits_ESR.RDS")
+# hits_ESR = searchSeq(ZNF460_pwm, seq_ESR, min.score="80%", strand="*")
+# 
+# hits_ESR <- as.data.frame(hits_ESR)
+# saveRDS(hits_ESR,"data/hits_files/ZNF460_hits_ESR.RDS")
+# hits_ESR_ZNF460 %>%
+#   mutate(position=start-1000) %>%
+#   ggplot(.,aes(position))+
+#   geom_density(size=2) +
+#   theme_bw() +
+#   geom_vline(xintercept = 0, linetype=2, color='red', size=2) +
+#   xlab('Position around the ZNF460  motif') +
+#   ylab('Per position percentage\nof motif occurrence') +
+#   ggtitle("ESR: ZNF460 binding")+
+#   theme(
+#     axis.text = element_text(size=10, face='bold'),
+#     axis.title = element_text(size=14,face="bold"),
+#     plot.title = element_text(hjust = 0.5))
+
+hits_EAR_ZNF460 <- readRDS("data/hits_files/ZNF460_hits_EAR.RDS")
+# hits_EAR <- searchSeq(ZNF460_pwm, seq_EAR, min.score="80%", strand="*")
+# hits_EAR <- as.data.frame(hits_EAR)
+# saveRDS(hits_EAR,"data/hits_files/ZNF460_hits_EAR.RDS")
+
+# hits_EAR_ZNF460 %>%
+#   mutate(position=start-1000) %>%
+#   ggplot(.,aes(position))+
+#   geom_density(size=2) +
+#   theme_bw() +
+#   geom_vline(xintercept = 0, linetype=2, color='red', size=2) +
+#   xlab('Position around the ZNF460  motif') +
+#   ylab('Per position percentage\nof motif occurrence') +
+#   ggtitle("EAR: ZNF460 binding")+
+#   theme(
+#     axis.text = element_text(size=10, face='bold'),
+#     axis.title = element_text(size=14,face="bold"),
+#     plot.title = element_text(hjust = 0.5))
+# 
+hits_LR_ZNF460 <- readRDS("data/hits_files/ZNF460_hits_LR.RDS")
+# hits_LR <- searchSeq(ZNF460_pwm, seq_LR, min.score="80%", strand="*")
+# hits_LR <- as.data.frame(hits_LR)
+# saveRDS(hits_LR,"data/hits_files/ZNF460_hits_LR.RDS")
+
+# hits_LR_ZNF460 %>%
+#   mutate(position=start-1000) %>%
+#   ggplot(.,aes(position))+
+#   geom_density(size=2) +
+#   theme_bw() +
+#   geom_vline(xintercept = 0, linetype=2, color='red', size=2) +
+#   xlab('Position around the ZNF460  motif') +
+#   ylab('Per position percentage\nof motif occurrence') +
+#   ggtitle("LR: ZNF460 binding")+
+#   theme(
+#     axis.text = element_text(size=10, face='bold'),
+#     axis.title = element_text(size=14,face="bold"),
+#     plot.title = element_text(hjust = 0.5))
+
+hits_NR_ZNF460 <- readRDS("data/hits_files/ZNF460_hits_NR.RDS")
+# hits_NR <- searchSeq(ZNF460_pwm, seq_NR, min.score="80%", strand="*")
+# hits_NR <- as.data.frame(hits_NR)
+# saveRDS(hits_NR,"data/hits_files/ZNF460_hits_NR.RDS")
+
+hits_NR_ZNF460 %>%
+  mutate(position=start-1000) %>%
+  mutate(id_mrc="NR") %>%
+  rbind(.,(hits_LR_ZNF460 %>% mutate(position=start-1000) %>%
+  mutate(id_mrc="LR"))) %>%
+   rbind(.,(hits_ESR_ZNF460 %>% mutate(position=start-1000) %>%
+  mutate(id_mrc="ESR"))) %>%
+   rbind(.,(hits_EAR_ZNF460 %>% mutate(position=start-1000) %>%
+  mutate(id_mrc="EAR"))) %>%
+  ggplot(.,aes(position, color = id_mrc))+
+  geom_density(size=1.5) +
+  # geom_density(data=hits_LR_ZNF460, aes(position))+
+  theme_bw() +
+  geom_vline(xintercept = 0, linetype=2, color='red', size=2) +
+  xlab('Position around the ZNF460  motif') +
+  ylab('Per position percentage\nof motif occurrence') +
+  ggtitle("Chromatin accessibility around ZNF460 binding site")+
+  theme(
+    axis.text = element_text(size=10, face='bold'),
+    axis.title = element_text(size=14,face="bold"),
+    plot.title = element_text(hjust = 0.5))+
+  coord_cartesian(xlim= c(-500,500))
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ### Looking at SEA data
 
