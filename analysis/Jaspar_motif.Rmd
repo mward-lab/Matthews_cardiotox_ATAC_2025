@@ -1,0 +1,1343 @@
+---
+title: "Jaspar_enrichment"
+author: "ERM"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE,
+	warning = FALSE
+)
+```
+
+```{css, echo=FALSE}
+pre {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+pre[class] {
+  max-height: 200px;
+}
+```
+
+```{r  package loading}
+library(tidyverse)
+# library(ggsignif)
+# library(cowplot)
+# library(ggpubr)
+
+# library(sjmisc)
+library(kableExtra)
+library(broom)
+# library(biomaRt)
+library(RColorBrewer)
+# library(gprofiler2)
+# library(qvalue)
+library(ChIPseeker)
+library("TxDb.Hsapiens.UCSC.hg38.knownGene")
+library("org.Hs.eg.db")
+# library(ATACseqQC)
+library(rtracklayer)
+library(edgeR)
+library(ggfortify)
+library(limma)
+library(readr)
+library(BiocGenerics)
+library(gridExtra)
+library(VennDiagram)
+library(scales)
+# library(ggVennDiagram)
+library(Cormotif)
+library(BiocParallel)
+library(ggpubr)
+library(devtools)
+# install_github('davetang/bedr')
+library(bedr)
+library(JASPAR2022)
+library(TFBSTools)
+library(MotifDb)
+library(BSgenome.Hsapiens.UCSC.hg38)
+
+```
+
+
+```{r dataframe loading}
+
+# xstreme_ESR_v_NR <-ESR_v_NR_full_xstreme %>%
+#   slice_head(n = length(.$ID)-3)
+# saveRDS(xstreme_ESR_v_NR, "data/xstreme/xstreme_ESR_v_NR.RDS")
+
+
+xstreme_EAR_v_NR <- readRDS("data/xstreme/xstreme_EAR_v_NR.RDS")
+
+xstreme_ESR_v_NR <-readRDS("data/xstreme/xstreme_ESR_v_NR.RDS") 
+
+xstreme_LR_v_NR <- readRDS("data/xstreme/xstreme_LR_v_NR.RDS")
+# 
+# xstreme_EAR_v_LR <- readRDS("data/xstreme/xstreme_EAR_v_LR.RDS")
+# 
+# xstreme_ESR_v_LR <- readRDS("data/xstreme/xstreme_ESR_v_LR.RDS")
+
+
+
+# saveRDS(ESR_streme_sites, "data/xstreme/ESR_streme_sites.RDS")
+# ESR_binding_sites <- ESR_streme_sites %>% 
+#   dplyr::select(seq_ID:site_Sequence,motif_ID, motif_ALT_ID) %>% 
+#   rename(seq_ID = "seqnames",site_Start = "start", site_End = "end") %>% 
+#   dplyr::filter(!is.na(seqnames)) %>% 
+#    GRanges()
+# rtracklayer::export.bed(ESR_binding_sites , con="data/n45_bedfiles/ESR_binding_sites.bed", format="bed", ignore.strand = FALSE)
+
+```
+
+
+```{r simmotif}
+xstreme_EAR_v_NR %>% 
+  dplyr::select(SIM_MOTIF,ALT_ID, ID,EVALUE) %>% 
+  arrange(.,EVALUE) %>% 
+  separate(SIM_MOTIF, into= c("SIM_MOTIF", "NAME"), sep= " ") %>% 
+  dplyr::filter(., EVALUE<0.05) %>% 
+  kable(., caption = "Enriched motifs  (EVALUE < 0.05) in EAR v NR") %>%
+  kable_paper("striped", full_width = TRUE) %>%
+  kable_styling(full_width = FALSE, font_size = 16) %>%
+  scroll_box(height = "500px")
+
+
+xstreme_ESR_v_NR %>% 
+  dplyr::select(SIM_MOTIF,ALT_ID, ID,EVALUE) %>% 
+  arrange(.,EVALUE) %>% 
+  separate(SIM_MOTIF, into= c("SIM_MOTIF", "NAME"), sep= " ") %>% 
+  dplyr::filter(., EVALUE<0.05) %>% 
+  kable(., caption = "Enriched motifs  (EVALUE < 0.05) in ESR v NR") %>%
+  kable_paper("striped", full_width = TRUE) %>%
+  kable_styling(full_width = FALSE, font_size = 16) %>%
+  scroll_box(height = "800px")
+
+xstreme_LR_v_NR %>% 
+  dplyr::select(SIM_MOTIF,ALT_ID, ID,EVALUE) %>% 
+  arrange(.,EVALUE) %>% 
+  separate(SIM_MOTIF, into= c("SIM_MOTIF", "NAME"), sep= " ") %>% 
+  dplyr::filter(., EVALUE<0.05) %>% 
+  kable(., caption = "Enriched motifs  (EVALUE < 0.05) in LR v NR") %>%
+  kable_paper("striped", full_width = TRUE) %>%
+  kable_styling(full_width = FALSE, font_size = 16) %>%
+  scroll_box(height = "800px")
+
+
+# xstreme_EAR_v_LR %>% 
+#   dplyr::select(SIM_MOTIF,ALT_ID, ID,SITES,EVALUE) %>% 
+#   arrange(.,EVALUE) %>% 
+#   separate(SIM_MOTIF, into= c("SIM_MOTIF", "NAME"), sep= " ") %>% 
+#   dplyr::filter(., EVALUE<0.05) %>% 
+#   kable(., caption = "Enriched motifs  (EVALUE < 0.05) in EAR v LR") %>%
+#   kable_paper("striped", full_width = TRUE) %>%
+#   kable_styling(full_width = FALSE, font_size = 16) %>%
+#   scroll_box(height = "800px")
+# 
+# 
+# xstreme_ESR_v_LR %>% 
+#   dplyr::select(SIM_MOTIF,ALT_ID, ID,SITES,EVALUE) %>% 
+#   arrange(.,EVALUE) %>% 
+#   separate(SIM_MOTIF, into= c("SIM_MOTIF", "NAME"), sep= " ") %>% 
+#   dplyr::filter(., EVALUE<0.05) %>% 
+#   kable(., caption = "Enriched motifs  (EVALUE < 0.05) in ESR v LR") %>%
+#   kable_paper("striped", full_width = TRUE) %>%
+#   kable_styling(full_width = FALSE, font_size = 16) %>%
+#   scroll_box(height = "800px")
+
+
+
+```
+### enriched motifs
+
+```{r enriched motifs EAR}
+
+# xstreme_EAR_v_NR %>% 
+#   dplyr::select(CLUSTER, SITES,SIM_MOTIF,ALT_ID, ID,EVALUE) %>% 
+#   dplyr::filter(., EVALUE<0.05) %>% 
+#   separate(SIM_MOTIF, into= c("SIM_MOTIF", "NAME"), sep= " ") %>% 
+#   # arrange(.,EVALUE) %>% 
+#   mutate(log10Evalue= log10(EVALUE)*(-1)) %>% 
+#   mutate(motif_name= gsub("[()]","",NAME), mrc="EAR") %>% 
+#   bind_rows(., (xstreme_ESR_v_NR %>% 
+#   dplyr::select(CLUSTER, SITES,SIM_MOTIF,ALT_ID, ID,EVALUE) %>% 
+#   dplyr::filter(., EVALUE<0.05) %>% 
+#   separate(SIM_MOTIF, into= c("SIM_MOTIF", "NAME"), sep= " ") %>% 
+#   # arrange(.,EVALUE) %>% 
+#   mutate(log10Evalue= log10(EVALUE)*(-1)) %>% 
+#   mutate(motif_name= gsub("[()]","",NAME), mrc="ESR"))) %>% 
+#   bind_rows(., (xstreme_LR_v_NR %>% 
+#   dplyr::select(CLUSTER, SITES,SIM_MOTIF,ALT_ID, ID,EVALUE) %>% 
+#   dplyr::filter(., EVALUE<0.05) %>% 
+#   separate(SIM_MOTIF, into= c("SIM_MOTIF", "NAME"), sep= " ") %>% 
+#   # arrange(.,EVALUE) %>% 
+#   mutate(log10Evalue= log10(EVALUE)*(-1)) %>% 
+  # mutate(motif_name= gsub("[()]","",NAME), mrc="LR"))) %>% 
+  # dplyr::filter(!is.na(motif_name)) %>% 
+  # # group_by(mrc) %>% 
+  #  dplyr::arrange(.,desc(log10Evalue)) %>% 
+  # mutate(mrc=factor(mrc, levels = c("EAR", "ESR", "LR"))) %>% 
+  # ggplot(., aes (x= log10Evalue, y= reorder(motif_name, log10Evalue), fill=mrc)) +
+  # geom_col()+
+  # facet_wrap(~mrc)
+
+xstreme_EAR_v_NR %>% 
+  dplyr::select(CLUSTER, SITES,SIM_MOTIF,ALT_ID, ID,EVALUE) %>% 
+  dplyr::filter(., EVALUE<0.05) %>% 
+  separate(SIM_MOTIF, into= c("SIM_MOTIF", "NAME"), sep= " ") %>% 
+  arrange(.,EVALUE) %>%
+  mutate(log10Evalue= log10(EVALUE)*(-1)) %>% 
+  mutate(motif_name= gsub("[()]","",NAME), mrc="EAR") %>% 
+dplyr::filter(!is.na(motif_name)) %>% 
+  # group_by(mrc) %>% 
+   dplyr::arrange(.,desc(log10Evalue)) %>% 
+ggplot(., aes (x= log10Evalue, y= reorder(motif_name,log10Evalue))) +
+  geom_col(fill="red") +
+  theme_classic()+
+  xlim(0,140)
+
+
+xstreme_ESR_v_NR %>% 
+  dplyr::select(CLUSTER, SITES,SIM_MOTIF,ALT_ID, ID,EVALUE) %>% 
+  dplyr::filter(., EVALUE<0.05) %>% 
+  separate(SIM_MOTIF, into= c("SIM_MOTIF", "NAME"), sep= " ") %>% 
+  arrange(.,EVALUE) %>%
+  mutate(log10Evalue= log10(EVALUE)*(-1)) %>% 
+  mutate(motif_name= gsub("[()]","",NAME), mrc="EAR") %>% 
+dplyr::filter(!is.na(motif_name)) %>% 
+  # group_by(mrc) %>% 
+   dplyr::arrange(.,desc(log10Evalue)) %>% 
+ggplot(., aes (x= log10Evalue, y= reorder(motif_name,log10Evalue), fill=mrc)) +
+  geom_col(fill="blue") +
+  theme_classic()
+
+
+
+xstreme_LR_v_NR %>% 
+  dplyr::select(CLUSTER, SITES,SIM_MOTIF,ALT_ID, ID,EVALUE) %>% 
+  dplyr::filter(., EVALUE<0.05) %>% 
+  separate(SIM_MOTIF, into= c("SIM_MOTIF", "NAME"), sep= " ") %>% 
+  arrange(.,EVALUE) %>%
+  mutate(log10Evalue= log10(EVALUE)*(-1)) %>% 
+  mutate(motif_name= gsub("[()]","",NAME), mrc="EAR") %>% 
+dplyr::filter(!is.na(motif_name)) %>% 
+  # group_by(mrc) %>% 
+   dplyr::arrange(.,desc(log10Evalue)) %>% 
+ggplot(., aes (x= log10Evalue, y= reorder(motif_name,log10Evalue), fill=mrc)) +
+  geom_col(fill="green") +
+  theme_classic()
+
+
+
+```
+
+
+
+
+
+
+
+```{r lists of genes and motifs}
+
+## can I see if anyof these genes are in expression data:
+
+toplistall_RNA <- readRDS("data/other_papers/toplistall_RNA.RDS") 
+###Because of how I applied the DEG system in RNA-seq analysis, the lFC is opposite of the 
+###counts.   I did trt-veh instead of veh-trt.  therefore I need to multiply lfc by -1 to get t
+###the right correlation.
+
+toplistall_RNA <- toplistall_RNA %>% 
+  mutate(logFC = logFC*(-1))
+# 
+# motifgenes_EAR_v_LR <- xstreme_EAR_v_LR %>% 
+#   dplyr::select(SIM_MOTIF,ALT_ID, ID,SITES,EVALUE) %>% 
+#   arrange(.,EVALUE) %>% 
+#   separate(SIM_MOTIF, into= c("SIM_MOTIF", "NAME"), sep= " ") %>% 
+#   dplyr::filter(., EVALUE<0.05) %>% 
+#   mutate(motif_name= gsub("[()]","",NAME)) %>% 
+#   dplyr::select(SIM_MOTIF,motif_name) %>% 
+#   unique()
+# 
+# motifgenes_ESR_v_LR <- xstreme_ESR_v_LR %>% 
+#   dplyr::select(SIM_MOTIF,ALT_ID, ID,SITES,EVALUE) %>% 
+#   arrange(.,EVALUE) %>% 
+#   separate(SIM_MOTIF, into= c("SIM_MOTIF", "NAME"), sep= " ") %>% 
+#   dplyr::filter(., EVALUE<0.05) %>% 
+#   mutate(motif_name= gsub("[()]","",NAME)) %>% 
+#    dplyr::select(SIM_MOTIF,motif_name) %>% 
+#   unique()
+
+motifgenes_EAR_v_NR <- xstreme_EAR_v_NR %>% 
+  dplyr::select(SIM_MOTIF,ALT_ID, ID,SITES,EVALUE) %>% 
+  arrange(.,EVALUE) %>% 
+  separate(SIM_MOTIF, into= c("SIM_MOTIF", "NAME"), sep= " ") %>% 
+  dplyr::filter(., EVALUE<0.05) %>% 
+  mutate(motif_name= gsub("[()]","",NAME)) %>% 
+   dplyr::select(SIM_MOTIF,motif_name,SITES) %>% 
+  unique()
+
+motifgenes_ESR_v_NR <- xstreme_ESR_v_NR %>% 
+  dplyr::select(SIM_MOTIF,ALT_ID, ID,SITES,EVALUE) %>% 
+  arrange(.,EVALUE) %>% 
+  separate(SIM_MOTIF, into= c("SIM_MOTIF", "NAME"), sep= " ") %>% 
+  dplyr::filter(., EVALUE<0.05) %>% 
+  mutate(motif_name= gsub("[()]","",NAME)) %>% 
+   dplyr::select(SIM_MOTIF,motif_name,SITES) %>% 
+  unique()
+
+
+motifgenes_LR_v_NR <- xstreme_LR_v_NR %>% 
+  dplyr::select(SIM_MOTIF,ALT_ID, ID,SITES,EVALUE) %>% 
+  arrange(.,EVALUE) %>% 
+  separate(SIM_MOTIF, into= c("SIM_MOTIF", "NAME"), sep= " ") %>% 
+  dplyr::filter(., EVALUE<0.05) %>% 
+  mutate(motif_name= gsub("[()]","",NAME)) %>% 
+   dplyr::select(SIM_MOTIF,motif_name) %>% 
+  unique()
+# intersect(motifgenes_EAR_v_LR$SIM_MOTIF, motifgenes_ESR_v_LR$SIM_MOTIF
+#           )
+
+```
+
+
+
+```{r jaspar peak tests  FOXD3 motif}
+peakAnnoList_n45_motif <- readRDS("data/peakAnnoList_n45_motif.RDS")
+list2env(peakAnnoList_n45_motif, envir = .GlobalEnv)
+EAR_df <- as.data.frame(peakAnnoList_n45_motif$EAR_n45_gr)
+EAR_df_gr <-  GRanges(EAR_df)
+
+ESR_df <- as.data.frame(peakAnnoList_n45_motif$ESR_n45_gr)
+ESR_df_gr <-  GRanges(ESR_df)
+
+LR_df <- as.data.frame(peakAnnoList_n45_motif$LR_n45_gr)
+LR_df_gr <-  GRanges(LR_df)
+ 
+NR_df <- as.data.frame(peakAnnoList_n45_motif$NR_n45_gr)
+NR_df_gr <-  GRanges(NR_df)
+
+
+ESR_peaks_resized = resize(ESR_df_gr, width = 2000, fix='center')
+EAR_peaks_resized = resize(EAR_df_gr, width = 2000, fix='center')
+LR_peaks_resized = resize(LR_df_gr, width = 2000, fix='center')
+NR_peaks_resized = resize(NR_df_gr, width = 2000, fix='center')
+
+
+
+ESR_peaks_resized_500 = resize(ESR_df_gr, width = 1000, fix='center')
+EAR_peaks_resized_500 = resize(EAR_df_gr, width = 1000, fix='center')
+LR_peaks_resized_500 = resize(LR_df_gr, width = 1000, fix='center')
+NR_peaks_resized_500 = resize(NR_df_gr, width = 1000, fix='center')
+# ESR_peaks_resized_site = resize(ESR_df_gr,  fix='center')
+
+seq_ESR = getSeq(BSgenome.Hsapiens.UCSC.hg38, ESR_peaks_resized)
+seq_EAR = getSeq(BSgenome.Hsapiens.UCSC.hg38, EAR_peaks_resized)
+seq_LR = getSeq(BSgenome.Hsapiens.UCSC.hg38, LR_peaks_resized)
+seq_NR = getSeq(BSgenome.Hsapiens.UCSC.hg38, NR_peaks_resized)
+
+seq_ESR_500 = getSeq(BSgenome.Hsapiens.UCSC.hg38, ESR_peaks_resized_500)
+seq_EAR_500 = getSeq(BSgenome.Hsapiens.UCSC.hg38, EAR_peaks_resized_500)
+seq_LR_500 = getSeq(BSgenome.Hsapiens.UCSC.hg38, LR_peaks_resized_500)
+seq_NR_500 = getSeq(BSgenome.Hsapiens.UCSC.hg38, NR_peaks_resized_500)
+
+seq_ESR_norm = getSeq(BSgenome.Hsapiens.UCSC.hg38, ESR_df_gr)
+seq_EAR_norm = getSeq(BSgenome.Hsapiens.UCSC.hg38, EAR_df_gr)
+seq_LR_norm = getSeq(BSgenome.Hsapiens.UCSC.hg38, LR_df_gr)
+seq_NR_norm = getSeq(BSgenome.Hsapiens.UCSC.hg38, NR_df_gr)
+
+
+```
+#### FOXD3
+
+```{r FOXD3 motif}
+# motifs_FOXD3 = query(query(MotifDb, 'Hsapiens'), 'FOXD3')
+# FOXD3_motif <- motifs_FOXD3$`Hsapiens-jaspar2022-FOXD3-MA0041.2`
+
+
+# FOXD3_pwm = PWMatrix(
+#     ID = 'FOXD3',
+#     profileMatrix = FOXD3_motif)
+hits_ESR_FOXD3 <- readRDS("data/hits_files/FOXD3_hits_ESR.RDS")
+
+hits_ESR_FOXD3_500 <- readRDS("data/hits_files/FOXD3_hits_ESR_500.RDS")
+# hits = searchSeq(FOXD3_pwm, seq_ESR_500, min.score="80%", strand="*")
+# hits_ESR_500 <- hits
+# hits_ESR_500 <- as.data.frame(hits_ESR_500)
+# saveRDS(hits_ESR_500,"data/hits_files/FOXD3_hits_ESR_500.RDS")
+# hits_ESR_FOXD3 %>% 
+#   mutate(position=start-1000) %>% 
+#   ggplot(.,aes(position))+
+#   geom_density(size=2) +
+#   theme_bw() +
+#   geom_vline(xintercept = 0, linetype=2, color='red', size=2) +
+#   xlab('Position around the FOXD3 peaks') +
+#   ylab('Per position percentage\nof motif occurrence') +
+#   ggtitle("ESR: FOXD3 binding")+
+#   theme(
+#     axis.text = element_text(size=10, face='bold'),
+#     axis.title = element_text(size=14,face="bold"),
+#     plot.title = element_text(hjust = 0.5))
+
+hits_EAR_FOXD3 <- readRDS("data/hits_files/FOXD3_hits_EAR.RDS")
+# hits_EAR <- searchSeq(FOXD3_pwm, seq_EAR, min.score="80%", strand="*")
+# hits_EAR <- as.data.frame(hits_EAR)
+# saveRDS(hits_EAR,"data/hits_files/FOXD3_hits_EAR.RDS")
+# 
+# hits_EAR_FOXD3 %>% 
+#   mutate(position=start-1000) %>% 
+#   ggplot(.,aes(position))+
+#   geom_density(size=2) +
+#   theme_bw() +
+#   geom_vline(xintercept = 0, linetype=2, color='red', size=2) +
+#   xlab('Position around the FOXD3 peaks') +
+#   ylab('Per position percentage\nof motif occurrence') +
+#   ggtitle("EAR: FOXD3 binding")+
+#   theme(
+#     axis.text = element_text(size=10, face='bold'),
+#     axis.title = element_text(size=14,face="bold"),
+#     plot.title = element_text(hjust = 0.5))
+
+hits_LR_FOXD3 <- readRDS("data/hits_files/FOXD3_hits_LR.RDS")
+# hits_LR <- searchSeq(FOXD3_pwm, seq_LR, min.score="80%", strand="*")
+# hits_LR <- as.data.frame(hits_LR)
+# saveRDS(hits_LR,"data/hits_files/FOXD3_hits_LR.RDS")
+
+# hits_LR_FOXD3 %>% 
+#   mutate(position=start-1000) %>% 
+#   ggplot(.,aes(position))+
+#   geom_density(size=2) +
+#   theme_bw() +
+#   geom_vline(xintercept = 0, linetype=2, color='red', size=2) +
+#   xlab('Position around the FOXD3 peaks') +
+#   ylab('Per position percentage\nof motif occurrence') +
+#   ggtitle("LR: FOXD3 binding")+
+#   theme(
+#     axis.text = element_text(size=10, face='bold'),
+#     axis.title = element_text(size=14,face="bold"),
+#     plot.title = element_text(hjust = 0.5))
+hits_NR_FOXD3 <- readRDS("data/hits_files/FOXD3_hits_NR.RDS")
+# hits_NR <- searchSeq(FOXD3_pwm, seq_NR, min.score="80%", strand="*")
+# hits_NR <- as.data.frame(hits_NR)
+# saveRDS(hits_NR,"data/hits_files/FOXD3_hits_NR.RDS")
+
+hits_NR_FOXD3 %>% 
+  mutate(position=start-1000) %>% 
+  mutate(id_mrc="NR") %>% 
+  rbind(.,(hits_LR_FOXD3 %>% mutate(position=start-1000) %>% 
+  mutate(id_mrc="LR"))) %>% 
+   rbind(.,(hits_ESR_FOXD3 %>% mutate(position=start-1000) %>% 
+  mutate(id_mrc="ESR"))) %>% 
+   rbind(.,(hits_ESR_FOXD3_500 %>% mutate(position=start-500) %>% 
+  mutate(id_mrc="ESR_500"))) %>% 
+   rbind(.,(hits_EAR_FOXD3 %>% mutate(position=start-1000) %>% 
+  mutate(id_mrc="EAR"))) %>% 
+  ggplot(.,aes(position, color = id_mrc))+
+  geom_density(size=1.5) +
+  # geom_density(data=hits_LR_FOXD3, aes(position))+
+  theme_bw() +
+  geom_vline(xintercept = 0, linetype=2, color='red', size=2) +
+  xlab('Position around the FOXD3 peaks') +
+  ylab('Per position percentage\nof motif occurrence') +
+  ggtitle("Chromatin accessibility around FOXD3 binding site")+
+  theme(
+    axis.text = element_text(size=10, face='bold'),
+    axis.title = element_text(size=14,face="bold"),
+    plot.title = element_text(hjust = 0.5))
+
+```
+#### ZNF384
+```{r ZNF384}
+
+# motifs_ZNF384 = query(query(MotifDb, 'Hsapiens'), 'ZNF384')
+# ZNF384_motif <- motifs_ZNF384$`Hsapiens-jaspar2022-ZNF384-MA1125.1`
+# # 
+# # 
+# ZNF384_pwm = PWMatrix(
+#     ID = 'ZNF384',
+#     profileMatrix = ZNF384_motif)
+hits_ESR_ZNF384 <- readRDS("data/hits_files/ZNF384_hits_ESR.RDS")
+# hits = searchSeq(ZNF384_pwm, seq_ESR, min.score="80%", strand="*")
+# hits_ESR <- hits
+# hits_ESR <- as.data.frame(hits_ESR)
+# saveRDS(hits_ESR,"data/hits_files/ZNF384_hits_ESR.RDS")
+hits_ESR_ZNF384 %>%
+  mutate(position=start-1000) %>%
+  ggplot(.,aes(position))+
+  geom_density(size=2) +
+  theme_bw() +
+  geom_vline(xintercept = 0, linetype=2, color='red', size=2) +
+  xlab('Position around the ZNF384 peaks') +
+  ylab('Per position percentage\nof motif occurrence') +
+  ggtitle("ESR: ZNF384 binding")+
+  theme(
+    axis.text = element_text(size=10, face='bold'),
+    axis.title = element_text(size=14,face="bold"),
+    plot.title = element_text(hjust = 0.5))
+
+hits_EAR_ZNF384 <- readRDS("data/hits_files/ZNF384_hits_EAR.RDS")
+# hits_EAR <- searchSeq(ZNF384_pwm, seq_EAR, min.score="80%", strand="*")
+# hits_EAR <- as.data.frame(hits_EAR)
+# saveRDS(hits_EAR,"data/hits_files/ZNF384_hits_EAR.RDS")
+
+hits_EAR_ZNF384 %>%
+  mutate(position=start-1000) %>%
+  ggplot(.,aes(position))+
+  geom_density(size=2) +
+  theme_bw() +
+  geom_vline(xintercept = 0, linetype=2, color='red', size=2) +
+  xlab('Position around the ZNF384 peaks') +
+  ylab('Per position percentage\nof motif occurrence') +
+  ggtitle("EAR: ZNF384 binding")+
+  theme(
+    axis.text = element_text(size=10, face='bold'),
+    axis.title = element_text(size=14,face="bold"),
+    plot.title = element_text(hjust = 0.5))
+
+hits_LR_ZNF384 <- readRDS("data/hits_files/ZNF384_hits_LR.RDS")
+# hits_LR <- searchSeq(ZNF384_pwm, seq_LR, min.score="80%", strand="*")
+# hits_LR <- as.data.frame(hits_LR)
+# saveRDS(hits_LR,"data/hits_files/ZNF384_hits_LR.RDS")
+
+# hits_LR_ZNF384 %>% 
+#   mutate(position=start-1000) %>% 
+#   ggplot(.,aes(position))+
+#   geom_density(size=2) +
+#   theme_bw() +
+#   geom_vline(xintercept = 0, linetype=2, color='red', size=2) +
+#   xlab('Position around the ZNF384 peaks') +
+#   ylab('Per position percentage\nof motif occurrence') +
+#   ggtitle("LR: ZNF384 binding")+
+#   theme(
+#     axis.text = element_text(size=10, face='bold'),
+#     axis.title = element_text(size=14,face="bold"),
+#     plot.title = element_text(hjust = 0.5))
+hits_NR_ZNF384 <- readRDS("data/hits_files/ZNF384_hits_NR.RDS")
+# hits_NR <- searchSeq(ZNF384_pwm, seq_NR, min.score="80%", strand="*")
+# hits_NR <- as.data.frame(hits_NR)
+# saveRDS(hits_NR,"data/hits_files/ZNF384_hits_NR.RDS")
+
+hits_NR_ZNF384 %>%
+  mutate(position=start-1000) %>%
+  mutate(id_mrc="NR") %>%
+  rbind(.,(hits_LR_ZNF384 %>% mutate(position=start-1000) %>%
+  mutate(id_mrc="LR"))) %>%
+   rbind(.,(hits_ESR_ZNF384 %>% mutate(position=start-1000) %>%
+  mutate(id_mrc="ESR"))) %>%
+   rbind(.,(hits_EAR_ZNF384 %>% mutate(position=start-1000) %>%
+  mutate(id_mrc="EAR"))) %>%
+  ggplot(.,aes(position, color = id_mrc))+
+  geom_density(size=1.5) +
+  # geom_density(data=hits_LR_ZNF384, aes(position))+
+  theme_bw() +
+  geom_vline(xintercept = 0, linetype=2, color='red', size=2) +
+  xlab('Position around the ZNF384 peaks') +
+  ylab('Per position percentage\nof motif occurrence') +
+  ggtitle("Chromatin accessibility around ZNF384 binding site")+
+  theme(
+    axis.text = element_text(size=10, face='bold'),
+    axis.title = element_text(size=14,face="bold"),
+    plot.title = element_text(hjust = 0.5))
+
+
+
+
+```
+
+
+
+#### ZKSCAN3
+
+```{r ZKSCAN3}
+
+motifs_ZKSCAN3 = query(query(MotifDb, 'Hsapiens'), 'ZKSCAN3')
+ZKSCAN3_motif <- motifs_ZKSCAN3$`Hsapiens-jaspar2022-ZKSCAN3-MA1973.1`
+#
+#
+ZKSCAN3_pwm = PWMatrix(
+    ID = 'ZKSCAN3',
+    profileMatrix = ZKSCAN3_motif)
+hits_ESR_ZKSCAN3 <- readRDS("data/hits_files/ZKSCAN3_hits_ESR.RDS")
+ hits_ESR_ZKSCAN3_norm<-readRDS("data/hits_files/ZKSCAN3_hits_ESR_norm.RDS")
+
+# hits = searchSeq(ZKSCAN3_pwm, seq_ESR_norm, min.score="80%", strand="*")
+# hits_ESR <- hits
+# hits_ESR <- as.data.frame(hits_ESR)
+# saveRDS(hits_ESR,"data/hits_files/ZKSCAN3_hits_ESR_norm.RDS")
+# 
+hits_ESR_ZKSCAN3_norm %>%
+  mutate(position=start-1611.5) %>%
+  ggplot(.,aes(position))+
+  geom_density(size=2) +
+  theme_bw() +
+  geom_vline(xintercept = 0, linetype=2, color='red', size=2) +
+  xlab('Position around the ZKSCAN3 peaks') +
+  ylab('Per position percentage\nof motif occurrence') +
+  ggtitle("ESR: ZKSCAN3 binding")+
+  theme(
+    axis.text = element_text(size=10, face='bold'),
+    axis.title = element_text(size=14,face="bold"),
+    plot.title = element_text(hjust = 0.5))
+
+hits_EAR_ZKSCAN3 <- readRDS("data/hits_files/ZKSCAN3_hits_EAR.RDS")
+# hits_EAR <- searchSeq(ZKSCAN3_pwm, seq_EAR, min.score="80%", strand="*")
+# hits_EAR <- as.data.frame(hits_EAR)
+# saveRDS(hits_EAR,"data/hits_files/ZKSCAN3_hits_EAR.RDS")
+
+# hits_EAR_ZKSCAN3 %>%
+#   mutate(position=start-1000) %>%
+#   ggplot(.,aes(position))+
+#   geom_density(size=2) +
+#   theme_bw() +
+#   geom_vline(xintercept = 0, linetype=2, color='red', size=2) +
+#   xlab('Position around the ZKSCAN3 peaks') +
+#   ylab('Per position percentage\nof motif occurrence') +
+#   ggtitle("EAR: ZKSCAN3 binding")+
+#   theme(
+#     axis.text = element_text(size=10, face='bold'),
+#     axis.title = element_text(size=14,face="bold"),
+#     plot.title = element_text(hjust = 0.5))
+
+hits_LR_ZKSCAN3 <- readRDS("data/hits_files/ZKSCAN3_hits_LR.RDS")
+# hits_LR <- searchSeq(ZKSCAN3_pwm, seq_LR, min.score="80%", strand="*")
+# hits_LR <- as.data.frame(hits_LR)
+# saveRDS(hits_LR,"data/hits_files/ZKSCAN3_hits_LR.RDS")
+
+# hits_LR_ZKSCAN3 %>%
+#   mutate(position=start-1000) %>%
+#   ggplot(.,aes(position))+
+#   geom_density(size=2) +
+#   theme_bw() +
+#   geom_vline(xintercept = 0, linetype=2, color='red', size=2) +
+#   xlab('Position around the ZKSCAN3 peaks') +
+#   ylab('Per position percentage\nof motif occurrence') +
+#   ggtitle("LR: ZKSCAN3 binding")+
+#   theme(
+#     axis.text = element_text(size=10, face='bold'),
+#     axis.title = element_text(size=14,face="bold"),
+#     plot.title = element_text(hjust = 0.5))
+hits_NR_ZKSCAN3 <- readRDS("data/hits_files/ZKSCAN3_hits_NR.RDS")
+# hits_NR <- searchSeq(ZKSCAN3_pwm, seq_NR, min.score="80%", strand="*")
+# hits_NR <- as.data.frame(hits_NR)
+# saveRDS(hits_NR,"data/hits_files/ZKSCAN3_hits_NR.RDS")
+
+# hits_NR_ZKSCAN3 %>%
+#   mutate(position=start-1000) %>%
+#   mutate(id_mrc="NR") %>%
+#   rbind(.,(hits_LR_ZKSCAN3 %>% mutate(position=start-1000) %>%
+#   mutate(id_mrc="LR"))) %>%
+#    rbind(.,(hits_ESR_ZKSCAN3 %>% mutate(position=start-1000) %>%
+#   mutate(id_mrc="ESR"))) %>%
+#    rbind(.,(hits_EAR_ZKSCAN3 %>% mutate(position=start-1000) %>%
+#   mutate(id_mrc="EAR"))) %>%
+#   ggplot(.,aes(position, color = id_mrc))+
+#   geom_density(size=1.5) +
+#   # geom_density(data=hits_LR_ZKSCAN3, aes(position))+
+#   theme_bw() +
+#   geom_vline(xintercept = 0, linetype=2, color='red', size=2) +
+#   xlab('Position around the ZKSCAN3 peaks') +
+#   ylab('Per position percentage\nof motif occurrence') +
+#   ggtitle("Chromatin accessibility around ZKSCAN3 binding site")+
+#   theme(
+#     axis.text = element_text(size=10, face='bold'),
+#     axis.title = element_text(size=14,face="bold"),
+#     plot.title = element_text(hjust = 0.5))
+
+
+
+
+```
+
+
+
+
+#### PITX1
+
+```{r PITX1}
+# 
+# motifs_PITX1 = query(query(MotifDb, 'Hsapiens'), 'PITX1')
+#     PITX1_motif <- motifs_PITX1$`Hsapiens-jaspar2022-PITX1-MA0682.2`
+
+
+# PITX1_pwm = PWMatrix(
+#     ID = 'PITX1',
+#     profileMatrix = PITX1_motif)
+hits_ESR_PITX1 <- readRDS("data/hits_files/PITX1_hits_ESR.RDS")
+# hits_ESR = searchSeq(PITX1_pwm, seq_ESR, min.score="80%", strand="*")
+# hits_ESR <- hits
+# hits_ESR <- as.data.frame(hits_ESR)
+# saveRDS(hits_ESR,"data/hits_files/PITX1_hits_ESR.RDS")
+hits_ESR_PITX1 %>%
+  mutate(position=start-1000) %>%
+  ggplot(.,aes(position))+
+  geom_density(size=2) +
+  theme_bw() +
+  geom_vline(xintercept = 0, linetype=2, color='red', size=2) +
+  xlab('Position around the PITX1 peaks') +
+  ylab('Per position percentage\nof motif occurrence') +
+  ggtitle("ESR: PITX1 binding")+
+  theme(
+    axis.text = element_text(size=10, face='bold'),
+    axis.title = element_text(size=14,face="bold"),
+    plot.title = element_text(hjust = 0.5))
+
+hits_EAR_PITX1 <- readRDS("data/hits_files/PITX1_hits_EAR.RDS")
+# hits_EAR <- searchSeq(PITX1_pwm, seq_EAR, min.score="80%", strand="*")
+# hits_EAR <- as.data.frame(hits_EAR)
+# saveRDS(hits_EAR,"data/hits_files/PITX1_hits_EAR.RDS")
+
+hits_EAR_PITX1 %>%
+  mutate(position=start-1000) %>%
+  ggplot(.,aes(position))+
+  geom_density(size=2) +
+  theme_bw() +
+  geom_vline(xintercept = 0, linetype=2, color='red', size=2) +
+  xlab('Position around the PITX1 peaks') +
+  ylab('Per position percentage\nof motif occurrence') +
+  ggtitle("EAR: PITX1 binding")+
+  theme(
+    axis.text = element_text(size=10, face='bold'),
+    axis.title = element_text(size=14,face="bold"),
+    plot.title = element_text(hjust = 0.5))
+
+hits_LR_PITX1 <- readRDS("data/hits_files/PITX1_hits_LR.RDS")
+# hits_LR <- searchSeq(PITX1_pwm, seq_LR, min.score="80%", strand="*")
+# hits_LR <- as.data.frame(hits_LR)
+# saveRDS(hits_LR,"data/hits_files/PITX1_hits_LR.RDS")
+
+hits_LR_PITX1 %>%
+  mutate(position=start-1000) %>%
+  ggplot(.,aes(position))+
+  geom_density(size=2) +
+  theme_bw() +
+  geom_vline(xintercept = 0, linetype=2, color='red', size=2) +
+  xlab('Position around the PITX1  motif') +
+  ylab('Per position percentage\nof motif occurrence') +
+  ggtitle("LR: PITX1 binding")+
+  theme(
+    axis.text = element_text(size=10, face='bold'),
+    axis.title = element_text(size=14,face="bold"),
+    plot.title = element_text(hjust = 0.5))
+hits_NR_PITX1 <- readRDS("data/hits_files/PITX1_hits_NR.RDS")
+# hits_NR <- searchSeq(PITX1_pwm, seq_NR, min.score="80%", strand="*")
+# hits_NR <- as.data.frame(hits_NR)
+# saveRDS(hits_NR,"data/hits_files/PITX1_hits_NR.RDS")
+
+hits_NR_PITX1 %>%
+  mutate(position=start-1000) %>%
+  mutate(id_mrc="NR") %>%
+  rbind(.,(hits_LR_PITX1 %>% mutate(position=start-1000) %>%
+  mutate(id_mrc="LR"))) %>%
+   rbind(.,(hits_ESR_PITX1 %>% mutate(position=start-1000) %>%
+  mutate(id_mrc="ESR"))) %>%
+   rbind(.,(hits_EAR_PITX1 %>% mutate(position=start-1000) %>%
+  mutate(id_mrc="EAR"))) %>%
+  ggplot(.,aes(position, color = id_mrc))+
+  geom_density(size=1.5) +
+  # geom_density(data=hits_LR_PITX1, aes(position))+
+  theme_bw() +
+  geom_vline(xintercept = 0, linetype=2, color='red', size=2) +
+  xlab('Position around the PITX1  motif') +
+  ylab('Per position percentage\nof motif occurrence') +
+  ggtitle("Chromatin accessibility around PITX1 binding site")+
+  theme(
+    axis.text = element_text(size=10, face='bold'),
+    axis.title = element_text(size=14,face="bold"),
+    plot.title = element_text(hjust = 0.5))
+
+
+
+
+```
+
+
+#### TP53
+
+```{r TP53}
+# 
+# motifs_TP53 = query(query(MotifDb, 'Hsapiens'), 'TP53')
+#     TP53_motif <- motifs_TP53$`Hsapiens-JASPAR_CORE-TP53-MA0106.1`
+# 
+# 
+# TP53_pwm = PWMatrix(
+#     ID = 'TP53',
+#     profileMatrix = TP53_motif)
+hits_ESR_TP53 <- readRDS("data/hits_files/TP53_hits_ESR.RDS")
+# hits_ESR = searchSeq(TP53_pwm, seq_ESR, min.score="80%", strand="*")
+# hits_ESR <- hits
+# hits_ESR <- as.data.frame(hits_ESR)
+# saveRDS(hits_ESR,"data/hits_files/TP53_hits_ESR.RDS")
+# hits_ESR_TP53 %>%
+#   mutate(position=start-1000) %>%
+#   ggplot(.,aes(position))+
+#   geom_density(size=2) +
+#   theme_bw() +
+#   geom_vline(xintercept = 0, linetype=2, color='red', size=2) +
+#   xlab('Position around the TP53  motif') +
+#   ylab('Per position percentage\nof motif occurrence') +
+#   ggtitle("ESR: TP53 binding")+
+#   theme(
+#     axis.text = element_text(size=10, face='bold'),
+#     axis.title = element_text(size=14,face="bold"),
+#     plot.title = element_text(hjust = 0.5))
+
+hits_EAR_TP53 <- readRDS("data/hits_files/TP53_hits_EAR.RDS")
+# hits_EAR <- searchSeq(TP53_pwm, seq_EAR, min.score="80%", strand="*")
+# hits_EAR <- as.data.frame(hits_EAR)
+# saveRDS(hits_EAR,"data/hits_files/TP53_hits_EAR.RDS")
+
+# hits_EAR_TP53 %>%
+#   mutate(position=start-1000) %>%
+#   ggplot(.,aes(position))+
+#   geom_density(size=2) +
+#   theme_bw() +
+#   geom_vline(xintercept = 0, linetype=2, color='red', size=2) +
+#   xlab('Position around the TP53  motif') +
+#   ylab('Per position percentage\nof motif occurrence') +
+#   ggtitle("EAR: TP53 binding")+
+#   theme(
+#     axis.text = element_text(size=10, face='bold'),
+#     axis.title = element_text(size=14,face="bold"),
+#     plot.title = element_text(hjust = 0.5))
+
+hits_LR_TP53 <- readRDS("data/hits_files/TP53_hits_LR.RDS")
+# hits_LR <- searchSeq(TP53_pwm, seq_LR, min.score="80%", strand="*")
+# hits_LR <- as.data.frame(hits_LR)
+# saveRDS(hits_LR,"data/hits_files/TP53_hits_LR.RDS")
+
+# hits_LR_TP53 %>%
+#   mutate(position=start-1000) %>%
+#   ggplot(.,aes(position))+
+#   geom_density(size=2) +
+#   theme_bw() +
+#   geom_vline(xintercept = 0, linetype=2, color='red', size=2) +
+#   xlab('Position around the TP53  motif') +
+#   ylab('Per position percentage\nof motif occurrence') +
+#   ggtitle("LR: TP53 binding")+
+#   theme(
+#     axis.text = element_text(size=10, face='bold'),
+#     axis.title = element_text(size=14,face="bold"),
+#     plot.title = element_text(hjust = 0.5))
+
+hits_NR_TP53 <- readRDS("data/hits_files/TP53_hits_NR.RDS")
+# hits_NR <- searchSeq(TP53_pwm, seq_NR, min.score="80%", strand="*")
+# hits_NR <- as.data.frame(hits_NR)
+# saveRDS(hits_NR,"data/hits_files/TP53_hits_NR.RDS")
+
+hits_NR_TP53 %>%
+  mutate(position=start-1000) %>%
+  mutate(id_mrc="NR") %>%
+  rbind(.,(hits_LR_TP53 %>% mutate(position=start-1000) %>%
+  mutate(id_mrc="LR"))) %>%
+   rbind(.,(hits_ESR_TP53 %>% mutate(position=start-1000) %>%
+  mutate(id_mrc="ESR"))) %>%
+   rbind(.,(hits_EAR_TP53 %>% mutate(position=start-1000) %>%
+  mutate(id_mrc="EAR"))) %>%
+  ggplot(.,aes(position, color = id_mrc))+
+  geom_density(size=1.5) +
+  # geom_density(data=hits_LR_TP53, aes(position))+
+  theme_bw() +
+  geom_vline(xintercept = 0, linetype=2, color='red', size=2) +
+  xlab('Position around the TP53 motif') +
+  ylab('Per position percentage\nof motif occurrence') +
+  ggtitle("Chromatin accessibility around TP53 binding site")+
+  theme(
+    axis.text = element_text(size=10, face='bold'),
+    axis.title = element_text(size=14,face="bold"),
+    plot.title = element_text(hjust = 0.5))
+# 
+
+
+
+```
+
+
+
+
+
+
+#### NRF1
+
+```{r NRF1}
+# 
+# motifs_NRF1 = query(query(MotifDb, 'Hsapiens'), 'NRF1')
+#     NRF1_motif <- motifs_NRF1$`Hsapiens-jaspar2018-NRF1-MA0506.1`
+# # 
+# # 
+# NRF1_pwm = PWMatrix(
+#     ID = 'NRF1',
+#     profileMatrix = NRF1_motif)
+hits_ESR_NRF1 <- readRDS("data/hits_files/NRF1_hits_ESR.RDS")
+# hits_ESR = searchSeq(NRF1_pwm, seq_ESR, min.score="80%", strand="*")
+# hits_ESR <- hits
+# hits_ESR <- as.data.frame(hits_ESR)
+# saveRDS(hits_ESR,"data/hits_files/NRF1_hits_ESR.RDS")
+# hits_ESR_NRF1 %>%
+#   mutate(position=start-1000) %>%
+#   ggplot(.,aes(position))+
+#   geom_density(size=2) +
+#   theme_bw() +
+#   geom_vline(xintercept = 0, linetype=2, color='red', size=2) +
+#   xlab('Position around the NRF1  motif') +
+#   ylab('Per position percentage\nof motif occurrence') +
+#   ggtitle("ESR: NRF1 binding")+
+#   theme(
+#     axis.text = element_text(size=10, face='bold'),
+#     axis.title = element_text(size=14,face="bold"),
+#     plot.title = element_text(hjust = 0.5))
+
+hits_EAR_NRF1 <- readRDS("data/hits_files/NRF1_hits_EAR.RDS")
+# hits_EAR <- searchSeq(NRF1_pwm, seq_EAR, min.score="80%", strand="*")
+# hits_EAR <- as.data.frame(hits_EAR)
+# saveRDS(hits_EAR,"data/hits_files/NRF1_hits_EAR.RDS")
+
+# hits_EAR_NRF1 %>%
+#   mutate(position=start-1000) %>%
+#   ggplot(.,aes(position))+
+#   geom_density(size=2) +
+#   theme_bw() +
+#   geom_vline(xintercept = 0, linetype=2, color='red', size=2) +
+#   xlab('Position around the NRF1  motif') +
+#   ylab('Per position percentage\nof motif occurrence') +
+#   ggtitle("EAR: NRF1 binding")+
+#   theme(
+#     axis.text = element_text(size=10, face='bold'),
+#     axis.title = element_text(size=14,face="bold"),
+#     plot.title = element_text(hjust = 0.5))
+# 
+hits_LR_NRF1 <- readRDS("data/hits_files/NRF1_hits_LR.RDS")
+# hits_LR <- searchSeq(NRF1_pwm, seq_LR, min.score="80%", strand="*")
+# hits_LR <- as.data.frame(hits_LR)
+# saveRDS(hits_LR,"data/hits_files/NRF1_hits_LR.RDS")
+
+# hits_LR_NRF1 %>%
+#   mutate(position=start-1000) %>%
+#   ggplot(.,aes(position))+
+#   geom_density(size=2) +
+#   theme_bw() +
+#   geom_vline(xintercept = 0, linetype=2, color='red', size=2) +
+#   xlab('Position around the NRF1  motif') +
+#   ylab('Per position percentage\nof motif occurrence') +
+#   ggtitle("LR: NRF1 binding")+
+#   theme(
+#     axis.text = element_text(size=10, face='bold'),
+#     axis.title = element_text(size=14,face="bold"),
+#     plot.title = element_text(hjust = 0.5))
+
+hits_NR_NRF1 <- readRDS("data/hits_files/NRF1_hits_NR.RDS")
+# hits_NR <- searchSeq(NRF1_pwm, seq_NR, min.score="80%", strand="*")
+# hits_NR <- as.data.frame(hits_NR)
+# saveRDS(hits_NR,"data/hits_files/NRF1_hits_NR.RDS")
+
+hits_NR_NRF1 %>%
+  mutate(position=start-1000) %>%
+  mutate(id_mrc="NR") %>%
+  rbind(.,(hits_LR_NRF1 %>% mutate(position=start-1000) %>%
+  mutate(id_mrc="LR"))) %>%
+   rbind(.,(hits_ESR_NRF1 %>% mutate(position=start-1000) %>%
+  mutate(id_mrc="ESR"))) %>%
+   rbind(.,(hits_EAR_NRF1 %>% mutate(position=start-1000) %>%
+  mutate(id_mrc="EAR"))) %>%
+  ggplot(.,aes(position, color = id_mrc))+
+  geom_density(size=1.5) +
+  # geom_density(data=hits_LR_NRF1, aes(position))+
+  theme_bw() +
+  geom_vline(xintercept = 0, linetype=2, color='red', size=2) +
+  xlab('Position around the NRF1  motif') +
+  ylab('Per position percentage\nof motif occurrence') +
+  ggtitle("Chromatin accessibility around NRF1 binding site")+
+  theme(
+    axis.text = element_text(size=10, face='bold'),
+    axis.title = element_text(size=14,face="bold"),
+    plot.title = element_text(hjust = 0.5))
+
+
+
+
+```
+
+
+
+
+
+
+#### NFIC_TLX1
+
+```{r NFIC_TLX1}
+# 
+# motifs_NFIC_TLX1 = query(query(MotifDb, 'Hsapiens'), 'NFIC::TLX1')
+#     NFIC_TLX1_motif <- motifs_NFIC_TLX1$`Hsapiens-jaspar2022-NFIC::TLX1-MA0119.1`
+# #
+# # # 
+# NFIC_TLX1_pwm = PWMatrix(
+#     ID = 'NFIC_TLX1',
+#     profileMatrix = NFIC_TLX1_motif)
+hits_ESR_NFIC_TLX1 <- readRDS("data/hits_files/NFIC_TLX1_hits_ESR.RDS")
+# hits_ESR = searchSeq(NFIC_TLX1_pwm, seq_ESR, min.score="80%", strand="*")
+# 
+# hits_ESR <- as.data.frame(hits_ESR)
+# saveRDS(hits_ESR,"data/hits_files/NFIC_TLX1_hits_ESR.RDS")
+# hits_ESR_NFIC_TLX1 %>%
+#   mutate(position=start-1000) %>%
+#   ggplot(.,aes(position))+
+#   geom_density(size=2) +
+#   theme_bw() +
+#   geom_vline(xintercept = 0, linetype=2, color='red', size=2) +
+#   xlab('Position around the NFIC_TLX1  motif') +
+#   ylab('Per position percentage\nof motif occurrence') +
+#   ggtitle("ESR: NFIC_TLX1 binding")+
+#   theme(
+#     axis.text = element_text(size=10, face='bold'),
+#     axis.title = element_text(size=14,face="bold"),
+#     plot.title = element_text(hjust = 0.5))
+
+hits_EAR_NFIC_TLX1 <- readRDS("data/hits_files/NFIC_TLX1_hits_EAR.RDS")
+# hits_EAR <- searchSeq(NFIC_TLX1_pwm, seq_EAR, min.score="80%", strand="*")
+# hits_EAR <- as.data.frame(hits_EAR)
+# saveRDS(hits_EAR,"data/hits_files/NFIC_TLX1_hits_EAR.RDS")
+
+# hits_EAR_NFIC_TLX1 %>%
+#   mutate(position=start-1000) %>%
+#   ggplot(.,aes(position))+
+#   geom_density(size=2) +
+#   theme_bw() +
+#   geom_vline(xintercept = 0, linetype=2, color='red', size=2) +
+#   xlab('Position around the NFIC_TLX1  motif') +
+#   ylab('Per position percentage\nof motif occurrence') +
+#   ggtitle("EAR: NFIC_TLX1 binding")+
+#   theme(
+#     axis.text = element_text(size=10, face='bold'),
+#     axis.title = element_text(size=14,face="bold"),
+#     plot.title = element_text(hjust = 0.5))
+# 
+hits_LR_NFIC_TLX1 <- readRDS("data/hits_files/NFIC_TLX1_hits_LR.RDS")
+# hits_LR <- searchSeq(NFIC_TLX1_pwm, seq_LR, min.score="80%", strand="*")
+# hits_LR <- as.data.frame(hits_LR)
+# saveRDS(hits_LR,"data/hits_files/NFIC_TLX1_hits_LR.RDS")
+
+# hits_LR_NFIC_TLX1 %>%
+#   mutate(position=start-1000) %>%
+#   ggplot(.,aes(position))+
+#   geom_density(size=2) +
+#   theme_bw() +
+#   geom_vline(xintercept = 0, linetype=2, color='red', size=2) +
+#   xlab('Position around the NFIC_TLX1  motif') +
+#   ylab('Per position percentage\nof motif occurrence') +
+#   ggtitle("LR: NFIC_TLX1 binding")+
+#   theme(
+#     axis.text = element_text(size=10, face='bold'),
+#     axis.title = element_text(size=14,face="bold"),
+#     plot.title = element_text(hjust = 0.5))
+
+hits_NR_NFIC_TLX1 <- readRDS("data/hits_files/NFIC_TLX1_hits_NR.RDS")
+# hits_NR <- searchSeq(NFIC_TLX1_pwm, seq_NR, min.score="80%", strand="*")
+# hits_NR <- as.data.frame(hits_NR)
+# saveRDS(hits_NR,"data/hits_files/NFIC_TLX1_hits_NR.RDS")
+
+hits_NR_NFIC_TLX1 %>%
+  mutate(position=start-1000) %>%
+  mutate(id_mrc="NR") %>%
+  rbind(.,(hits_LR_NFIC_TLX1 %>% mutate(position=start-1000) %>%
+  mutate(id_mrc="LR"))) %>%
+   rbind(.,(hits_ESR_NFIC_TLX1 %>% mutate(position=start-1000) %>%
+  mutate(id_mrc="ESR"))) %>%
+   rbind(.,(hits_EAR_NFIC_TLX1 %>% mutate(position=start-1000) %>%
+  mutate(id_mrc="EAR"))) %>%
+  ggplot(.,aes(position, color = id_mrc))+
+  geom_density(size=1.5) +
+  # geom_density(data=hits_LR_NFIC_TLX1, aes(position))+
+  theme_bw() +
+  geom_vline(xintercept = 0, linetype=2, color='red', size=2) +
+  xlab('Position around the NFIC_TLX1  motif') +
+  ylab('Per position percentage\nof motif occurrence') +
+  ggtitle("Chromatin accessibility around NFIC_TLX1 binding site")+
+  theme(
+    axis.text = element_text(size=10, face='bold'),
+    axis.title = element_text(size=14,face="bold"),
+    plot.title = element_text(hjust = 0.5))#+
+  # coord_cartesian(xlim= c(-500,500))
+
+
+
+
+```
+
+
+
+
+
+#### PRDM1
+
+```{r PRDM1}
+# 
+# motifs_PRDM1 = query(query(MotifDb, 'Hsapiens'), 'PRDM1')
+#     PRDM1_motif <- motifs_PRDM1$`Hsapiens-jaspar2022-PRDM1-MA0508.3`
+# #
+# PRDM1_pwm = PWMatrix(
+#     ID = 'PRDM1',
+#     profileMatrix = PRDM1_motif)
+hits_ESR_PRDM1 <- readRDS("data/hits_files/PRDM1_hits_ESR.RDS")
+# hits_ESR = searchSeq(PRDM1_pwm, seq_ESR, min.score="80%", strand="*")
+# 
+# hits_ESR <- as.data.frame(hits_ESR)
+# saveRDS(hits_ESR,"data/hits_files/PRDM1_hits_ESR.RDS")
+
+hits_EAR_PRDM1 <- readRDS("data/hits_files/PRDM1_hits_EAR.RDS")
+# hits_EAR <- searchSeq(PRDM1_pwm, seq_EAR, min.score="80%", strand="*")
+# hits_EAR <- as.data.frame(hits_EAR)
+# saveRDS(hits_EAR,"data/hits_files/PRDM1_hits_EAR.RDS")
+
+
+hits_LR_PRDM1 <- readRDS("data/hits_files/PRDM1_hits_LR.RDS")
+# hits_LR <- searchSeq(PRDM1_pwm, seq_LR, min.score="80%", strand="*")
+# hits_LR <- as.data.frame(hits_LR)
+# saveRDS(hits_LR,"data/hits_files/PRDM1_hits_LR.RDS")
+
+
+
+hits_NR_PRDM1 <- readRDS("data/hits_files/PRDM1_hits_NR.RDS")
+# hits_NR <- searchSeq(PRDM1_pwm, seq_NR, min.score="80%", strand="*")
+# hits_NR <- as.data.frame(hits_NR)
+# saveRDS(hits_NR,"data/hits_files/PRDM1_hits_NR.RDS")
+
+hits_NR_PRDM1 %>%
+  mutate(position=start-1000) %>%
+  mutate(id_mrc="NR") %>%
+  rbind(.,(hits_LR_PRDM1 %>% mutate(position=start-1000) %>%
+  mutate(id_mrc="LR"))) %>%
+   rbind(.,(hits_ESR_PRDM1 %>% mutate(position=start-1000) %>%
+  mutate(id_mrc="ESR"))) %>%
+   rbind(.,(hits_EAR_PRDM1 %>% mutate(position=start-1000) %>%
+  mutate(id_mrc="EAR"))) %>%
+  ggplot(.,aes(position, color = id_mrc))+
+  geom_density(size=1.5) +
+  # geom_density(data=hits_LR_PRDM1, aes(position))+
+  theme_bw() +
+  geom_vline(xintercept = 0, linetype=2, color='red', size=2) +
+  xlab('Position around the PRDM1  motif') +
+  ylab('Per position percentage\nof motif occurrence') +
+  ggtitle("Chromatin accessibility around PRDM1 binding site")+
+  theme(
+    axis.text = element_text(size=10, face='bold'),
+    axis.title = element_text(size=14,face="bold"),
+    plot.title = element_text(hjust = 0.5))+
+  coord_cartesian(xlim= c(-250,250))
+
+
+
+
+```
+
+
+
+
+#### TBX1
+
+```{r TBX1}
+# 
+# motifs_TBX1 = query(query(MotifDb, 'Hsapiens'), 'TBX1')
+#     TBX1_motif <- motifs_TBX1$`Hsapiens-jaspar2022-TBX1-MA0805.1`
+# #
+# #
+# TBX1_pwm = PWMatrix(
+#     ID = 'TBX1',
+#     profileMatrix = TBX1_motif)
+hits_ESR_TBX1 <- readRDS("data/hits_files/TBX1_hits_ESR.RDS")
+# hits_ESR = searchSeq(TBX1_pwm, seq_ESR, min.score="80%", strand="*")
+# 
+# hits_ESR <- as.data.frame(hits_ESR)
+# saveRDS(hits_ESR,"data/hits_files/TBX1_hits_ESR.RDS")
+# hits_ESR_TBX1 %>%
+#   mutate(position=start-1000) %>%
+#   ggplot(.,aes(position))+
+#   geom_density(size=2) +
+#   theme_bw() +
+#   geom_vline(xintercept = 0, linetype=2, color='red', size=2) +
+#   xlab('Position around the TBX1  motif') +
+#   ylab('Per position percentage\nof motif occurrence') +
+#   ggtitle("ESR: TBX1 binding")+
+#   theme(
+#     axis.text = element_text(size=10, face='bold'),
+#     axis.title = element_text(size=14,face="bold"),
+#     plot.title = element_text(hjust = 0.5))
+
+hits_EAR_TBX1 <- readRDS("data/hits_files/TBX1_hits_EAR.RDS")
+# hits_EAR <- searchSeq(TBX1_pwm, seq_EAR, min.score="80%", strand="*")
+# hits_EAR <- as.data.frame(hits_EAR)
+# saveRDS(hits_EAR,"data/hits_files/TBX1_hits_EAR.RDS")
+
+# hits_EAR_TBX1 %>%
+#   mutate(position=start-1000) %>%
+#   ggplot(.,aes(position))+
+#   geom_density(size=2) +
+#   theme_bw() +
+#   geom_vline(xintercept = 0, linetype=2, color='red', size=2) +
+#   xlab('Position around the TBX1  motif') +
+#   ylab('Per position percentage\nof motif occurrence') +
+#   ggtitle("EAR: TBX1 binding")+
+#   theme(
+#     axis.text = element_text(size=10, face='bold'),
+#     axis.title = element_text(size=14,face="bold"),
+#     plot.title = element_text(hjust = 0.5))
+# 
+hits_LR_TBX1 <- readRDS("data/hits_files/TBX1_hits_LR.RDS")
+# hits_LR <- searchSeq(TBX1_pwm, seq_LR, min.score="80%", strand="*")
+# hits_LR <- as.data.frame(hits_LR)
+# saveRDS(hits_LR,"data/hits_files/TBX1_hits_LR.RDS")
+
+# hits_LR_TBX1 %>%
+#   mutate(position=start-1000) %>%
+#   ggplot(.,aes(position))+
+#   geom_density(size=2) +
+#   theme_bw() +
+#   geom_vline(xintercept = 0, linetype=2, color='red', size=2) +
+#   xlab('Position around the TBX1  motif') +
+#   ylab('Per position percentage\nof motif occurrence') +
+#   ggtitle("LR: TBX1 binding")+
+#   theme(
+#     axis.text = element_text(size=10, face='bold'),
+#     axis.title = element_text(size=14,face="bold"),
+#     plot.title = element_text(hjust = 0.5))
+
+hits_NR_TBX1 <- readRDS("data/hits_files/TBX1_hits_NR.RDS")
+# hits_NR <- searchSeq(TBX1_pwm, seq_NR, min.score="80%", strand="*")
+# hits_NR <- as.data.frame(hits_NR)
+# saveRDS(hits_NR,"data/hits_files/TBX1_hits_NR.RDS")
+
+hits_NR_TBX1 %>%
+  mutate(position=start-1000) %>%
+  mutate(id_mrc="NR") %>%
+  rbind(.,(hits_LR_TBX1 %>% mutate(position=start-1000) %>%
+  mutate(id_mrc="LR"))) %>%
+   rbind(.,(hits_ESR_TBX1 %>% mutate(position=start-1000) %>%
+  mutate(id_mrc="ESR"))) %>%
+   rbind(.,(hits_EAR_TBX1 %>% mutate(position=start-1000) %>%
+  mutate(id_mrc="EAR"))) %>%
+  ggplot(.,aes(position, color = id_mrc))+
+  geom_density(size=1.5) +
+  # geom_density(data=hits_LR_TBX1, aes(position))+
+  theme_bw() +
+  geom_vline(xintercept = 0, linetype=2, color='red', size=2) +
+  xlab('Position around the TBX1  motif') +
+  ylab('Per position percentage\nof motif occurrence') +
+  ggtitle("Chromatin accessibility around TBX1 binding site")+
+  theme(
+    axis.text = element_text(size=10, face='bold'),
+    axis.title = element_text(size=14,face="bold"),
+    plot.title = element_text(hjust = 0.5))+
+  coord_cartesian(xlim= c(-250,250))
+
+```
+
+#### GLI1
+
+```{r GLI1}
+# 
+# motifs_GLI1 = query(query(MotifDb, 'Hsapiens'), 'GLI1')
+#     GLI1_motif <- motifs_GLI1$`Hsapiens-HOCOMOCOv10-GLI1_HUMAN.H10MO.C`
+# # # 
+# # # 
+# GLI1_pwm = PWMatrix(
+#     ID = 'GLI1',
+#     profileMatrix = GLI1_motif)
+hits_ESR_GLI1 <- readRDS("data/hits_files/GLI1_hits_ESR.RDS")
+# hits_ESR = searchSeq(GLI1_pwm, seq_ESR, min.score="80%", strand="*")
+# 
+# hits_ESR <- as.data.frame(hits_ESR)
+# saveRDS(hits_ESR,"data/hits_files/GLI1_hits_ESR.RDS")
+# hits_ESR_GLI1 %>%
+#   mutate(position=start-1000) %>%
+#   ggplot(.,aes(position))+
+#   geom_density(size=2) +
+#   theme_bw() +
+#   geom_vline(xintercept = 0, linetype=2, color='red', size=2) +
+#   xlab('Position around the GLI1  motif') +
+#   ylab('Per position percentage\nof motif occurrence') +
+#   ggtitle("ESR: GLI1 binding")+
+#   theme(
+#     axis.text = element_text(size=10, face='bold'),
+#     axis.title = element_text(size=14,face="bold"),
+#     plot.title = element_text(hjust = 0.5))
+
+hits_EAR_GLI1 <- readRDS("data/hits_files/GLI1_hits_EAR.RDS")
+# hits_EAR <- searchSeq(GLI1_pwm, seq_EAR, min.score="80%", strand="*")
+# hits_EAR <- as.data.frame(hits_EAR)
+# saveRDS(hits_EAR,"data/hits_files/GLI1_hits_EAR.RDS")
+
+# hits_EAR_GLI1 %>%
+#   mutate(position=start-1000) %>%
+#   ggplot(.,aes(position))+
+#   geom_density(size=2) +
+#   theme_bw() +
+#   geom_vline(xintercept = 0, linetype=2, color='red', size=2) +
+#   xlab('Position around the GLI1  motif') +
+#   ylab('Per position percentage\nof motif occurrence') +
+#   ggtitle("EAR: GLI1 binding")+
+#   theme(
+#     axis.text = element_text(size=10, face='bold'),
+#     axis.title = element_text(size=14,face="bold"),
+#     plot.title = element_text(hjust = 0.5))
+# 
+hits_LR_GLI1 <- readRDS("data/hits_files/GLI1_hits_LR.RDS")
+# hits_LR <- searchSeq(GLI1_pwm, seq_LR, min.score="80%", strand="*")
+# hits_LR <- as.data.frame(hits_LR)
+# saveRDS(hits_LR,"data/hits_files/GLI1_hits_LR.RDS")
+
+# hits_LR_GLI1 %>%
+#   mutate(position=start-1000) %>%
+#   ggplot(.,aes(position))+
+#   geom_density(size=2) +
+#   theme_bw() +
+#   geom_vline(xintercept = 0, linetype=2, color='red', size=2) +
+#   xlab('Position around the GLI1  motif') +
+#   ylab('Per position percentage\nof motif occurrence') +
+#   ggtitle("LR: GLI1 binding")+
+#   theme(
+#     axis.text = element_text(size=10, face='bold'),
+#     axis.title = element_text(size=14,face="bold"),
+#     plot.title = element_text(hjust = 0.5))
+
+hits_NR_GLI1 <- readRDS("data/hits_files/GLI1_hits_NR.RDS")
+# hits_NR <- searchSeq(GLI1_pwm, seq_NR, min.score="80%", strand="*")
+# hits_NR <- as.data.frame(hits_NR)
+# saveRDS(hits_NR,"data/hits_files/GLI1_hits_NR.RDS")
+
+hits_NR_GLI1 %>%
+  mutate(position=start-1000) %>%
+  mutate(id_mrc="NR") %>%
+  rbind(.,(hits_LR_GLI1 %>% mutate(position=start-1000) %>%
+  mutate(id_mrc="LR"))) %>%
+   rbind(.,(hits_ESR_GLI1 %>% mutate(position=start-1000) %>%
+  mutate(id_mrc="ESR"))) %>%
+   rbind(.,(hits_EAR_GLI1 %>% mutate(position=start-1000) %>%
+  mutate(id_mrc="EAR"))) %>%
+  ggplot(.,aes(position, color = id_mrc))+
+  geom_density(size=1.5) +
+  # geom_density(data=hits_LR_GLI1, aes(position))+
+  theme_bw() +
+  geom_vline(xintercept = 0, linetype=2, color='red', size=2) +
+  xlab('Position around the GLI1  motif') +
+  ylab('Per position percentage\nof motif occurrence') +
+  ggtitle("Chromatin accessibility around GLI1 binding site")+
+  theme(
+    axis.text = element_text(size=10, face='bold'),
+    axis.title = element_text(size=14,face="bold"),
+    plot.title = element_text(hjust = 0.5))+
+  coord_cartesian(xlim= c(-250,250))
+
+```
+
+### Looking at SEA data
+
+
+```{r  SEA data}
+
+
+
+```
+
+
+
