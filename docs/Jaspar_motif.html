@@ -523,15 +523,15 @@ project makes it easier to run your code on other machines.</p>
 <div class="panel panel-default">
 <div class="panel-heading">
 <p class="panel-title">
-<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomreneeisnowhereATAClearningtreec58f48cadf8044ec5f0185a23ba57a8607e76c32targetblankc58f48ca">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomreneeisnowhereATAClearningtreeefbd424dde9c21c7a01bf6f170b0a01f7c6a303dtargetblankefbd424a">
 <span class="glyphicon glyphicon-ok text-success"
 aria-hidden="true"></span> <strong>Repository version:</strong>
-<a href="https://github.com/reneeisnowhere/ATAC_learning/tree/c58f48cadf8044ec5f0185a23ba57a8607e76c32" target="_blank">c58f48c</a>
+<a href="https://github.com/reneeisnowhere/ATAC_learning/tree/efbd424dde9c21c7a01bf6f170b0a01f7c6a303d" target="_blank">efbd424</a>
 </a>
 </p>
 </div>
 <div
-id="strongRepositoryversionstrongahrefhttpsgithubcomreneeisnowhereATAClearningtreec58f48cadf8044ec5f0185a23ba57a8607e76c32targetblankc58f48ca"
+id="strongRepositoryversionstrongahrefhttpsgithubcomreneeisnowhereATAClearningtreeefbd424dde9c21c7a01bf6f170b0a01f7c6a303dtargetblankefbd424a"
 class="panel-collapse collapse">
 <div class="panel-body">
 <p>
@@ -541,7 +541,7 @@ reproducibility.
 </p>
 <p>
 The results in this page were generated with repository version
-<a href="https://github.com/reneeisnowhere/ATAC_learning/tree/c58f48cadf8044ec5f0185a23ba57a8607e76c32" target="_blank">c58f48c</a>.
+<a href="https://github.com/reneeisnowhere/ATAC_learning/tree/efbd424dde9c21c7a01bf6f170b0a01f7c6a303d" target="_blank">efbd424</a>.
 See the <em>Past versions</em> tab to see a history of the changes made
 to the R Markdown and HTML files.
 </p>
@@ -715,7 +715,6 @@ Unstaged changes:
     Modified:   analysis/Enrichment_motif.Rmd
     Modified:   analysis/Peak_analysis.Rmd
     Modified:   analysis/Smaller_set_DAR.Rmd
-    Modified:   analysis/index.Rmd
 
 </code></pre>
 <p>
@@ -761,6 +760,40 @@ Message
 </tr>
 </thead>
 <tbody>
+<tr>
+<td>
+Rmd
+</td>
+<td>
+<a href="https://github.com/reneeisnowhere/ATAC_learning/blob/efbd424dde9c21c7a01bf6f170b0a01f7c6a303d/analysis/Jaspar_motif.Rmd" target="_blank">efbd424</a>
+</td>
+<td>
+reneeisnowhere
+</td>
+<td>
+2024-05-03
+</td>
+<td>
+first commit
+</td>
+</tr>
+<tr>
+<td>
+html
+</td>
+<td>
+<a href="https://rawcdn.githack.com/reneeisnowhere/ATAC_learning/59f30bb6f750b769fa0ba657e2d2a6231423c7ac/docs/Jaspar_motif.html" target="_blank">59f30bb</a>
+</td>
+<td>
+reneeisnowhere
+</td>
+<td>
+2024-05-03
+</td>
+<td>
+Build site.
+</td>
+</tr>
 <tr>
 <td>
 Rmd
@@ -1666,7 +1699,31 @@ STREME-8
 </tbody>
 </table>
 </div>
-<pre class="r"><code># xstreme_EAR_v_LR %&gt;% 
+<pre class="r"><code>### selecting just the list of names and checking for expression
+
+
+gene_list_SEA &lt;- xstreme_EAR_v_NR %&gt;% 
+  dplyr::select(SIM_MOTIF,ALT_ID, ID,EVALUE) %&gt;% 
+  arrange(.,EVALUE) %&gt;% 
+  separate(SIM_MOTIF, into= c(&quot;SIM_MOTIF&quot;, &quot;NAME&quot;), sep= &quot; &quot;) %&gt;% 
+  mutate(MCR=&quot;EAR&quot;) %&gt;% 
+  bind_rows(xstreme_ESR_v_NR %&gt;% 
+  dplyr::select(SIM_MOTIF,ALT_ID, ID,EVALUE) %&gt;% 
+  arrange(.,EVALUE) %&gt;% 
+  separate(SIM_MOTIF, into= c(&quot;SIM_MOTIF&quot;, &quot;NAME&quot;), sep= &quot; &quot;) %&gt;% 
+ mutate(MCR=&quot;ESR&quot;)) %&gt;% 
+  bind_rows(xstreme_LR_v_NR %&gt;% 
+  dplyr::select(SIM_MOTIF,ALT_ID, ID,EVALUE) %&gt;% 
+  arrange(.,EVALUE) %&gt;% 
+  separate(SIM_MOTIF, into= c(&quot;SIM_MOTIF&quot;, &quot;NAME&quot;), sep= &quot; &quot;) %&gt;% 
+    mutate(MCR=&quot;LR&quot;)) %&gt;% 
+  dplyr::filter(!is.na(NAME)) %&gt;%  
+  mutate(NAME= gsub(&quot;[()]&quot;,&quot;&quot;,NAME)) %&gt;% 
+ distinct(NAME)
+  
+  
+
+# xstreme_EAR_v_LR %&gt;% 
 #   dplyr::select(SIM_MOTIF,ALT_ID, ID,SITES,EVALUE) %&gt;% 
 #   arrange(.,EVALUE) %&gt;% 
 #   separate(SIM_MOTIF, into= c(&quot;SIM_MOTIF&quot;, &quot;NAME&quot;), sep= &quot; &quot;) %&gt;% 
@@ -1732,6 +1789,43 @@ ggplot(., aes (x= log10Evalue, y= reorder(motif_name,log10Evalue))) +
   theme_classic()+
   xlim(0,140)</code></pre>
 <p><img src="figure/Jaspar_motif.Rmd/enriched%20motifs%20EAR-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-no-spaces-enriched-motifs-EAR-1">
+Past versions of "enriched motifs EAR-1.png"
+</button>
+</p>
+<div id="fig-no-spaces-enriched-motifs-EAR-1" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/reneeisnowhere/ATAC_learning/blob/59f30bb6f750b769fa0ba657e2d2a6231423c7ac/docs/figure/Jaspar_motif.Rmd/enriched motifs EAR-1.png" target="_blank">59f30bb</a>
+</td>
+<td>
+reneeisnowhere
+</td>
+<td>
+2024-05-03
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 <pre class="r"><code>xstreme_ESR_v_NR %&gt;% 
   dplyr::select(CLUSTER, SITES,SIM_MOTIF,ALT_ID, ID,EVALUE) %&gt;% 
   dplyr::filter(., EVALUE&lt;0.05) %&gt;% 
@@ -1746,6 +1840,43 @@ ggplot(., aes (x= log10Evalue, y= reorder(motif_name,log10Evalue), fill=mrc)) +
   geom_col(fill=&quot;blue&quot;) +
   theme_classic()</code></pre>
 <p><img src="figure/Jaspar_motif.Rmd/enriched%20motifs%20EAR-2.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-no-spaces-enriched-motifs-EAR-2">
+Past versions of "enriched motifs EAR-2.png"
+</button>
+</p>
+<div id="fig-no-spaces-enriched-motifs-EAR-2" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/reneeisnowhere/ATAC_learning/blob/59f30bb6f750b769fa0ba657e2d2a6231423c7ac/docs/figure/Jaspar_motif.Rmd/enriched motifs EAR-2.png" target="_blank">59f30bb</a>
+</td>
+<td>
+reneeisnowhere
+</td>
+<td>
+2024-05-03
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 <pre class="r"><code>xstreme_LR_v_NR %&gt;% 
   dplyr::select(CLUSTER, SITES,SIM_MOTIF,ALT_ID, ID,EVALUE) %&gt;% 
   dplyr::filter(., EVALUE&lt;0.05) %&gt;% 
@@ -1760,6 +1891,43 @@ ggplot(., aes (x= log10Evalue, y= reorder(motif_name,log10Evalue), fill=mrc)) +
   geom_col(fill=&quot;green&quot;) +
   theme_classic()</code></pre>
 <p><img src="figure/Jaspar_motif.Rmd/enriched%20motifs%20EAR-3.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-no-spaces-enriched-motifs-EAR-3">
+Past versions of "enriched motifs EAR-3.png"
+</button>
+</p>
+<div id="fig-no-spaces-enriched-motifs-EAR-3" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/reneeisnowhere/ATAC_learning/blob/59f30bb6f750b769fa0ba657e2d2a6231423c7ac/docs/figure/Jaspar_motif.Rmd/enriched motifs EAR-3.png" target="_blank">59f30bb</a>
+</td>
+<td>
+reneeisnowhere
+</td>
+<td>
+2024-05-03
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 <pre class="r"><code>## can I see if anyof these genes are in expression data:
 
 toplistall_RNA &lt;- readRDS(&quot;data/other_papers/toplistall_RNA.RDS&quot;) 
@@ -1769,6 +1937,18 @@ toplistall_RNA &lt;- readRDS(&quot;data/other_papers/toplistall_RNA.RDS&quot;)
 
 toplistall_RNA &lt;- toplistall_RNA %&gt;% 
   mutate(logFC = logFC*(-1))
+
+RNA_expresed_genes &lt;- toplistall_RNA %&gt;% 
+  # dplyr::filter(adj.P.Val &lt;0.05) %&gt;% 
+   mutate(expression = if_else(logFC&lt;0,&quot;down&quot;,&quot;up&quot;)) %&gt;% 
+  dplyr::select(ENTREZID,SYMBOL,expression) %&gt;% 
+  # dplyr::select(ENTREZID,SYMBOL) %&gt;% 
+  unique(.)  
+RNA_expresed_genes_DE &lt;- toplistall_RNA %&gt;% 
+  dplyr::filter(adj.P.Val &lt;0.05) %&gt;%
+  mutate(expression = if_else(logFC&lt;0,&quot;down&quot;,&quot;up&quot;)) %&gt;% 
+  dplyr::select(ENTREZID,SYMBOL,expression) %&gt;% 
+  unique(.) 
 # 
 # motifgenes_EAR_v_LR &lt;- xstreme_EAR_v_LR %&gt;% 
 #   dplyr::select(SIM_MOTIF,ALT_ID, ID,SITES,EVALUE) %&gt;% 
@@ -1815,8 +1995,419 @@ motifgenes_LR_v_NR &lt;- xstreme_LR_v_NR %&gt;%
   mutate(motif_name= gsub(&quot;[()]&quot;,&quot;&quot;,NAME)) %&gt;% 
    dplyr::select(SIM_MOTIF,motif_name) %&gt;% 
   unique()
-# intersect(motifgenes_EAR_v_LR$SIM_MOTIF, motifgenes_ESR_v_LR$SIM_MOTIF
-#           )</code></pre>
+
+gene_list_SEA %&gt;% 
+  mutate(express_RNA=if_else(NAME %in%  RNA_expresed_genes$SYMBOL,&quot;exp&quot;,&quot;not_exp&quot;),DE_RNA=if_else(NAME %in% RNA_expresed_genes_DE$SYMBOL,&quot;DE&quot;,&quot;notDE&quot;)) %&gt;%  
+  rowid_to_column(&quot;row_name&quot;) %&gt;% 
+  kable(., caption= &quot;RNA DE genes expresssed in EAR MRCs that contain SNPs associated with Heart disease&quot;) %&gt;% 
+    kable_paper(&quot;striped&quot;, full_width = TRUE) %&gt;%
+  kable_styling(full_width = FALSE, font_size = 16) %&gt;%
+  scroll_box(height = &quot;800px&quot;)</code></pre>
+<div
+style="border: 1px solid #ddd; padding: 0px; overflow-y: scroll; height:800px; ">
+<table class=" lightable-paper lightable-striped table" style="font-family: &quot;Arial Narrow&quot;, arial, helvetica, sans-serif; margin-left: auto; margin-right: auto; font-size: 16px; width: auto !important; margin-left: auto; margin-right: auto;">
+<caption style="font-size: initial !important;">
+RNA DE genes expresssed in EAR MRCs that contain SNPs associated with
+Heart disease
+</caption>
+<thead>
+<tr>
+<th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;">
+row_name
+</th>
+<th style="text-align:left;position: sticky; top:0; background-color: #FFFFFF;">
+NAME
+</th>
+<th style="text-align:left;position: sticky; top:0; background-color: #FFFFFF;">
+express_RNA
+</th>
+<th style="text-align:left;position: sticky; top:0; background-color: #FFFFFF;">
+DE_RNA
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:left;">
+PITX1
+</td>
+<td style="text-align:left;">
+not_exp
+</td>
+<td style="text-align:left;">
+notDE
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:left;">
+ZNF384
+</td>
+<td style="text-align:left;">
+exp
+</td>
+<td style="text-align:left;">
+notDE
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+3
+</td>
+<td style="text-align:left;">
+ZNF460
+</td>
+<td style="text-align:left;">
+exp
+</td>
+<td style="text-align:left;">
+notDE
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+4
+</td>
+<td style="text-align:left;">
+PRDM1
+</td>
+<td style="text-align:left;">
+exp
+</td>
+<td style="text-align:left;">
+DE
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+5
+</td>
+<td style="text-align:left;">
+ZKSCAN3
+</td>
+<td style="text-align:left;">
+exp
+</td>
+<td style="text-align:left;">
+DE
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+6
+</td>
+<td style="text-align:left;">
+NFIC::TLX1
+</td>
+<td style="text-align:left;">
+not_exp
+</td>
+<td style="text-align:left;">
+notDE
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+7
+</td>
+<td style="text-align:left;">
+ZNF93
+</td>
+<td style="text-align:left;">
+exp
+</td>
+<td style="text-align:left;">
+DE
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+8
+</td>
+<td style="text-align:left;">
+TBX1
+</td>
+<td style="text-align:left;">
+not_exp
+</td>
+<td style="text-align:left;">
+notDE
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+9
+</td>
+<td style="text-align:left;">
+GATA2
+</td>
+<td style="text-align:left;">
+exp
+</td>
+<td style="text-align:left;">
+DE
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+10
+</td>
+<td style="text-align:left;">
+GFI1
+</td>
+<td style="text-align:left;">
+not_exp
+</td>
+<td style="text-align:left;">
+notDE
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+11
+</td>
+<td style="text-align:left;">
+NKX2-2
+</td>
+<td style="text-align:left;">
+not_exp
+</td>
+<td style="text-align:left;">
+notDE
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+12
+</td>
+<td style="text-align:left;">
+Atf3
+</td>
+<td style="text-align:left;">
+not_exp
+</td>
+<td style="text-align:left;">
+notDE
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+13
+</td>
+<td style="text-align:left;">
+Gli1
+</td>
+<td style="text-align:left;">
+not_exp
+</td>
+<td style="text-align:left;">
+notDE
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+14
+</td>
+<td style="text-align:left;">
+ZSCAN4
+</td>
+<td style="text-align:left;">
+not_exp
+</td>
+<td style="text-align:left;">
+notDE
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+15
+</td>
+<td style="text-align:left;">
+TFAP2B
+</td>
+<td style="text-align:left;">
+not_exp
+</td>
+<td style="text-align:left;">
+notDE
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+16
+</td>
+<td style="text-align:left;">
+KLF9
+</td>
+<td style="text-align:left;">
+exp
+</td>
+<td style="text-align:left;">
+notDE
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+17
+</td>
+<td style="text-align:left;">
+ZNF257
+</td>
+<td style="text-align:left;">
+not_exp
+</td>
+<td style="text-align:left;">
+notDE
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+18
+</td>
+<td style="text-align:left;">
+NFIB
+</td>
+<td style="text-align:left;">
+exp
+</td>
+<td style="text-align:left;">
+DE
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+19
+</td>
+<td style="text-align:left;">
+PITX2
+</td>
+<td style="text-align:left;">
+exp
+</td>
+<td style="text-align:left;">
+notDE
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+20
+</td>
+<td style="text-align:left;">
+FOSL1
+</td>
+<td style="text-align:left;">
+exp
+</td>
+<td style="text-align:left;">
+DE
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+21
+</td>
+<td style="text-align:left;">
+BACH2
+</td>
+<td style="text-align:left;">
+exp
+</td>
+<td style="text-align:left;">
+DE
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+22
+</td>
+<td style="text-align:left;">
+MEF2A
+</td>
+<td style="text-align:left;">
+exp
+</td>
+<td style="text-align:left;">
+notDE
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+23
+</td>
+<td style="text-align:left;">
+DMRT3
+</td>
+<td style="text-align:left;">
+not_exp
+</td>
+<td style="text-align:left;">
+notDE
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+24
+</td>
+<td style="text-align:left;">
+ZNF24
+</td>
+<td style="text-align:left;">
+exp
+</td>
+<td style="text-align:left;">
+notDE
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+25
+</td>
+<td style="text-align:left;">
+FOXE1
+</td>
+<td style="text-align:left;">
+not_exp
+</td>
+<td style="text-align:left;">
+notDE
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+26
+</td>
+<td style="text-align:left;">
+CREB1
+</td>
+<td style="text-align:left;">
+exp
+</td>
+<td style="text-align:left;">
+DE
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+27
+</td>
+<td style="text-align:left;">
+SRF
+</td>
+<td style="text-align:left;">
+exp
+</td>
+<td style="text-align:left;">
+DE
+</td>
+</tr>
+</tbody>
+</table>
+</div>
 <pre class="r"><code>peakAnnoList_n45_motif &lt;- readRDS(&quot;data/peakAnnoList_n45_motif.RDS&quot;)
 list2env(peakAnnoList_n45_motif, envir = .GlobalEnv)</code></pre>
 <pre><code>&lt;environment: R_GlobalEnv&gt;</code></pre>
@@ -1860,103 +2451,13 @@ seq_ESR_norm = getSeq(BSgenome.Hsapiens.UCSC.hg38, ESR_df_gr)
 seq_EAR_norm = getSeq(BSgenome.Hsapiens.UCSC.hg38, EAR_df_gr)
 seq_LR_norm = getSeq(BSgenome.Hsapiens.UCSC.hg38, LR_df_gr)
 seq_NR_norm = getSeq(BSgenome.Hsapiens.UCSC.hg38, NR_df_gr)</code></pre>
-<div id="foxd3" class="section level4">
-<h4>FOXD3</h4>
-<pre class="r"><code># motifs_FOXD3 = query(query(MotifDb, &#39;Hsapiens&#39;), &#39;FOXD3&#39;)
-# FOXD3_motif &lt;- motifs_FOXD3$`Hsapiens-jaspar2022-FOXD3-MA0041.2`
-
-
-# FOXD3_pwm = PWMatrix(
-#     ID = &#39;FOXD3&#39;,
-#     profileMatrix = FOXD3_motif)
-hits_ESR_FOXD3 &lt;- readRDS(&quot;data/hits_files/FOXD3_hits_ESR.RDS&quot;)
-
-hits_ESR_FOXD3_500 &lt;- readRDS(&quot;data/hits_files/FOXD3_hits_ESR_500.RDS&quot;)
-# hits = searchSeq(FOXD3_pwm, seq_ESR_500, min.score=&quot;80%&quot;, strand=&quot;*&quot;)
-# hits_ESR_500 &lt;- hits
-# hits_ESR_500 &lt;- as.data.frame(hits_ESR_500)
-# saveRDS(hits_ESR_500,&quot;data/hits_files/FOXD3_hits_ESR_500.RDS&quot;)
-# hits_ESR_FOXD3 %&gt;% 
-#   mutate(position=start-1000) %&gt;% 
-#   ggplot(.,aes(position))+
-#   geom_density(size=2) +
-#   theme_bw() +
-#   geom_vline(xintercept = 0, linetype=2, color=&#39;red&#39;, size=2) +
-#   xlab(&#39;Position around the FOXD3 peaks&#39;) +
-#   ylab(&#39;Per position percentage\nof motif occurrence&#39;) +
-#   ggtitle(&quot;ESR: FOXD3 binding&quot;)+
-#   theme(
-#     axis.text = element_text(size=10, face=&#39;bold&#39;),
-#     axis.title = element_text(size=14,face=&quot;bold&quot;),
-#     plot.title = element_text(hjust = 0.5))
-
-hits_EAR_FOXD3 &lt;- readRDS(&quot;data/hits_files/FOXD3_hits_EAR.RDS&quot;)
-# hits_EAR &lt;- searchSeq(FOXD3_pwm, seq_EAR, min.score=&quot;80%&quot;, strand=&quot;*&quot;)
-# hits_EAR &lt;- as.data.frame(hits_EAR)
-# saveRDS(hits_EAR,&quot;data/hits_files/FOXD3_hits_EAR.RDS&quot;)
-# 
-# hits_EAR_FOXD3 %&gt;% 
-#   mutate(position=start-1000) %&gt;% 
-#   ggplot(.,aes(position))+
-#   geom_density(size=2) +
-#   theme_bw() +
-#   geom_vline(xintercept = 0, linetype=2, color=&#39;red&#39;, size=2) +
-#   xlab(&#39;Position around the FOXD3 peaks&#39;) +
-#   ylab(&#39;Per position percentage\nof motif occurrence&#39;) +
-#   ggtitle(&quot;EAR: FOXD3 binding&quot;)+
-#   theme(
-#     axis.text = element_text(size=10, face=&#39;bold&#39;),
-#     axis.title = element_text(size=14,face=&quot;bold&quot;),
-#     plot.title = element_text(hjust = 0.5))
-
-hits_LR_FOXD3 &lt;- readRDS(&quot;data/hits_files/FOXD3_hits_LR.RDS&quot;)
-# hits_LR &lt;- searchSeq(FOXD3_pwm, seq_LR, min.score=&quot;80%&quot;, strand=&quot;*&quot;)
-# hits_LR &lt;- as.data.frame(hits_LR)
-# saveRDS(hits_LR,&quot;data/hits_files/FOXD3_hits_LR.RDS&quot;)
-
-# hits_LR_FOXD3 %&gt;% 
-#   mutate(position=start-1000) %&gt;% 
-#   ggplot(.,aes(position))+
-#   geom_density(size=2) +
-#   theme_bw() +
-#   geom_vline(xintercept = 0, linetype=2, color=&#39;red&#39;, size=2) +
-#   xlab(&#39;Position around the FOXD3 peaks&#39;) +
-#   ylab(&#39;Per position percentage\nof motif occurrence&#39;) +
-#   ggtitle(&quot;LR: FOXD3 binding&quot;)+
-#   theme(
-#     axis.text = element_text(size=10, face=&#39;bold&#39;),
-#     axis.title = element_text(size=14,face=&quot;bold&quot;),
-#     plot.title = element_text(hjust = 0.5))
-hits_NR_FOXD3 &lt;- readRDS(&quot;data/hits_files/FOXD3_hits_NR.RDS&quot;)
-# hits_NR &lt;- searchSeq(FOXD3_pwm, seq_NR, min.score=&quot;80%&quot;, strand=&quot;*&quot;)
-# hits_NR &lt;- as.data.frame(hits_NR)
-# saveRDS(hits_NR,&quot;data/hits_files/FOXD3_hits_NR.RDS&quot;)
-
-hits_NR_FOXD3 %&gt;% 
-  mutate(position=start-1000) %&gt;% 
-  mutate(id_mrc=&quot;NR&quot;) %&gt;% 
-  rbind(.,(hits_LR_FOXD3 %&gt;% mutate(position=start-1000) %&gt;% 
-  mutate(id_mrc=&quot;LR&quot;))) %&gt;% 
-   rbind(.,(hits_ESR_FOXD3 %&gt;% mutate(position=start-1000) %&gt;% 
-  mutate(id_mrc=&quot;ESR&quot;))) %&gt;% 
-   rbind(.,(hits_ESR_FOXD3_500 %&gt;% mutate(position=start-500) %&gt;% 
-  mutate(id_mrc=&quot;ESR_500&quot;))) %&gt;% 
-   rbind(.,(hits_EAR_FOXD3 %&gt;% mutate(position=start-1000) %&gt;% 
-  mutate(id_mrc=&quot;EAR&quot;))) %&gt;% 
-  ggplot(.,aes(position, color = id_mrc))+
-  geom_density(size=1.5) +
-  # geom_density(data=hits_LR_FOXD3, aes(position))+
-  theme_bw() +
-  geom_vline(xintercept = 0, linetype=2, color=&#39;red&#39;, size=2) +
-  xlab(&#39;Position around the FOXD3 peaks&#39;) +
-  ylab(&#39;Per position percentage\nof motif occurrence&#39;) +
-  ggtitle(&quot;Chromatin accessibility around FOXD3 binding site&quot;)+
-  theme(
-    axis.text = element_text(size=10, face=&#39;bold&#39;),
-    axis.title = element_text(size=14,face=&quot;bold&quot;),
-    plot.title = element_text(hjust = 0.5))</code></pre>
-<p><img src="figure/Jaspar_motif.Rmd/FOXD3%20motif-1.png" width="672" style="display: block; margin: auto;" />
-#### ZNF384</p>
+<div id="foxd3" class="section level6">
+<h6>FOXD3</h6>
+<p>**not enriched</p>
+</div>
+<div id="znf384" class="section level4">
+<h4>ZNF384</h4>
+<p>enriched in EAR, ESR, LR</p>
 <pre class="r"><code># motifs_ZNF384 = query(query(MotifDb, &#39;Hsapiens&#39;), &#39;ZNF384&#39;)
 # ZNF384_motif &lt;- motifs_ZNF384$`Hsapiens-jaspar2022-ZNF384-MA1125.1`
 # # 
@@ -1969,40 +2470,40 @@ hits_ESR_ZNF384 &lt;- readRDS(&quot;data/hits_files/ZNF384_hits_ESR.RDS&quot;)
 # hits_ESR &lt;- hits
 # hits_ESR &lt;- as.data.frame(hits_ESR)
 # saveRDS(hits_ESR,&quot;data/hits_files/ZNF384_hits_ESR.RDS&quot;)
-hits_ESR_ZNF384 %&gt;%
-  mutate(position=start-1000) %&gt;%
-  ggplot(.,aes(position))+
-  geom_density(size=2) +
-  theme_bw() +
-  geom_vline(xintercept = 0, linetype=2, color=&#39;red&#39;, size=2) +
-  xlab(&#39;Position around the ZNF384 peaks&#39;) +
-  ylab(&#39;Per position percentage\nof motif occurrence&#39;) +
-  ggtitle(&quot;ESR: ZNF384 binding&quot;)+
-  theme(
-    axis.text = element_text(size=10, face=&#39;bold&#39;),
-    axis.title = element_text(size=14,face=&quot;bold&quot;),
-    plot.title = element_text(hjust = 0.5))</code></pre>
-<p><img src="figure/Jaspar_motif.Rmd/ZNF384-1.png" width="672" style="display: block; margin: auto;" /></p>
-<pre class="r"><code>hits_EAR_ZNF384 &lt;- readRDS(&quot;data/hits_files/ZNF384_hits_EAR.RDS&quot;)
+# hits_ESR_ZNF384 %&gt;%
+#   mutate(position=start-1000) %&gt;%
+#   ggplot(.,aes(position))+
+#   geom_density(size=2) +
+#   theme_bw() +
+#   geom_vline(xintercept = 0, linetype=2, color=&#39;red&#39;, size=2) +
+#   xlab(&#39;Position around the ZNF384 peaks&#39;) +
+#   ylab(&#39;Per position percentage\nof motif occurrence&#39;) +
+#   ggtitle(&quot;ESR: ZNF384 binding&quot;)+
+#   theme(
+#     axis.text = element_text(size=10, face=&#39;bold&#39;),
+#     axis.title = element_text(size=14,face=&quot;bold&quot;),
+#     plot.title = element_text(hjust = 0.5))
+
+hits_EAR_ZNF384 &lt;- readRDS(&quot;data/hits_files/ZNF384_hits_EAR.RDS&quot;)
 # hits_EAR &lt;- searchSeq(ZNF384_pwm, seq_EAR, min.score=&quot;80%&quot;, strand=&quot;*&quot;)
 # hits_EAR &lt;- as.data.frame(hits_EAR)
 # saveRDS(hits_EAR,&quot;data/hits_files/ZNF384_hits_EAR.RDS&quot;)
 
-hits_EAR_ZNF384 %&gt;%
-  mutate(position=start-1000) %&gt;%
-  ggplot(.,aes(position))+
-  geom_density(size=2) +
-  theme_bw() +
-  geom_vline(xintercept = 0, linetype=2, color=&#39;red&#39;, size=2) +
-  xlab(&#39;Position around the ZNF384 peaks&#39;) +
-  ylab(&#39;Per position percentage\nof motif occurrence&#39;) +
-  ggtitle(&quot;EAR: ZNF384 binding&quot;)+
-  theme(
-    axis.text = element_text(size=10, face=&#39;bold&#39;),
-    axis.title = element_text(size=14,face=&quot;bold&quot;),
-    plot.title = element_text(hjust = 0.5))</code></pre>
-<p><img src="figure/Jaspar_motif.Rmd/ZNF384-2.png" width="672" style="display: block; margin: auto;" /></p>
-<pre class="r"><code>hits_LR_ZNF384 &lt;- readRDS(&quot;data/hits_files/ZNF384_hits_LR.RDS&quot;)
+# hits_EAR_ZNF384 %&gt;%
+#   mutate(position=start-1000) %&gt;%
+#   ggplot(.,aes(position))+
+#   geom_density(size=2) +
+#   theme_bw() +
+#   geom_vline(xintercept = 0, linetype=2, color=&#39;red&#39;, size=2) +
+#   xlab(&#39;Position around the ZNF384 peaks&#39;) +
+#   ylab(&#39;Per position percentage\nof motif occurrence&#39;) +
+#   ggtitle(&quot;EAR: ZNF384 binding&quot;)+
+#   theme(
+#     axis.text = element_text(size=10, face=&#39;bold&#39;),
+#     axis.title = element_text(size=14,face=&quot;bold&quot;),
+#     plot.title = element_text(hjust = 0.5))
+
+hits_LR_ZNF384 &lt;- readRDS(&quot;data/hits_files/ZNF384_hits_LR.RDS&quot;)
 # hits_LR &lt;- searchSeq(ZNF384_pwm, seq_LR, min.score=&quot;80%&quot;, strand=&quot;*&quot;)
 # hits_LR &lt;- as.data.frame(hits_LR)
 # saveRDS(hits_LR,&quot;data/hits_files/ZNF384_hits_LR.RDS&quot;)
@@ -2039,24 +2540,63 @@ hits_NR_ZNF384 %&gt;%
   # geom_density(data=hits_LR_ZNF384, aes(position))+
   theme_bw() +
   geom_vline(xintercept = 0, linetype=2, color=&#39;red&#39;, size=2) +
-  xlab(&#39;Position around the ZNF384 peaks&#39;) +
+  xlab(&#39;Position around the ZNF384 motif&#39;) +
   ylab(&#39;Per position percentage\nof motif occurrence&#39;) +
   ggtitle(&quot;Chromatin accessibility around ZNF384 binding site&quot;)+
   theme(
     axis.text = element_text(size=10, face=&#39;bold&#39;),
     axis.title = element_text(size=14,face=&quot;bold&quot;),
     plot.title = element_text(hjust = 0.5))</code></pre>
-<p><img src="figure/Jaspar_motif.Rmd/ZNF384-3.png" width="672" style="display: block; margin: auto;" /></p>
+<p><img src="figure/Jaspar_motif.Rmd/ZNF384-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-ZNF384-1">
+Past versions of ZNF384-1.png
+</button>
+</p>
+<div id="fig-ZNF384-1" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/reneeisnowhere/ATAC_learning/blob/59f30bb6f750b769fa0ba657e2d2a6231423c7ac/docs/figure/Jaspar_motif.Rmd/ZNF384-1.png" target="_blank">59f30bb</a>
+</td>
+<td>
+reneeisnowhere
+</td>
+<td>
+2024-05-03
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 </div>
 <div id="zkscan3" class="section level4">
 <h4>ZKSCAN3</h4>
-<pre class="r"><code>motifs_ZKSCAN3 = query(query(MotifDb, &#39;Hsapiens&#39;), &#39;ZKSCAN3&#39;)
-ZKSCAN3_motif &lt;- motifs_ZKSCAN3$`Hsapiens-jaspar2022-ZKSCAN3-MA1973.1`
+<p>enriched in EAR</p>
+<pre class="r"><code># 
+# motifs_ZKSCAN3 = query(query(MotifDb, &#39;Hsapiens&#39;), &#39;ZKSCAN3&#39;)
+# ZKSCAN3_motif &lt;- motifs_ZKSCAN3$`Hsapiens-jaspar2022-ZKSCAN3-MA1973.1`
 #
 #
-ZKSCAN3_pwm = PWMatrix(
-    ID = &#39;ZKSCAN3&#39;,
-    profileMatrix = ZKSCAN3_motif)
+# ZKSCAN3_pwm = PWMatrix(
+#     ID = &#39;ZKSCAN3&#39;,
+#     profileMatrix = ZKSCAN3_motif)
 hits_ESR_ZKSCAN3 &lt;- readRDS(&quot;data/hits_files/ZKSCAN3_hits_ESR.RDS&quot;)
  hits_ESR_ZKSCAN3_norm&lt;-readRDS(&quot;data/hits_files/ZKSCAN3_hits_ESR_norm.RDS&quot;)
 
@@ -2065,21 +2605,21 @@ hits_ESR_ZKSCAN3 &lt;- readRDS(&quot;data/hits_files/ZKSCAN3_hits_ESR.RDS&quot;)
 # hits_ESR &lt;- as.data.frame(hits_ESR)
 # saveRDS(hits_ESR,&quot;data/hits_files/ZKSCAN3_hits_ESR_norm.RDS&quot;)
 # 
-hits_ESR_ZKSCAN3_norm %&gt;%
-  mutate(position=start-1611.5) %&gt;%
-  ggplot(.,aes(position))+
-  geom_density(size=2) +
-  theme_bw() +
-  geom_vline(xintercept = 0, linetype=2, color=&#39;red&#39;, size=2) +
-  xlab(&#39;Position around the ZKSCAN3 peaks&#39;) +
-  ylab(&#39;Per position percentage\nof motif occurrence&#39;) +
-  ggtitle(&quot;ESR: ZKSCAN3 binding&quot;)+
-  theme(
-    axis.text = element_text(size=10, face=&#39;bold&#39;),
-    axis.title = element_text(size=14,face=&quot;bold&quot;),
-    plot.title = element_text(hjust = 0.5))</code></pre>
-<p><img src="figure/Jaspar_motif.Rmd/ZKSCAN3-1.png" width="672" style="display: block; margin: auto;" /></p>
-<pre class="r"><code>hits_EAR_ZKSCAN3 &lt;- readRDS(&quot;data/hits_files/ZKSCAN3_hits_EAR.RDS&quot;)
+# hits_ESR_ZKSCAN3_norm %&gt;%
+#   mutate(position=start-1611.5) %&gt;%
+#   ggplot(.,aes(position))+
+#   geom_density(size=2) +
+#   theme_bw() +
+#   geom_vline(xintercept = 0, linetype=2, color=&#39;red&#39;, size=2) +
+#   xlab(&#39;Position around the ZKSCAN3 motif&#39;) +
+#   ylab(&#39;Per position percentage\nof motif occurrence&#39;) +
+#   ggtitle(&quot;ESR: ZKSCAN3 binding&quot;)+
+#   theme(
+#     axis.text = element_text(size=10, face=&#39;bold&#39;),
+#     axis.title = element_text(size=14,face=&quot;bold&quot;),
+#     plot.title = element_text(hjust = 0.5))
+
+hits_EAR_ZKSCAN3 &lt;- readRDS(&quot;data/hits_files/ZKSCAN3_hits_EAR.RDS&quot;)
 # hits_EAR &lt;- searchSeq(ZKSCAN3_pwm, seq_EAR, min.score=&quot;80%&quot;, strand=&quot;*&quot;)
 # hits_EAR &lt;- as.data.frame(hits_EAR)
 # saveRDS(hits_EAR,&quot;data/hits_files/ZKSCAN3_hits_EAR.RDS&quot;)
@@ -2121,30 +2661,69 @@ hits_NR_ZKSCAN3 &lt;- readRDS(&quot;data/hits_files/ZKSCAN3_hits_NR.RDS&quot;)
 # hits_NR &lt;- as.data.frame(hits_NR)
 # saveRDS(hits_NR,&quot;data/hits_files/ZKSCAN3_hits_NR.RDS&quot;)
 
-# hits_NR_ZKSCAN3 %&gt;%
-#   mutate(position=start-1000) %&gt;%
-#   mutate(id_mrc=&quot;NR&quot;) %&gt;%
-#   rbind(.,(hits_LR_ZKSCAN3 %&gt;% mutate(position=start-1000) %&gt;%
-#   mutate(id_mrc=&quot;LR&quot;))) %&gt;%
-#    rbind(.,(hits_ESR_ZKSCAN3 %&gt;% mutate(position=start-1000) %&gt;%
-#   mutate(id_mrc=&quot;ESR&quot;))) %&gt;%
-#    rbind(.,(hits_EAR_ZKSCAN3 %&gt;% mutate(position=start-1000) %&gt;%
-#   mutate(id_mrc=&quot;EAR&quot;))) %&gt;%
-#   ggplot(.,aes(position, color = id_mrc))+
-#   geom_density(size=1.5) +
-#   # geom_density(data=hits_LR_ZKSCAN3, aes(position))+
-#   theme_bw() +
-#   geom_vline(xintercept = 0, linetype=2, color=&#39;red&#39;, size=2) +
-#   xlab(&#39;Position around the ZKSCAN3 peaks&#39;) +
-#   ylab(&#39;Per position percentage\nof motif occurrence&#39;) +
-#   ggtitle(&quot;Chromatin accessibility around ZKSCAN3 binding site&quot;)+
-#   theme(
-#     axis.text = element_text(size=10, face=&#39;bold&#39;),
-#     axis.title = element_text(size=14,face=&quot;bold&quot;),
-#     plot.title = element_text(hjust = 0.5))</code></pre>
+hits_NR_ZKSCAN3 %&gt;%
+  mutate(position=start-1000) %&gt;%
+  mutate(id_mrc=&quot;NR&quot;) %&gt;%
+  rbind(.,(hits_LR_ZKSCAN3 %&gt;% mutate(position=start-1000) %&gt;%
+  mutate(id_mrc=&quot;LR&quot;))) %&gt;%
+   rbind(.,(hits_ESR_ZKSCAN3 %&gt;% mutate(position=start-1000) %&gt;%
+  mutate(id_mrc=&quot;ESR&quot;))) %&gt;%
+   rbind(.,(hits_EAR_ZKSCAN3 %&gt;% mutate(position=start-1000) %&gt;%
+  mutate(id_mrc=&quot;EAR&quot;))) %&gt;%
+  ggplot(.,aes(position, color = id_mrc))+
+  geom_density(size=1.5) +
+  # geom_density(data=hits_LR_ZKSCAN3, aes(position))+
+  theme_bw() +
+  geom_vline(xintercept = 0, linetype=2, color=&#39;red&#39;, size=2) +
+  xlab(&#39;Position around the ZKSCAN3 peaks&#39;) +
+  ylab(&#39;Per position percentage\nof motif occurrence&#39;) +
+  ggtitle(&quot;Chromatin accessibility around ZKSCAN3 binding site&quot;)+
+  theme(
+    axis.text = element_text(size=10, face=&#39;bold&#39;),
+    axis.title = element_text(size=14,face=&quot;bold&quot;),
+    plot.title = element_text(hjust = 0.5))</code></pre>
+<p><img src="figure/Jaspar_motif.Rmd/ZKSCAN3-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-ZKSCAN3-1">
+Past versions of ZKSCAN3-1.png
+</button>
+</p>
+<div id="fig-ZKSCAN3-1" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/reneeisnowhere/ATAC_learning/blob/59f30bb6f750b769fa0ba657e2d2a6231423c7ac/docs/figure/Jaspar_motif.Rmd/ZKSCAN3-1.png" target="_blank">59f30bb</a>
+</td>
+<td>
+reneeisnowhere
+</td>
+<td>
+2024-05-03
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 </div>
 <div id="pitx1" class="section level4">
 <h4>PITX1</h4>
+<p>enriched in EAR and ESR</p>
 <pre class="r"><code># 
 # motifs_PITX1 = query(query(MotifDb, &#39;Hsapiens&#39;), &#39;PITX1&#39;)
 #     PITX1_motif &lt;- motifs_PITX1$`Hsapiens-jaspar2022-PITX1-MA0682.2`
@@ -2172,6 +2751,43 @@ hits_ESR_PITX1 %&gt;%
     axis.title = element_text(size=14,face=&quot;bold&quot;),
     plot.title = element_text(hjust = 0.5))</code></pre>
 <p><img src="figure/Jaspar_motif.Rmd/PITX1-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-PITX1-1">
+Past versions of PITX1-1.png
+</button>
+</p>
+<div id="fig-PITX1-1" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/reneeisnowhere/ATAC_learning/blob/59f30bb6f750b769fa0ba657e2d2a6231423c7ac/docs/figure/Jaspar_motif.Rmd/PITX1-1.png" target="_blank">59f30bb</a>
+</td>
+<td>
+reneeisnowhere
+</td>
+<td>
+2024-05-03
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 <pre class="r"><code>hits_EAR_PITX1 &lt;- readRDS(&quot;data/hits_files/PITX1_hits_EAR.RDS&quot;)
 # hits_EAR &lt;- searchSeq(PITX1_pwm, seq_EAR, min.score=&quot;80%&quot;, strand=&quot;*&quot;)
 # hits_EAR &lt;- as.data.frame(hits_EAR)
@@ -2191,6 +2807,43 @@ hits_EAR_PITX1 %&gt;%
     axis.title = element_text(size=14,face=&quot;bold&quot;),
     plot.title = element_text(hjust = 0.5))</code></pre>
 <p><img src="figure/Jaspar_motif.Rmd/PITX1-2.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-PITX1-2">
+Past versions of PITX1-2.png
+</button>
+</p>
+<div id="fig-PITX1-2" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/reneeisnowhere/ATAC_learning/blob/59f30bb6f750b769fa0ba657e2d2a6231423c7ac/docs/figure/Jaspar_motif.Rmd/PITX1-2.png" target="_blank">59f30bb</a>
+</td>
+<td>
+reneeisnowhere
+</td>
+<td>
+2024-05-03
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 <pre class="r"><code>hits_LR_PITX1 &lt;- readRDS(&quot;data/hits_files/PITX1_hits_LR.RDS&quot;)
 # hits_LR &lt;- searchSeq(PITX1_pwm, seq_LR, min.score=&quot;80%&quot;, strand=&quot;*&quot;)
 # hits_LR &lt;- as.data.frame(hits_LR)
@@ -2210,6 +2863,43 @@ hits_LR_PITX1 %&gt;%
     axis.title = element_text(size=14,face=&quot;bold&quot;),
     plot.title = element_text(hjust = 0.5))</code></pre>
 <p><img src="figure/Jaspar_motif.Rmd/PITX1-3.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-PITX1-3">
+Past versions of PITX1-3.png
+</button>
+</p>
+<div id="fig-PITX1-3" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/reneeisnowhere/ATAC_learning/blob/59f30bb6f750b769fa0ba657e2d2a6231423c7ac/docs/figure/Jaspar_motif.Rmd/PITX1-3.png" target="_blank">59f30bb</a>
+</td>
+<td>
+reneeisnowhere
+</td>
+<td>
+2024-05-03
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 <pre class="r"><code>hits_NR_PITX1 &lt;- readRDS(&quot;data/hits_files/PITX1_hits_NR.RDS&quot;)
 # hits_NR &lt;- searchSeq(PITX1_pwm, seq_NR, min.score=&quot;80%&quot;, strand=&quot;*&quot;)
 # hits_NR &lt;- as.data.frame(hits_NR)
@@ -2237,9 +2927,47 @@ hits_NR_PITX1 %&gt;%
     axis.title = element_text(size=14,face=&quot;bold&quot;),
     plot.title = element_text(hjust = 0.5))</code></pre>
 <p><img src="figure/Jaspar_motif.Rmd/PITX1-4.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-PITX1-4">
+Past versions of PITX1-4.png
+</button>
+</p>
+<div id="fig-PITX1-4" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/reneeisnowhere/ATAC_learning/blob/59f30bb6f750b769fa0ba657e2d2a6231423c7ac/docs/figure/Jaspar_motif.Rmd/PITX1-4.png" target="_blank">59f30bb</a>
+</td>
+<td>
+reneeisnowhere
+</td>
+<td>
+2024-05-03
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 </div>
 <div id="tp53" class="section level4">
 <h4>TP53</h4>
+<p>not enriched, just curious</p>
 <pre class="r"><code># 
 # motifs_TP53 = query(query(MotifDb, &#39;Hsapiens&#39;), &#39;TP53&#39;)
 #     TP53_motif &lt;- motifs_TP53$`Hsapiens-JASPAR_CORE-TP53-MA0106.1`
@@ -2332,6 +3060,43 @@ hits_NR_TP53 %&gt;%
     axis.title = element_text(size=14,face=&quot;bold&quot;),
     plot.title = element_text(hjust = 0.5))</code></pre>
 <p><img src="figure/Jaspar_motif.Rmd/TP53-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-TP53-1">
+Past versions of TP53-1.png
+</button>
+</p>
+<div id="fig-TP53-1" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/reneeisnowhere/ATAC_learning/blob/59f30bb6f750b769fa0ba657e2d2a6231423c7ac/docs/figure/Jaspar_motif.Rmd/TP53-1.png" target="_blank">59f30bb</a>
+</td>
+<td>
+reneeisnowhere
+</td>
+<td>
+2024-05-03
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 <pre class="r"><code># </code></pre>
 </div>
 <div id="nrf1" class="section level4">
@@ -2428,6 +3193,43 @@ hits_NR_NRF1 %&gt;%
     axis.title = element_text(size=14,face=&quot;bold&quot;),
     plot.title = element_text(hjust = 0.5))</code></pre>
 <p><img src="figure/Jaspar_motif.Rmd/NRF1-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-NRF1-1">
+Past versions of NRF1-1.png
+</button>
+</p>
+<div id="fig-NRF1-1" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/reneeisnowhere/ATAC_learning/blob/59f30bb6f750b769fa0ba657e2d2a6231423c7ac/docs/figure/Jaspar_motif.Rmd/NRF1-1.png" target="_blank">59f30bb</a>
+</td>
+<td>
+reneeisnowhere
+</td>
+<td>
+2024-05-03
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 </div>
 <div id="nfic_tlx1" class="section level4">
 <h4>NFIC_TLX1</h4>
@@ -2523,6 +3325,43 @@ hits_NR_NFIC_TLX1 %&gt;%
     axis.title = element_text(size=14,face=&quot;bold&quot;),
     plot.title = element_text(hjust = 0.5))#+</code></pre>
 <p><img src="figure/Jaspar_motif.Rmd/NFIC_TLX1-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-NFIC_TLX1-1">
+Past versions of NFIC_TLX1-1.png
+</button>
+</p>
+<div id="fig-NFIC_TLX1-1" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/reneeisnowhere/ATAC_learning/blob/59f30bb6f750b769fa0ba657e2d2a6231423c7ac/docs/figure/Jaspar_motif.Rmd/NFIC_TLX1-1.png" target="_blank">59f30bb</a>
+</td>
+<td>
+reneeisnowhere
+</td>
+<td>
+2024-05-03
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 <pre class="r"><code>  # coord_cartesian(xlim= c(-500,500))</code></pre>
 </div>
 <div id="prdm1" class="section level4">
@@ -2579,8 +3418,45 @@ hits_NR_PRDM1 %&gt;%
     axis.text = element_text(size=10, face=&#39;bold&#39;),
     axis.title = element_text(size=14,face=&quot;bold&quot;),
     plot.title = element_text(hjust = 0.5))+
-  coord_cartesian(xlim= c(-250,250))</code></pre>
+  coord_cartesian(xlim= c(-500,500))</code></pre>
 <p><img src="figure/Jaspar_motif.Rmd/PRDM1-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-PRDM1-1">
+Past versions of PRDM1-1.png
+</button>
+</p>
+<div id="fig-PRDM1-1" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/reneeisnowhere/ATAC_learning/blob/59f30bb6f750b769fa0ba657e2d2a6231423c7ac/docs/figure/Jaspar_motif.Rmd/PRDM1-1.png" target="_blank">59f30bb</a>
+</td>
+<td>
+reneeisnowhere
+</td>
+<td>
+2024-05-03
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 </div>
 <div id="tbx1" class="section level4">
 <h4>TBX1</h4>
@@ -2675,8 +3551,45 @@ hits_NR_TBX1 %&gt;%
     axis.text = element_text(size=10, face=&#39;bold&#39;),
     axis.title = element_text(size=14,face=&quot;bold&quot;),
     plot.title = element_text(hjust = 0.5))+
-  coord_cartesian(xlim= c(-250,250))</code></pre>
+  coord_cartesian(xlim= c(-500,500))</code></pre>
 <p><img src="figure/Jaspar_motif.Rmd/TBX1-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-TBX1-1">
+Past versions of TBX1-1.png
+</button>
+</p>
+<div id="fig-TBX1-1" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/reneeisnowhere/ATAC_learning/blob/59f30bb6f750b769fa0ba657e2d2a6231423c7ac/docs/figure/Jaspar_motif.Rmd/TBX1-1.png" target="_blank">59f30bb</a>
+</td>
+<td>
+reneeisnowhere
+</td>
+<td>
+2024-05-03
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 </div>
 <div id="gli1" class="section level4">
 <h4>GLI1</h4>
@@ -2771,8 +3684,140 @@ hits_NR_GLI1 %&gt;%
     axis.text = element_text(size=10, face=&#39;bold&#39;),
     axis.title = element_text(size=14,face=&quot;bold&quot;),
     plot.title = element_text(hjust = 0.5))+
-  coord_cartesian(xlim= c(-250,250))</code></pre>
+  coord_cartesian(xlim= c(-500,500))</code></pre>
 <p><img src="figure/Jaspar_motif.Rmd/GLI1-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-GLI1-1">
+Past versions of GLI1-1.png
+</button>
+</p>
+<div id="fig-GLI1-1" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/reneeisnowhere/ATAC_learning/blob/59f30bb6f750b769fa0ba657e2d2a6231423c7ac/docs/figure/Jaspar_motif.Rmd/GLI1-1.png" target="_blank">59f30bb</a>
+</td>
+<td>
+reneeisnowhere
+</td>
+<td>
+2024-05-03
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<div id="znf460" class="section level4">
+<h4>ZNF460</h4>
+<pre class="r"><code># # 
+# motifs_ZNF460 = query(query(MotifDb, &#39;Hsapiens&#39;), &#39;ZNF460&#39;)
+#     ZNF460_motif &lt;- motifs_ZNF460$`Hsapiens-jaspar2022-ZNF460-MA1596.1`
+# 
+# ZNF460_pwm = PWMatrix(
+#     ID = &#39;ZNF460&#39;,
+#     profileMatrix = ZNF460_motif)
+hits_ESR_ZNF460 &lt;- readRDS(&quot;data/hits_files/ZNF460_hits_ESR.RDS&quot;)
+# hits_ESR = searchSeq(ZNF460_pwm, seq_ESR, min.score=&quot;80%&quot;, strand=&quot;*&quot;)
+# 
+# hits_ESR &lt;- as.data.frame(hits_ESR)
+# saveRDS(hits_ESR,&quot;data/hits_files/ZNF460_hits_ESR.RDS&quot;)
+# hits_ESR_ZNF460 %&gt;%
+#   mutate(position=start-1000) %&gt;%
+#   ggplot(.,aes(position))+
+#   geom_density(size=2) +
+#   theme_bw() +
+#   geom_vline(xintercept = 0, linetype=2, color=&#39;red&#39;, size=2) +
+#   xlab(&#39;Position around the ZNF460  motif&#39;) +
+#   ylab(&#39;Per position percentage\nof motif occurrence&#39;) +
+#   ggtitle(&quot;ESR: ZNF460 binding&quot;)+
+#   theme(
+#     axis.text = element_text(size=10, face=&#39;bold&#39;),
+#     axis.title = element_text(size=14,face=&quot;bold&quot;),
+#     plot.title = element_text(hjust = 0.5))
+
+hits_EAR_ZNF460 &lt;- readRDS(&quot;data/hits_files/ZNF460_hits_EAR.RDS&quot;)
+# hits_EAR &lt;- searchSeq(ZNF460_pwm, seq_EAR, min.score=&quot;80%&quot;, strand=&quot;*&quot;)
+# hits_EAR &lt;- as.data.frame(hits_EAR)
+# saveRDS(hits_EAR,&quot;data/hits_files/ZNF460_hits_EAR.RDS&quot;)
+
+# hits_EAR_ZNF460 %&gt;%
+#   mutate(position=start-1000) %&gt;%
+#   ggplot(.,aes(position))+
+#   geom_density(size=2) +
+#   theme_bw() +
+#   geom_vline(xintercept = 0, linetype=2, color=&#39;red&#39;, size=2) +
+#   xlab(&#39;Position around the ZNF460  motif&#39;) +
+#   ylab(&#39;Per position percentage\nof motif occurrence&#39;) +
+#   ggtitle(&quot;EAR: ZNF460 binding&quot;)+
+#   theme(
+#     axis.text = element_text(size=10, face=&#39;bold&#39;),
+#     axis.title = element_text(size=14,face=&quot;bold&quot;),
+#     plot.title = element_text(hjust = 0.5))
+# 
+hits_LR_ZNF460 &lt;- readRDS(&quot;data/hits_files/ZNF460_hits_LR.RDS&quot;)
+# hits_LR &lt;- searchSeq(ZNF460_pwm, seq_LR, min.score=&quot;80%&quot;, strand=&quot;*&quot;)
+# hits_LR &lt;- as.data.frame(hits_LR)
+# saveRDS(hits_LR,&quot;data/hits_files/ZNF460_hits_LR.RDS&quot;)
+
+# hits_LR_ZNF460 %&gt;%
+#   mutate(position=start-1000) %&gt;%
+#   ggplot(.,aes(position))+
+#   geom_density(size=2) +
+#   theme_bw() +
+#   geom_vline(xintercept = 0, linetype=2, color=&#39;red&#39;, size=2) +
+#   xlab(&#39;Position around the ZNF460  motif&#39;) +
+#   ylab(&#39;Per position percentage\nof motif occurrence&#39;) +
+#   ggtitle(&quot;LR: ZNF460 binding&quot;)+
+#   theme(
+#     axis.text = element_text(size=10, face=&#39;bold&#39;),
+#     axis.title = element_text(size=14,face=&quot;bold&quot;),
+#     plot.title = element_text(hjust = 0.5))
+
+hits_NR_ZNF460 &lt;- readRDS(&quot;data/hits_files/ZNF460_hits_NR.RDS&quot;)
+# hits_NR &lt;- searchSeq(ZNF460_pwm, seq_NR, min.score=&quot;80%&quot;, strand=&quot;*&quot;)
+# hits_NR &lt;- as.data.frame(hits_NR)
+# saveRDS(hits_NR,&quot;data/hits_files/ZNF460_hits_NR.RDS&quot;)
+
+hits_NR_ZNF460 %&gt;%
+  mutate(position=start-1000) %&gt;%
+  mutate(id_mrc=&quot;NR&quot;) %&gt;%
+  rbind(.,(hits_LR_ZNF460 %&gt;% mutate(position=start-1000) %&gt;%
+  mutate(id_mrc=&quot;LR&quot;))) %&gt;%
+   rbind(.,(hits_ESR_ZNF460 %&gt;% mutate(position=start-1000) %&gt;%
+  mutate(id_mrc=&quot;ESR&quot;))) %&gt;%
+   rbind(.,(hits_EAR_ZNF460 %&gt;% mutate(position=start-1000) %&gt;%
+  mutate(id_mrc=&quot;EAR&quot;))) %&gt;%
+  ggplot(.,aes(position, color = id_mrc))+
+  geom_density(size=1.5) +
+  # geom_density(data=hits_LR_ZNF460, aes(position))+
+  theme_bw() +
+  geom_vline(xintercept = 0, linetype=2, color=&#39;red&#39;, size=2) +
+  xlab(&#39;Position around the ZNF460  motif&#39;) +
+  ylab(&#39;Per position percentage\nof motif occurrence&#39;) +
+  ggtitle(&quot;Chromatin accessibility around ZNF460 binding site&quot;)+
+  theme(
+    axis.text = element_text(size=10, face=&#39;bold&#39;),
+    axis.title = element_text(size=14,face=&quot;bold&quot;),
+    plot.title = element_text(hjust = 0.5))+
+  coord_cartesian(xlim= c(-500,500))</code></pre>
+<p><img src="figure/Jaspar_motif.Rmd/ZNF460-1.png" width="672" style="display: block; margin: auto;" /></p>
 </div>
 </div>
 <div id="looking-at-sea-data" class="section level3">
