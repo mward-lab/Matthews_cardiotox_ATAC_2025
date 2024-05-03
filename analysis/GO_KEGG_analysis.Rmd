@@ -1,0 +1,335 @@
+---
+title: "GO and KEGG pathway analysis"
+author: "ERM"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE,
+	warning = FALSE
+)
+```
+
+```{css, echo=FALSE}
+pre {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+pre[class] {
+  max-height: 200px;
+}
+```
+
+```{r  package loading}
+library(tidyverse)
+# library(ggsignif)
+# library(cowplot)
+# library(ggpubr)
+
+# library(sjmisc)
+library(kableExtra)
+library(broom)
+# library(biomaRt)
+library(RColorBrewer)
+library(gprofiler2)
+# library(qvalue)
+library(ChIPseeker)
+library("TxDb.Hsapiens.UCSC.hg38.knownGene")
+library("org.Hs.eg.db")
+# library(ATACseqQC)
+library(rtracklayer)
+library(edgeR)
+library(ggfortify)
+library(limma)
+library(readr)
+library(BiocGenerics)
+library(gridExtra)
+library(VennDiagram)
+library(scales)
+# library(ggVennDiagram)
+# library(Cormotif)
+library(BiocParallel)
+library(ggpubr)
+# library(devtools)
+# # install_github('davetang/bedr')
+# library(bedr)
+library(biomaRt)
+```
+##### data loading
+```{r loading data}
+peakAnnoList_n45_motif <- readRDS("data/peakAnnoList_n45_motif.RDS")
+# list2env(peakAnnoList_n45_motif, envir = .GlobalEnv)
+
+EAR_df <- as.data.frame(peakAnnoList_n45_motif$EAR_n45_gr)
+EAR_df_gr <-  GRanges(EAR_df)
+
+ESR_df <- as.data.frame(peakAnnoList_n45_motif$ESR_n45_gr)
+ESR_df_gr <-  GRanges(ESR_df)
+ 
+LR_df <- as.data.frame(peakAnnoList_n45_motif$LR_n45_gr)
+LR_df_gr <-  GRanges(LR_df)
+ 
+NR_df <- as.data.frame(peakAnnoList_n45_motif$NR_n45_gr)
+NR_df_gr <-  GRanges(NR_df)
+
+
+exp_neargene_table <- read_delim("data/n45_bedfiles/exp_neargene_table.tsv", 
+    delim = "\t", escape_double = FALSE, 
+    trim_ws = TRUE)
+
+# col_ng_peak <- exp_neargene_table %>%
+#   group_by(chr, start, end, peakid) %>%
+#     summarise(NCBI_gene = paste(unique(ENTREZID),collapse=","),
+#               ensembl_ID= paste(unique(ensembl_id),collapse = ","),
+#               SYMBOL= paste(unique(SYMBOL),collapse = ",") , 
+#               dist_to_NG =min(dist_to_NG))
+# 
+
+EAR_NG_list <- exp_neargene_table %>% 
+    dplyr::filter(peakid %in% EAR_df$id) %>% 
+  dplyr::select(ENTREZID) %>% 
+  distinct()
+
+ESR_NG_list <- exp_neargene_table %>% 
+    dplyr::filter(peakid %in% ESR_df$id) %>% 
+  dplyr::select(ENTREZID) %>% 
+  distinct()
+
+LR_NG_list <- exp_neargene_table %>% 
+    dplyr::filter(peakid %in% LR_df$id) %>% 
+  dplyr::select(ENTREZID) %>% 
+  distinct()
+
+NR_NG_list <- exp_neargene_table %>% 
+    dplyr::filter(peakid %in% NR_df$id) %>% 
+  dplyr::select(ENTREZID) %>% 
+  distinct()
+
+background_df <- exp_neargene_table %>% 
+  dplyr::select(ENTREZID) %>% 
+  distinct()
+
+EAR_resgenes <- readRDS("data/GO_KEGG_analysis/EAR_resgenes.RDS")
+ESR_resgenes <- readRDS("data/GO_KEGG_analysis/ESR_resgenes.RDS")
+LR_resgenes <- readRDS("data/GO_KEGG_analysis/LR_resgenes.RDS")
+NR_resgenes <- readRDS("data/GO_KEGG_analysis/NR_resgenes.RDS")
+
+
+```
+
+### EAR response genes
+
+```{r GO_EAR}
+# EAR_resgenes <- gost(query = EAR_NG_list$ENTREZID,
+#                     organism = "hsapiens",
+#                     significant = FALSE,
+#                     ordered_query = FALSE,
+#                     domain_scope = "custom",
+#                     measure_underrepresentation = FALSE,
+#                     evcodes = FALSE,
+#                     user_threshold = 0.05,
+#                     correction_method = c("fdr"),
+#                     custom_bg = background_df$ENTREZID,
+#                     sources=c("GO:BP","KEGG"))
+# saveRDS(EAR_resgenes,"data/GO_KEGG_analysis/EAR_resgenes.RDS")
+
+
+EARnom <- gostplot(EAR_resgenes, capped = FALSE, interactive = TRUE)
+# EARnom
+
+EARnomtable <- EAR_resgenes$result %>% 
+  dplyr::select(c(source, term_id,
+                  term_name,intersection_size, 
+                   term_size, p_value))# %>% 
+
+EARnomtable %>%
+   filter(source=="GO:BP", p_value < 0.05) %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(.,caption = "GO:BP terms found in EAR neargenes" ) %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
+EARnomtable %>%
+  filter(source=="KEGG", p_value < 0.05) %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(., caption = "KEGG terms found in EAR neargenes") %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
+
+
+
+
+```
+
+
+### ESR response genes
+
+
+```{r GO_ESR}
+# ESR_resgenes <- gost(query = ESR_NG_list$ENTREZID,
+#                     organism = "hsapiens",
+#                     significant = FALSE,
+#                     ordered_query = FALSE,
+#                     domain_scope = "custom",
+#                     measure_underrepresentation = FALSE,
+#                     evcodes = FALSE,
+#                     user_threshold = 0.05,
+#                     correction_method = c("fdr"),
+#                     custom_bg = background_df$ENTREZID,
+#                     sources=c("GO:BP","KEGG"))
+# saveRDS(ESR_resgenes,"data/GO_KEGG_analysis/ESR_resgenes.RDS")
+
+ESRnom <- gostplot(ESR_resgenes, capped = FALSE, interactive = TRUE)
+# ESRnom
+
+ESRnomtable <- ESR_resgenes$result %>% 
+  dplyr::select(c(source, term_id,
+                  term_name,intersection_size, 
+                   term_size, p_value))# %>% 
+
+ESRnomtable %>%
+   filter(source=="GO:BP", p_value < 0.05) %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(.,caption = "GO:BP terms found in ESR neargenes" ) %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
+ESRnomtable %>%
+  filter(source=="KEGG", p_value < 0.05) %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(., caption = "KEGG terms found in ESR neargenes") %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
+
+```
+
+### LR response genes
+
+
+```{r GO_LR}
+# LR_resgenes <- gost(query = LR_NG_list$ENTREZID,
+#                     organism = "hsapiens",
+#                     significant = FALSE,
+#                     ordered_query = FALSE,
+#                     domain_scope = "custom",
+#                     measure_underrepresentation = FALSE,
+#                     evcodes = FALSE,
+#                     user_threshold = 0.05,
+#                     correction_method = c("fdr"),
+#                     custom_bg = background_df$ENTREZID,
+#                     sources=c("GO:BP","KEGG"))
+# saveRDS(LR_resgenes,"data/GO_KEGG_analysis/LR_resgenes.RDS")
+
+LRnom <- gostplot(LR_resgenes, capped = FALSE, interactive = TRUE)
+# LRnom
+
+LRnomtable <- LR_resgenes$result %>% 
+  dplyr::select(c(source, term_id,
+                  term_name,intersection_size, 
+                   term_size, p_value))# %>% 
+
+LRnomtable %>%
+   filter(source=="GO:BP", p_value < 0.05) %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(.,caption = "GO:BP terms found in LR neargenes" ) %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
+LRnomtable %>%
+  filter(source=="KEGG", p_value < 0.05) %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(., caption = "KEGG terms found in LR neargenes") %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
+
+```
+
+
+### NR response genes
+
+```{r GO_NR}
+# NR_resgenes <- gost(query = NR_NG_list$ENTREZID,
+#                     organism = "hsapiens",
+#                     significant = FALSE,
+#                     ordered_query = FALSE,
+#                     domain_scope = "custom",
+#                     measure_underrepresentation = FALSE,
+#                     evcodes = FALSE,
+#                     user_threshold = 0.05,
+#                     correction_method = c("fdr"),
+#                     custom_bg = background_df$ENTREZID,
+#                     sources=c("GO:BP","KEGG"))
+# saveRDS(NR_resgenes,"data/GO_KEGG_analysis/NR_resgenes.RDS")
+
+NRnom <- gostplot(NR_resgenes, capped = FALSE, interactive = TRUE)
+# NRnom
+
+NRnomtable <- NR_resgenes$result %>% 
+  dplyr::select(c(source, term_id,
+                  term_name,intersection_size, 
+                   term_size, p_value))# %>% 
+
+NRnomtable %>%
+   filter(source=="GO:BP", p_value < 0.05) %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(.,caption = "GO:BP terms found in NR neargenes" ) %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
+NRnomtable %>%
+  filter(source=="KEGG", p_value < 0.05) %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(., caption = "KEGG terms found in NR neargenes") %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
+
+```
+
