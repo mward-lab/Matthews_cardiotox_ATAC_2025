@@ -57,6 +57,7 @@ library(ggpubr)
 library(devtools)
 # install_github('davetang/bedr')
 library(bedr)
+library(biomaRt)
 ```
 
 ### Knowles supp data check
@@ -119,7 +120,9 @@ SNP_supp_schneider <-  SNP_supp_schneider %>%
 
 ##split into granges objects
 ###make dataframe of each EAR,ESR,LR,NR promoters
-
+# background_df <- as.data.frame(background_gr)
+# background_Gr <- GRanges(background_df)
+#  rtracklayer::export.bed(background_Gr, con="data/n45_bedfiles/background_n45.bed", format="bed")
 EAR_df <- as.data.frame(peakAnnoList_n45_motif$EAR_n45_gr)
 # EAR_promotor <- EAR_df %>% 
 #   dplyr::filter(annotation=="Promoter (<=1kb)")
@@ -144,6 +147,18 @@ NR_df <- as.data.frame(peakAnnoList_n45_motif$NR_n45_gr)
 # NR_promotor <- NR_df %>% 
 #   dplyr::filter(annotation=="Promoter (<=1kb)")
  NR_df_gr <-  GRanges(NR_df)
+ 
+ ENCFF134HBK <- read_delim("data/n45_bedfiles/ENCFF134HBK.bed", 
+     delim = "\t", escape_double = FALSE, 
+     col_names = FALSE, trim_ws = TRUE)
+ ZNF384_chip <- ENCFF134HBK %>% 
+   rename(X1="chr",
+         X2="start",
+         X3="end",
+         X10="length") %>%
+   GRanges()
+ 
+ 
 ```
 
 ### Checking for enrichment K4-K6 cardiotox:
@@ -420,13 +435,6 @@ gwas_5_gr_noext <- gwas_5 %>%
 # gwas_2[(is.na(gwas_2$CHR_POS)),]
 ```
 
-| Col1 | Col2 | Col3 | Col4 | Col5 | Col6 | Col7 |
-|------|------|------|------|------|------|------|
-|      |      |      |      |      |      |      |
-|      |      |      |      |      |      |      |
-|      |      |      |      |      |      |      |
-|      |      |      |      |      |      |      |
-|      |      |      |      |      |      |      |
 
 #### GWAS overlap findings
 
@@ -467,8 +475,7 @@ findOverlaps(ESR_df_gr,  MI_gwas_gr)
 findOverlaps(LR_df_gr,  MI_gwas_gr)
 findOverlaps(NR_df_gr,  MI_gwas_gr)
 
-# EAR_g1_ol <- 
-findOverlaps(EAR_df_gr, gwas_1_gr_noext)
+EAR_g1_ol <- findOverlaps(EAR_df_gr, gwas_1_gr_noext)
 ESR_g1_ol <-findOverlaps(ESR_df_gr, gwas_1_gr_noext)
 LR_g1_ol <-findOverlaps(LR_df_gr, gwas_1_gr_noext)
 NR_g1_ol <-findOverlaps(NR_df_gr, gwas_1_gr_noext)
@@ -588,13 +595,7 @@ chisq.test(chitest_CAD_LR)
 
 ```
 
-### Dox cardiotox snps
-
-```{r DoxcardiotoxSNP}
-
-
-
-```
+#### subsetting overlaps
 
 ```{r subsetoverlap to check for peaks/nearestgene}
 ##sub-setting  peaks that overlap with at least 1 SNP in gwas2 noext
@@ -642,7 +643,10 @@ LR_CAD_sol <- as.data.frame(subsetByOverlaps(LR_df_gr,  CAD_gwas_gr))
 NR_CAD_sol <- as.data.frame(subsetByOverlaps(NR_df_gr, CAD_gwas_gr))
 
 ###Now I can pull the geneID list and see if genes are DE from RNAseq data
+```
 
+### RNA MRC (motif response cluster)
+```{r adding in RNA genes}
 toplistall_RNA <- readRDS("data/other_papers/toplistall_RNA.RDS") 
 S13Table <- read.csv( "data/other_papers/S13Table_Matthews2024.csv",row.names = 1)
 ##14021
@@ -953,6 +957,8 @@ pie_chartdata_MI %>%
   theme(plot.title = element_text(size = rel(1.5), hjust = 0.5))
 ```
 
+
+
 ```{r expressionDE chart}
 
 ### Code to express # of DE vs non DE genes associated with SNPs found in MRCs
@@ -1255,3 +1261,214 @@ Counts_RNA_ERMatthews %>%
 
 
 ```
+
+### KEGG pathway enrichment by peaks location
+```{r function profiles comp}
+library(clusterProfiler)
+genes = lapply(peakAnnoList_n45_motif[1:4], function(i) as.data.frame(i)$geneId)
+names(genes) = sub("_", "\n", names(genes))
+compKEGG <- compareCluster(geneCluster   = genes,
+                         fun           = "enrichKEGG",
+                         pvalueCutoff  = 0.05,
+                         pAdjustMethod = "BH")
+dotplot(compKEGG, showCategory = 15, title = "KEGG Pathway Enrichment Analysis")
+
+```
+
+### Mapping peaks to nearest RNA-expressed genes
+
+The code below is the documentation of what I did to make the RNA-gene list from my expressed genes.
+
+I first used `biomaRt` package to retrieve the chromosome information for each ENTREZID.  This game me 13114 rows, with > 500 rows containing string-only chromosomal locations.  I then tried using the hgnc symbol to pull up gene information and  retrieved  'chromosome_name', 'start_position', 'end_position','entrezgene_id', 'ensembl_gene_id', 'hgnc_symbol' for 15,497 rows of genes from my expressed gene list. This list again contained multiple string-only chromosomal locations.  I filtered out non-numeric chromosomes after looking up several genes that had multiple entries with at least one of the entries containing no ENTREZID or incorrect coordinates or symbols, leaving me with 13,426 rows of unique genes, but several contained `NAs` in the ENTREZID column.  Since I generally use ENTREZIDs to connect my data, I removed those genes and was left with 12,984 unique genes from my RNA expressed gene list.  
+ 
+The next steps involved exporting this file as a .bed file and using `bedtools closest` function to map the nearest expressed gene to each peak.   I used `bedtools closest -a background.bed -b Expressedgenes.bed -d > assigned_closest_gene.bed`  to map accessible peaks, ie 151,675 peaks.  Some peaks were assigned more than one neargene, and I kept all neargenes assigned in one file with 156,431 rows.  I can collapse these into a comma deliminated file, but for now I am keeping separated lines.
+
+
+NOTE FOR MYSELF  (are we base 0 or base 1!!!!!)  
+The peak file names do not match the bed file names due to the 0/1 issue.  This means to match up MRC categories by name, I need to alter the first start position by +1 to get the "new" names to match the old names!
+```{r overlapping closest, eval=FALSE, include=TRUE}
+
+# get RNA gene list:  (14,084)  Can be done using the S13 from my previous data-  i just went to UCSC browser and 
+# followed this post on Biostars:  https://bioinformatics.stackexchange.com/questions/17647/create-bed-file-from-list-with-gene-symbols
+
+## I then took the background peaks list and ran "bedtools closest -a background.bed -b Expressedgenes.bed -d -k 2 > assigned_closest_gene.bed"
+
+### Now i can load the file here intersect information
+# assigned_closest_gene <- read_delim("data/n45_bedfiles/assigned_closest_gene.bed", 
+#     delim = "\t", escape_double = FALSE, 
+#     col_names = FALSE, trim_ws = TRUE)
+# gene_ref <- assigned_closest_gene$X10
+# gene_ref <- unique(gene_ref)
+### here i am trying to link the transcript to gene location.   This did not work well so now I am trying to use biomart to retrieve the start and end coordinates of the genes from the gene list, then use that as a .bed file for the closet function.
+
+#  ensembl <- useEnsembl(biomart = "genes", dataset = "hsapiens_gene_ensembl")
+# my_attributes <- c('chromosome_name', 'start_position', 'end_position','entrezgene_id', 'ensembl_gene_id', 'hgnc_symbol')
+# # searchAttributes(mart = ensembl, pattern = "refseq")
+# # searchDatasets(mart=ensembl,pattern="NCBI")
+# gene_list <- getBM(attributes=my_attributes,
+#       filters = "hgnc_symbol",
+#         values = S13Table$SYMBOL,
+#       mart = ensembl)
+# write.csv(gene_ref,"data/gene_ref.csv")
+# listFilters(ensembl)
+
+####
+
+gene_full_list <- gene_list %>% 
+  mutate(chromosome_name=as.numeric(chromosome_name))%>% 
+  # filter(!is.na(chromosome_name)) #%>% 
+  na.omit(.)
+  dplyr::select(chromosome_name,start_position,end_position,entrezgene_id,ensembl_gene_id)
+
+### this conversion left me with 13114 genes. some Ids were lost in the conversion, so I will try to figure those locations out.  This led me to adjusting the biomart retrieval by using hgnc symbol, the removing nas from 15497 to 13426.  This was further cut to 12984 using na.omit which excluded those ncbi gene ids (entrezgeneids) that were empty.   I went with the na.omit option overall.
+write_delim(gene_full_list,delim = "\t",file="data/testnames.txt")
+
+assigned_closest_gene <- read_delim("data/n45_bedfiles/assigned_closest_gene.bed", 
+    delim = "\t", escape_double = FALSE, 
+    col_names = FALSE, trim_ws = TRUE)
+
+expressed_NEARGENE_table <- assigned_closest_gene %>%
+#  NOTE FOR MYSELF  (are we base 0 or base 1!!!!!)  
+# The peak file names do not match the bed file names due to the 0/1 issue.  This means to match up MRC categories by name, I need to alter the first start position by +1! 
+  mutate(X2 = X2+1) %>% 
+  unite("peakid",X1:X3, sep = ".", remove= FALSE) %>% 
+  rename("chr"=X1,
+         "start"=X2,
+         "end"= X3,
+         "NG_chr"=X7,
+         "NG_start"=X8 ,
+         "NG_end"=X9 ,
+         "ENTREZID"= X10,
+         "ensembl_id"= X11,
+         "SYMBOL"=X12,
+         "dist_to_NG"=X13) %>%
+  dplyr::select(chr, start,end, peakid,NG_chr:dist_to_NG) 
+
+write_tsv(expressed_NEARGENE_table,"data/n45_bedfiles/exp_neargene_table.tsv")
+
+##test code for collapsing the list later
+  group_by(chr, start, end, peakid) %>%
+    summarise(NCBI_gene = paste(unique(ENTREZID),collapse=","),
+              ensembl_ID= paste(unique(ensembl_id),collapse = ","),
+              SYMBOL= paste(unique(SYMBOL),collapse = ",") , 
+              dist_to_NG =min(dist_to_NG));
+  
+
+
+```
+### near-gene and MRC peaks
+
+
+
+
+
+```{r near-gene MRC peaks distibution}
+##Assume file not loaded
+exp_neargene_table <- read_delim("data/n45_bedfiles/exp_neargene_table.tsv", 
+    delim = "\t", escape_double = FALSE, 
+    trim_ws = TRUE)
+
+col_ng_peak <- exp_neargene_table %>%
+  group_by(chr, start, end, peakid) %>%
+    summarise(NCBI_gene = paste(unique(ENTREZID),collapse=","),
+              ensembl_ID= paste(unique(ensembl_id),collapse = ","),
+              SYMBOL= paste(unique(SYMBOL),collapse = ",") , 
+              dist_to_NG =min(dist_to_NG))
+
+
+EAR_peak_list <- exp_neargene_table %>% 
+    dplyr::filter(peakid %in% EAR_df$id) %>% 
+  dplyr::select(ENTREZID) %>% 
+  distinct()
+
+ESR_peak_list <- exp_neargene_table %>% 
+    dplyr::filter(peakid %in% ESR_df$id) %>% 
+  dplyr::select(ENTREZID) %>% 
+  distinct()
+
+LR_peak_list <- exp_neargene_table %>% 
+    dplyr::filter(peakid %in% LR_df$id) %>% 
+  dplyr::select(ENTREZID) %>% 
+  distinct()
+
+NR_peak_list <- exp_neargene_table %>% 
+    dplyr::filter(peakid %in% NR_df$id) %>% 
+  dplyr::select(ENTREZID) %>% 
+  distinct()
+
+# length(unique(expressed_NEARGENE_table$ENTREZID))
+
+```
+
+
+#### VENN of peaks
+
+```{r venn of peaks}
+
+ggVennDiagram::ggVennDiagram(list(EAR_peak_list$ENTREZID,ESR_peak_list$ENTREZID,LR_peak_list$ENTREZID, NR_peak_list$ENTREZID),
+              category.names = c("EAR","ESR","LR","NR"), label = "count")+
+  labs(title = "Distribution of NEAR genes by motif response regions")+
+  theme(plot.title = element_text(size = rel(1.5), hjust = 0.5))
+
+
+
+ggVennDiagram::ggVennDiagram(list(EAR_peak_list$ENTREZID,EAR_RNA$ENTREZID),
+              category.names = c("EAR_ATAC","EAR_RNA"), label = "count")+
+  labs(title = "EAR MRC-neargenes and expressed-RNA_MRC")+
+  theme(plot.title = element_text(size = rel(1.5), hjust = 0.5))
+
+ggVennDiagram::ggVennDiagram(list(ESR_peak_list$ENTREZID,ESR_RNA$ENTREZID),
+              category.names = c("ESR_ATAC","ESR_RNA"), label = "count")+
+  labs(title = "ESR MRC-neargenes and expressed-RNA_MRC")+
+  theme(plot.title = element_text(size = rel(1.5), hjust = 0.5))
+
+ggVennDiagram::ggVennDiagram(list(LR_peak_list$ENTREZID,LR_RNA$ENTREZID),
+              category.names = c("LR_ATAC","LR_RNA"), label = "count")+
+  labs(title = "LR MRC-neargenes and expressed-RNA_MRC")+
+  theme(plot.title = element_text(size = rel(1.5), hjust = 0.5))
+
+ggVennDiagram::ggVennDiagram(list(NR_peak_list$ENTREZID,NR_RNA$ENTREZID),
+              category.names = c("NR_ATAC","NR_RNA"), label = "count")+
+  labs(title = "NR MRC-neargenes and expressed-RNA_MRC")+
+  theme(plot.title = element_text(size = rel(1.5), hjust = 0.5))
+
+
+
+
+```
+
+```{r ZNF384}
+### files loaded on line ~ 151
+
+
+length(findOverlaps(EAR_df_gr, ZNF384_chip))
+length(findOverlaps(ESR_df_gr,  ZNF384_chip))
+length(findOverlaps(LR_df_gr,  ZNF384_chip))
+length(findOverlaps(NR_df_gr,  ZNF384_chip))
+
+ZNF_chip_data <- data.frame("CHIP_peak_num"=c(length(findOverlaps(EAR_df_gr, ZNF384_chip)), 
+                            length(findOverlaps(ESR_df_gr,  ZNF384_chip)),
+                            length(findOverlaps(LR_df_gr,  ZNF384_chip)),
+                            length(findOverlaps(NR_df_gr,  ZNF384_chip))),
+                            "MRC"= c("EAR","ESR","LR","NR"), 
+                            "tot_MRC" = c(length(EAR_df$seqnames), 
+                                          length(ESR_df$seqnames), 
+                                          length(LR_df$seqnames), 
+                                          length(NR_df$seqnames))) %>% 
+  mutate(non_chip = tot_MRC-CHIP_peak_num) %>% 
+  mutate(MRC= factor(MRC, levels = c("NR","EAR","ESR","LR")))
+
+ZNF_chip_data %>% 
+  pivot_longer(cols= c(CHIP_peak_num, non_chip), values_to = "counts", names_to = "type") %>% 
+   mutate(percent=counts/tot_MRC*100) %>% 
+  ggplot(., aes(x=MRC,y= percent, fill= type)) +
+  geom_col()+
+   geom_text(aes(label =sprintf("%.1f %%",percent)), position = "stack",vjust= 1
+             )+
+  ggtitle("MRC peaks found in ZNF384 ChIP data")+
+
+  theme_classic()
+```
+Because of the occurrence of ZNF384 enrichment in accessibility of ZNF384 motifs, I used a CHIP pull down of ZNF384 to understand  how many of these peaks may be occupied by the TF in my MRCs.
+
+
