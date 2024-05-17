@@ -118,6 +118,22 @@ ESR_resgenes <- readRDS("data/GO_KEGG_analysis/ESR_resgenes.RDS")
 LR_resgenes <- readRDS("data/GO_KEGG_analysis/LR_resgenes.RDS")
 NR_resgenes <- readRDS("data/GO_KEGG_analysis/NR_resgenes.RDS")
 
+EAR_enh_peaks_20k <- readRDS("data/enhancerdata/EAR_enh_peaks_20k.RDS")
+ESR_enh_peaks_20k <- readRDS("data/enhancerdata/ESR_enh_peaks_20k.RDS")
+LR_enh_peaks_20k <- readRDS("data/enhancerdata/LR_enh_peaks_20k.RDS")
+NR_enh_peaks_20k <- readRDS("data/enhancerdata/NR_enh_peaks_20k.RDS")
+
+EAR_resgenes_20k <- readRDS("data/GO_KEGG_analysis/EAR_resgenes_20k.RDS")
+EAR_resgenes_20k_enh <- readRDS("data/GO_KEGG_analysis/EAR_resgenes_20k_enh.RDS")
+ESR_resgenes_20k <- readRDS("data/GO_KEGG_analysis/ESR_resgenes_20k.RDS")
+ESR_resgenes_20k_enh <- readRDS("data/GO_KEGG_analysis/ESR_resgenes_20k_enh.RDS")
+
+LR_resgenes_20k <- readRDS("data/GO_KEGG_analysis/LR_resgenes_20k.RDS")
+LR_resgenes_20k_enh <- readRDS("data/GO_KEGG_analysis/LR_resgenes_20k_enh.RDS")
+
+NR_resgenes_20k <- readRDS("data/GO_KEGG_analysis/NR_resgenes_20k.RDS")
+NR_resgenes_20k_enh <- readRDS("data/GO_KEGG_analysis/NR_resgenes_20k_enh.RDS")
+
 
 ```
 
@@ -175,7 +191,6 @@ EARnomtable %>%
 
 
 ```
-
 
 ### ESR response genes
 
@@ -332,4 +347,464 @@ NRnomtable %>%
 
 
 ```
+
+
+
+## Peaks within 20,000 bps of assigned nearest expressed gene, GO and KEGG enrichment
+
+```{r data_expNG}
+
+# exp_neargene_table <- read_delim("data/n45_bedfiles/exp_neargene_table.tsv", 
+#     delim = "\t", escape_double = FALSE, 
+#     trim_ws = TRUE)
+
+# col_ng_peak <- exp_neargene_table %>%
+#   group_by(chr, start, end, peakid) %>%
+#     summarise(NCBI_gene = paste(unique(ENTREZID),collapse=","),
+#               ensembl_ID= paste(unique(ensembl_id),collapse = ","),
+#               SYMBOL= paste(unique(SYMBOL),collapse = ",") , 
+#               dist_to_NG =min(dist_to_NG)) %>% 
+#   ungroup()
+
+# write.csv(col_ng_peak, "data/Collapsed_expressed_NG_peak_table.csv")
+col_ng_peak <- read.csv("data/Collapsed_expressed_NG_peak_table.csv", row.names = 1)
+
+EAR_peak_list_20k <-  col_ng_peak %>%
+  dplyr::filter(dist_to_NG<20000) %>% 
+    dplyr::filter(peakid %in% EAR_df$id) 
+
+ESR_peak_list_20k <- col_ng_peak %>%
+  dplyr::filter(dist_to_NG<20000) %>% 
+    dplyr::filter(peakid %in% ESR_df$id) 
+
+LR_peak_list_20k <- col_ng_peak %>%
+  dplyr::filter(dist_to_NG<20000) %>% 
+    dplyr::filter(peakid %in% LR_df$id) 
+
+NR_peak_list_20k <- col_ng_peak %>%
+  dplyr::filter(dist_to_NG<20000) %>% 
+    dplyr::filter(peakid %in% NR_df$id) 
+```
+
+
+### EAR 20,000 bp NG 
+```{r GO_EAR_20k}
+# EAR_resgenes_20k <- gost(query = EAR_peak_list_20k$NCBI_gene,
+#                     organism = "hsapiens",
+#                     significant = FALSE,
+#                     ordered_query = FALSE,
+#                     domain_scope = "custom",
+#                     measure_underrepresentation = FALSE,
+#                     evcodes = FALSE,
+#                     user_threshold = 0.05,
+#                     correction_method = c("fdr"),
+#                     custom_bg = background_df$ENTREZID,
+#                     sources=c("GO:BP","KEGG"))
+# saveRDS(EAR_resgenes_20k,"data/GO_KEGG_analysis/EAR_resgenes_20k.RDS")
+
+
+EARnom <- gostplot(EAR_resgenes_20k, capped = FALSE, interactive = TRUE)
+# EARnom
+
+EARnomtable_20k <- EAR_resgenes_20k$result %>% 
+  dplyr::select(c(source, term_id,
+                  term_name,intersection_size, 
+                   term_size, p_value))# %>% 
+
+EARnomtable_20k %>%
+   filter(source=="GO:BP", p_value < 0.05) %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(.,caption = "GO:BP terms found in EAR neargenes_20k" ) %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
+EARnomtable_20k %>%
+  filter(source=="KEGG", p_value < 0.05) %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(., caption = "KEGG terms found in EAR neargenes_20k") %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
+
+
+
+
+```
+
+
+
+
+
+
+### EAR peaks overlapping enhancers
+```{r GO_EAR_20k_enh}
+# EAR_resgenes_20k_enh <- gost(query = unique(EAR_enh_peaks_20k$NCBI_gene),
+#                     organism = "hsapiens",
+#                     significant = FALSE,
+#                     ordered_query = FALSE,
+#                     domain_scope = "custom",
+#                     measure_underrepresentation = FALSE,
+#                     evcodes = FALSE,
+#                     user_threshold = 0.05,
+#                     correction_method = c("fdr"),
+#                     custom_bg = background_df$ENTREZID,
+#                     sources=c("GO:BP","KEGG"))
+# saveRDS(EAR_resgenes_20k_enh,"data/GO_KEGG_analysis/EAR_resgenes_20k_enh.RDS")
+
+
+# EARnom <- gostplot(EAR_resgenes_20k_enh, capped = FALSE, interactive = TRUE)
+# EARnom
+
+EARnomtable_20k_enh <- EAR_resgenes_20k_enh$result %>% 
+  dplyr::select(c(source, term_id,
+                  term_name,intersection_size, 
+                   term_size, p_value))# %>% 
+
+EARnomtable_20k_enh %>%
+   filter(source=="GO:BP", p_value < 0.05) %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(.,caption = "GO:BP terms found in EAR enhancer neargenes_20k" ) %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
+EARnomtable_20k_enh %>%
+  filter(source=="KEGG", p_value < 0.05) %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(., caption = "KEGG terms found in EAR enhancer neargenes_20k") %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
+```
+
+### ESR 20,000 bp NG 
+```{r GO_ESR_20k}
+# ESR_resgenes_20k <- gost(query = ESR_peak_list_20k$NCBI_gene,
+#                     organism = "hsapiens",
+#                     significant = FALSE,
+#                     ordered_query = FALSE,
+#                     domain_scope = "custom",
+#                     measure_underrepresentation = FALSE,
+#                     evcodes = FALSE,
+#                     user_threshold = 0.05,
+#                     correction_method = c("fdr"),
+#                     custom_bg = background_df$ENTREZID,
+#                     sources=c("GO:BP","KEGG"))
+# saveRDS(ESR_resgenes_20k,"data/GO_KEGG_analysis/ESR_resgenes_20k.RDS")
+
+
+# ESRnom <- gostplot(ESR_resgenes_20k, capped = FALSE, interactive = TRUE)
+# ESRnom
+
+ESRnomtable_20k <- ESR_resgenes_20k$result %>% 
+  dplyr::select(c(source, term_id,
+                  term_name,intersection_size, 
+                   term_size, p_value))# %>% 
+
+ESRnomtable_20k %>%
+   filter(source=="GO:BP", p_value < 0.05) %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(.,caption = "GO:BP terms found in ESR nESRgenes_20k" ) %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
+ESRnomtable_20k %>%
+  filter(source=="KEGG", p_value < 0.05) %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(., caption = "KEGG terms found in ESR nESRgenes_20k") %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
+
+
+
+
+```
+
+### ESR peaks overlapping enhancers
+```{r GO_ESR_20k_enh}
+# ESR_resgenes_20k_enh <- gost(query = unique(ESR_enh_peaks_20k$NCBI_gene),
+#                     organism = "hsapiens",
+#                     significant = FALSE,
+#                     ordered_query = FALSE,
+#                     domain_scope = "custom",
+#                     measure_underrepresentation = FALSE,
+#                     evcodes = FALSE,
+#                     user_threshold = 0.05,
+#                     correction_method = c("fdr"),
+#                     custom_bg = background_df$ENTREZID,
+#                     sources=c("GO:BP","KEGG"))
+# saveRDS(ESR_resgenes_20k_enh,"data/GO_KEGG_analysis/ESR_resgenes_20k_enh.RDS")
+
+
+# ESRnom <- gostplot(ESR_resgenes_20k_enh, capped = FALSE, interactive = TRUE)
+# ESRnom
+
+ESRnomtable_20k_enh <- ESR_resgenes_20k_enh$result %>% 
+  dplyr::select(c(source, term_id,
+                  term_name,intersection_size, 
+                   term_size, p_value))# %>% 
+
+ESRnomtable_20k_enh %>%
+   filter(source=="GO:BP", p_value < 0.05) %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(.,caption = "GO:BP terms found in ESR neargenes_20k" ) %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
+ESRnomtable_20k_enh %>%
+  filter(source=="KEGG", p_value < 0.05) %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(., caption = "KEGG terms found in ESR enhancer neargenes_20k") %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
+```
+
+### LR 20,000 bp NG 
+```{r GO_LR_20k}
+# LR_resgenes_20k <- gost(query = LR_peak_list_20k$NCBI_gene,
+#                     organism = "hsapiens",
+#                     significant = FALSE,
+#                     ordered_query = FALSE,
+#                     domain_scope = "custom",
+#                     measure_underrepresentation = FALSE,
+#                     evcodes = FALSE,
+#                     user_threshold = 0.05,
+#                     correction_method = c("fdr"),
+#                     custom_bg = background_df$ENTREZID,
+#                     sources=c("GO:BP","KEGG"))
+# saveRDS(LR_resgenes_20k,"data/GO_KEGG_analysis/LR_resgenes_20k.RDS")
+
+
+# LRnom <- gostplot(LR_resgenes_20k, capped = FALSE, interactive = TRUE)
+# LRnom
+
+LRnomtable_20k <- LR_resgenes_20k$result %>% 
+  dplyr::select(c(source, term_id,
+                  term_name,intersection_size, 
+                   term_size, p_value))# %>% 
+
+LRnomtable_20k %>%
+   filter(source=="GO:BP", p_value < 0.05) %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(.,caption = "GO:BP terms found in LR nESRgenes_20k" ) %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
+LRnomtable_20k %>%
+  filter(source=="KEGG", p_value < 0.05) %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(., caption = "KEGG terms found in LR nESRgenes_20k") %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
+
+
+
+
+```
+
+### LR peaks overlapping enhancers
+```{r GO_LR_20k_enh}
+# LR_resgenes_20k_enh <- gost(query = unique(LR_enh_peaks_20k$NCBI_gene),
+#                     organism = "hsapiens",
+#                     significant = FALSE,
+#                     ordered_query = FALSE,
+#                     domain_scope = "custom",
+#                     measure_underrepresentation = FALSE,
+#                     evcodes = FALSE,
+#                     user_threshold = 0.05,
+#                     correction_method = c("fdr"),
+#                     custom_bg = background_df$ENTREZID,
+#                     sources=c("GO:BP","KEGG"))
+# saveRDS(LR_resgenes_20k_enh,"data/GO_KEGG_analysis/LR_resgenes_20k_enh.RDS")
+
+
+# LRnom <- gostplot(LR_resgenes_20k_enh, capped = FALSE, interactive = TRUE)
+# LRnom
+
+LRnomtable_20k_enh <- LR_resgenes_20k_enh$result %>% 
+  dplyr::select(c(source, term_id,
+                  term_name,intersection_size, 
+                   term_size, p_value))# %>% 
+
+LRnomtable_20k_enh %>%
+   filter(source=="GO:BP", p_value < 0.05) %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(.,caption = "GO:BP terms found in LR neargenes_20k" ) %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
+LRnomtable_20k_enh %>%
+  filter(source=="KEGG", p_value < 0.05) %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(., caption = "KEGG terms found in LR enhancer neargenes_20k") %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
+```
+
+### NR 20,000 bp NG 
+```{r GO_NR_20k}
+# NR_resgenes_20k <- gost(query = NR_peak_list_20k$NCBI_gene,
+#                     organism = "hsapiens",
+#                     significant = FALSE,
+#                     ordered_query = FALSE,
+#                     domain_scope = "custom",
+#                     measure_underrepresentation = FALSE,
+#                     evcodes = FALSE,
+#                     user_threshold = 0.05,
+#                     correction_method = c("fdr"),
+#                     custom_bg = background_df$ENTREZID,
+#                     sources=c("GO:BP","KEGG"))
+# saveRDS(NR_resgenes_20k,"data/GO_KEGG_analysis/NR_resgenes_20k.RDS")
+
+
+# NRnom <- gostplot(NR_resgenes_20k, capped = FALSE, interactive = TRUE)
+# NRnom
+
+NRnomtable_20k <- NR_resgenes_20k$result %>% 
+  dplyr::select(c(source, term_id,
+                  term_name,intersection_size, 
+                   term_size, p_value))# %>% 
+
+NRnomtable_20k %>%
+   filter(source=="GO:BP", p_value < 0.05) %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(.,caption = "GO:BP terms found in NR nESRgenes_20k" ) %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
+NRnomtable_20k %>%
+  filter(source=="KEGG", p_value < 0.05) %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(., caption = "KEGG terms found in NR nESRgenes_20k") %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
+```
+
+
+
+### NR peaks overlapping enhancers
+```{r GO_NR_20k_enh}
+# NR_resgenes_20k_enh <- gost(query = unique(NR_enh_peaks_20k$NCBI_gene),
+#                     organism = "hsapiens",
+#                     significant = FALSE,
+#                     ordered_query = FALSE,
+#                     domain_scope = "custom",
+#                     measure_underrepresentation = FALSE,
+#                     evcodes = FALSE,
+#                     user_threshold = 0.05,
+#                     correction_method = c("fdr"),
+#                     custom_bg = background_df$ENTREZID,
+#                     sources=c("GO:BP","KEGG"))
+# saveRDS(NR_resgenes_20k_enh,"data/GO_KEGG_analysis/NR_resgenes_20k_enh.RDS")
+
+
+# NRnom <- gostplot(NR_resgenes_20k_enh, capped = FALSE, interactive = TRUE)
+# NRnom
+
+NRnomtable_20k_enh <- NR_resgenes_20k_enh$result %>% 
+  dplyr::select(c(source, term_id,
+                  term_name,intersection_size, 
+                   term_size, p_value))# %>% 
+
+NRnomtable_20k_enh %>%
+   filter(source=="GO:BP", p_value < 0.05) %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(.,caption = "GO:BP terms found in NR neargenes_20k" ) %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
+NRnomtable_20k_enh %>%
+  filter(source=="KEGG", p_value < 0.05) %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(., caption = "KEGG terms found in NR enhancer neargenes_20k") %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
+```
+
+
 
