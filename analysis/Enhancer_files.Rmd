@@ -1,0 +1,236 @@
+---
+title: "Enhancer_files"
+author: "ERM"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE,
+	warning = FALSE
+)
+```
+
+```{css, echo=FALSE}
+pre {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+pre[class] {
+  max-height: 200px;
+}
+```
+
+```{r  package loading}
+library(tidyverse)
+# library(ggsignif)
+# library(cowplot)
+# library(ggpubr)
+
+# library(sjmisc)
+library(kableExtra)
+library(broom)
+# library(biomaRt)
+library(RColorBrewer)
+# library(gprofiler2)
+# library(qvalue)
+library(ChIPseeker)
+library("TxDb.Hsapiens.UCSC.hg38.knownGene")
+library("org.Hs.eg.db")
+# library(ATACseqQC)
+library(rtracklayer)
+library(edgeR)
+library(ggfortify)
+library(limma)
+library(readr)
+library(BiocGenerics)
+library(gridExtra)
+library(VennDiagram)
+library(scales)
+# library(ggVennDiagram)
+library(Cormotif)
+library(BiocParallel)
+library(ggpubr)
+library(devtools)
+# install_github('davetang/bedr')
+library(bedr)
+library(JASPAR2022)
+library(TFBSTools)
+library(MotifDb)
+library(BSgenome.Hsapiens.UCSC.hg38)
+
+```
+
+Data loading
+
+```{r data loading}
+
+toplistall_RNA <- readRDS("data/other_papers/toplistall_RNA.RDS") 
+S13Table <- read.csv( "data/other_papers/S13Table_Matthews2024.csv",row.names = 1)
+##14021
+
+EAR_RNA <- S13Table %>% 
+  dplyr::filter(MOTIF=="EAR") %>% 
+  dplyr::select(ENTREZID) %>% 
+  mutate(ENTREZID= as.character(ENTREZID))
+ESR_RNA <- S13Table %>% 
+  dplyr::filter(MOTIF=="ESR")%>% 
+  dplyr::select(ENTREZID)%>% 
+  mutate(ENTREZID= as.character(ENTREZID))
+LR_RNA <- S13Table %>% 
+  dplyr::filter(MOTIF=="LR")%>% 
+  dplyr::select(ENTREZID)%>% 
+  mutate(ENTREZID=as.character(ENTREZID))
+NR_RNA <- S13Table %>% 
+  dplyr::filter(MOTIF=="NR")%>% 
+  dplyr::select(ENTREZID)%>% 
+  mutate(ENTREZID= as.character(ENTREZID))
+
+peakAnnoList_n45_motif <- readRDS("data/peakAnnoList_n45_motif.RDS")
+list2env(peakAnnoList_n45_motif, envir = .GlobalEnv)
+EAR_df <- as.data.frame(peakAnnoList_n45_motif$EAR_n45_gr)
+EAR_df_gr <-  GRanges(EAR_df)
+
+
+ESR_df <- as.data.frame(peakAnnoList_n45_motif$ESR_n45_gr)
+ESR_df_gr <-  GRanges(ESR_df)
+
+LR_df <- as.data.frame(peakAnnoList_n45_motif$LR_n45_gr)
+LR_df_gr <-  GRanges(LR_df)
+
+NR_df <- as.data.frame(peakAnnoList_n45_motif$NR_n45_gr)
+NR_df_gr <-  GRanges(NR_df)
+
+exp_neargene_table <- read_delim("data/n45_bedfiles/exp_neargene_table.tsv", 
+    delim = "\t", escape_double = FALSE, 
+    trim_ws = TRUE)
+
+col_ng_peak <- exp_neargene_table %>%
+  group_by(chr, start, end, peakid) %>%
+    summarise(NCBI_gene = paste(unique(ENTREZID),collapse=","),
+              ensembl_ID= paste(unique(ensembl_id),collapse = ","),
+              SYMBOL= paste(unique(SYMBOL),collapse = ",") , 
+              dist_to_NG =min(dist_to_NG)) %>% 
+  ungroup()
+
+
+EAR_peak_list_20k <-  col_ng_peak %>%
+  dplyr::filter(dist_to_NG<20000) %>% 
+    dplyr::filter(peakid %in% EAR_df$id) 
+
+ESR_peak_list_20k <- col_ng_peak %>%
+  dplyr::filter(dist_to_NG<20000) %>% 
+    dplyr::filter(peakid %in% ESR_df$id) 
+
+LR_peak_list_20k <- col_ng_peak %>%
+  dplyr::filter(dist_to_NG<20000) %>% 
+    dplyr::filter(peakid %in% LR_df$id) 
+
+NR_peak_list_20k <- col_ng_peak %>%
+  dplyr::filter(dist_to_NG<20000) %>% 
+    dplyr::filter(peakid %in% NR_df$id) 
+```
+
+```{r Venns of data}
+ggVennDiagram::ggVennDiagram(list(unique(EAR_peak_list_20k$ensembl_ID), 
+                                  unique(ESR_peak_list_20k$ensembl_ID),  
+                                  unique(LR_peak_list_20k$ensembl_ID), 
+                                  unique(NR_peak_list_20k$ensembl_ID)),
+                             category.names = c("EAR_NG","ESR_NG","LR_NG","NR_NG"),
+              show_intersect = FALSE,
+              set_color = "black",
+              label = "count",
+              label_percent_digit = 1,
+              label_size = 4,
+              label_alpha = 0,
+              label_color = "black",
+              edge_lty = "solid", set_size = 4)
+
+
+
+ggVennDiagram::ggVennDiagram(list(EAR_peak_list_20k$NCBI_gene,EAR_RNA$ENTREZID),
+              category.names = c("EAR_ATAC","EAR_RNA"), label = "count")+
+  labs(title = "EAR MRC-neargenes and expressed-RNA_MRC")+
+  theme(plot.title = element_text(size = rel(1.5), hjust = 0.5))
+
+ggVennDiagram::ggVennDiagram(list(ESR_peak_list_20k$NCBI_gene,ESR_RNA$ENTREZID),
+              category.names = c("ESR_ATAC","ESR_RNA"), label = "count")+
+  labs(title = "ESR MRC-neargenes and expressed-RNA_MRC")+
+  theme(plot.title = element_text(size = rel(1.5), hjust = 0.5))
+
+ggVennDiagram::ggVennDiagram(list(LR_peak_list_20k$NCBI_gene,LR_RNA$ENTREZID),
+              category.names = c("LR_ATAC","LR_RNA"), label = "count")+
+  labs(title = "LR MRC-neargenes and expressed-RNA_MRC")+
+  theme(plot.title = element_text(size = rel(1.5), hjust = 0.5))
+
+ggVennDiagram::ggVennDiagram(list(NR_peak_list_20k$NCBI_gene,NR_RNA$ENTREZID),
+              category.names = c("NR_ATAC","NR_RNA"), label = "count")+
+  labs(title = "NR MRC-neargenes and expressed-RNA_MRC")+
+  theme(plot.title = element_text(size = rel(1.5), hjust = 0.5))
+
+
+```
+
+```{r  enhancers of the heart}
+
+enhancers_HLV_46F <- genomation::readBed("C:/Users/renee/Downloads/Supplements folde manuscriptr/ENCODE/heart_left_ventricle_tissue_female_adult_46_years.enhancers.bed")
+
+enhancerdf <- data.frame("MRC"=c("NR", "LR","ESR","EAR"), 
+              "cRE_yes"=c(length(findOverlaps(enhancers_HLV_46F,NR_df_gr)),
+                        length(findOverlaps(enhancers_HLV_46F,LR_df_gr)),
+                        length(findOverlaps(enhancers_HLV_46F,ESR_df_gr)),
+                        length(findOverlaps(enhancers_HLV_46F,EAR_df_gr))),
+              "cRE_no"=c(length(NR_df$seqnames)-length(findOverlaps(enhancers_HLV_46F,NR_df_gr)),
+                       length(LR_df$seqnames)-length(findOverlaps(enhancers_HLV_46F,LR_df_gr)), 
+                       length(ESR_df$seqnames)-length(findOverlaps(enhancers_HLV_46F,ESR_df_gr)),
+                       length(EAR_df$seqnames)-length(findOverlaps(enhancers_HLV_46F,EAR_df_gr))))
+testdf <- enhancerdf %>% 
+  column_to_rownames("MRC") %>% 
+  as.matrix() 
+paste("Late Response chi")
+chisq.test(testdf[c(1,2),])
+paste("Early sustained Response chi")
+chisq.test(testdf[c(1,3),])
+paste("Early-acute Response chi")
+chisq.test(testdf[c(1,4),])
+
+enhancerdf %>% 
+      pivot_longer(., cols=c(cRE_yes,cRE_no), names_to = "Enh_status", values_to = "count") %>% mutate(MRC=factor(MRC, levels = c("NR","EAR", "ESR","LR"))) %>% 
+  ggplot(., aes(x = MRC, y= count ))+
+    geom_bar(position ="fill", stat="identity", aes(fill=Enh_status))
+ 
+```
+
+| Cluster | enhancers                                            | not enhancers                                                                |
+|------------------------|------------------------|------------------------|
+| NR      | `r length(findOverlaps(enhancers_HLV_46F,NR_df_gr))` | `r length(NR_df$seqnames)-length(findOverlaps(enhancers_HLV_46F,NR_df_gr))`  |
+| LR      | `r length(findOverlaps(enhancers_HLV_46F,NR_df_gr))` | `r length(NR_df$seqnames)-length(findOverlaps(enhancers_HLV_46F,NR_df_gr))` |
+| ESR     | `r length(findOverlaps(enhancers_HLV_46F,NR_df_gr))` | `r length(NR_df$seqnames)-length(findOverlaps(enhancers_HLV_46F,NR_df_gr))` |
+| EAR     | `r length(findOverlaps(enhancers_HLV_46F,NR_df_gr))` | `r length(NR_df$seqnames)-length(findOverlaps(enhancers_HLV_46F,NR_df_gr))` |
+
+
+
+```{r making enhancer NG sets}
+EAR_20k_peaks_gr <- GRanges(EAR_peak_list_20k)
+ESR_20k_peaks_gr <- GRanges(ESR_peak_list_20k)
+LR_20k_peaks_gr <- GRanges(LR_peak_list_20k)
+NR_20k_peaks_gr <- GRanges(NR_peak_list_20k)
+
+EAR_enh_peaks_20k <- as.data.frame(subsetByOverlaps(EAR_20k_peaks_gr,enhancers_HLV_46F))
+ESR_enh_peaks_20k <- as.data.frame(subsetByOverlaps(ESR_20k_peaks_gr,enhancers_HLV_46F))
+LR_enh_peaks_20k <- as.data.frame(subsetByOverlaps(LR_20k_peaks_gr,enhancers_HLV_46F))
+NR_enh_peaks_20k <- as.data.frame(subsetByOverlaps(NR_20k_peaks_gr,enhancers_HLV_46F))
+# saveRDS(EAR_enh_peaks_20k,"data/enhancerdata/EAR_enh_peaks_20k.RDS")
+# saveRDS(ESR_enh_peaks_20k,"data/enhancerdata/ESR_enh_peaks_20k.RDS")
+# saveRDS(LR_enh_peaks_20k,"data/enhancerdata/LR_enh_peaks_20k.RDS")
+# saveRDS(NR_enh_peaks_20k,"data/enhancerdata/NR_enh_peaks_20k.RDS")
+
+
+
+```
+
+
+
