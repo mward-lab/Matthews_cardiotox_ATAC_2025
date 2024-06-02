@@ -49,7 +49,7 @@ library(ggfortify)
 library(limma)
 library(ggVennDiagram)
 library(devtools)
-install_github('davetang/bedr')
+# install_github('davetang/bedr')
 library(bedr)
 ```
 
@@ -244,15 +244,15 @@ toplist_n45 %>%
 ```{r histograms}
 
 
-toplist_n45 %>% 
-  group_by(time, trt) %>% 
-  dplyr::filter(trt != "TRZ") %>%
-  ggplot(., aes( x=(adj.P.Val)))+
- geom_histogram(aes(y=after_stat(density)), colour="black", fill="white")+
-  geom_density(alpha=.2, fill="#FF6666")+
-  theme_bw()+
-  ggtitle("adj.P.Value density by time/trt")+
-  facet_wrap(time~trt)
+# toplist_n45 %>% 
+#   group_by(time, trt) %>% 
+#   dplyr::filter(trt != "TRZ") %>%
+#   ggplot(., aes( x=(adj.P.Val)))+
+#  geom_histogram(aes(y=after_stat(density)), colour="black", fill="white")+
+#   geom_density(alpha=.2, fill="#FF6666")+
+#   theme_bw()+
+#   ggtitle("adj.P.Value density by time/trt")+
+#   facet_wrap(time~trt)
 
 toplist_n45 %>% 
   group_by(time, trt) %>% 
@@ -541,6 +541,9 @@ toplist_n45 %>%
 DNR_3_top3_n45 <- V.DNR_3.top_n45[1:3,1]
 
 
+V.EPI_3.top_n45 %>% 
+  dplyr::filter(peak=="chr4.173529475.173530537")
+
 row.names(log_filt_hc_n45) <- row.names(my_hc_filtered_counts_n45)
 log_filt_hc_n45 %>% 
   dplyr::filter(row.names(.) %in% DNR_3_top3_n45) %>% 
@@ -664,75 +667,95 @@ log_filt_hc_n45 %>%
 ```
 
 
-### Distal elements
-```{r examin distal elements, message=FALSE, warning=FALSE}
+### TSS elements
+```{r examin TSS elements, message=FALSE, warning=FALSE}
 
-# data.frame("DOX_3_n45" = siglist_n45_peaks$DOX_3_n45$peak) %>%
+# data.frame("DOX_3_n45" = siglist_n45$DOX_3_n45$peak) %>%
 #     mutate(name =DOX_3_n45) %>%
 #   separate(DOX_3_n45, into = c( "chr","start","end")) %>%
 #       mutate(start=as.integer(start), end=as.integer(end)) %>%
 #     dplyr::select(chr, start,end,name) %>%
-#     na.omit() %>%
-#     write.table(.,file = "data/n45_bedfiles/DOX_3_n45.bed", row.names =FALSE,col.name=FALSE)
+#     na.omit(.) %>% GRanges(.) %>% 
+#   rtracklayer::export.bed(., con="data/n45_bedfiles/DOX_3_n45.bed", format="bed", ignore.strand = FALSE)
+#     # write.table(.,file = "data/n45_bedfiles/DOX_3_n45.bed", row.names =FALSE,col.name=FALSE)
 # 
-# data.frame("EPI_3_n45" = siglist_n45_peaks$EPI_3_n45$peak) %>%
+# data.frame("EPI_3_n45" = siglist_n45$EPI_3_n45$peak) %>%
 #     mutate(name =EPI_3_n45) %>%
 #   separate(EPI_3_n45, into = c( "chr","start","end")) %>%
 #       mutate(start=as.integer(start), end=as.integer(end)) %>%
 #     dplyr::select(chr, start,end,name) %>%
-#     na.omit() %>%
-#     write.table(.,file = "data/n45_bedfiles/EPI_3_n45.bed", row.names =FALSE,col.name=FALSE)
-# 
-# 
-# data.frame("DNR_3_n45" = siglist_n45_peaks$DNR_3_n45$peak) %>%
-#     mutate(name = DNR_3_n45) %>% 
+#     na.omit(.) %>% GRanges(.) %>% 
+#   rtracklayer::export.bed(., con="data/n45_bedfiles/EPI_3_n45.bed", format="bed", ignore.strand = FALSE)
+    # write.table(.,file = "data/n45_bedfiles/EPI_3_n45.bed", row.names =FALSE,col.name=FALSE)
+
+
+# data.frame("DNR_3_n45" = siglist_n45$DNR_3_n45$peak) %>%
+#     mutate(name = DNR_3_n45) %>%
 #   separate(DNR_3_n45, into = c( "chr","start","end")) %>%
 #       mutate(start=as.integer(start), end=as.integer(end)) %>%
 #     dplyr::select(chr, start,end,name) %>%
-#     na.omit() %>%
-#     write.table(.,file = "data/n45_bedfiles/DNR_3_n45.bed", row.names =FALSE,col.name=FALSE)
-# 
-# 
-# data.frame("MTX_3_n45" = siglist_n45_peaks$MTX_3_n45$peak) %>%
+#     na.omit(.) %>% GRanges(.) %>% 
+#   rtracklayer::export.bed(., con="data/n45_bedfiles/DNR_3_n45.bed", format="bed", ignore.strand = FALSE)
+#     # write.table(.,file = "data/n45_bedfiles/DNR_3_n45.bed", row.names =FALSE,col.name=FALSE)
+
+
+# data.frame("MTX_3_n45" = siglist_n45$MTX_3_n45$peak) %>%
 #     mutate(name =MTX_3_n45) %>%
 #   separate(MTX_3_n45, into = c( "chr","start","end")) %>%
 #       mutate(start=as.integer(start), end=as.integer(end)) %>%
 #     dplyr::select(chr, start,end,name) %>%
-#     na.omit() %>%
-#     write.table(.,file = "data/n45_bedfiles/MTX_3_n45.bed", row.names =FALSE,col.name=FALSE)
-# 
-# 
-# data.frame("DOX_24_n45" = siglist_n45_peaks$DOX_24_n45$peak) %>%
+#     na.omit(.) %>% GRanges(.) %>% 
+#   rtracklayer::export.bed(., con="data/n45_bedfiles/MTX_3_n45.bed", format="bed", ignore.strand = FALSE)
+#     # write.table(.,file = "data/n45_bedfiles/MTX_3_n45.bed", row.names =FALSE,col.name=FALSE)
+
+
+# data.frame("DOX_24_n45" = siglist_n45$DOX_24_n45$peak) %>%
 #     mutate(name =DOX_24_n45) %>%
 #   separate(DOX_24_n45, into = c( "chr","start","end")) %>%
 #       mutate(start=as.integer(start), end=as.integer(end)) %>%
 #     dplyr::select(chr, start,end,name) %>%
-#     na.omit() %>%
-#     write.table(.,file = "data/n45_bedfiles/DOX_24_n45.bed", row.names =FALSE,col.name=FALSE)
-# data.frame("EPI_24_n45" = siglist_n45_peaks$EPI_24_n45$peak) %>%
+#     na.omit(.) %>% GRanges(.) %>% 
+#   rtracklayer::export.bed(., con="data/n45_bedfiles/DOX_24_n45.bed", format="bed", ignore.strand = FALSE)
+    # write.table(.,file = "data/n45_bedfiles/DOX_24_n45.bed", row.names =FALSE,col.name=FALSE)
+
+# data.frame("EPI_24_n45" = siglist_n45$EPI_24_n45$peak) %>%
 #     mutate(name =EPI_24_n45) %>%
 #   separate(EPI_24_n45, into = c( "chr","start","end")) %>%
 #       mutate(start=as.integer(start), end=as.integer(end)) %>%
 #     dplyr::select(chr, start,end,name) %>%
-#     na.omit() %>%
-#     write.table(.,file = "data/n45_bedfiles/EPI_24_n45.bed", row.names =FALSE,col.name=FALSE)
-# data.frame("DNR_24_n45" = siglist_n45_peaks$DNR_24_n45$peak) %>%
+#      na.omit(.) %>% GRanges(.) %>% 
+#   rtracklayer::export.bed(., con="data/n45_bedfiles/EPI_24_n45.bed", format="bed", ignore.strand = FALSE)
+#     # write.table(.,file = "data/n45_bedfiles/EPI_24_n45.bed", row.names =FALSE,col.name=FALSE)
+
+# data.frame("DNR_24_n45" = siglist_n45$DNR_24_n45$peak) %>%
 #     mutate(name =DNR_24_n45) %>%
 #   separate(DNR_24_n45, into = c( "chr","start","end")) %>%
 #       mutate(start=as.integer(start), end=as.integer(end)) %>%
 #     dplyr::select(chr, start,end,name) %>%
-#     na.omit() %>%
-#     write.table(.,file = "data/n45_bedfiles/DNR_24_n45.bed", row.names =FALSE,col.name=FALSE)
+#     na.omit(.) %>% GRanges(.) %>% 
+#   rtracklayer::export.bed(., con="data/n45_bedfiles/DNR_24_n45.bed", format="bed", ignore.strand = FALSE)
+#     # write.table(.,file = "data/n45_bedfiles/DNR_24_n45.bed", row.names =FALSE,col.name=FALSE)
+
+# test <- data.frame("all_peaks"= row.names(log_filt_hc_n45)) %>% 
+#   mutate(name = all_peaks) %>% 
+#   separate(all_peaks, into = c( "chr","start","end")) %>%
+#       mutate(start=as.integer(start), end=as.integer(end)) %>%
+#   dplyr::filter(chr != "chrUn") %>% 
+#   na.omit(.) %>%
+#     dplyr::select(chr, start,end,name) %>% 
+#   GRanges(.)
+# rtracklayer::export.bed(test, con="data/n45_bedfiles/DAR_DEG_background.bed", format="bed", ignore.strand = FALSE)
 # 
 # 
-# data.frame("MTX_24_n45" = siglist_n45_peaks$MTX_24_n45$peak) %>%
+# data.frame("MTX_24_n45" = siglist_n45$MTX_24_n45$peak) %>%
 #     mutate(name =MTX_24_n45) %>%
 #   separate(MTX_24_n45, into = c( "chr","start","end")) %>%
 #       mutate(start=as.integer(start), end=as.integer(end)) %>%
 #     dplyr::select(chr, start,end,name) %>%
-#     na.omit() %>%
-#     write.table(.,file = "data/n45_bedfiles/MTX_24_n45.bed", row.names =FALSE,col.name=FALSE)
-# 
+#     na.omit(.) %>% GRanges(.) %>% 
+#   rtracklayer::export.bed(., con="data/n45_bedfiles/MTX_24_n45.bed", format="bed", ignore.strand = FALSE)
+#     # write.table(.,file = "data/n45_bedfiles/MTX_24_n45.bed", row.names =FALSE,col.name=FALSE)
+
 # txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
 # TSS = getBioRegion(TxDb=txdb, upstream=2000, downstream=2000, by = "gene", 
 #                    type = "start_site")
@@ -745,16 +768,17 @@ log_filt_hc_n45 %>%
 # EPI_24_n45_gr <- bed_to_granges("data/n45_bedfiles/EPI_24_n45.bed")
 # DNR_24_n45_gr <- bed_to_granges("data/n45_bedfiles/DNR_24_n45.bed")
 # DOX_24_n45_gr <- bed_to_granges("data/n45_bedfiles/DOX_24_n45.bed")
-
-
-# my_list_3_n45<-list(DOX_3_n45_gr,EPI_3_n45_gr,DNR_3_n45_gr,MTX_3_n45_gr)
+# background_n45_gr <- bed_to_granges("data/n45_bedfiles/DAR_DEG_background.bed")
+# 
+# 
+# my_list_3_n45<-list(DOX_3_n45_gr,EPI_3_n45_gr,DNR_3_n45_gr,MTX_3_n45_gr, background_n45_gr)
 # peakAnnoList_3_n45<- lapply(my_list_3_n45, annotatePeak, tssRegion =c(-2000,2000), TxDb= txdb)
-# names(peakAnnoList_3_n45) <- c("DOX_3_n45" ,"EPI_3_n45", "DNR_3_n45", "MTX_3_n45")
+# names(peakAnnoList_3_n45) <- c("DOX_3_n45" ,"EPI_3_n45", "DNR_3_n45", "MTX_3_n45", "background")
 # saveRDS(peakAnnoList_3_n45, "data/peakAnnoList_3_n45.RDS")
 # 
-# my_list_24_n45<-list(DOX_24_n45_gr,EPI_24_n45_gr,DNR_24_n45_gr,MTX_24_n45_gr)
+# my_list_24_n45<-list(DOX_24_n45_gr,EPI_24_n45_gr,DNR_24_n45_gr,MTX_24_n45_gr, background_n45_gr)
 # peakAnnoList_24_n45<- lapply(my_list_24_n45, annotatePeak, tssRegion =c(-2000,2000), TxDb= txdb)
-# names(peakAnnoList_24_n45) <- c("DOX_24_n45" ,"EPI_24_n45", "DNR_24_n45", "MTX_24_n45")
+# names(peakAnnoList_24_n45) <- c("DOX_24_n45" ,"EPI_24_n45", "DNR_24_n45", "MTX_24_n45", "background")
 # saveRDS(peakAnnoList_24_n45, "data/peakAnnoList_24_n45.RDS")
 peakAnnoList_3_n45 <- readRDS("data/peakAnnoList_3_n45.RDS")
 peakAnnoList_24_n45<- readRDS("data/peakAnnoList_24_n45.RDS")
@@ -764,4 +788,252 @@ plotAnnoBar(peakAnnoList_3_n45) +ggtitle ("Genomic Feature Distribution, DAR 3 h
 plotAnnoBar(peakAnnoList_24_n45) +ggtitle ("Genomic Feature Distribution, DAR 24 hours n45")
 
 ```
+below this sentence, I will try to graph DEG_RNA LogFC against DAR regions by treatment-time sets 
 
+
+### DAR v DEG LFC
+
+This will be aligning the significant vs not significant DEGs against all TSS promoters
+
+#### DEG_RNA LogFC adjustment
+
+```{r  promotor list}
+
+library(smplot2)
+toplistall_RNA <- readRDS("data/other_papers/toplistall_RNA.RDS") 
+
+###Because of how I applied the DEG system in RNA-seq analysis, the lFC is opposite of the 
+###counts.   I did trt-veh instead of veh-trt.  therefore I need to multiply lfc by -1 to get t
+###the right correlation.
+
+toplistall_RNA <- toplistall_RNA %>% 
+  mutate(logFC = logFC*(-1))
+
+list2env(peakAnnoList_3_n45, envir = .GlobalEnv)
+list2env(peakAnnoList_24_n45, envir = .GlobalEnv)
+##split into granges objects
+###make dataframe of each EAR,ESR,LR,NR promoters
+
+DOX_3_df <- as.data.frame(DOX_3_n45)
+DOX_3_promotor <- DOX_3_df %>% 
+  dplyr::filter(annotation=="Promoter (<=1kb)")
+DOX_3_promo_gr <-  GRanges(DOX_3_promotor)
+
+EPI_3_df <- as.data.frame(EPI_3_n45)
+EPI_3_promotor <- EPI_3_df %>% 
+  dplyr::filter(annotation=="Promoter (<=1kb)")
+EPI_3_promo_gr <-  GRanges(EPI_3_promotor)
+
+DNR_3_df <- as.data.frame(DNR_3_n45)
+DNR_3_promotor <- DNR_3_df %>% 
+  dplyr::filter(annotation=="Promoter (<=1kb)")
+DNR_3_promo_gr <-  GRanges(DNR_3_promotor)
+
+MTX_3_df <- as.data.frame(MTX_3_n45)
+MTX_3_promotor <- MTX_3_df %>% 
+  dplyr::filter(annotation=="Promoter (<=1kb)")
+MTX_3_promo_gr <-  GRanges(MTX_3_promotor)
+
+# TRZ_3_df <- as.data.frame(TRZ_3_n45)
+# TRZ_3_promotor <- TRZ_3_df %>% 
+#   dplyr::filter(annotation=="Promoter (<=1kb)")
+# TRZ_3_promo_gr <-  GRanges(TRZ_3_promotor)
+DOX_24_df <- as.data.frame(DOX_24_n45)
+DOX_24_promotor <- DOX_24_df %>% 
+  dplyr::filter(annotation=="Promoter (<=1kb)")
+DOX_24_promo_gr <-  GRanges(DOX_24_promotor)
+
+EPI_24_df <- as.data.frame(EPI_24_n45)
+EPI_24_promotor <- EPI_24_df %>% 
+  dplyr::filter(annotation=="Promoter (<=1kb)")
+EPI_24_promo_gr <-  GRanges(EPI_24_promotor)
+
+DNR_24_df <- as.data.frame(DNR_24_n45)
+DNR_24_promotor <- DNR_24_df %>% 
+  dplyr::filter(annotation=="Promoter (<=1kb)")
+DNR_24_promo_gr <-  GRanges(DNR_24_promotor)
+
+MTX_24_df <- as.data.frame(MTX_24_n45)
+MTX_24_promotor <- MTX_24_df %>% 
+  dplyr::filter(annotation=="Promoter (<=1kb)")
+MTX_24_promo_gr <-  GRanges(MTX_24_promotor)
+
+```
+
+##### 3 hour promotor log FC correlation
+
+```{r DOX 3 hour,fig.width=10}
+
+
+
+DOX_3_promotor %>% 
+  dplyr::select(id,geneId) %>% 
+  left_join(.,toplist_n45, by = c("id"="peak" )) %>% 
+  dplyr::select(id:logFC) %>% 
+  rename(geneId="ENTREZID") %>% 
+  full_join(., (toplistall_RNA %>% 
+  # dplyr:: filter(ENTREZID %in% EAR_promoter_peaks) %>% 
+  dplyr::select(time:ENTREZID,logFC) %>% mutate(time=factor(time, levels= c("3_hours","24_hours"), labels = c("3 hours","24 hours"))) %>% 
+  rename(id="trt")), by= c("ENTREZID", "trt","time")) %>% 
+  ggplot(., aes(x=logFC.x,y =logFC.y))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  sm_statCorr(corr_method = 'pearson')+
+facet_wrap(~time+trt, nrow =2, ncol = 5)+
+  xlab("log FC DAR")+
+  ylab("log FC RNA")+
+  ggtitle("Dox 3 hour promotor DARs")
+
+EPI_3_promotor %>% 
+  dplyr::select(id,geneId) %>% 
+  left_join(.,toplist_n45, by = c("id"="peak" )) %>% 
+  dplyr::select(id:logFC) %>% 
+  rename(geneId="ENTREZID") %>% 
+  full_join(., (toplistall_RNA %>% 
+  # dplyr:: filter(ENTREZID %in% EAR_promoter_peaks) %>% 
+  dplyr::select(time:ENTREZID,logFC) %>% mutate(time=factor(time, levels= c("3_hours","24_hours"), labels = c("3 hours","24 hours"))) %>% 
+  rename(id="trt")), by= c("ENTREZID", "trt","time")) %>% 
+  ggplot(., aes(x=logFC.x,y =logFC.y))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  sm_statCorr(corr_method = 'pearson')+
+facet_wrap(~time+trt, nrow =2, ncol = 5)+
+  xlab("log FC DAR")+
+  ylab("log FC RNA")+
+  ggtitle("EPI 3 hour promotor DARs")
+
+DNR_3_promotor %>% 
+  dplyr::select(id,geneId) %>% 
+  left_join(.,toplist_n45, by = c("id"="peak" )) %>% 
+  dplyr::select(id:logFC) %>% 
+  rename(geneId="ENTREZID") %>% 
+  full_join(., (toplistall_RNA %>% 
+  # dplyr:: filter(ENTREZID %in% EAR_promoter_peaks) %>% 
+  dplyr::select(time:ENTREZID,logFC) %>% mutate(time=factor(time, levels= c("3_hours","24_hours"), labels = c("3 hours","24 hours"))) %>% 
+  rename(id="trt")), by= c("ENTREZID", "trt","time")) %>% 
+  ggplot(., aes(x=logFC.x,y =logFC.y))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  sm_statCorr(corr_method = 'pearson')+
+facet_wrap(~time+trt, nrow =2, ncol = 5)+
+  xlab("log FC DAR")+
+  ylab("log FC RNA")+
+  ggtitle("DNR 3 hour promotor DARs")
+
+MTX_3_promotor %>% 
+  dplyr::select(id,geneId) %>% 
+  left_join(.,toplist_n45, by = c("id"="peak" )) %>% 
+  dplyr::select(id:logFC) %>% 
+  rename(geneId="ENTREZID") %>% 
+  full_join(., (toplistall_RNA %>% 
+  # dplyr:: filter(ENTREZID %in% EAR_promoter_peaks) %>% 
+  dplyr::select(time:ENTREZID,logFC) %>% mutate(time=factor(time, levels= c("3_hours","24_hours"), labels = c("3 hours","24 hours"))) %>% 
+  rename(id="trt")), by= c("ENTREZID", "trt","time")) %>% 
+  ggplot(., aes(x=logFC.x,y =logFC.y))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  sm_statCorr(corr_method = 'pearson')+
+facet_wrap(~time+trt, nrow =2, ncol = 5)+
+  xlab("log FC DAR")+
+  ylab("log FC RNA")+
+  ggtitle("MTX 3 hour promotor DARs")
+
+
+
+
+
+
+
+
+
+```  
+
+
+```{r 24 hour promotor sets, fig.width=10}
+
+
+DOX_24_promotor %>% 
+  dplyr::select(id,geneId) %>% 
+  left_join(.,toplist_n45, by = c("id"="peak" )) %>% 
+  dplyr::select(id:logFC) %>% 
+  rename(geneId="ENTREZID") %>% 
+  full_join(., (toplistall_RNA %>% 
+  # dplyr:: filter(ENTREZID %in% EAR_promoter_peaks) %>% 
+  dplyr::select(time:ENTREZID,logFC) %>% mutate(time=factor(time, levels= c("3_hours","24_hours"), labels = c("3 hours","24 hours"))) %>% 
+  rename(id="trt")), by= c("ENTREZID", "trt","time")) %>% 
+  ggplot(., aes(x=logFC.x,y =logFC.y))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  sm_statCorr(corr_method = 'pearson')+
+facet_wrap(~time+trt, nrow =2, ncol = 5)+
+  xlab("log FC DAR")+
+  ylab("log FC RNA")+
+  ggtitle("Dox 24 hour promotor DARs")
+
+EPI_24_promotor %>% 
+  dplyr::select(id,geneId) %>% 
+  left_join(.,toplist_n45, by = c("id"="peak" )) %>% 
+  dplyr::select(id:logFC) %>% 
+  rename(geneId="ENTREZID") %>% 
+  full_join(., (toplistall_RNA %>% 
+  # dplyr:: filter(ENTREZID %in% EAR_promoter_peaks) %>% 
+  dplyr::select(time:ENTREZID,logFC) %>% mutate(time=factor(time, levels= c("3_hours","24_hours"), labels = c("3 hours","24 hours"))) %>% 
+  rename(id="trt")), by= c("ENTREZID", "trt","time")) %>% 
+  ggplot(., aes(x=logFC.x,y =logFC.y))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  sm_statCorr(corr_method = 'pearson')+
+facet_wrap(~time+trt, nrow =2, ncol = 5)+
+  xlab("log FC DAR")+
+  ylab("log FC RNA")+
+  ggtitle("EPI 24 hour promotor DARs")
+
+DNR_24_promotor %>% 
+  dplyr::select(id,geneId) %>% 
+  left_join(.,toplist_n45, by = c("id"="peak" )) %>% 
+  dplyr::select(id:logFC) %>% 
+  rename(geneId="ENTREZID") %>% 
+  full_join(., (toplistall_RNA %>% 
+  # dplyr:: filter(ENTREZID %in% EAR_promoter_peaks) %>% 
+  dplyr::select(time:ENTREZID,logFC) %>% mutate(time=factor(time, levels= c("3_hours","24_hours"), labels = c("3 hours","24 hours"))) %>% 
+  rename(id="trt")), by= c("ENTREZID", "trt","time")) %>% 
+  ggplot(., aes(x=logFC.x,y =logFC.y))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  sm_statCorr(corr_method = 'pearson')+
+facet_wrap(~time+trt, nrow =2, ncol = 5)+
+  xlab("log FC DAR")+
+  ylab("log FC RNA")+
+  ggtitle("DNR 24 hour promotor DARs")
+
+MTX_24_promotor %>% 
+  dplyr::select(id,geneId) %>% 
+  left_join(.,toplist_n45, by = c("id"="peak" )) %>% 
+  dplyr::select(id:logFC) %>% 
+  rename(geneId="ENTREZID") %>% 
+  full_join(., (toplistall_RNA %>% 
+  # dplyr:: filter(ENTREZID %in% EAR_promoter_peaks) %>% 
+  dplyr::select(time:ENTREZID,logFC) %>% mutate(time=factor(time, levels= c("3_hours","24_hours"), labels = c("3 hours","24 hours"))) %>% 
+  rename(id="trt")), by= c("ENTREZID", "trt","time")) %>% 
+  ggplot(., aes(x=logFC.x,y =logFC.y))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  sm_statCorr(corr_method = 'pearson')+
+facet_wrap(~time+trt, nrow =2, ncol = 5)+
+  xlab("log FC DAR")+
+  ylab("log FC RNA")+
+  ggtitle("MTX 24 hour promotor DARs")
+
+```
+
+
+```{r lookat hand2as1}
+
+
+
+
+
+
+
+
+```

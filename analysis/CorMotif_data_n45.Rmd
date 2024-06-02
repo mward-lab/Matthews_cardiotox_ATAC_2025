@@ -58,6 +58,7 @@ library(ggpubr)
 library(devtools)
 # install_github('davetang/bedr')
 library(bedr)
+library(eulerr)
 ```
 
 ```{r echo=TRUE, file='code/corMotifcustom.R'}
@@ -452,8 +453,12 @@ TSS = getBioRegion(TxDb=txdb, upstream=2000, downstream=2000, by = "gene",
 # names(peakAnnoList) <- c("EAR_n45_gr","ESR_n45_gr","LR_n45_gr","NR_n45_gr","unclassified_gr","background_gr")
 # saveRDS(peakAnnoList, "data/peakAnnoList_n45_motif.RDS")
 
+
+ 
+
+
 peakAnnoList_n45_motif <- readRDS("data/peakAnnoList_n45_motif.RDS")
-plotAnnoBar(peakAnnoList_n45_motif[1:4], main = "Genomic Feature Distribution, CorMotif")+
+plotAnnoBar(peakAnnoList_n45_motif[c(4,1:3)], main = "Genomic Feature Distribution, CorMotif")+
   ggtitle ("Genomic Feature Distribution, Individuals 1,2,3,6")
 
 
@@ -528,6 +533,31 @@ log_filt_hc_n45 %>%
   ggtitle("log2cpm in ESR peaks")+
   scale_fill_manual(values = drug_pal)+
   theme_bw()
+
+
+log_filt_hc_n45 %>% 
+ #  rownames_to_column("peak") %>% 
+ #  dplyr::filter(peak %in% motif_list_n45$EAR) 
+ # log_filt_hc %>% 
+  dplyr::filter(row.names(.)=="chr6.36678380.36679788") %>% 
+  mutate(Peak = row.names(.)) %>% 
+  pivot_longer(cols = !Peak, names_to = "sample", values_to = "counts") %>% 
+  separate("sample", into = c("indv","trt","time")) %>% 
+  mutate(time=factor(time, levels = c("3h","24h"))) %>% 
+  mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
+  ggplot(., aes (x = time, y=counts))+
+  geom_boxplot(aes(fill=trt))+
+  facet_wrap(Peak~.)+
+  ggtitle("log2cpm in ESR CDKN1a")+
+  scale_fill_manual(values = drug_pal)+
+  theme_bw()+
+  theme(plot.title = element_text(size = rel(1.5), hjust = 0.5),
+        axis.title = element_text(size = 15, color = "black"),
+        # axis.ticks = element_line(linewidth = 1.5),
+        # axis.line = element_line(linewidth = 1.5),
+        strip.background = element_rect(fill = "transparent"),
+        axis.text.x = element_blank(),
+        strip.text.x = element_text(size = 12, color = "black", face = "bold"))
 
 
 ```
@@ -708,7 +738,7 @@ pie_chartdata %>%
   geom_col(width =1) +
   coord_polar("y", pi/2)+
   theme_void()+
-  ggtitle("Distribution of genes for each set")+
+  ggtitle("Distribution of peaks for each set")+
   geom_text(aes(label = paste0(Set," (",gene_num,")")),
                 position = position_stack(vjust =.45)) +
   theme(legend.position="none") +
@@ -761,7 +791,7 @@ TSS_counts_n45 <- data.frame( group=c("ESR","EAR","LR","NR","sanity"),
 
 ```
 
-### TSS proportions
+ ### TSS proportions
 ```{r column of percent TSS}
 
 TSS_counts_n45 %>% 
@@ -886,36 +916,37 @@ EAR_df <- as.data.frame(peakAnnoList_n45_motif$EAR_n45_gr)
 EAR_promotor <- EAR_df %>% 
   dplyr::filter(annotation=="Promoter (<=1kb)")
 EAR_promo_gr <-  GRanges(EAR_promotor)
-
-# rtracklayer::export.bed(EAR_promo_gr, con="data/n45_bedfiles/EAR_promo.bed", format="bed", ignore.strand = FALSE)
+# EAR_df_gr <- EAR_df %>% GRanges()
+# rtracklayer::export.bed(EAR_df_gr, con="data/n45_bedfiles/EAR_df_gr.bed", format="bed", ignore.strand = FALSE)
 ESR_df <- as.data.frame(peakAnnoList_n45_motif$ESR_n45_gr)
 ESR_promotor <- ESR_df %>% 
   dplyr::filter(annotation=="Promoter (<=1kb)")
 ESR_promo_gr <-  GRanges(ESR_promotor)
- # rtracklayer::export.bed(ESR_promo_gr, con="data/n45_bedfiles/ESR_promo.bed", format="bed", ignore.strand = FALSE)
- 
+#  ESR_df_gr <- ESR_df %>% GRanges()
+# rtracklayer::export.bed(ESR_df_gr, con="data/n45_bedfiles/ESR_df_gr.bed", format="bed", ignore.strand = FALSE)
 LR_df <- as.data.frame(peakAnnoList_n45_motif$LR_n45_gr)
 LR_promotor <- LR_df %>% 
   dplyr::filter(annotation=="Promoter (<=1kb)")
 LR_promo_gr <-  GRanges(LR_promotor)
- # rtracklayer::export.bed(LR_promo_gr, con="data/n45_bedfiles/LR_promo.bed", format="bed", ignore.strand = FALSE)
- # LR_promotor %>% 
- #   dplyr::filter(geneChr==6)
+# 
+#  LR_df_gr <- LR_df %>% GRanges()
+# rtracklayer::export.bed(LR_df_gr, con="data/n45_bedfiles/LR_df_gr.bed", format="bed", ignore.strand = FALSE)
 
 NR_df <- as.data.frame(peakAnnoList_n45_motif$NR_n45_gr)
 NR_promotor <- NR_df %>% 
   dplyr::filter(annotation=="Promoter (<=1kb)")
   
 NR_promo_gr <-  GRanges(NR_promotor)
- # rtracklayer::export.bed(NR_promo_gr, con="data/n45_bedfiles/NR_promo.bed", format="bed", ignore.strand = FALSE)
+#  NR_df_gr <- NR_df %>% GRanges()
+# rtracklayer::export.bed(NR_df_gr, con="data/n45_bedfiles/NR_df_gr.bed", format="bed", ignore.strand = FALSE)
 
 ```
 
 
 
-### RNA-seq and highly-expressed DARs
+### RNA-seq and highly-expressed Motif response catagories
 
-```{r HEDAR and DEGRNA}
+```{r HEMotif response catagories and DEGRNA}
 
 ##working with motif enriched genes: first step, get DEGs for motif EAR, ESR, LR, and NR in entrezid
 ##second step: get dARs in entrezid
@@ -940,11 +971,15 @@ NR_RNA <- S13Table %>%
   dplyr::filter(MOTIF=="NR")%>% 
   dplyr::select(ENTREZID)
 
-
+EAR_EAR_peaks <- intersect(EAR_df$geneId,EAR_RNA$ENTREZID)
 EAR_promoter_peaks <- intersect(EAR_promotor$geneId,EAR_RNA$ENTREZID)
+ESR_ESR_peaks <- intersect(ESR_df$geneId,ESR_RNA$ENTREZID)
 ESR_promoter_peaks <- intersect(ESR_promotor$geneId,ESR_RNA$ENTREZID)
+LR_LR_peaks <- intersect(LR_df$geneId,LR_RNA$ENTREZID)
 LR_promoter_peaks <- intersect(LR_promotor$geneId,LR_RNA$ENTREZID)
+NR_NR_peaks <- intersect(NR_df$geneId,NR_RNA$ENTREZID)
 NR_promoter_peaks <- intersect(NR_promotor$geneId,NR_RNA$ENTREZID)
+
 
 toplistall_RNA <- readRDS("data/other_papers/toplistall_RNA.RDS")
 
@@ -953,11 +988,13 @@ toplistall_RNA <- toplistall_RNA %>%
   mutate(logFC = logFC*(-1))
 
 ```
-  There are `r length (EAR_promoter_peaks)` genes that overlap between DAR and DEG in the EAR motif. There are `r length (ESR_promoter_peaks)` genes that overlap between DAR and DEG in the ESR motif.  
+  There are `r length (EAR_promoter_peaks)` genes that overlap between the motif response category and DEG in the EAR motif. 
   
-  There are `r length (LR_promoter_peaks)` genes that overlap between DAR and DEG in the LR motif.  
+  There are `r length (ESR_promoter_peaks)` genes that overlap between the response category and DEG in the ESR motif.  
   
-  There are `r length( NR_promoter_peaks)` genes that overlap between DAR and DEG in the NR motif.
+  There are `r length (LR_promoter_peaks)` genes that overlap between the response category and DEG in the LR motif.  
+  
+  There are `r length( NR_promoter_peaks)` genes that overlap between the motif response category and DEG in the NR motif.
 
 
 
@@ -1181,6 +1218,7 @@ test %>%
 ### ATAC and RNA genes in common
 
 ```{r comparisonvenns}
+library(eulerr)
 ### Looking at overall expression between neargenes in EAR,ESR,LR, and NR to RNA-genes that are EAR,ESR,LR, NR.
 
 # motif_list_n45 <- readRDS("data/motif_list_n45.RDS")
@@ -1205,21 +1243,128 @@ ggVennDiagram::ggVennDiagram(list(unique(as.integer(EAR_df$geneId)),EAR_RNA$ENTR
   labs(title = "EAR motifs in ATAC and RNA")+
   theme(plot.title = element_text(size = rel(1.5), hjust = 0.5))
 
+
+#specify values to use in venn diagram
+fit_EAR <- euler(c('ATAC' = 5526, 'RNA' = 306, 'ATAC&RNA' = 138))
+fit_ESR <- euler(c('ATAC' = 9237 , 'RNA'= 336,'ATAC&RNA' =192))
+fit_LR <- euler(c('ATAC' =12586 , 'RNA'=2370 ,'ATAC&RNA' =3175))
+fit_NR <- euler(c('ATAC' = 17176, 'RNA'= 1406,'ATAC&RNA' =6098))
+
+# fit_all <- euler(c('ATAC_EAR' = 5526, 'RNA_EAR' = 306, 'ATAC_EAR&RNA_EAR' = 138,
+# 'ATAC_ESR' = 9237 , 'RNA_ESR'= 336,'ATAC_ESR&RNA_ESR' =192,
+# 'ATAC_LR' =12586 , 'RNA_LR'=2370 ,'ATAC_LR&RNA_LR' =3175,
+# 'ATAC_NR' = 17176, 'RNA_NR'= 1406,'ATAC_NR&RNA_NR' =6098))
+plot(fit_EAR,quantities = TRUE,
+  fill = c("purple","cornflowerblue"),
+  lty = 1,
+  labels = list(font = 6),
+  main="EAR motifs")                  
+plot(fit_ESR,quantities = TRUE,
+  fill = c("purple","cornflowerblue"),
+  lty = 1,
+  labels = list(font = 6),
+  main="ESR motifs") 
+plot(fit_LR,quantities = TRUE,
+  fill = c("purple","cornflowerblue"),
+  lty = 1,
+  labels = list(font = 6),
+  main="LR motifs")                  
+plot(fit_NR,quantities = TRUE,
+  fill = c("purple","cornflowerblue"),
+  lty = 1,
+  labels = list(font = 6),
+  main="NR motifs")                  
+# matrixdf <- data.frame(EAR=(c(138)
+# 
+#  chisq.test(chimatrix2[c(1,4),],correct = FALSE)#$p.value
+# chimatrix <- TSS_counts_n45 %>% 
+#   dplyr::filter(group != "sanity") %>% 
+#   mutate(group=factor(group, levels = c("EAR","ESR","LR","NR"))) %>% 
+#   column_to_rownames("group") %>% 
+#   dplyr::select(TSS_peak, not_TSS_peak) %>% 
+#   as.matrix() 
+
+
 ggVennDiagram::ggVennDiagram(list(unique(as.integer(ESR_df$geneId)),ESR_RNA$ENTREZID),category.names = c("ATAC","RNA"))+
   scale_x_continuous(expand = expansion(mult = .2))+
-  scale_fill_gradient(low = "red1", high = "cornflowerblue")+
+  scale_fill_gradient(low = "coral", high = "cornflowerblue")+
   labs(title = "ESR motifs in ATAC and RNA")+
   theme(plot.title = element_text(size = rel(1.5), hjust = 0.5))
 
 ggVennDiagram::ggVennDiagram(list(unique(as.integer(LR_df$geneId)),LR_RNA$ENTREZID),category.names = c("ATAC","RNA"))+
   scale_x_continuous(expand = expansion(mult = .2))+
-  scale_fill_gradient(low = "red2", high = "cornflowerblue")+
+  scale_fill_gradient(low = "coral", high = "cornflowerblue")+
   labs(title = "LR motifs in ATAC and RNA")+
   theme(plot.title = element_text(size = rel(1.5), hjust = 0.5))
 
 ggVennDiagram::ggVennDiagram(list(unique(as.integer(NR_df$geneId)),NR_RNA$ENTREZID),category.names = c("ATAC","RNA"))+
   scale_x_continuous(expand = expansion(mult = .2))+
-  scale_fill_gradient(low = "red3", high = "cornflowerblue")+
+  scale_fill_gradient(low = "coral", high = "cornflowerblue")+
   labs(title = "NR motifs in ATAC and RNA")+
   theme(plot.title = element_text(size = rel(1.5), hjust = 0.5))
+
+Set <- c("EAR", "ESR","LR", "NR")
+ypos_resp <- c(138/(138+306)*100,192/(192+336)*100,3175/(2370+3175)*100,6098/(6098+1406)*100)
+fills <- c("#F8766D",  "#00BFC4","#7CAE00", "#C77CFF")
+
+pie_chartdata_DAR <- data.frame(Set, ypos_resp, fills)
+ 
+    # pie(gene_num,labels =Set )      
+
+pie_chartdata_DAR <- pie_chartdata_DAR %>% 
+   mutate(prop = ypos_resp / sum(pie_chartdata_DAR$ypos_resp) *100) %>%
+  mutate(ypos = (prop)+ 0.5*prop )
+
+
+pie_chartdata_DAR %>% 
+  ggplot(.,aes(x="",y=ypos_resp, fill=Set))+
+  geom_col(width =1) +
+  coord_polar("y", pi/2)+
+  theme_void()+
+  ggtitle("Proportion of RNA DE genes and Motif response category near-genes")+
+  geom_text(aes(label = paste0(Set," (",sprintf("%.1f",ypos_resp),"% )")),
+                position = position_stack(vjust =.45)) +
+  theme(legend.position="none") +
+  theme(plot.title = element_text(size = rel(1.5), hjust = 0.5))
+
+
+
+
+```
+
+
+```{r otherVENNs}
+
+##combine of EAR and ESR Motif response categories
+
+response_chrom_gene <-unique(c(unique(ESR_df$geneId),unique(EAR_df$geneId),unique(LR_df$geneId)))
+length(unique(LR_df$geneId))
+early_dar_df <-
+  unique(c(ESR_df$geneId, EAR_df$geneId))
+length(intersect((early_dar_df),unique(LR_df$geneId)))
+          
+length(unique(c(ESR_df$geneId, EAR_df$geneId, LR_df$geneId)))
+
+ggVennDiagram::ggVennDiagram(list(LR_RNA$ENTREZID,
+                                  as.integer(early_dar_df)),                       
+                             category.names = c("RNA\nlate response",
+                                                "Chromatin\nearly response"),
+                             label="count")+
+  scale_x_continuous(expand = expansion(mult = .4))+
+  scale_fill_gradient(low = "purple", high = "cornflowerblue")+
+  labs(title = "Response genes vs. early chromatin genes")+
+  theme(plot.title = element_text(size = rel(1.5), hjust = 0.5))
+
+
+ggVennDiagram::ggVennDiagram(list(LR_RNA$ENTREZID,
+                                  as.integer(response_chrom_gene)),                       
+                             category.names = c("RNA\nlate response",
+                                                "Chromatin\n response"),
+                             label="count")+
+  scale_x_continuous(expand = expansion(mult = .4))+
+  scale_fill_gradient(low = "purple", high = "cornflowerblue")+
+  labs(title = "Response genes vs. early chromatin genes")+
+  theme(plot.title = element_text(size = rel(1.5), hjust = 0.5))
+
+
 ```
