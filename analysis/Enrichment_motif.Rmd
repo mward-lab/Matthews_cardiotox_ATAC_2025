@@ -24,7 +24,7 @@ pre[class] {
 }
 ```
 
-```{r  package loading}
+```{r package loading, message=FALSE, warning=FALSE}
 library(tidyverse)
 # library(ggsignif)
 # library(cowplot)
@@ -58,6 +58,9 @@ library(devtools)
 # install_github('davetang/bedr')
 library(bedr)
 library(biomaRt)
+library(plyranges)
+library(genomation)
+
 ```
 
 ### Knowles supp data check
@@ -246,9 +249,9 @@ trait 3, 40 associations with trait **response to anthracycline-based chemothera
 
 trait 4, 6139 associations with trait **heart disease**
 
-trait 5, 447 associations with trait **heart failure**
+trait 5, 445 associations with trait **heart failure**
 
-```{r GWAS info}
+```{r GWAS info, message=FALSE, warning=FALSE}
 
 
 ##finding GWAS for Hearfailure: I used several traits from the GWAS database:
@@ -431,7 +434,7 @@ gwas_5_gr_noext <- gwas_5 %>%
   dplyr::select(chr, start,end, SNPS,CHR_POS) %>%
    na.omit() %>% 
   GRanges()
-
+# saveRDS(list("gwas_2_gr_noext"=gwas_2_gr_noext, "gwas_4_gr_noext"= gwas_4_gr_noext),"data/test.list.RDS")
 # gwas_2[(is.na(gwas_2$CHR_POS)),]
 ```
 
@@ -492,19 +495,22 @@ LR_g3_ol <-findOverlaps(LR_df_gr, gwas_3_gr_noext)
 NR_g3_ol <-findOverlaps(NR_df_gr, gwas_3_gr_noext)
 
 EAR_g4_ol <-findOverlaps(EAR_df_gr, gwas_4_gr_noext)
-EAR_g4_ol <-findOverlaps(ESR_df_gr, gwas_4_gr_noext)
-EAR_g4_ol <-findOverlaps(LR_df_gr, gwas_4_gr_noext)
-EAR_g4_ol <-findOverlaps(NR_df_gr, gwas_4_gr_noext)
+ESR_g4_ol <-findOverlaps(ESR_df_gr, gwas_4_gr_noext)
+LR_g4_ol <-findOverlaps(LR_df_gr, gwas_4_gr_noext)
+NR_g4_ol <-findOverlaps(NR_df_gr, gwas_4_gr_noext)
 
 EAR_g5_ol <-findOverlaps(EAR_df_gr, gwas_5_gr_noext)
-EAR_g5_ol <-findOverlaps(ESR_df_gr, gwas_5_gr_noext)
-EAR_g5_ol <-findOverlaps(LR_df_gr, gwas_5_gr_noext)
-EAR_g5_ol <-findOverlaps(NR_df_gr, gwas_5_gr_noext)
+ESR_g5_ol <-findOverlaps(ESR_df_gr, gwas_5_gr_noext)
+LR_g5_ol <-findOverlaps(LR_df_gr, gwas_5_gr_noext)
+NR_g5_ol <-findOverlaps(NR_df_gr, gwas_5_gr_noext)
+
+
+
 
 EAR_CAD_ol <-findOverlaps(EAR_df_gr, CAD_gwas_gr_noext)
-EAR_CAD_ol <-findOverlaps(ESR_df_gr,  CAD_gwas_gr_noext)
-EAR_CAD_ol <-findOverlaps(LR_df_gr,  CAD_gwas_gr_noext)
-EAR_CAD_ol <-findOverlaps(NR_df_gr,  CAD_gwas_gr_noext)
+ESR_CAD_ol <-findOverlaps(ESR_df_gr,  CAD_gwas_gr_noext)
+LR_CAD_ol <-findOverlaps(LR_df_gr,  CAD_gwas_gr_noext)
+NR_CAD_ol <-findOverlaps(NR_df_gr,  CAD_gwas_gr_noext)
 
 findOverlaps(EAR_df_gr, MI_gwas_gr_noext)
 findOverlaps(ESR_df_gr,  MI_gwas_gr_noext)
@@ -514,7 +520,7 @@ findOverlaps(NR_df_gr,  MI_gwas_gr_noext)
 
 ```
 
-| motif       | gwas_1 (11)                                        | gwas_2 (1061)                                      | gwas_3 (39)                                        | gwas_4 (6052)                                      | gwas_5 (445)                                        | CAD_gwas (3482)                                      |
+| motif       | gwas_1 (11)                                        | gwas_2 (1061)                                      | gwas_3 (39)                                        | gwas_4 (6052)                                      | Heart Failure (445)                                        | CAD_gwas (3482)                                      |
 |-----------|-----------|-----------|-----------|-----------|-----------|-----------|
 | EAR (7321)  | `r length(findOverlaps(EAR_df_gr, gwas_1_gr_ten))` | `r length(findOverlaps(EAR_df_gr, gwas_2_gr_ten))` | `r length(findOverlaps(EAR_df_gr, gwas_3_gr_ten))` | `r length(findOverlaps(EAR_df_gr, gwas_4_gr_ten))` | `r  length(findOverlaps(EAR_df_gr, gwas_5_gr_ten))` | `r length(findOverlaps(EAR_df_gr, CAD_gwas_gr_ten))` |
 | ESR (15665) | `r length(findOverlaps(ESR_df_gr, gwas_1_gr_ten))` | `r length(findOverlaps(ESR_df_gr, gwas_2_gr_ten))` | `r length(findOverlaps(ESR_df_gr, gwas_3_gr_ten))` | `r length(findOverlaps(ESR_df_gr, gwas_4_gr_ten))` | `r length(findOverlaps(ESR_df_gr, gwas_5_gr_ten))`  | `r length(findOverlaps(ESR_df_gr, CAD_gwas_gr_ten))` |
@@ -523,7 +529,7 @@ findOverlaps(NR_df_gr,  MI_gwas_gr_noext)
 
 : gwas trait enrichment with extensions of 5,000 bp +/- SNP location
 
-| motif       | gwas_1 (11)                                    | gwas_2 (1061)                                  | gwas_3 (39)                                    | gwas_4 (6052)                                  | gwas_5 (445)                                   | CAD_gwas (3482)                                  |
+| motif       | gwas_1 (11)                                    | gwas_2 (1061)                                  | gwas_3 (39)                                    | gwas_4 (6052)                                  | Heart Failure (445)                                   | CAD_gwas (3482)                                  |
 |-----------|-----------|-----------|-----------|-----------|-----------|-----------|
 | EAR (7321)  | `r length(findOverlaps(EAR_df_gr, gwas_1_gr))` | `r length(findOverlaps(EAR_df_gr, gwas_2_gr))` | `r length(findOverlaps(EAR_df_gr, gwas_3_gr))` | `r length(findOverlaps(EAR_df_gr, gwas_4_gr))` | `r length(findOverlaps(EAR_df_gr, gwas_5_gr))` | `r length(findOverlaps(EAR_df_gr, CAD_gwas_gr))` |
 | ESR (15665) | `r length(findOverlaps(ESR_df_gr, gwas_1_gr))` | `r length(findOverlaps(ESR_df_gr, gwas_2_gr))` | `r length(findOverlaps(ESR_df_gr, gwas_3_gr))` | `r length(findOverlaps(ESR_df_gr, gwas_4_gr))` | `r length(findOverlaps(ESR_df_gr, gwas_5_gr))` | `r length(findOverlaps(ESR_df_gr, CAD_gwas_gr))` |
@@ -532,7 +538,7 @@ findOverlaps(NR_df_gr,  MI_gwas_gr_noext)
 
 : gwas trait enrichment with extensions of 500 bp +/- SNP location
 
-| motif       | gwas_1 (11) | gwas_2 (1061) | gwas_3 (39) | gwas_4 (6052) | gwas_5 (445) | CAD_gwas (3482) | MI_gwas (399) |     |
+| motif       | gwas_1 (11) | gwas_2 (1061) | gwas_3 (39) | gwas_4 (6052) | Heart Failure (445) | CAD_gwas (3482) | MI_gwas (399) |     |
 |--------|--------|--------|--------|--------|--------|--------|--------|--------|
 | EAR (7321)  | 0           | 2             | 0           | 17            | 0            | 12              | 1             |     |
 | ESR (15665) | 0           | 30            | 0           | 55            | 2            | 17              | 0             |     |
@@ -625,7 +631,6 @@ LR_g3_sol <- as.data.frame(subsetByOverlaps(LR_df_gr,  gwas_3_gr_noext))
 NR_g3_sol <- as.data.frame(subsetByOverlaps(NR_df_gr, gwas_3_gr_noext))
 
 EAR_g5_sol <- as.data.frame(subsetByOverlaps(EAR_df_gr, gwas_5_gr_noext))
-
 ESR_g5_sol <- as.data.frame(subsetByOverlaps(ESR_df_gr, gwas_5_gr_noext))
 LR_g5_sol <- as.data.frame(subsetByOverlaps(LR_df_gr,  gwas_5_gr_noext))
 NR_g5_sol <- as.data.frame(subsetByOverlaps(NR_df_gr, gwas_5_gr_noext))
@@ -695,7 +700,8 @@ LR_g2_list <- intersect(RNA_expresed_genes$ENTREZID,LR_g2_sol$geneId)
 ESR_g2_list <- intersect(RNA_expresed_genes$ENTREZID,ESR_g2_sol$geneId)
 EAR_g2_list <- intersect(RNA_expresed_genes$ENTREZID,EAR_g2_sol$geneId)
 g2_motif_list <-list(NR=data.frame(NR_g2_list), LR=data.frame(LR_g2_list),ESR=data.frame(ESR_g2_list),EAR=data.frame(EAR_g2_list))
-g2_motif_df <- g2_motif_list %>%  map_df(c, .id = "src") %>%
+g2_motif_df <- g2_motif_list %>%  
+  map_df(c, .id = "src") %>%
   mutate(ENTREZID=if_else(!is.na(EAR_g2_list),EAR_g2_list,if_else(!is.na(ESR_g2_list),ESR_g2_list, if_else(!is.na(LR_g2_list), LR_g2_list,NR_g2_list))))%>%
   dplyr::select(src,ENTREZID)
 NR_g4_list <-intersect(RNA_expresed_genes$ENTREZID,NR_g4_sol$geneId)
@@ -703,18 +709,39 @@ LR_g4_list <- intersect(RNA_expresed_genes$ENTREZID,LR_g4_sol$geneId)
 ESR_g4_list <- intersect(RNA_expresed_genes$ENTREZID,ESR_g4_sol$geneId)
 EAR_g4_list <- intersect(RNA_expresed_genes$ENTREZID,EAR_g4_sol$geneId)
 
+
+
+NR_g5_list <-intersect(RNA_expresed_genes$ENTREZID,NR_g5_sol$geneId)
+LR_g5_list <- intersect(RNA_expresed_genes$ENTREZID,LR_g5_sol$geneId)
+ESR_g5_list <- intersect(RNA_expresed_genes$ENTREZID,ESR_g5_sol$geneId)
+EAR_g5_list <- intersect(RNA_expresed_genes$ENTREZID,EAR_g5_sol$geneId)
+
+
 g4_motif_list <-list(NR=data.frame(NR_g4_list), LR=data.frame(LR_g4_list),ESR=data.frame(ESR_g4_list),EAR=data.frame(EAR_g4_list))
 g4_motif_df <- g4_motif_list %>%  map_df(c, .id = "src") %>%
   mutate(ENTREZID=if_else(!is.na(EAR_g4_list),EAR_g4_list,if_else(!is.na(ESR_g4_list),ESR_g4_list, if_else(!is.na(LR_g4_list), LR_g4_list,NR_g4_list))))%>%
   dplyr::select(src,ENTREZID)
 
+g5_motif_list <-list(NR=data.frame(NR_g5_list), LR=data.frame(LR_g5_list),ESR=data.frame(ESR_g5_list),EAR=data.frame(EAR_g5_list))
+g5_motif_df <- g5_motif_list %>%  map_df(c, .id = "src") %>%
+  mutate(ENTREZID=if_else(!is.na(EAR_g5_list),EAR_g5_list,if_else(!is.na(ESR_g5_list),ESR_g5_list, if_else(!is.na(LR_g5_list), LR_g5_list,NR_g5_list))))%>%
+  dplyr::select(src,ENTREZID)
+
 RNA_expresed_genes_DE %>% 
   dplyr::filter(ENTREZID %in% intersect(RNA_expresed_genes_DE$ENTREZID,LR_g4_sol$geneId)) %>% 
    rowid_to_column("row_name") %>% 
-  kable(., caption= "RNA DE genes expresssed in LR MRCs that contain SNPs associated with Heart disease") %>% 
+  kable(., caption= "RNA DE genes associated with peaks in ATAC-LR that contain SNPs associated with Heart disease") %>% 
     kable_paper("striped", full_width = TRUE) %>%
   kable_styling(full_width = FALSE, font_size = 16) %>%
   scroll_box(height = "800px")
+RNA_expresed_genes_DE %>% 
+  dplyr::filter(ENTREZID %in% intersect(RNA_expresed_genes_DE$ENTREZID,LR_g5_sol$geneId)) %>% 
+   rowid_to_column("row_name") %>% 
+  kable(., caption= "RNA DE genes expresssed in LR MRCs that contain SNPs associated with Heart failure") %>% 
+    kable_paper("striped", full_width = TRUE) %>%
+  kable_styling(full_width = FALSE, font_size = 16) %>%
+  scroll_box(height = "800px")
+
 
 RNA_expresed_genes_DE %>% 
   dplyr::filter(ENTREZID %in% intersect(RNA_expresed_genes_DE$ENTREZID,LR_g2_sol$geneId)) %>% 
@@ -751,8 +778,8 @@ RNA_expresed_genes_DE %>%
   scroll_box(height = "800px")
 
 RNA_expresed_genes%>% 
-  # dplyr::filter(ENTREZID %in% intersect(RNA_expresed_genes$ENTREZID,EAR_g2_sol$geneId)) %>% 
-   dplyr::filter(ENTREZID =="79804") %>% 
+  dplyr::filter(ENTREZID %in% intersect(RNA_expresed_genes$ENTREZID,EAR_g2_sol$geneId)) %>%
+   # dplyr::filter(ENTREZID =="79804") %>% 
    rowid_to_column("row_name") %>%
   kable(., caption= "RNA genes expresssed in EAR MRCs that contain SNPs associated with Cardiac arrhythmia") %>% 
     kable_paper("striped", full_width = TRUE) %>%
@@ -762,6 +789,7 @@ RNA_expresed_genes%>%
 
 
 ```
+
 
 ```{r MRC and RNAseq}
 drug_pal <- c("#8B006D","#DF707E","#F1B72B", "#3386DD","#707031","#41B333")
@@ -889,12 +917,14 @@ gene_num_ARR <- c(2,30,29,90)
 gene_num_HD <- c(17,55,182,278)
 gene_num_CAD <- c(12,17,116,146)
 gene_num_MI <- c(1,0,15,19)
+gene_num_HF <- c(0,2,15,11)
 fills <- c("#F8766D",  "#00BFC4","#7CAE00", "#C77CFF")
 
 pie_chartdata_ARR <- data.frame(Set, gene_num_ARR, fills)
 pie_chartdata_HD <- data.frame(Set, gene_num_HD, fills)
 pie_chartdata_CAD <- data.frame(Set, gene_num_CAD, fills)
 pie_chartdata_MI <- data.frame(Set, gene_num_MI, fills)
+pie_chartdata_HF <- data.frame(Set, gene_num_HF, fills)
 
  
     # pie(gene_num,labels =Set )      
@@ -910,6 +940,12 @@ pie_chartdata_CAD <- pie_chartdata_CAD %>%
 pie_chartdata_MI <- pie_chartdata_MI %>% 
    mutate(prop = gene_num_MI / sum(pie_chartdata_MI$gene_num_MI) *100) %>%
   mutate(ypos = (prop)+ 0.5*prop )
+pie_chartdata_HF <- pie_chartdata_HF %>% 
+   mutate(prop = gene_num_MI / sum(pie_chartdata_HF$gene_num_HF) *100) %>%
+  mutate(ypos = (prop)+ 0.5*prop )
+
+
+
 
 pie_chartdata_ARR %>% 
   ggplot(.,aes(x="",y=gene_num_ARR, fill=Set))+
@@ -952,6 +988,17 @@ pie_chartdata_MI %>%
   theme_void()+
   ggtitle("Distribution of myocardial infarction SNPs in MRCs")+
   geom_text(aes(label = paste0(Set," (",gene_num_MI,")")),
+                position = position_stack(vjust =.45)) +
+  theme(legend.position="none") +
+  theme(plot.title = element_text(size = rel(1.5), hjust = 0.5))
+
+pie_chartdata_HF %>% 
+  ggplot(.,aes(x="",y=gene_num_HF, fill=Set))+
+  geom_col(width =1) +
+  coord_polar("y", pi/2)+
+  theme_void()+
+  ggtitle("Distribution of Heart failure SNPs in MRCs")+
+  geom_text(aes(label = paste0(Set," (",gene_num_HF,")")),
                 position = position_stack(vjust =.45)) +
   theme(legend.position="none") +
   theme(plot.title = element_text(size = rel(1.5), hjust = 0.5))
@@ -1154,7 +1201,7 @@ bind_rows(
 
 ```
 
-## ARR, HD, MI, CAD snp overlaps and MRC status
+## ARR, HD, HF, MI, CAD snp overlaps and MRC status
 
 ```{r  motifMRC enrichment}
 GWAS_5_DAR_df %>% 
@@ -1199,6 +1246,16 @@ GWAS_CAD_DAR_df %>%
   kable_paper("striped", full_width = TRUE) %>%
   kable_styling(full_width = FALSE, font_size = 16) %>%
   scroll_box(height = "500px")
+
+
+GWAS_5_DAR_df %>% 
+  # dplyr::filter(DE_g2=="DE") %>% 
+  dplyr::select(seqnames:id,DE_g2,ATAC_MRC, RNA_MRC,annotation:distanceToTSS)%>% 
+  kable(.,caption="ATAC peaks that overlap with Heart SNPs, annotated with RNA MRC and DE status") %>% 
+  kable_paper("striped", full_width = TRUE) %>%
+  kable_styling(full_width = FALSE, font_size = 16) %>%
+  scroll_box(height = "500px")
+
 
 ```
 
@@ -1320,7 +1377,7 @@ gene_full_list <- gene_list %>%
   na.omit(.)
   dplyr::select(chromosome_name,start_position,end_position,entrezgene_id,ensembl_gene_id)
 
-### this conversion left me with 13114 genes. some Ids were lost in the conversion, so I will try to figure those locations out.  This led me to adjusting the biomart retrieval by using hgnc symbol, the removing nas from 15497 to 13426.  This was further cut to 12984 using na.omit which excluded those ncbi gene ids (entrezgeneids) that were empty.   I went with the na.omit option overall.
+### this conversion left me with 13114 genes. some Ids were lost in the conversion, so I will try to figure those locations out.  This led me to adjusting the biomart retrieval by using hgnc symbol, then removing nas from 15497 to 13426.  This was further cut to 12984 using na.omit which excluded those ncbi gene ids (entrezgeneids) that were empty.   I went with the na.omit option overall.
 write_delim(gene_full_list,delim = "\t",file="data/testnames.txt")
 
 assigned_closest_gene <- read_delim("data/n45_bedfiles/assigned_closest_gene.bed", 
@@ -1436,7 +1493,7 @@ ggVennDiagram::ggVennDiagram(list(NR_peak_list$ENTREZID,NR_RNA$ENTREZID),
 
 
 ```
-
+### ZNF384 ChIP overlaps
 ```{r ZNF384}
 ### files loaded on line ~ 151
 
@@ -1471,4 +1528,136 @@ ZNF_chip_data %>%
 ```
 Because of the occurrence of ZNF384 enrichment in accessibility of ZNF384 motifs, I used a CHIP pull down of ZNF384 to understand  how many of these peaks may be occupied by the TF in my MRCs.
 
+### SNPs by category
 
+#### Heart Failure
+
+```{r HF SNP by category}
+## Heart failure is gwas #5
+
+EAR_HF_SNP <- as.data.frame(join_overlap_intersect(EAR_df_gr, gwas_5_gr_noext))
+ESR_HF_SNP <- as.data.frame(join_overlap_intersect(ESR_df_gr, gwas_5_gr_noext))
+LR_HF_SNP <- as.data.frame(join_overlap_intersect(LR_df_gr,  gwas_5_gr_noext))
+NR_HF_SNP <- as.data.frame(join_overlap_intersect(NR_df_gr, gwas_5_gr_noext))
+
+HF_SNP_table <- EAR_HF_SNP %>% 
+  mutate(MRC="EAR") %>% 
+  bind_rows((ESR_HF_SNP %>% 
+              mutate(MRC="ESR"))) %>% 
+  bind_rows((LR_HF_SNP %>% 
+              mutate(MRC="LR"))) %>% 
+  bind_rows((NR_HF_SNP %>% 
+              mutate(MRC="NR")))  
+HF_SNP_table %>%  
+ rename( id="peak_id") %>% 
+  select(peak_id, annotation,SNPS,CHR_POS,MRC) %>% 
+  left_join(., exp_neargene_table, by=c("peak_id"="peakid")) %>% 
+  kable(., caption= "SNPs for Heart Failure found in MRC peaks") %>% 
+    kable_paper("striped", full_width = TRUE) %>%
+  kable_styling(full_width = FALSE, font_size = 16) %>%
+  scroll_box(height = "800px")
+  
+## arrythmia is gwas #2
+
+
+
+```
+
+
+#### Arrhythmia
+
+```{r ARR SNP by category}
+## Heart failure is gwas #5
+
+EAR_ARR_SNP <- as.data.frame(join_overlap_intersect(EAR_df_gr, gwas_2_gr_noext))
+ESR_ARR_SNP <- as.data.frame(join_overlap_intersect(ESR_df_gr, gwas_2_gr_noext))
+LR_ARR_SNP <- as.data.frame(join_overlap_intersect(LR_df_gr,  gwas_2_gr_noext))
+NR_ARR_SNP <- as.data.frame(join_overlap_intersect(NR_df_gr, gwas_2_gr_noext))
+
+ARR_SNP_table <- EAR_ARR_SNP %>% 
+  mutate(MRC="EAR") %>% 
+  bind_rows((ESR_ARR_SNP %>% 
+              mutate(MRC="ESR"))) %>% 
+  bind_rows((LR_ARR_SNP %>% 
+              mutate(MRC="LR"))) %>% 
+  bind_rows((NR_ARR_SNP %>% 
+              mutate(MRC="NR")))  
+ARR_SNP_table %>%  
+ rename( id="peak_id") %>% 
+  select(peak_id, annotation,SNPS,CHR_POS,MRC) %>% 
+  left_join(., exp_neargene_table, by=c("peak_id"="peakid")) %>% 
+  kable(., caption= "SNPs for Arrhythmia found in MRC peaks") %>% 
+    kable_paper("striped", full_width = TRUE) %>%
+  kable_styling(full_width = FALSE, font_size = 16) %>%
+  scroll_box(height = "800px")
+  
+## arrythmia is gwas #2
+
+
+
+```
+
+
+
+#### Myocardial Infarction
+
+```{r MI SNP by category}
+## Heart failure is gwas #5
+
+EAR_MI_SNP <- as.data.frame(join_overlap_intersect(EAR_df_gr,MI_gwas_gr_noext))
+ESR_MI_SNP <- as.data.frame(join_overlap_intersect(ESR_df_gr,MI_gwas_gr_noext))
+LR_MI_SNP <- as.data.frame(join_overlap_intersect(LR_df_gr, MI_gwas_gr_noext))
+NR_MI_SNP <- as.data.frame(join_overlap_intersect(NR_df_gr, MI_gwas_gr_noext))
+
+MI_SNP_table <- EAR_MI_SNP %>% 
+  mutate(MRC="EAR") %>% 
+  bind_rows((ESR_MI_SNP %>% 
+              mutate(MRC="ESR"))) %>% 
+  bind_rows((LR_MI_SNP %>% 
+              mutate(MRC="LR"))) %>% 
+  bind_rows((NR_MI_SNP %>% 
+              mutate(MRC="NR")))  
+MI_SNP_table %>%  
+ rename( id="peak_id") %>% 
+  select(peak_id, annotation,SNPS,CHR_POS,MRC) %>% 
+  left_join(., exp_neargene_table, by=c("peak_id"="peakid")) %>% 
+  kable(., caption= "SNPs for MI found in MRC peaks") %>% 
+    kable_paper("striped", full_width = TRUE) %>%
+  kable_styling(full_width = FALSE, font_size = 16) %>%
+  scroll_box(height = "800px")
+  
+```
+
+
+#### Coronary Artery Disease
+
+```{r MI SNP by category}
+## Heart failure is gwas #5
+
+EAR_CAD_SNP <- as.data.frame(join_overlap_intersect(EAR_df_gr,CAD_gwas_gr_noext))
+ESR_CAD_SNP <- as.data.frame(join_overlap_intersect(ESR_df_gr,CAD_gwas_gr_noext))
+LR_CAD_SNP <- as.data.frame(join_overlap_intersect(LR_df_gr, CAD_gwas_gr_noext))
+NR_CAD_SNP <- as.data.frame(join_overlap_intersect(NR_df_gr, CAD_gwas_gr_noext))
+
+CAD_SNP_table <- EAR_CAD_SNP %>% 
+  mutate(MRC="EAR") %>% 
+  bind_rows((ESR_CAD_SNP %>% 
+              mutate(MRC="ESR"))) %>% 
+  bind_rows((LR_CAD_SNP %>% 
+              mutate(MRC="LR"))) %>% 
+  bind_rows((NR_CAD_SNP %>% 
+              mutate(MRC="NR")))  
+CAD_SNP_table %>%  
+ rename( id="peak_id") %>% 
+  select(peak_id, annotation,SNPS,CHR_POS,MRC) %>% 
+  left_join(., exp_neargene_table, by=c("peak_id"="peakid")) %>% 
+  kable(., caption= "SNPs for CAD found in MRC peaks") %>% 
+    kable_paper("striped", full_width = TRUE) %>%
+  kable_styling(full_width = FALSE, font_size = 16) %>%
+  scroll_box(height = "800px")
+  
+## arrythmia is gwas #2
+
+
+
+```
