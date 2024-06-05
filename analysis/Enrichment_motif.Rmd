@@ -1,5 +1,5 @@
 ---
-title: "Enrichment_motif"
+title: "SNP Enrichment Investigation"
 author: "ERM"
 date: "`r Sys.Date()`"
 output: html_document
@@ -26,10 +26,6 @@ pre[class] {
 
 ```{r package loading, message=FALSE, warning=FALSE}
 library(tidyverse)
-# library(ggsignif)
-# library(cowplot)
-# library(ggpubr)
-
 # library(sjmisc)
 library(kableExtra)
 library(broom)
@@ -245,6 +241,8 @@ trait 1, 11 associations with trait **cardiotoxicity**
 
 trait 2, 1068 associations with trait **cardiac arrhythmia**
 
+--note: after checking through, the file for cardiac arrhythmia has 668 unique SNPs
+
 trait 3, 40 associations with trait **response to anthracycline-based chemotherapy**
 
 trait 4, 6139 associations with trait **heart disease**
@@ -256,7 +254,8 @@ trait 5, 445 associations with trait **heart failure**
 
 ##finding GWAS for Hearfailure: I used several traits from the GWAS database:
 ##1_cardiotoxicity  11 associations   gwas_1
-gwas_1 <- readRDS("data/gwas_1_dataframe.RDS")
+gwas_1 <- readRDS("data/gwas_1_dataframe.RDS")  
+
 ##2_ cardiac arrhythmia  1068 associations   gwas_2
 gwas_2 <- readRDS("data/gwas_2_dataframe.RDS")
 
@@ -276,6 +275,7 @@ MI_gwas <- readRDS("data/MI_gwas.RDS")
 
 CAD_gwas_gr <- CAD_gwas %>%
   dplyr::select(CHR_ID,CHR_POS,SNPS) %>% 
+  distinct() %>% 
   mutate(CHR_ID=as.numeric(CHR_ID), CHR_POS=as.numeric(CHR_POS)) %>% 
   na.omit(.) %>% 
   mutate(start=CHR_POS-500, end=CHR_POS+500, chr=paste0("chr",CHR_ID)) %>%
@@ -283,6 +283,7 @@ CAD_gwas_gr <- CAD_gwas %>%
    GRanges(.)
 CAD_gwas_gr_ten <- CAD_gwas %>%
   dplyr::select(CHR_ID,CHR_POS,SNPS) %>% 
+   distinct() %>% 
   mutate(CHR_ID=as.numeric(CHR_ID), CHR_POS=as.numeric(CHR_POS)) %>% 
   na.omit(.) %>% 
   mutate(start=CHR_POS-5000, end=CHR_POS+5000, chr=paste0("chr",CHR_ID)) %>%
@@ -290,7 +291,8 @@ CAD_gwas_gr_ten <- CAD_gwas %>%
    GRanges(.)
 
 CAD_gwas_gr_noext <- CAD_gwas %>% 
-  dplyr::select(CHR_ID,CHR_POS,SNPS) %>% 
+  dplyr::select(CHR_ID,CHR_POS,SNPS) %>%
+   distinct() %>% 
   mutate(CHR_ID=as.numeric(CHR_ID), CHR_POS=as.numeric(CHR_POS)) %>% 
   na.omit(.) %>% 
   mutate(start=CHR_POS, end=CHR_POS+1, chr=paste0("chr",CHR_ID)) %>%
@@ -300,13 +302,15 @@ CAD_gwas_gr_noext <- CAD_gwas %>%
 
 MI_gwas_gr <- MI_gwas %>%
   dplyr::select(CHR_ID,CHR_POS,SNPS) %>% 
+   distinct() %>% 
   mutate(CHR_ID=as.numeric(CHR_ID), CHR_POS=as.numeric(CHR_POS)) %>% 
   na.omit(.) %>% 
   mutate(start=CHR_POS-500, end=CHR_POS+500, chr=paste0("chr",CHR_ID)) %>%
   dplyr::select(chr, start,end, SNPS,CHR_POS) %>%
    GRanges(.)
 MI_gwas_gr_ten <- MI_gwas %>%
-  dplyr::select(CHR_ID,CHR_POS,SNPS) %>% 
+  dplyr::select(CHR_ID,CHR_POS,SNPS) %>%
+   distinct() %>% 
   mutate(CHR_ID=as.numeric(CHR_ID), CHR_POS=as.numeric(CHR_POS)) %>% 
   na.omit(.) %>% 
   mutate(start=CHR_POS-5000, end=CHR_POS+5000, chr=paste0("chr",CHR_ID)) %>%
@@ -315,6 +319,7 @@ MI_gwas_gr_ten <- MI_gwas %>%
 
 MI_gwas_gr_noext <- MI_gwas %>% 
   dplyr::select(CHR_ID,CHR_POS,SNPS) %>% 
+   distinct() %>% 
   mutate(CHR_ID=as.numeric(CHR_ID), CHR_POS=as.numeric(CHR_POS)) %>% 
   na.omit(.) %>% 
   mutate(start=CHR_POS, end=CHR_POS+1, chr=paste0("chr",CHR_ID)) %>%
@@ -324,6 +329,7 @@ MI_gwas_gr_noext <- MI_gwas %>%
 
 gwas_1_gr <- gwas_1 %>% 
   dplyr::select(CHR_ID,CHR_POS,SNPS) %>% 
+   distinct() %>% 
   mutate(start=CHR_POS-500, end=CHR_POS+500, chr=paste0("chr",CHR_ID)) %>%
   dplyr::select(chr, start,end, SNPS,CHR_POS) %>%
    na.omit() %>% 
@@ -331,6 +337,7 @@ gwas_1_gr <- gwas_1 %>%
 
 gwas_1_gr_ten <- gwas_1 %>% 
   dplyr::select(CHR_ID,CHR_POS,SNPS) %>% 
+   distinct() %>% 
   mutate(start=CHR_POS-5000, end=CHR_POS+5000, chr=paste0("chr",CHR_ID)) %>%
   dplyr::select(chr, start,end, SNPS,CHR_POS) %>%
    na.omit() %>% 
@@ -338,6 +345,7 @@ gwas_1_gr_ten <- gwas_1 %>%
 # rtracklayer::export.bed(gwas_1_gr , con="data/n45_bedfiles/cardiotox_gwas_gr_ext.bed", format="bed", ignore.strand = FALSE)
 gwas_1_gr_noext <- gwas_1 %>% 
   dplyr::select(CHR_ID,CHR_POS,SNPS) %>% 
+   distinct() %>% 
   mutate(start=CHR_POS, end=CHR_POS+1, chr=paste0("chr",CHR_ID)) %>%
   dplyr::select(chr, start,end, SNPS,CHR_POS) %>%
    na.omit() %>% 
@@ -345,6 +353,7 @@ gwas_1_gr_noext <- gwas_1 %>%
 
 gwas_2_gr <- gwas_2 %>% 
   dplyr::select(CHR_ID,CHR_POS,SNPS) %>% 
+   distinct() %>% 
    mutate(start=CHR_POS-500, end=CHR_POS+500, chr=paste0("chr",CHR_ID)) %>%
   dplyr::select(chr, start,end, SNPS,CHR_POS) %>%
   na.omit() %>% 
@@ -352,6 +361,7 @@ gwas_2_gr <- gwas_2 %>%
 
 gwas_2_gr_ten <- gwas_2 %>% 
   dplyr::select(CHR_ID,CHR_POS,SNPS) %>% 
+   distinct() %>% 
    mutate(start=CHR_POS-5000, end=CHR_POS+5000, chr=paste0("chr",CHR_ID)) %>%
   dplyr::select(chr, start,end, SNPS,CHR_POS) %>%
   na.omit() %>% 
@@ -360,6 +370,7 @@ gwas_2_gr_ten <- gwas_2 %>%
  
 gwas_2_gr_noext <- gwas_2 %>% 
   dplyr::select(CHR_ID,CHR_POS,SNPS) %>% 
+   distinct() %>% 
   mutate(start=CHR_POS, end=CHR_POS+1, chr=paste0("chr",CHR_ID)) %>%
   dplyr::select(chr, start,end, SNPS,CHR_POS) %>%
   na.omit() %>% 
@@ -369,6 +380,7 @@ gwas_2_gr_noext <- gwas_2 %>%
 
 gwas_3_gr <- gwas_3 %>% 
   dplyr::select(CHR_ID,CHR_POS,SNPS) %>% 
+   distinct() %>% 
   mutate(start=CHR_POS-500, end=CHR_POS+500, chr=paste0("chr",CHR_ID)) %>%
   dplyr::select(chr, start,end, SNPS,CHR_POS) %>%
    na.omit() %>% 
@@ -377,6 +389,7 @@ gwas_3_gr <- gwas_3 %>%
 
 gwas_3_gr_ten <- gwas_3 %>% 
   dplyr::select(CHR_ID,CHR_POS,SNPS) %>% 
+   distinct() %>% 
   mutate(start=CHR_POS-5000, end=CHR_POS+5000, chr=paste0("chr",CHR_ID)) %>%
   dplyr::select(chr, start,end, SNPS,CHR_POS) %>%
    na.omit() %>% 
@@ -384,6 +397,7 @@ gwas_3_gr_ten <- gwas_3 %>%
 
 gwas_3_gr_noext <- gwas_3 %>% 
   dplyr::select(CHR_ID,CHR_POS,SNPS) %>% 
+   distinct() %>% 
    mutate(start=CHR_POS, end=CHR_POS+1, chr=paste0("chr",CHR_ID)) %>%
   dplyr::select(chr, start,end, SNPS,CHR_POS) %>%
    na.omit() %>% 
@@ -391,6 +405,7 @@ gwas_3_gr_noext <- gwas_3 %>%
 
 gwas_4_gr <-  gwas_4 %>% 
   dplyr::select(CHR_ID,CHR_POS,SNPS) %>% 
+   distinct() %>% 
   mutate(CHR_POS= as.integer(CHR_POS)) %>% 
   mutate(start=CHR_POS-500, end=CHR_POS+500, chr=paste0("chr",CHR_ID))%>%
   dplyr::select(chr, start,end, SNPS,CHR_POS) %>%
@@ -399,6 +414,7 @@ gwas_4_gr <-  gwas_4 %>%
  
 gwas_4_gr_ten <-  gwas_4 %>% 
   dplyr::select(CHR_ID,CHR_POS,SNPS) %>% 
+   distinct() %>% 
   mutate(CHR_POS= as.integer(CHR_POS)) %>% 
   mutate(start=CHR_POS-5000, end=CHR_POS+5000, chr=paste0("chr",CHR_ID))%>%
   dplyr::select(chr, start,end, SNPS,CHR_POS) %>%
@@ -406,6 +422,7 @@ gwas_4_gr_ten <-  gwas_4 %>%
   GRanges()
 gwas_4_gr_noext <-  gwas_4 %>% 
   dplyr::select(CHR_ID,CHR_POS,SNPS) %>% 
+   distinct() %>% 
   mutate(CHR_POS= as.integer(CHR_POS)) %>% 
    mutate(start=CHR_POS, end=CHR_POS+1, chr=paste0("chr",CHR_ID)) %>%
   dplyr::select(chr, start,end, SNPS,CHR_POS) %>%
@@ -416,12 +433,14 @@ gwas_4_gr_noext <-  gwas_4 %>%
 
 gwas_5_gr <- gwas_5 %>% 
   dplyr::select(CHR_ID,CHR_POS,SNPS) %>% 
+   distinct() %>% 
   mutate(start=CHR_POS-500, end=CHR_POS+500, chr=paste0("chr",CHR_ID)) %>%
   dplyr::select(chr, start,end, SNPS,CHR_POS) %>%
    na.omit() %>% 
   GRanges()
 gwas_5_gr_ten <- gwas_5 %>% 
   dplyr::select(CHR_ID,CHR_POS,SNPS) %>% 
+   distinct() %>% 
   mutate(start=CHR_POS-5000, end=CHR_POS+5000, chr=paste0("chr",CHR_ID)) %>%
   dplyr::select(chr, start,end, SNPS,CHR_POS) %>%
    na.omit() %>% 
@@ -430,14 +449,18 @@ gwas_5_gr_ten <- gwas_5 %>%
 
 gwas_5_gr_noext <- gwas_5 %>% 
   dplyr::select(CHR_ID,CHR_POS,SNPS) %>% 
+   distinct() %>% 
   mutate(start=CHR_POS, end=CHR_POS+1, chr=paste0("chr",CHR_ID)) %>%
   dplyr::select(chr, start,end, SNPS,CHR_POS) %>%
    na.omit() %>% 
   GRanges()
 # saveRDS(list("gwas_2_gr_noext"=gwas_2_gr_noext, "gwas_4_gr_noext"= gwas_4_gr_noext),"data/test.list.RDS")
 # gwas_2[(is.na(gwas_2$CHR_POS)),]
-```
 
+# rtracklayer::export.bed(gwas_5_gr_noext , con="data/n45_bedfiles/HF_LR_gwas_gr_noext.bed", format="bed", ignore.strand = FALSE)
+
+
+```
 
 #### GWAS overlap findings
 
@@ -504,9 +527,6 @@ ESR_g5_ol <-findOverlaps(ESR_df_gr, gwas_5_gr_noext)
 LR_g5_ol <-findOverlaps(LR_df_gr, gwas_5_gr_noext)
 NR_g5_ol <-findOverlaps(NR_df_gr, gwas_5_gr_noext)
 
-
-
-
 EAR_CAD_ol <-findOverlaps(EAR_df_gr, CAD_gwas_gr_noext)
 ESR_CAD_ol <-findOverlaps(ESR_df_gr,  CAD_gwas_gr_noext)
 LR_CAD_ol <-findOverlaps(LR_df_gr,  CAD_gwas_gr_noext)
@@ -520,7 +540,7 @@ findOverlaps(NR_df_gr,  MI_gwas_gr_noext)
 
 ```
 
-| motif       | gwas_1 (11)                                        | gwas_2 (1061)                                      | gwas_3 (39)                                        | gwas_4 (6052)                                      | Heart Failure (445)                                        | CAD_gwas (3482)                                      |
+| motif       | gwas_1 (`r length(gwas_1_gr)`)                     | gwas_2 (`r length(gwas_2_gr)`)                     | gwas_3 (`r length(gwas_3_gr)`)                     | gwas_4 (`r length(gwas_4_gr)`)                     | Heart Failure (`r length(gwas_5_gr)`)               | CAD_gwas (`r length(CAD_gwas_gr)`)                   |
 |-----------|-----------|-----------|-----------|-----------|-----------|-----------|
 | EAR (7321)  | `r length(findOverlaps(EAR_df_gr, gwas_1_gr_ten))` | `r length(findOverlaps(EAR_df_gr, gwas_2_gr_ten))` | `r length(findOverlaps(EAR_df_gr, gwas_3_gr_ten))` | `r length(findOverlaps(EAR_df_gr, gwas_4_gr_ten))` | `r  length(findOverlaps(EAR_df_gr, gwas_5_gr_ten))` | `r length(findOverlaps(EAR_df_gr, CAD_gwas_gr_ten))` |
 | ESR (15665) | `r length(findOverlaps(ESR_df_gr, gwas_1_gr_ten))` | `r length(findOverlaps(ESR_df_gr, gwas_2_gr_ten))` | `r length(findOverlaps(ESR_df_gr, gwas_3_gr_ten))` | `r length(findOverlaps(ESR_df_gr, gwas_4_gr_ten))` | `r length(findOverlaps(ESR_df_gr, gwas_5_gr_ten))`  | `r length(findOverlaps(ESR_df_gr, CAD_gwas_gr_ten))` |
@@ -529,7 +549,7 @@ findOverlaps(NR_df_gr,  MI_gwas_gr_noext)
 
 : gwas trait enrichment with extensions of 5,000 bp +/- SNP location
 
-| motif       | gwas_1 (11)                                    | gwas_2 (1061)                                  | gwas_3 (39)                                    | gwas_4 (6052)                                  | Heart Failure (445)                                   | CAD_gwas (3482)                                  |
+| motif       | gwas_1 (`r length(gwas_1_gr)`)                 | gwas_2 (`r length(gwas_2_gr)`)                 | gwas_3 (`r length(gwas_3_gr)`)                 | gwas_4 (`r length(gwas_4_gr)`)                 | Heart Failure (`r length(gwas_5_gr)`)          | CAD_gwas (`r length(CAD_gwas_gr)`)               |
 |-----------|-----------|-----------|-----------|-----------|-----------|-----------|
 | EAR (7321)  | `r length(findOverlaps(EAR_df_gr, gwas_1_gr))` | `r length(findOverlaps(EAR_df_gr, gwas_2_gr))` | `r length(findOverlaps(EAR_df_gr, gwas_3_gr))` | `r length(findOverlaps(EAR_df_gr, gwas_4_gr))` | `r length(findOverlaps(EAR_df_gr, gwas_5_gr))` | `r length(findOverlaps(EAR_df_gr, CAD_gwas_gr))` |
 | ESR (15665) | `r length(findOverlaps(ESR_df_gr, gwas_1_gr))` | `r length(findOverlaps(ESR_df_gr, gwas_2_gr))` | `r length(findOverlaps(ESR_df_gr, gwas_3_gr))` | `r length(findOverlaps(ESR_df_gr, gwas_4_gr))` | `r length(findOverlaps(ESR_df_gr, gwas_5_gr))` | `r length(findOverlaps(ESR_df_gr, CAD_gwas_gr))` |
@@ -538,34 +558,41 @@ findOverlaps(NR_df_gr,  MI_gwas_gr_noext)
 
 : gwas trait enrichment with extensions of 500 bp +/- SNP location
 
-| motif       | gwas_1 (11) | gwas_2 (1061) | gwas_3 (39) | gwas_4 (6052) | Heart Failure (445) | CAD_gwas (3482) | MI_gwas (399) |     |
+| motif       | gwas_1 (`r length(gwas_1_gr)`)                                        | gwas_2 (`r length(gwas_2_gr)`)                                      | gwas_3 (`r length(gwas_3_gr)`)                                        | gwas_4 (`r length(gwas_4_gr)`)                                      | Heart Failure (`r length(gwas_5_gr)`)                                        | CAD_gwas (`r length(CAD_gwas_gr)`)                                      | MI_gwas (`r length(MI_gwas_gr)`)
 |--------|--------|--------|--------|--------|--------|--------|--------|--------|
-| EAR (7321)  | 0           | 2             | 0           | 17            | 0            | 12              | 1             |     |
-| ESR (15665) | 0           | 30            | 0           | 55            | 2            | 17              | 0             |     |
-| LR (41759)  | 2           | 29            | 4           | 182           | 15           | 116             | 15            |     |
-| NR (83658)  | 0           | 90            | 0           | 278           | 11           | 146             | 19            |     |
+| EAR (7321)  | `r length(findOverlaps(EAR_df_gr, gwas_1_gr))` | `r length(findOverlaps(EAR_df_gr, gwas_2_gr_noext))` | `r length(findOverlaps(EAR_df_gr, gwas_3_gr_noext))` | `r length(findOverlaps(EAR_df_gr, gwas_4_gr_noext))` | `r length(findOverlaps(EAR_df_gr, gwas_5_gr_noext))` | `r length(findOverlaps(EAR_df_gr, CAD_gwas_gr))` |`r length(findOverlaps(EAR_df_gr, MI_gwas_gr_noext))`|
+| ESR (15665) | `r length(findOverlaps(ESR_df_gr, gwas_1_gr_noext))` | `r length(findOverlaps(ESR_df_gr, gwas_2_gr_noext))` | `r length(findOverlaps(ESR_df_gr, gwas_3_gr_noext))` | `r length(findOverlaps(ESR_df_gr, gwas_4_gr_noext))` | `r length(findOverlaps(ESR_df_gr, gwas_5_gr_noext))` | `r length(findOverlaps(ESR_df_gr, CAD_gwas_gr_noext))` |`r length(findOverlaps(ESR_df_gr, MI_gwas_gr_noext))`|
+| LR (41759)  | `r length(findOverlaps(LR_df_gr, gwas_1_gr_noext))`  | `r length(findOverlaps(LR_df_gr, gwas_2_gr_noext))`  | `r length(findOverlaps(LR_df_gr, gwas_3_gr_noext))`  | `r length(findOverlaps(LR_df_gr, gwas_4_gr_noext))`  | `r length(findOverlaps(LR_df_gr, gwas_5_gr_noext))`  | `r length(findOverlaps(LR_df_gr, CAD_gwas_gr_noext))`  |`r length(findOverlaps(LR_df_gr, MI_gwas_gr_noext))`|
+| NR (83658)  | `r length(findOverlaps(NR_df_gr, gwas_1_gr_noext))`  | `r length(findOverlaps(NR_df_gr, gwas_2_gr_noext))`  | `r length(findOverlaps(NR_df_gr, gwas_3_gr_noext))`  | `r length(findOverlaps(NR_df_gr, gwas_4_gr_noext))`  | `r length(findOverlaps(NR_df_gr, gwas_5_gr_noext))`  | `r length(findOverlaps(NR_df_gr, CAD_gwas_gr_noext))`  |`r length(findOverlaps(NR_df_gr, MI_gwas_gr_noext))`|
 
 : gwas trait enrichment with no extension
 
-These numbers are different than the original lists from which they derived. This is normally due to running `na.omit()` on the data frame before GRanges transformation. \#### chisquare tests
+These numbers are different than the original lists from which they derived. This is normally due to running `na.omit()` and adding on the `distinct` function to the data frame before GRanges transformation.This reliably removes repeated SNPs. \#
+
+#### chisquare tests
 
 ```{r chi numbers}
-chitest_gwas2_EAR <- matrix(c(2,7319,90,83568), ncol=2, byrow=TRUE)
-chitest_gwas2_ESR <- matrix(c(30,15635,90,83568), ncol=2, byrow=TRUE)
-chitest_gwas2_LR <- matrix(c(20,41739,90,83568), ncol=2, byrow=TRUE)
+chitest_gwas2_EAR <- matrix(c(2,7319,48,83610), ncol=2, byrow=TRUE)
+chitest_gwas2_ESR <- matrix(c(13,15652,48,83610), ncol=2, byrow=TRUE)
+chitest_gwas2_LR <- matrix(c(18,41741,48,83610), ncol=2, byrow=TRUE)
 chisq.test(chitest_gwas2_EAR)
 chisq.test(chitest_gwas2_ESR)
 chisq.test(chitest_gwas2_LR)
 
 
 
-chitest_gwas4_EAR <- matrix(c(17,7304,292,83366), ncol=2, byrow=TRUE)
-chitest_gwas4_ESR <- matrix(c(55,15610,292,83366), ncol=2, byrow=TRUE)
-chitest_gwas4_LR <- matrix(c(186,41573,292,83366), ncol=2, byrow=TRUE)
+chitest_gwas4_EAR <- matrix(c(12,7309,170,83488), ncol=2, byrow=TRUE)
+chitest_gwas4_ESR <- matrix(c(29,15636,170,83488), ncol=2, byrow=TRUE)
+chitest_gwas4_LR <- matrix(c(99,41660,170,83488), ncol=2, byrow=TRUE)
 chisq.test(chitest_gwas4_EAR)
 chisq.test(chitest_gwas4_ESR)
 chisq.test(chitest_gwas4_LR)
-
+chitest_gwas5_EAR <- matrix(c(0,7321,10,83648), ncol=2, byrow=TRUE)
+chitest_gwas5_ESR <- matrix(c(2,15663,10,83648), ncol=2, byrow=TRUE)
+chitest_gwas5_LR <- matrix(c(15,41744,10,83648), ncol=2, byrow=TRUE)
+chisq.test(chitest_gwas5_EAR)
+chisq.test(chitest_gwas5_ESR)
+chisq.test(chitest_gwas5_LR)
 
 chitest_K4_EAR <- matrix(c(0,7321,32,83626), ncol=2, byrow=TRUE)
 chitest_K4_ESR <- matrix(c(3,15662,32,83626), ncol=2, byrow=TRUE)
@@ -590,12 +617,19 @@ chisq.test(chitest_K6_EAR)
 chisq.test(chitest_K6_ESR)
 chisq.test(chitest_K6_LR)
 
-chitest_CAD_EAR <- matrix(c(12,7309,146,83512), ncol=2, byrow=TRUE)
-chitest_CAD_ESR <- matrix(c(17,15648,146,83512), ncol=2, byrow=TRUE)
-chitest_CAD_LR <- matrix(c(116,41643,146,83512), ncol=2, byrow=TRUE)
+chitest_CAD_EAR <- matrix(c(21,7300,84,83574), ncol=2, byrow=TRUE)
+chitest_CAD_ESR <- matrix(c(12,15653,84,83574), ncol=2, byrow=TRUE)
+chitest_CAD_LR <- matrix(c(59,41700,84,83574), ncol=2, byrow=TRUE)
 chisq.test(chitest_CAD_EAR)
 chisq.test(chitest_CAD_ESR)
 chisq.test(chitest_CAD_LR)
+
+chitest_MI_EAR <- matrix(c(1,7320,13,83645), ncol=2, byrow=TRUE)
+chitest_MI_ESR <- matrix(c(0,15665,13,83645), ncol=2, byrow=TRUE)
+chitest_MI_LR <- matrix(c(10,41749,13,83645), ncol=2, byrow=TRUE)
+chisq.test(chitest_MI_EAR)
+chisq.test(chitest_MI_ESR)
+chisq.test(chitest_MI_LR)
 
 
 
@@ -651,6 +685,7 @@ NR_CAD_sol <- as.data.frame(subsetByOverlaps(NR_df_gr, CAD_gwas_gr))
 ```
 
 ### RNA MRC (motif response cluster)
+
 ```{r adding in RNA genes}
 toplistall_RNA <- readRDS("data/other_papers/toplistall_RNA.RDS") 
 S13Table <- read.csv( "data/other_papers/S13Table_Matthews2024.csv",row.names = 1)
@@ -790,7 +825,6 @@ RNA_expresed_genes%>%
 
 ```
 
-
 ```{r MRC and RNAseq}
 drug_pal <- c("#8B006D","#DF707E","#F1B72B", "#3386DD","#707031","#41B333")
 ##Here my focus is to find nearest genes that are MRC and see if they are DEGs
@@ -913,11 +947,11 @@ toplist_n45 %>%
 ```{r  piechart noext }
 
 Set <- c("EAR", "ESR","LR", "NR")
-gene_num_ARR <- c(2,30,29,90)
-gene_num_HD <- c(17,55,182,278)
-gene_num_CAD <- c(12,17,116,146)
-gene_num_MI <- c(1,0,15,19)
-gene_num_HF <- c(0,2,15,11)
+gene_num_ARR <- c(2,13,18,48)
+gene_num_HD <- c(12,29,99,170)
+gene_num_CAD <- c(21,12,59,84)
+gene_num_MI <- c(1,0,10,13)
+gene_num_HF <- c(0,2,15,10)
 fills <- c("#F8766D",  "#00BFC4","#7CAE00", "#C77CFF")
 
 pie_chartdata_ARR <- data.frame(Set, gene_num_ARR, fills)
@@ -1003,8 +1037,6 @@ pie_chartdata_HF %>%
   theme(legend.position="none") +
   theme(plot.title = element_text(size = rel(1.5), hjust = 0.5))
 ```
-
-
 
 ```{r expressionDE chart}
 
@@ -1320,13 +1352,15 @@ Counts_RNA_ERMatthews %>%
 ```
 
 ### KEGG pathway enrichment by peaks location
+
 ```{r function profiles comp}
 library(clusterProfiler)
 genes = lapply(peakAnnoList_n45_motif[1:4], function(i) as.data.frame(i)$geneId)
 names(genes) = sub("_", "\n", names(genes))
 compKEGG <- compareCluster(geneCluster   = genes,
-                         fun           = "enrichKEGG",
+                         fun           = "enrichGO",
                          pvalueCutoff  = 0.05,
+                         OrgDb='org.Hs.eg.db',
                          pAdjustMethod = "BH")
 dotplot(compKEGG, showCategory = 15, title = "KEGG Pathway Enrichment Analysis")
 
@@ -1336,13 +1370,13 @@ dotplot(compKEGG, showCategory = 15, title = "KEGG Pathway Enrichment Analysis")
 
 The code below is the documentation of what I did to make the RNA-gene list from my expressed genes.
 
-I first used `biomaRt` package to retrieve the chromosome information for each ENTREZID.  This game me 13114 rows, with > 500 rows containing string-only chromosomal locations.  I then tried using the hgnc symbol to pull up gene information and  retrieved  'chromosome_name', 'start_position', 'end_position','entrezgene_id', 'ensembl_gene_id', 'hgnc_symbol' for 15,497 rows of genes from my expressed gene list. This list again contained multiple string-only chromosomal locations.  I filtered out non-numeric chromosomes after looking up several genes that had multiple entries with at least one of the entries containing no ENTREZID or incorrect coordinates or symbols, leaving me with 13,426 rows of unique genes, but several contained `NAs` in the ENTREZID column.  Since I generally use ENTREZIDs to connect my data, I removed those genes and was left with 12,984 unique genes from my RNA expressed gene list.  
- 
-The next steps involved exporting this file as a .bed file and using `bedtools closest` function to map the nearest expressed gene to each peak.   I used `bedtools closest -a background.bed -b Expressedgenes.bed -d > assigned_closest_gene.bed`  to map accessible peaks, ie 151,675 peaks.  Some peaks were assigned more than one neargene, and I kept all neargenes assigned in one file with 156,431 rows.  I can collapse these into a comma deliminated file, but for now I am keeping separated lines.
+I first used `biomaRt` package to retrieve the chromosome information for each ENTREZID. This game me 13114 rows, with \> 500 rows containing string-only chromosomal locations. I then tried using the hgnc symbol to pull up gene information and retrieved 'chromosome_name', 'start_position', 'end_position','entrezgene_id', 'ensembl_gene_id', 'hgnc_symbol' for 15,497 rows of genes from my expressed gene list. This list again contained multiple string-only chromosomal locations. I filtered out non-numeric chromosomes after looking up several genes that had multiple entries with at least one of the entries containing no ENTREZID or incorrect coordinates or symbols, leaving me with 13,426 rows of unique genes, but several contained `NAs` in the ENTREZID column. Since I generally use ENTREZIDs to connect my data, I removed those genes and was left with 12,984 unique genes from my RNA expressed gene list.
 
+The next steps involved exporting this file as a .bed file and using `bedtools closest` function to map the nearest expressed gene to each peak. I used `bedtools closest -a background.bed -b Expressedgenes.bed -d > assigned_closest_gene.bed` to map accessible peaks, ie 151,675 peaks. Some peaks were assigned more than one neargene, and I kept all neargenes assigned in one file with 156,431 rows. I can collapse these into a comma deliminated file, but for now I am keeping separated lines.
 
-NOTE FOR MYSELF  (are we base 0 or base 1!!!!!)  
-The peak file names do not match the bed file names due to the 0/1 issue.  This means to match up MRC categories by name, I need to alter the first start position by +1 to get the "new" names to match the old names!
+NOTE FOR MYSELF (are we base 0 or base 1!!!!!)\
+The peak file names do not match the bed file names due to the 0/1 issue. This means to match up MRC categories by name, I need to alter the first start position by +1 to get the "new" names to match the old names!
+
 ```{r overlapping closest, eval=FALSE, include=TRUE}
 
 # get RNA gene list:  (14,084)  Can be done using the S13 from my previous data-  i just went to UCSC browser and 
@@ -1413,11 +1447,8 @@ write_tsv(expressed_NEARGENE_table,"data/n45_bedfiles/exp_neargene_table.tsv")
 
 
 ```
+
 ### near-gene and MRC peaks
-
-
-
-
 
 ```{r near-gene MRC peaks distibution}
 ##Assume file not loaded
@@ -1435,28 +1466,27 @@ col_ng_peak <- exp_neargene_table %>%
 
 EAR_peak_list <- exp_neargene_table %>% 
     dplyr::filter(peakid %in% EAR_df$id) %>% 
-  dplyr::select(ENTREZID) %>% 
+  dplyr::select(ENTREZID, peakid) %>% 
   distinct()
 
 ESR_peak_list <- exp_neargene_table %>% 
     dplyr::filter(peakid %in% ESR_df$id) %>% 
-  dplyr::select(ENTREZID) %>% 
+  dplyr::select(ENTREZID, peakid) %>% 
   distinct()
 
 LR_peak_list <- exp_neargene_table %>% 
     dplyr::filter(peakid %in% LR_df$id) %>% 
-  dplyr::select(ENTREZID) %>% 
+  dplyr::select(ENTREZID, peakid) %>% 
   distinct()
 
 NR_peak_list <- exp_neargene_table %>% 
     dplyr::filter(peakid %in% NR_df$id) %>% 
-  dplyr::select(ENTREZID) %>% 
+  dplyr::select(ENTREZID, peakid) %>% 
   distinct()
 
 # length(unique(expressed_NEARGENE_table$ENTREZID))
 
 ```
-
 
 #### VENN of peaks
 
@@ -1493,7 +1523,9 @@ ggVennDiagram::ggVennDiagram(list(NR_peak_list$ENTREZID,NR_RNA$ENTREZID),
 
 
 ```
+
 ### ZNF384 ChIP overlaps
+
 ```{r ZNF384}
 ### files loaded on line ~ 151
 
@@ -1526,7 +1558,8 @@ ZNF_chip_data %>%
 
   theme_classic()
 ```
-Because of the occurrence of ZNF384 enrichment in accessibility of ZNF384 motifs, I used a CHIP pull down of ZNF384 to understand  how many of these peaks may be occupied by the TF in my MRCs.
+
+Because of the occurrence of ZNF384 enrichment in accessibility of ZNF384 motifs, I used a CHIP pull down of ZNF384 to understand how many of these peaks may be occupied by the TF in my MRCs.
 
 ### SNPs by category
 
@@ -1556,14 +1589,16 @@ HF_SNP_table %>%
   kable(., caption= "SNPs for Heart Failure found in MRC peaks") %>% 
     kable_paper("striped", full_width = TRUE) %>%
   kable_styling(full_width = FALSE, font_size = 16) %>%
-  scroll_box(height = "800px")
+  scroll_box(height = "400px")
   
-## arrythmia is gwas #2
-
+HF_SNP_table %>%  
+ # rename(., "peak_id"=id) %>% 
+  select(id, annotation,SNPS,CHR_POS,MRC) %>% 
+  left_join(., exp_neargene_table, by=c("id"="peakid")) %>% 
+  write.csv(.,"data/HF_SNP_table.csv")
 
 
 ```
-
 
 #### Arrhythmia
 
@@ -1592,15 +1627,17 @@ ARR_SNP_table %>%
   kable(., caption= "SNPs for Arrhythmia found in MRC peaks") %>% 
     kable_paper("striped", full_width = TRUE) %>%
   kable_styling(full_width = FALSE, font_size = 16) %>%
-  scroll_box(height = "800px")
+  scroll_box(height = "400px")
   
-## arrythmia is gwas #2
+ARR_SNP_table %>%  
+ # rename(., "peak_id"=id) %>% 
+  select(id, annotation,SNPS,CHR_POS,MRC) %>% 
+  left_join(., exp_neargene_table, by=c("id"="peakid")) %>% 
+  write.csv(.,"data/ARR_SNP_table.csv")
 
 
 
 ```
-
-
 
 #### Myocardial Infarction
 
@@ -1628,10 +1665,9 @@ MI_SNP_table %>%
   kable(., caption= "SNPs for MI found in MRC peaks") %>% 
     kable_paper("striped", full_width = TRUE) %>%
   kable_styling(full_width = FALSE, font_size = 16) %>%
-  scroll_box(height = "800px")
+  scroll_box(height = "400px")
   
 ```
-
 
 #### Coronary Artery Disease
 
