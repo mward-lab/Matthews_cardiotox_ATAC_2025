@@ -631,6 +631,10 @@ chisq.test(chitest_MI_EAR)
 chisq.test(chitest_MI_ESR)
 chisq.test(chitest_MI_LR)
 
+chitest_HFresp <- matrix(c(17,64728,10,83648),ncol=2, byrow = TRUE)
+chisq.test(chitest_HFresp)
+chitest_ARRresp <- matrix(c(33,64712,48,83610),ncol=2, byrow = TRUE)
+chisq.test(chitest_ARRresp)
 
 
 ```
@@ -686,7 +690,7 @@ NR_CAD_sol <- as.data.frame(subsetByOverlaps(NR_df_gr, CAD_gwas_gr))
 
 ### RNA MRC (motif response cluster)
 
-```{r adding in RNA genes}
+```{r adding in RNA genes, include=FALSE}
 toplistall_RNA <- readRDS("data/other_papers/toplistall_RNA.RDS") 
 S13Table <- read.csv( "data/other_papers/S13Table_Matthews2024.csv",row.names = 1)
 ##14021
@@ -1235,7 +1239,7 @@ bind_rows(
 
 ## ARR, HD, HF, MI, CAD snp overlaps and MRC status
 
-```{r  motifMRC enrichment}
+```{r motifMRC enrichment, eval=FALSE, include=TRUE}
 GWAS_5_DAR_df %>% 
   # dplyr::filter(DE_g2=="DE")%>% 
   dplyr::select(seqnames:id,DE_g2,ATAC_MRC, RNA_MRC,annotation:distanceToTSS) %>% 
@@ -1351,18 +1355,18 @@ Counts_RNA_ERMatthews %>%
 
 ```
 
-### KEGG pathway enrichment by peaks location
+<!-- ### KEGG pathway enrichment by peaks location -->
 
 ```{r function profiles comp}
-library(clusterProfiler)
-genes = lapply(peakAnnoList_n45_motif[1:4], function(i) as.data.frame(i)$geneId)
-names(genes) = sub("_", "\n", names(genes))
-compKEGG <- compareCluster(geneCluster   = genes,
-                         fun           = "enrichGO",
-                         pvalueCutoff  = 0.05,
-                         OrgDb='org.Hs.eg.db',
-                         pAdjustMethod = "BH")
-dotplot(compKEGG, showCategory = 15, title = "KEGG Pathway Enrichment Analysis")
+# library(clusterProfiler)
+# genes = lapply(peakAnnoList_n45_motif[1:4], function(i) as.data.frame(i)$geneId)
+# names(genes) = sub("_", "\n", names(genes))
+# compKEGG <- compareCluster(geneCluster   = genes,
+#                          fun           = "enrichGO",
+#                          pvalueCutoff  = 0.05,
+#                          OrgDb='org.Hs.eg.db',
+#                          pAdjustMethod = "BH")
+# dotplot(compKEGG, showCategory = 15, title = "KEGG Pathway Enrichment Analysis")
 
 ```
 
@@ -1561,9 +1565,9 @@ ZNF_chip_data %>%
 
 Because of the occurrence of ZNF384 enrichment in accessibility of ZNF384 motifs, I used a CHIP pull down of ZNF384 to understand how many of these peaks may be occupied by the TF in my MRCs.
 
-### SNPs by category
+## SNPs by category
 
-#### Heart Failure
+### Heart Failure
 
 ```{r HF SNP by category}
 ## Heart failure is gwas #5
@@ -1600,7 +1604,7 @@ HF_SNP_table %>%
 
 ```
 
-#### Arrhythmia
+### Arrhythmia
 
 ```{r ARR SNP by category}
 ## Heart failure is gwas #5
@@ -1639,7 +1643,7 @@ ARR_SNP_table %>%
 
 ```
 
-#### Myocardial Infarction
+### Myocardial Infarction
 
 ```{r MI SNP by category}
 ## Heart failure is gwas #5
@@ -1669,7 +1673,7 @@ MI_SNP_table %>%
   
 ```
 
-#### Coronary Artery Disease
+### Coronary Artery Disease
 
 ```{r CAD SNP by category}
 ## Heart failure is gwas #5
