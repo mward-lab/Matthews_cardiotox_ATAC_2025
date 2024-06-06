@@ -1,0 +1,946 @@
+---
+title: "Analysis of RNA and ATAC data"
+author: "ERM"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE,
+	warning = FALSE
+)
+```
+
+```{css, echo=FALSE}
+pre {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+pre[class] {
+  max-height: 200px;
+}
+```
+
+```{r package loading, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(kableExtra)
+library(broom)
+library(RColorBrewer)
+# library(gprofiler2)
+# library(qvalue)
+library(ChIPseeker)
+library("TxDb.Hsapiens.UCSC.hg38.knownGene")
+library("org.Hs.eg.db")
+# library(ATACseqQC)
+library(rtracklayer)
+library(edgeR)
+library(ggfortify)
+library(limma)
+library(readr)
+library(BiocGenerics)
+library(gridExtra)
+library(VennDiagram)
+library(scales)
+# library(ggVennDiagram)
+library(Cormotif)
+library(BiocParallel)
+library(ggpubr)
+library(devtools)
+# install_github('davetang/bedr')
+library(bedr)
+library(biomaRt)
+library(eulerr)
+library(smplot2)
+library(genomation)
+library(ggsignif)
+```
+
+
+
+Analysis of ATAC and RNA seq data together
+
+Files to load: RNA MRC, ATAC MRC assigned to neargenes (RNA-expressed gene list), LogFC of DAR, LogFC of RNA
+
+```{r loading data sets}
+toplistall_RNA <- readRDS("data/other_papers/toplistall_RNA.RDS") 
+S13Table <- read.csv( "data/other_papers/S13Table_Matthews2024.csv",row.names = 1)
+##14021
+
+EAR_RNA <- S13Table %>% 
+  dplyr::filter(MOTIF=="EAR") %>% 
+  dplyr::select(ENTREZID) %>% 
+  mutate(ENTREZID= as.character(ENTREZID))
+ESR_RNA <- S13Table %>% 
+  dplyr::filter(MOTIF=="ESR")%>% 
+  dplyr::select(ENTREZID)%>% 
+  mutate(ENTREZID= as.character(ENTREZID))
+LR_RNA <- S13Table %>% 
+  dplyr::filter(MOTIF=="LR")%>% 
+  dplyr::select(ENTREZID)%>% 
+  mutate(ENTREZID=as.character(ENTREZID))
+NR_RNA <- S13Table %>% 
+  dplyr::filter(MOTIF=="NR")%>% 
+  dplyr::select(ENTREZID)%>% 
+  mutate(ENTREZID= as.character(ENTREZID))
+
+
+Resp_RNA <- EAR_RNA %>% 
+  rbind(.,ESR_RNA) %>% 
+  rbind(., LR_RNA) %>% 
+  distinct(ENTREZID)
+###Because of how I applied the DEG system in RNA-seq analysis, the lFC is opposite of the 
+###counts.   I did trt-veh instead of veh-trt.  therefore I need to multiply lfc by -1 to get t
+###the right correlation.
+
+toplistall_RNA <- toplistall_RNA %>% 
+  mutate(logFC = logFC*(-1))
+DOX_24_toplist_RNA <- toplistall_RNA %>% 
+  dplyr::filter(time =="24_hours" & id == "DOX")
+DOX_3_toplist_RNA <- toplistall_RNA %>% 
+  dplyr::filter(time =="3_hours" & id == "DOX")
+
+exp_neargene_table <- read_delim("data/n45_bedfiles/exp_neargene_table.tsv", 
+    delim = "\t", escape_double = FALSE, 
+    trim_ws = TRUE)
+
+
+toplist_full_ATAC <- readRDS("data/DEG_toplist_sep_n45.RDS")
+
+n45_fullpeaks_gr <- readBed("data/n45_bedfiles/DAR_DEG_background.bed")
+# RNA_expresed_genes <- toplistall_RNA %>% 
+#   # dplyr::filter(adj.P.Val <0.05) %>% 
+#    mutate(expression = if_else(logFC<0,"down","up")) %>% 
+#   dplyr::select(ENTREZID,SYMBOL,expression) %>% 
+#   # dplyr::select(ENTREZID,SYMBOL) %>% 
+#   unique(.)  
+# RNA_expresed_genes_DE <- toplistall_RNA %>% 
+#   dplyr::filter(adj.P.Val <0.05) %>%
+#   mutate(expression = if_else(logFC<0,"down","up")) %>% 
+#   dplyr::select(ENTREZID,SYMBOL,expression) %>% 
+#   unique(.)  
+
+col_ng_peak <- read.csv("data/col_ng_peak.csv",row.names = 1)
+peakAnnoList_n45_motif <- readRDS("data/peakAnnoList_n45_motif.RDS")
+# list2env(peakAnnoList_n45_motif, envir = .GlobalEnv)
+
+peakAnnoList_3_n45 <- readRDS("data/peakAnnoList_3_n45.RDS")
+peakAnnoList_24_n45<- readRDS("data/peakAnnoList_24_n45.RDS")
+
+DOX_3hr <- as.data.frame(peakAnnoList_3_n45$DOX_3_n45)
+DOX_3hr_gr <- GRanges(DOX_3hr)
+EPI_3hr <- as.data.frame(peakAnnoList_3_n45$EPI_3_n45)
+EPI_3hr_gr <- GRanges(EPI_3hr)
+DNR_3hr <- as.data.frame(peakAnnoList_3_n45$DNR_3_n45)
+DNR_3hr_gr <- GRanges(DNR_3hr)
+MTX_3hr <- as.data.frame(peakAnnoList_3_n45$MTX_3_n45)
+MTX_3hr_gr <- GRanges(MTX_3hr)
+# TRZ_3hr <- as.data.frame(peakAnnoList_3_n45$TRZ_3_n45)
+# TRZ_3hr_gr <- GRanges(TRZ_3hr)
+DOX_3_peak_list_20k <-  exp_neargene_table %>%
+  dplyr::filter(dist_to_NG<20000) %>% 
+    dplyr::filter(peakid %in% DOX_3hr$id) 
+EPI_3_peak_list_20k <-  exp_neargene_table %>%
+  dplyr::filter(dist_to_NG<20000) %>% 
+    dplyr::filter(peakid %in% EPI_3hr$id) 
+DNR_3_peak_list_20k <-  exp_neargene_table %>%
+  dplyr::filter(dist_to_NG<20000) %>% 
+    dplyr::filter(peakid %in% DNR_3hr$id) 
+MTX_3_peak_list_20k <-  exp_neargene_table %>%
+  dplyr::filter(dist_to_NG<20000) %>% 
+    dplyr::filter(peakid %in% MTX_3hr$id) 
+
+
+
+DOX_24hr <- as.data.frame(peakAnnoList_24_n45$DOX_24_n45)
+DOX_24hr_gr <- GRanges(DOX_24hr)
+EPI_24hr <- as.data.frame(peakAnnoList_24_n45$EPI_24_n45)
+EPI_24hr_gr <- GRanges(EPI_24hr)
+DNR_24hr <- as.data.frame(peakAnnoList_24_n45$DNR_24_n45)
+DNR_24hr_gr <- GRanges(DNR_24hr)
+MTX_24hr <- as.data.frame(peakAnnoList_24_n45$MTX_24_n45)
+MTX_24hr_gr <- GRanges(MTX_24hr)
+# TRZ_24hr <- as.data.frame(peakAnnoList_24_n45$TRZ_24_n45)
+# TRZ_24hr_gr <- GRanges(TRZ_24hr)
+
+DOX_24_peak_list_20k <-  exp_neargene_table %>%
+  dplyr::filter(dist_to_NG<20000) %>% 
+    dplyr::filter(peakid %in% DOX_24hr$id) 
+EPI_24_peak_list_20k <-  exp_neargene_table %>%
+  dplyr::filter(dist_to_NG<20000) %>% 
+    dplyr::filter(peakid %in% EPI_24hr$id) 
+DNR_24_peak_list_20k <-  exp_neargene_table %>%
+  dplyr::filter(dist_to_NG<20000) %>% 
+    dplyr::filter(peakid %in% DNR_24hr$id) 
+MTX_24_peak_list_20k <-  exp_neargene_table %>%
+  dplyr::filter(dist_to_NG<20000) %>% 
+    dplyr::filter(peakid %in% MTX_24hr$id) 
+
+
+EAR_df <- as.data.frame(peakAnnoList_n45_motif$EAR_n45_gr)
+EAR_df_gr <-  GRanges(EAR_df)
+
+
+ESR_df <- as.data.frame(peakAnnoList_n45_motif$ESR_n45_gr)
+ESR_df_gr <-  GRanges(ESR_df)
+
+LR_df <- as.data.frame(peakAnnoList_n45_motif$LR_n45_gr)
+LR_df_gr <-  GRanges(LR_df)
+
+NR_df <- as.data.frame(peakAnnoList_n45_motif$NR_n45_gr)
+NR_df_gr <-  GRanges(NR_df)
+
+
+
+EAR_peak_list_20k <-  exp_neargene_table %>%
+  dplyr::filter(dist_to_NG<20000) %>%
+   dplyr::filter(dist_to_NG>=0) %>%
+    dplyr::filter(peakid %in% EAR_df$id) %>% 
+  dplyr::select(peakid, ENTREZID:dist_to_NG) %>% 
+  mutate(MRC="EAR")
+
+ESR_peak_list_20k <- exp_neargene_table %>%
+  dplyr::filter(dist_to_NG<20000) %>%
+  dplyr::filter(dist_to_NG>=0) %>%
+    dplyr::filter(peakid %in% ESR_df$id) %>%
+   dplyr::select(peakid, ENTREZID:dist_to_NG) %>% 
+    mutate(MRC="ESR")
+
+LR_peak_list_20k <- exp_neargene_table %>%
+  dplyr::filter(dist_to_NG<20000) %>%
+  dplyr::filter(dist_to_NG>=0) %>%
+    dplyr::filter(peakid %in% LR_df$id) %>% 
+   dplyr::select(peakid, ENTREZID:dist_to_NG) %>% 
+    mutate(MRC="LR")
+
+NR_peak_list_20k <- exp_neargene_table %>%
+  dplyr::filter(dist_to_NG<20000) %>%
+  dplyr::filter(dist_to_NG>=0) %>%
+    dplyr::filter(peakid %in% NR_df$id) %>%
+   dplyr::select(peakid, ENTREZID:dist_to_NG) %>% 
+    mutate(MRC="NR")
+
+
+peak_list_20k_MRC <- EAR_peak_list_20k %>% 
+  rbind(ESR_peak_list_20k) %>% 
+  rbind(LR_peak_list_20k) %>% 
+  rbind(NR_peak_list_20k)
+
+all_ng_peaks <- exp_neargene_table%>%
+  dplyr::filter(dist_to_NG<20000)%>%
+dplyr::filter(dist_to_NG>=0) 
+length(unique(all_ng_peaks$ENTREZID))
+
+Resp_ATAC_genes <-  peak_list_20k_MRC %>% 
+  dplyr:: filter(MRC != "NR") %>% 
+    distinct(ENTREZID)
+# gr_EAR_peak_list_20k <-  col_ng_peak %>%
+#   dplyr::filter(dist_to_NG<20000) %>%
+#     dplyr::filter(peakid %in% EAR_df$id) %>% 
+#   mutate(MRC="EAR") %>% 
+#   GRanges()
+# 
+# gr_ESR_peak_list_20k <- col_ng_peak %>%
+#   dplyr::filter(dist_to_NG<20000) %>%
+#     dplyr::filter(peakid %in% ESR_df$id) %>% 
+#     mutate(MRC="ESR")%>% 
+#   GRanges()
+# 
+# gr_LR_peak_list_20k <- col_ng_peak %>%
+#   dplyr::filter(dist_to_NG<20000) %>%
+#     dplyr::filter(peakid %in% LR_df$id) %>% 
+#     mutate(MRC="LR")%>% 
+#   GRanges()
+# 
+# gr_NR_peak_list_20k <- col_ng_peak %>%
+#   dplyr::filter(dist_to_NG<20000) %>%
+#     dplyr::filter(peakid %in% NR_df$id) %>% 
+#     mutate(MRC="NR")%>% 
+#   GRanges()
+
+
+```
+
+
+```{r countsof peaks in genes}
+genecount_EAR <- EAR_peak_list_20k %>% 
+  dplyr::filter(dist_to_NG >=0) %>% 
+  group_by(ensembl_id) %>% 
+  count() %>% 
+  as.data.frame() %>% 
+  mutate(MRC="EAR")
+
+genecount_ESR <- ESR_peak_list_20k %>% 
+  dplyr::filter(dist_to_NG >=0) %>% 
+  group_by(ensembl_id) %>% 
+  count() %>% 
+  as.data.frame() %>% 
+  mutate(MRC="ESR")
+
+
+genecount_LR <- LR_peak_list_20k %>% 
+  dplyr::filter(dist_to_NG >=0) %>% 
+  group_by(ensembl_id) %>% 
+  count() %>% 
+  as.data.frame() %>% 
+  mutate(MRC="LR")
+
+genecount_NR <- NR_peak_list_20k %>% 
+  dplyr::filter(dist_to_NG >=0) %>% 
+  group_by(ensembl_id) %>% 
+  count() %>% 
+  as.data.frame() %>% 
+  mutate(MRC="NR")
+
+
+genecount_all <- genecount_EAR %>% 
+  rbind(., genecount_ESR) %>%
+  rbind(., genecount_LR) %>%
+  rbind(., genecount_NR)
+  
+
+ggplot(genecount_EAR, aes(x=n))+
+  geom_histogram()
+
+ggplot(genecount_ESR, aes(x=n))+
+  geom_histogram()
+ggplot(genecount_LR, aes(x=n))+
+  geom_histogram()
+ggplot(genecount_NR, aes(x=n))+
+  geom_histogram()
+
+
+ggplot(genecount_all, aes(x=n))+
+  geom_density(aes(fill=MRC, alpha = 0.5))
+
+ggplot(genecount_all, aes(x=n))+
+  geom_density(aes(fill=MRC, alpha = 0.4)) + 
+  coord_cartesian(xlim=c(0,15))
+
+```
+
+
+
+
+
+## MRC overlaps between ATAC and RNA data
+
+```{r  Euler of MRCs}
+
+length(intersect(Resp_RNA$ENTREZID, Resp_ATAC_genes$ENTREZID))
+# length(unique(EAR_peak_list_20k$NCBI_gene))-length(intersect(unique(EAR_RNA$ENTREZID), unique(EAR_peak_list_20k$NCBI_gene)))
+fit_EAR <- euler(c(
+  'ATAC' = length(unique(EAR_peak_list_20k$ENTREZID))-length(intersect(unique(EAR_RNA$ENTREZID), unique(EAR_peak_list_20k$ENTREZID))), 
+  'RNA' = length(unique(EAR_RNA$ENTREZID))-length(intersect(unique(EAR_RNA$ENTREZID), unique(EAR_peak_list_20k$ENTREZID))), 
+  'ATAC&RNA' = length(intersect(unique(EAR_RNA$ENTREZID), unique(EAR_peak_list_20k$ENTREZID)))))
+
+
+fit_ESR <- euler(c(
+  'ATAC' = length(unique(ESR_peak_list_20k$ENTREZID))-length(intersect(unique(ESR_RNA$ENTREZID), unique(ESR_peak_list_20k$ENTREZID))), 
+  'RNA' = length(unique(ESR_RNA$ENTREZID))-length(intersect(unique(ESR_RNA$ENTREZID), unique(ESR_peak_list_20k$ENTREZID))), 
+  'ATAC&RNA' = length(intersect(unique(ESR_RNA$ENTREZID), unique(ESR_peak_list_20k$ENTREZID)))))
+
+fit_LR <- euler(c(
+  'ATAC' = length(unique(LR_peak_list_20k$ENTREZID))-length(intersect(unique(LR_RNA$ENTREZID), unique(LR_peak_list_20k$ENTREZID))), 
+  'RNA' = length(unique(LR_RNA$ENTREZID))-length(intersect(unique(LR_RNA$ENTREZID), unique(LR_peak_list_20k$ENTREZID))), 
+  'ATAC&RNA' = length(intersect(unique(LR_RNA$ENTREZID), unique(LR_peak_list_20k$ENTREZID)))))
+
+
+fit_NR <- euler(c(
+  'ATAC' = length(unique(NR_peak_list_20k$ENTREZID))-length(intersect(unique(NR_RNA$ENTREZID), unique(NR_peak_list_20k$ENTREZID))), 
+  'RNA' = length(unique(NR_RNA$ENTREZID))-length(intersect(unique(NR_RNA$ENTREZID), unique(NR_peak_list_20k$ENTREZID))), 
+  'ATAC&RNA' = length(intersect(unique(NR_RNA$ENTREZID), unique(NR_peak_list_20k$ENTREZID)))))
+
+
+fit_EAR_comRNA <- euler(c(
+  'ATAC' = length(unique(EAR_peak_list_20k$ENTREZID))-length(intersect(unique(Resp_RNA$ENTREZID), unique(EAR_peak_list_20k$ENTREZID))), 
+  'RNA' = length(unique(Resp_RNA$ENTREZID))-length(intersect(unique(Resp_RNA$ENTREZID), unique(EAR_peak_list_20k$ENTREZID))), 
+  'ATAC&RNA' = length(intersect(unique(Resp_RNA$ENTREZID), unique(EAR_peak_list_20k$ENTREZID)))))
+
+fit_ESR_comRNA <- euler(c(
+  'ATAC' = length(unique(ESR_peak_list_20k$ENTREZID))-length(intersect(unique(Resp_RNA$ENTREZID), unique(ESR_peak_list_20k$ENTREZID))), 
+  'RNA' = length(unique(Resp_RNA$ENTREZID))-length(intersect(unique(Resp_RNA$ENTREZID), unique(ESR_peak_list_20k$ENTREZID))), 
+  'ATAC&RNA' = length(intersect(unique(Resp_RNA$ENTREZID), unique(ESR_peak_list_20k$ENTREZID)))))
+
+fit_LR_comRNA <- euler(c(
+  'ATAC' = length(unique(LR_peak_list_20k$ENTREZID))-length(intersect(unique(Resp_RNA$ENTREZID), unique(LR_peak_list_20k$ENTREZID))), 
+  'RNA' = length(unique(Resp_RNA$ENTREZID))-length(intersect(unique(Resp_RNA$ENTREZID), unique(LR_peak_list_20k$ENTREZID))), 
+  'ATAC&RNA' = length(intersect(unique(Resp_RNA$ENTREZID), unique(LR_peak_list_20k$ENTREZID)))))
+
+
+fit_NR_comRNA <- euler(c(
+  'ATAC' = length(unique(NR_peak_list_20k$ENTREZID))-length(intersect(unique(Resp_RNA$ENTREZID), unique(NR_peak_list_20k$ENTREZID))), 
+  'RNA' = length(unique(Resp_RNA$ENTREZID))-length(intersect(unique(Resp_RNA$ENTREZID), unique(NR_peak_list_20k$ENTREZID))), 
+  'ATAC&RNA' = length(intersect(unique(Resp_RNA$ENTREZID), unique(NR_peak_list_20k$ENTREZID)))))
+
+
+fit_all_resp <- euler(c(
+  'ATAC' = length(unique(Resp_ATAC_genes$ENTREZID))-length(intersect(unique(Resp_RNA$ENTREZID), unique(Resp_ATAC_genes$ENTREZID))), 
+  'RNA' = length(unique(Resp_RNA$ENTREZID))-length(intersect(unique(Resp_RNA$ENTREZID), unique(Resp_ATAC_genes$ENTREZID))), 
+  'ATAC&RNA' = length(intersect(unique(Resp_RNA$ENTREZID), unique(Resp_ATAC_genes$ENTREZID)))))
+
+
+
+
+# fit_all <- euler(c('ATAC_EAR' = 5526, 'RNA_EAR' = 306, 'ATAC_EAR&RNA_EAR' = 138,
+# 'ATAC_ESR' = 9237 , 'RNA_ESR'= 336,'ATAC_ESR&RNA_ESR' =192,
+# 'ATAC_LR' =12586 , 'RNA_LR'=2370 ,'ATAC_LR&RNA_LR' =3175,
+# 'ATAC_NR' = 17176, 'RNA_NR'= 1406,'ATAC_NR&RNA_NR' =6098))
+plot(fit_EAR,quantities = TRUE,
+  fill = c("purple","cornflowerblue"),
+  lty = 1,
+  labels = list(font = 6),
+  main="EAR motifs")                  
+plot(fit_ESR,quantities = TRUE,
+  fill = c("purple","cornflowerblue"),
+  lty = 1,
+  labels = list(font = 6),
+  main="ESR motifs") 
+plot(fit_LR,quantities = TRUE,
+  fill = c("purple","cornflowerblue"),
+  lty = 1,
+  labels = list(font = 6),
+  main="LR motifs")                  
+plot(fit_NR,quantities = TRUE,
+  fill = c("purple","cornflowerblue"),
+  lty = 1,
+  labels = list(font = 6),
+  main="NR motifs") 
+
+
+
+plot(fit_EAR_comRNA,quantities = TRUE,
+  fill = c("purple","cornflowerblue"),
+  lty = 1,
+  labels = list(font = 6),
+  main="ATAC EAR neargenes and RNA-response genes")                  
+plot(fit_ESR_comRNA,quantities = TRUE,
+  fill = c("purple","cornflowerblue"),
+  lty = 1,
+  labels = list(font = 6),
+  main="ATAC ESR neargenes and RNA-response genes") 
+plot(fit_LR_comRNA,quantities = TRUE,
+  fill = c("purple","cornflowerblue"),
+  lty = 1,
+  labels = list(font = 6),
+  main="ATAC LR neargenes and RNA-response genes")                  
+plot(fit_NR_comRNA,quantities = TRUE,
+  fill = c("purple","cornflowerblue"),
+  lty = 1,
+  labels = list(font = 6),
+  main="ATAC NR neargenes and RNA-response genes")   
+
+
+
+
+# total_NG <-  
+length(unique(peak_list_20k_MRC$ENTREZID)) 
+length(unique(S13Table$ENTREZID))
+
+length(unique(EAR_peak_list_20k$ENTREZID)) 
+length(unique(ESR_peak_list_20k$ENTREZID)) 
+length(unique(LR_peak_list_20k$ENTREZID)) 
+length(unique(NR_peak_list_20k$ENTREZID)) 
+
+
+```
+
+
+```{r Near gene proportions}
+### using all expressed genes and all near_genes
+# length(intersect(unique(peak_list_20k_MRC$ENTREZID), unique(S13Table$ENTREZID)))
+fit_NG <- euler(c(
+  'ATAC_NG' = length(unique(peak_list_20k_MRC$ENTREZID))-    length(intersect(unique(peak_list_20k_MRC$ENTREZID), unique(S13Table$ENTREZID))), 
+  'RNA_EG' =length(unique(S13Table$ENTREZID))-
+length(intersect(unique(peak_list_20k_MRC$ENTREZID), unique(S13Table$ENTREZID))),
+  'ATAC_NG&RNA_EG'= length(intersect(unique(peak_list_20k_MRC$ENTREZID), unique(S13Table$ENTREZID)))))
+
+plot(fit_NG,quantities = TRUE,
+  fill = c("purple","cornflowerblue"),
+  lty = 1,
+  labels = list(font = 6),
+  main="near genes and RNA expressed genes overall")   
+
+plot(fit_all_resp,quantities = TRUE,
+  fill = c("purple","cornflowerblue"),
+  lty = 1,
+  labels = list(font = 6),
+  main="ATAC MRC-response neargenes and RNA-response genes")     
+
+
+
+
+```
+
+## Fold change inquiry
+
+
+```{r FC manip}
+## basically split the DAR/DEG lists into 3 and 24 hour 
+DOX_3_toplist_RNA <- toplistall_RNA %>% 
+  dplyr::filter(time =="3_hours" & id == "DOX") %>% 
+  dplyr::filter(adj.P.Val<0.05)
+
+DOX_3_toplist_ATAC <- toplist_full_ATAC$DOX_3
+
+
+DOX_24_toplist_RNA <- toplistall_RNA %>% 
+  dplyr::filter(time =="24_hours" & id == "DOX") %>% 
+  dplyr::filter(adj.P.Val<0.05)
+
+DOX_24_toplist_ATAC <- toplist_full_ATAC$DOX_24
+
+### Then I joined the ATAC-FC and RNA_FC to the 20kb peaklist for each MRC
+
+MRC_EAR_FC_3hr <- EAR_peak_list_20k%>% left_join(., DOX_3_toplist_ATAC, by=c('peakid'='peak')) %>% left_join(., DOX_3_toplist_RNA, by=c("ENTREZID"="ENTREZID"),suffix=c(".ATAC",".RNA"))
+
+MRC_ESR_FC_3hr <- ESR_peak_list_20k %>% left_join(., DOX_3_toplist_ATAC, by=c('peakid'='peak')) %>% left_join(., DOX_3_toplist_RNA, by=c("ENTREZID"="ENTREZID"),suffix=c(".ATAC",".RNA"))
+MRC_LR_FC_3hr <- LR_peak_list_20k %>% left_join(., DOX_3_toplist_ATAC, by=c('peakid'='peak')) %>% left_join(., DOX_3_toplist_RNA, by=c("ENTREZID"="ENTREZID"),suffix=c(".ATAC",".RNA"))
+MRC_NR_FC_3hr <- NR_peak_list_20k %>% left_join(., DOX_3_toplist_ATAC, by=c('peakid'='peak')) %>% left_join(., DOX_3_toplist_RNA, by=c("ENTREZID"="ENTREZID"),suffix=c(".ATAC",".RNA"))
+
+MRC_EAR_FC_24hr <- EAR_peak_list_20k %>% left_join(., DOX_24_toplist_ATAC, by=c('peakid'='peak')) %>% left_join(., DOX_24_toplist_RNA, by=c("ENTREZID"="ENTREZID"),suffix=c(".ATAC",".RNA"))
+
+MRC_ESR_FC_24hr <- ESR_peak_list_20k %>% left_join(., DOX_24_toplist_ATAC, by=c('peakid'='peak')) %>% left_join(., DOX_24_toplist_RNA, by=c("ENTREZID"="ENTREZID"),suffix=c(".ATAC",".RNA"))
+MRC_LR_FC_24hr <- LR_peak_list_20k %>% left_join(., DOX_24_toplist_ATAC, by=c('peakid'='peak')) %>% left_join(., DOX_24_toplist_RNA, by=c("ENTREZID"="ENTREZID"),suffix=c(".ATAC",".RNA"))
+MRC_NR_FC_24hr <- NR_peak_list_20k %>% left_join(., DOX_24_toplist_ATAC, by=c('peakid'='peak')) %>% left_join(., DOX_24_toplist_RNA, by=c("ENTREZID"="ENTREZID"),suffix=c(".ATAC",".RNA"))
+
+
+```
+
+```{r  inital fC}
+# this is LogFC scatter plots with pearson correlation printed
+
+MRC_EAR_FC_24hr %>% 
+  ggplot(., aes(x=logFC.ATAC, y= logFC.RNA))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  sm_statCorr(corr_method = 'pearson')+
+  # sm_statCorr(corr_method = 'spearman', label_x = -2.5, label_y = 4)+
+  ggtitle("EAR")
+
+MRC_ESR_FC_24hr %>% 
+  ggplot(., aes(x=logFC.ATAC, y= logFC.RNA))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  sm_statCorr(corr_method = 'pearson')+
+ggtitle("ESR")
+MRC_LR_FC_24hr %>% 
+  ggplot(., aes(x=logFC.ATAC, y= logFC.RNA))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  sm_statCorr(corr_method = 'pearson')+
+ggtitle("LR")
+MRC_NR_FC_24hr %>% 
+  ggplot(., aes(x=logFC.ATAC, y= logFC.RNA))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  sm_statCorr(corr_method = 'pearson')+
+ggtitle("NR")
+
+```
+```{r splitting by region EAR}
+
+MRC_EAR_FC_3hr %>% 
+  mutate(location=if_else(dist_to_NG<2000, "near","far")) %>% 
+  mutate(location=factor(location, levels = c("near","far"))) %>% 
+  ggplot(., aes(x=logFC.ATAC, y= logFC.RNA))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  sm_statCorr(corr_method = 'pearson')+
+  facet_wrap(~location)+
+  ggtitle("EAR 3 hour FC split between 0-2kb, and 2kb-20kb")
+
+
+MRC_EAR_FC_24hr %>% 
+  mutate(location=if_else(dist_to_NG<2000, "near","far")) %>% 
+  mutate(location=factor(location, levels = c("near","far"))) %>% 
+  ggplot(., aes(x=logFC.ATAC, y= logFC.RNA))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  sm_statCorr(corr_method = 'pearson')+
+  facet_wrap(~location)+
+  ggtitle("EAR 24 hour FC split between 0-2kb, and 2kb-20kb")
+
+
+```
+
+```{r splitting by region ESR}
+
+MRC_ESR_FC_24hr %>% 
+  mutate(location=if_else(dist_to_NG<2000, "near","far")) %>% 
+  mutate(location=factor(location, levels = c("near","far"))) %>% 
+  ggplot(., aes(x=logFC.ATAC, y= logFC.RNA))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  sm_statCorr(corr_method = 'pearson')+
+  facet_wrap(~location)+
+  ggtitle("ESR 24 hour FC split between 0-2kb, and 2kb-20kb")
+
+
+MRC_ESR_FC_3hr %>% 
+  mutate(location=if_else(dist_to_NG<2000, "near","far")) %>% 
+  mutate(location=factor(location, levels = c("near","far"))) %>% 
+  ggplot(., aes(x=logFC.ATAC, y= logFC.RNA))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  sm_statCorr(corr_method = 'pearson')+
+  facet_wrap(~location)+
+  ggtitle("ESR 3 hour FC split between 0-2kb, and 2kb-20kb")
+
+
+```
+
+
+
+```{r splitting by region LR}
+
+MRC_LR_FC_24hr %>% 
+  mutate(location=if_else(dist_to_NG<2000, "near","far")) %>% 
+  mutate(location=factor(location, levels = c("near","far"))) %>% 
+  ggplot(., aes(x=logFC.ATAC, y= logFC.RNA))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  sm_statCorr(corr_method = 'pearson')+
+  facet_wrap(~location)+
+  ggtitle("LR 24 hour FC split between 0-2kb, and 2kb-20kb")
+
+
+MRC_LR_FC_3hr %>% 
+  mutate(location=if_else(dist_to_NG<2000, "near","far")) %>% 
+  mutate(location=factor(location, levels = c("near","far"))) %>% 
+  ggplot(., aes(x=logFC.ATAC, y= logFC.RNA))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  sm_statCorr(corr_method = 'pearson')+
+  facet_wrap(~location)+
+  ggtitle("LR 3 hour FC split between 0-2kb, and 2kb-20kb")
+
+
+```
+
+
+```{r splitting by region EAR}
+
+MRC_NR_FC_24hr %>% 
+  mutate(location=if_else(dist_to_NG<2000, "near","far")) %>% 
+  mutate(location=factor(location, levels = c("near","far"))) %>% 
+  ggplot(., aes(x=logFC.ATAC, y= logFC.RNA))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  sm_statCorr(corr_method = 'pearson')+
+  facet_wrap(~location)+
+  ggtitle("NR 24 hour FC split between 0-2kb, and 2kb-20kb")
+
+
+MRC_NR_FC_3hr %>% 
+  mutate(location=if_else(dist_to_NG<2000, "near","far")) %>% 
+  mutate(location=factor(location, levels = c("near","far"))) %>% 
+  ggplot(., aes(x=logFC.ATAC, y= logFC.RNA))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  sm_statCorr(corr_method = 'pearson')+
+  facet_wrap(~location)+
+  ggtitle("NR 3 hour FC split between 0-2kb, and 2kb-20kb")
+
+
+```
+
+
+```{r full breakdown}
+
+
+
+# full_join(., DOX_3_toplist_ATAC, by=c('peakid'='peak')) %>% left_join(., DOX_3_toplist_RNA, by=c("ENTREZID"="ENTREZID"),suffix=c(".ATAC",".RNA"))
+
+toplist_full_ATAC %>% 
+  bind_rows(.,.id = "id") %>% 
+  dplyr::filter(peak %in% EAR_peak_list_20k$peakid) %>% 
+  left_join(., (EAR_peak_list_20k %>% dplyr::select(peakid:dist_to_NG)), by = c("peak"="peakid")) %>% 
+  separate(., col =id, into= c("id", "time"), sep="_") %>% 
+  mutate(time = paste0(time,"_hours")) %>% 
+    left_join(., toplistall_RNA,by=c("ENTREZID"="ENTREZID", "time"="time", "id"="id"),suffix=c(".ATAC",".RNA")) %>% 
+  # dplyr::filter(adj.P.Val.RNA < 0.05) %>%
+  # na.omit(logFC.RNA) %>% 
+  mutate(time=factor(time, levels =c("3_hours","24_hours")), id=factor(id, levels =c("DOX","EPI","DNR","MTX","TRZ"))) %>% 
+  ggplot(., aes(x=logFC.ATAC,y=logFC.RNA))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  sm_statCorr(corr_method = 'pearson')+
+  facet_wrap(~time+id, nrow =2, ncol = 5)+
+  ggtitle("FC across time and treatment")
+  
+
+
+```
+### RNA and DOX ATAC 24h
+```{r  ATAC 24 FC at res RNA}
+# Resp_all_genes <- intersect(Resp_ATAC_genes$ENTREZID, Resp_RNA$ENTREZID)
+# not_resp_all_genes <- setdiff(Resp_ATAC_genes$ENTREZID, Resp_RNA$ENTREZID)
+
+toplist_n45 <- readRDS("data/toplist_n45.RDS")
+
+# exp_neargene_table %>% 
+  # dplyr::select(peakid,ENTREZID:dist_to_NG) 
+
+# my_hc_filtered_counts_n45 <- readRDS("data/my_hc_filt_counts_n45.RDS")
+# log_filt_hc_n45 <- cpm(my_hc_filtered_counts_n45, log = TRUE) %>% as.data.frame()
+drug_pal <- c("#8B006D","#DF707E","#F1B72B", "#3386DD","#707031","#41B333")
+# no_resptoplist <- toplist_n45 %>% 
+#   dplyr::select(trt, time, peak, logFC, adj.P.Val) %>% 
+#   left_join(., (exp_neargene_table %>% 
+#   dplyr::select(peakid,ENTREZID:dist_to_NG)),by=c("peak"="peakid")) %>% 
+#   dplyr::filter(ENTREZID %in%not_resp_all_genes)
+
+# resptoplist <-
+# toplist_n45 %>% 
+#   dplyr::select(trt, time, peak, logFC, adj.P.Val) %>% 
+#   left_join(., (exp_neargene_table %>% 
+#   dplyr::select(peakid,ENTREZID:dist_to_NG)),by=c("peak"="peakid")) %>% 
+#   mutate(resp_stat= if_else(ENTREZID %in%Resp_all_genes,"resp","no_resp")) %>% 
+#   mutate(time=factor(time, levels = c("3 hours","24 hours"))) %>% 
+#   mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
+#   dplyr::filter(dist_to_NG<20000) %>%
+#   dplyr::filter(adj.P.Val <0.05) %>% 
+#   ggplot(., aes (x = resp_stat, y=logFC))+
+#   # geom_boxplot(aes(fill=trt))+
+#   geom_boxplot()+
+#   geom_signif(
+#     comparisons = list(c("resp", "no_resp")),
+#     map_signif_level = FALSE) +
+#   facet_wrap(~time)+
+#   ggtitle("Response gene abs log FC")+
+#   scale_fill_manual(values = drug_pal)+
+#   theme_bw()+
+#   
+#   theme(plot.title = element_text(size = rel(1.5), hjust = 0.5),
+#         axis.title = element_text(size = 15, color = "black"),
+#         # axis.ticks = element_line(linewidth = 1.5),
+#         # axis.line = element_line(linewidth = 1.5),
+#         strip.background = element_rect(fill = "transparent"),
+#         # axis.text.x = element_blank(),
+#         strip.text.x = element_text(size = 12, color = "black", face = "bold"))
+
+
+RNA_MRC_ATAC_LFC <- DOX_24_toplist_ATAC %>% 
+  left_join(., (all_ng_peaks %>% dplyr::select(peakid,ENTREZID,ensembl_id,SYMBOL,dist_to_NG)), by=c("peak"="peakid") ) %>% 
+  dplyr::filter(ENTREZID %in% EAR_RNA$ENTREZID) %>% 
+  dplyr::select(peak,logFC,adj.P.Val,ENTREZID:dist_to_NG) %>% 
+  mutate(mrc="EAR_RNA") %>% 
+  rbind(DOX_24_toplist_ATAC %>% 
+          left_join(., (all_ng_peaks %>% dplyr::select(peakid,ENTREZID,ensembl_id,SYMBOL,dist_to_NG)), by=c("peak"="peakid") ) %>% 
+          dplyr::filter(ENTREZID %in% ESR_RNA$ENTREZID) %>% 
+          dplyr::select(peak,logFC,adj.P.Val,ENTREZID:dist_to_NG) %>% 
+          mutate(mrc="ESR_RNA")) %>% 
+  rbind(DOX_24_toplist_ATAC %>% 
+  left_join(., (all_ng_peaks %>% dplyr::select(peakid,ENTREZID,ensembl_id,SYMBOL,dist_to_NG)), by=c("peak"="peakid") ) %>% 
+  dplyr::filter(ENTREZID %in% LR_RNA$ENTREZID) %>% 
+  dplyr::select(peak,logFC,adj.P.Val,ENTREZID:dist_to_NG) %>% 
+  mutate(mrc="LR_RNA")) %>% 
+  rbind(DOX_24_toplist_ATAC %>% 
+  left_join(., (all_ng_peaks %>% dplyr::select(peakid,ENTREZID,ensembl_id,SYMBOL,dist_to_NG)), by=c("peak"="peakid") ) %>% 
+  dplyr::filter(ENTREZID %in% NR_RNA$ENTREZID) %>% 
+  dplyr::select(peak,logFC,adj.P.Val,ENTREZID:dist_to_NG) %>% 
+  mutate(mrc="NR_RNA"))
+
+RNA_MRC_ATAC_LFC %>% 
+  mutate(mrc =factor(mrc, levels = c("NR_RNA","EAR_RNA","ESR_RNA","LR_RNA"))) %>% 
+  ggplot(.,aes(x= mrc,y =logFC))+
+  geom_boxplot()+
+  theme_bw()+
+  ggtitle("RNA expressed genes with ATAC peak log fold change")
+RNA_MRC_ATAC_LFC %>% 
+  group_by(mrc) %>% 
+  summarise(Median_LFC= median(logFC))
+
+```
+
+### RNA and DOX ATAC 3h
+```{r  ATAC 3 FC at res RNA}
+RNA_MRC_ATAC_LFC_3 <- DOX_3_toplist_ATAC %>% 
+  left_join(., (all_ng_peaks %>% dplyr::select(peakid,ENTREZID,ensembl_id,SYMBOL,dist_to_NG)), by=c("peak"="peakid") ) %>% 
+  dplyr::filter(ENTREZID %in% EAR_RNA$ENTREZID) %>% 
+  dplyr::select(peak,logFC,adj.P.Val,ENTREZID:dist_to_NG) %>% 
+  mutate(mrc="EAR_RNA") %>% 
+  rbind(DOX_3_toplist_ATAC %>% 
+          left_join(., (all_ng_peaks %>% dplyr::select(peakid,ENTREZID,ensembl_id,SYMBOL,dist_to_NG)), by=c("peak"="peakid") ) %>% 
+          dplyr::filter(ENTREZID %in% ESR_RNA$ENTREZID) %>% 
+          dplyr::select(peak,logFC,adj.P.Val,ENTREZID:dist_to_NG) %>% 
+          mutate(mrc="ESR_RNA")) %>% 
+  rbind(DOX_3_toplist_ATAC %>% 
+  left_join(., (all_ng_peaks %>% dplyr::select(peakid,ENTREZID,ensembl_id,SYMBOL,dist_to_NG)), by=c("peak"="peakid") ) %>% 
+  dplyr::filter(ENTREZID %in% LR_RNA$ENTREZID) %>% 
+  dplyr::select(peak,logFC,adj.P.Val,ENTREZID:dist_to_NG) %>% 
+  mutate(mrc="LR_RNA")) %>% 
+  rbind(DOX_3_toplist_ATAC %>% 
+  left_join(., (all_ng_peaks %>% dplyr::select(peakid,ENTREZID,ensembl_id,SYMBOL,dist_to_NG)), by=c("peak"="peakid") ) %>% 
+  dplyr::filter(ENTREZID %in% NR_RNA$ENTREZID) %>% 
+  dplyr::select(peak,logFC,adj.P.Val,ENTREZID:dist_to_NG) %>% 
+  mutate(mrc="NR_RNA"))
+
+RNA_MRC_ATAC_LFC_3 %>% 
+  mutate(mrc =factor(mrc, levels = c("NR_RNA","EAR_RNA","ESR_RNA","LR_RNA"))) %>% 
+  ggplot(.,aes(x= mrc,y =logFC))+
+  geom_boxplot()+
+  theme_bw()+
+  ggtitle("RNA expressed genes with ATAC peak log fold change")
+RNA_MRC_ATAC_LFC_3 %>% 
+  group_by(mrc) %>% 
+  summarise(Median_LFC= median(logFC))
+
+```
+
+
+### ATAC DOX 24 hr
+```{r  ATAC LFC across 24 mrc}
+# 
+ATAC_MRC_ATAC_LFC <- DOX_24_toplist_ATAC %>%
+  left_join(., (all_ng_peaks %>% dplyr::select(peakid,ENTREZID,ensembl_id,SYMBOL,dist_to_NG)), by=c("peak"="peakid") ) %>%
+  dplyr::filter(peak %in% EAR_peak_list_20k$peakid) %>%
+  dplyr::select(peak,logFC,adj.P.Val,ENTREZID:dist_to_NG) %>%
+  mutate(mrc="EAR_ATAC") %>%
+  rbind(
+    DOX_24_toplist_ATAC %>% 
+          left_join(., (all_ng_peaks %>% dplyr::select(peakid,ENTREZID,ensembl_id,SYMBOL,dist_to_NG)), by=c("peak"="peakid") ) %>% 
+          dplyr::filter(peak %in% ESR_peak_list_20k$peakid) %>% 
+          dplyr::select(peak,logFC,adj.P.Val,ENTREZID:dist_to_NG) %>% 
+          mutate(mrc="ESR_ATAC"))%>% 
+  rbind(DOX_24_toplist_ATAC %>% 
+  left_join(., (all_ng_peaks %>% dplyr::select(peakid,ENTREZID,ensembl_id,SYMBOL,dist_to_NG)), by=c("peak"="peakid") ) %>% 
+  dplyr::filter(peak %in% LR_peak_list_20k$peakid) %>% 
+  dplyr::select(peak,logFC,adj.P.Val,ENTREZID:dist_to_NG) %>% 
+  mutate(mrc="LR_ATAC")) %>% 
+  rbind(DOX_24_toplist_ATAC %>% 
+  left_join(., (all_ng_peaks %>% dplyr::select(peakid,ENTREZID,ensembl_id,SYMBOL,dist_to_NG)), by=c("peak"="peakid") ) %>% 
+  dplyr::filter(peak %in% NR_peak_list_20k$peakid) %>% 
+  dplyr::select(peak,logFC,adj.P.Val,ENTREZID:dist_to_NG) %>% 
+  mutate(mrc="NR_ATAC"))
+
+ATAC_MRC_ATAC_LFC %>% 
+  mutate(mrc =factor(mrc, levels = c("NR_ATAC","EAR_ATAC","ESR_ATAC","LR_ATAC"))) %>% 
+  ggplot(.,aes(x= mrc,y =logFC))+
+  geom_boxplot()+
+  theme_bw()+
+  ggtitle("ATAC response peak logFC by signature")
+  
+ATAC_MRC_ATAC_LFC %>% 
+  group_by(mrc) %>% 
+  summarise(Median_LFC= median(logFC))
+
+```
+
+### ATAC DOX 3 hr
+```{r  ATAC LFC across 3 mrc}
+# 
+ATAC_MRC_ATAC_LFC_3 <- DOX_3_toplist_ATAC %>%
+  left_join(., (all_ng_peaks %>% dplyr::select(peakid,ENTREZID,ensembl_id,SYMBOL,dist_to_NG)), by=c("peak"="peakid") ) %>%
+  dplyr::filter(peak %in% EAR_peak_list_20k$peakid) %>%
+  dplyr::select(peak,logFC,adj.P.Val,ENTREZID:dist_to_NG) %>%
+  mutate(mrc="EAR_ATAC") %>%
+  rbind(
+    DOX_3_toplist_ATAC %>% 
+          left_join(., (all_ng_peaks %>% dplyr::select(peakid,ENTREZID,ensembl_id,SYMBOL,dist_to_NG)), by=c("peak"="peakid") ) %>% 
+          dplyr::filter(peak %in% ESR_peak_list_20k$peakid) %>% 
+          dplyr::select(peak,logFC,adj.P.Val,ENTREZID:dist_to_NG) %>% 
+          mutate(mrc="ESR_ATAC"))%>% 
+  rbind(DOX_3_toplist_ATAC %>% 
+  left_join(., (all_ng_peaks %>% dplyr::select(peakid,ENTREZID,ensembl_id,SYMBOL,dist_to_NG)), by=c("peak"="peakid") ) %>% 
+  dplyr::filter(peak %in% LR_peak_list_20k$peakid) %>% 
+  dplyr::select(peak,logFC,adj.P.Val,ENTREZID:dist_to_NG) %>% 
+  mutate(mrc="LR_ATAC")) %>% 
+  rbind(DOX_3_toplist_ATAC %>% 
+  left_join(., (all_ng_peaks %>% dplyr::select(peakid,ENTREZID,ensembl_id,SYMBOL,dist_to_NG)), by=c("peak"="peakid") ) %>% 
+  dplyr::filter(peak %in% NR_peak_list_20k$peakid) %>% 
+  dplyr::select(peak,logFC,adj.P.Val,ENTREZID:dist_to_NG) %>% 
+  mutate(mrc="NR_ATAC"))
+
+ATAC_MRC_ATAC_LFC_3 %>% 
+  mutate(mrc =factor(mrc, levels = c("NR_ATAC","EAR_ATAC","ESR_ATAC","LR_ATAC"))) %>% 
+  ggplot(.,aes(x= mrc,y =logFC))+
+  geom_boxplot()+
+  theme_bw()+
+  ggtitle("ATAC response peak logFC by signature")
+  
+ATAC_MRC_ATAC_LFC_3 %>% 
+  group_by(mrc) %>% 
+  summarise(Median_LFC= median(logFC), up =sum(logFC>0), down = sum(logFC<0))
+
+
+```
+
+
+### DOX DEG response genes at 24 hours and ATAC LFC of near-gene related peaks
+
+```{r DOX24 DEG resp genes}
+### list of DOX24 and DOX3 DEGs in EAR
+toplistall_RNA %>% 
+  dplyr::filter(id=="DOX") %>% 
+  dplyr::filter(ENTREZID %in% EAR_RNA$ENTREZID) %>% 
+  dplyr::filter(adj.P.Val<0.5)
+### list of DOX24 and DOX3 DEGs in ESR
+toplistall_RNA %>% 
+  dplyr::filter(id=="DOX") %>% 
+  dplyr::filter(ENTREZID %in% ESR_RNA$ENTREZID) %>% 
+  dplyr::filter(adj.P.Val<0.5)
+### list of DOX24 and DOX3 DEGs in LR
+toplistall_RNA %>% 
+  dplyr::filter(id=="DOX") %>% 
+  dplyr::filter(ENTREZID %in% LR_RNA$ENTREZID) %>% 
+  dplyr::filter(adj.P.Val<0.5)
+### list of DOX24 and DOX3 DEGs in NR
+toplistall_RNA %>% 
+  dplyr::filter(id=="DOX") %>% 
+  dplyr::filter(ENTREZID %in% NR_RNA$ENTREZID) %>% 
+  dplyr::filter(adj.P.Val<0.5)
+fills <- c("#C77CFF","#F8766D","#7CAE00",  "#00BFC4" )
+### ATAC list to join the others to
+full_ATAC_FC <- toplist_full_ATAC$DOX_24 %>% 
+   left_join(., (exp_neargene_table %>% dplyr::select(peakid,ENTREZID,ensembl_id,SYMBOL,dist_to_NG)), by=c("peak"="peakid") ) %>%
+  na.omit(ENTREZID)  %>% 
+  mutate(mrc= if_else(ENTREZID %in% EAR_RNA$ENTREZID, "EAR", if_else(ENTREZID %in% ESR_RNA$ENTREZID, "ESR", if_else(ENTREZID %in% LR_RNA$ENTREZID, "LR",if_else(ENTREZID %in% NR_RNA$ENTREZID, "NR","not-mrc"))))) %>% 
+  dplyr::filter(mrc != "not-mrc") %>% 
+  mutate(mrc=factor(mrc, levels = c("NR","EAR","ESR","LR")))
+
+
+
+full_ATAC_FC %>% 
+  ggplot(.,aes(x= mrc,y =logFC))+
+  geom_boxplot(fill=fills)+
+  theme_bw()+
+  ggtitle("ATAC response peak DOX24-logFC by signature with all distances")
+  
+  
+full_ATAC_FC %>%
+group_by(mrc) %>% 
+  summarise(Median_LFC= median(logFC), hyper =sum(logFC>0), hypo = sum(logFC<0)) %>% 
+  kable(.,caption="DOX24 DAR median LFC and counts of hyper and hypo accesibility") %>% 
+  kable_paper("striped", full_width = TRUE) %>%
+  kable_styling(full_width = FALSE, font_size = 16) %>%
+  scroll_box(height = "500px")
+
+
+
+full_ATAC_FC %>%
+  dplyr::filter(dist_to_NG <20000 & dist_to_NG>=0) %>% 
+  ggplot(.,aes(x= mrc,y =logFC))+
+  geom_boxplot(fill=fills)+
+  theme_bw()+
+  ggtitle("ATAC response peak DOX24-logFC by with peaks within 20kb to nearest gene")
+  
+  
+full_ATAC_FC %>%
+   dplyr::filter(dist_to_NG <20000 & dist_to_NG>=0) %>% 
+group_by(mrc) %>% 
+  summarise(Median_LFC= median(logFC), hyper =sum(logFC>0), hypo = sum(logFC<0)) %>% 
+  kable(.,caption="DOX24 DAR median LFC and counts of hyper and hypo accesibility withpeaks within 20kb of neargene") %>% 
+  kable_paper("striped", full_width = TRUE) %>%
+  kable_styling(full_width = FALSE, font_size = 16) %>%
+  scroll_box(height = "500px")
+
+exp_neargene_table %>%  
+  summarise(total=sum(dist_to_NG>20000))
+
+
+```
+
