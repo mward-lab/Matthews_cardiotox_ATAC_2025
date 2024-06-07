@@ -165,9 +165,11 @@ Resp_RNA <- EAR_RNA %>%
   rbind(., LR_RNA) %>% 
   distinct(ENTREZID)
 
+
 int_EAR_n_RNAresp <- intersect(EAR_NG_list$ENTREZID, Resp_RNA$ENTREZID)
 int_ESR_n_RNAresp <- intersect(ESR_NG_list$ENTREZID, Resp_RNA$ENTREZID)
 int_LR_n_RNAresp <- intersect(LR_NG_list$ENTREZID, Resp_RNA$ENTREZID)
+int_NR_n_RNAresp <- intersect(NR_NG_list$ENTREZID, Resp_RNA$ENTREZID)
 EAR_int_resgenes <- readRDS("data/GO_KEGG_analysis/EAR_int_resgenes.RDS")
 ESR_int_resgenes <- readRDS("data/GO_KEGG_analysis/ESR_int_resgenes.RDS")
 LR_int_resgenes <- readRDS("data/GO_KEGG_analysis/LR_int_resgenes.RDS")
@@ -191,7 +193,7 @@ LR_int_resgenes <- readRDS("data/GO_KEGG_analysis/LR_int_resgenes.RDS")
 # saveRDS(EAR_resgenes,"data/GO_KEGG_analysis/EAR_resgenes.RDS")
 
 
-EARnom <- gostplot(EAR_resgenes, capped = FALSE, interactive = TRUE)
+# EARnom <- gostplot(EAR_resgenes, capped = FALSE, interactive = TRUE)
 # EARnom
 
 EARnomtable <- EAR_resgenes$result %>% 
@@ -223,7 +225,16 @@ EARnomtable %>%
   ) %>%
   scroll_box(width = "100%", height = "400px")
 
-
+EARnomtable %>%
+   filter(source=="GO:BP", p_value < 0.05) %>% 
+  slice_head(n=10) %>% 
+  mutate(log10_p=(-log(p_value, base=10))) %>% 
+  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
+    geom_col(aes(fill="#F8766D"))+
+  theme_bw()+
+  ylab("")+
+  xlab(paste0("-log10 p-value"))+
+  guides(fill="none")
 
 
 
@@ -246,7 +257,7 @@ EARnomtable %>%
 #                     sources=c("GO:BP","KEGG"))
 # saveRDS(ESR_resgenes,"data/GO_KEGG_analysis/ESR_resgenes.RDS")
 
-ESRnom <- gostplot(ESR_resgenes, capped = FALSE, interactive = TRUE)
+# ESRnom <- gostplot(ESR_resgenes, capped = FALSE, interactive = TRUE)
 # ESRnom
 
 ESRnomtable <- ESR_resgenes$result %>% 
@@ -278,6 +289,17 @@ ESRnomtable %>%
   ) %>%
   scroll_box(width = "100%", height = "400px")
 
+ESRnomtable %>%
+   filter(source=="GO:BP", p_value < 0.05) %>% 
+  slice_head(n=10) %>% 
+  mutate(log10_p=(-log(p_value, base=10))) %>% 
+  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
+    geom_col(fill="#7CAE00")+
+  theme_bw()+
+  ylab("")+
+  xlab(paste0("-log10 p-value"))+
+  guides(fill="none")
+
 
 ```
 
@@ -298,7 +320,7 @@ ESRnomtable %>%
 #                     sources=c("GO:BP","KEGG"))
 # saveRDS(LR_resgenes,"data/GO_KEGG_analysis/LR_resgenes.RDS")
 
-LRnom <- gostplot(LR_resgenes, capped = FALSE, interactive = TRUE)
+# LRnom <- gostplot(LR_resgenes, capped = FALSE, interactive = TRUE)
 # LRnom
 
 LRnomtable <- LR_resgenes$result %>% 
@@ -329,7 +351,16 @@ LRnomtable %>%
     bootstrap_options = c("striped", "hover")
   ) %>%
   scroll_box(width = "100%", height = "400px")
-
+LRnomtable %>%
+   filter(source=="GO:BP", p_value < 0.05) %>% 
+  slice_head(n=10) %>% 
+  mutate(log10_p=(-log(p_value, base=10))) %>% 
+  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
+    geom_col(fill="#00BFC4")+
+  theme_bw()+
+  ylab("")+
+  xlab(paste0("-log10 p-value"))+
+  guides(fill="none")
 
 ```
 
@@ -879,6 +910,21 @@ EAR_int_restable %>%
   ) %>%
   scroll_box(width = "100%", height = "400px")
 
+
+EAR_int_restable %>% 
+filter(source=="GO:BP", p_value < 0.05) %>% 
+  slice_head(n=10) %>% 
+  mutate(log10_p=(-log(p_value, base=10))) %>% 
+  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
+    geom_col(aes(fill="#F8766D"))+
+  theme_bw()+
+  ylab("")+
+  xlab(paste0("-log10 p-value"))+
+  guides(fill="none")+
+  theme(axis.text.y = element_text(color="black"))+
+  ggtitle("Intersection EAR")
+
+
 ```
 
 #### ESR
@@ -924,6 +970,20 @@ ESR_int_restable %>%
     bootstrap_options = c("striped", "hover")
   ) %>%
   scroll_box(width = "100%", height = "400px")
+
+
+ESR_int_restable %>%
+filter(source=="GO:BP", p_value < 0.05) %>% 
+  slice_head(n=10) %>% 
+  mutate(log10_p=(-log(p_value, base=10))) %>% 
+  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
+    geom_col(fill="#7CAE00")+
+  theme_bw()+
+  ylab("")+
+  xlab(paste0("-log10 p-value"))+
+  guides(fill="none")+
+  theme(axis.text.y = element_text(color="black"))+
+  ggtitle("Intersection ESR")
 
 ```
 
@@ -971,9 +1031,210 @@ LR_int_restable %>%
     bootstrap_options = c("striped", "hover")
   ) %>%
   scroll_box(width = "100%", height = "400px")
+# intersect(unique(Resp_RNA$ENTREZID), unique(NR_peak_list_20k$ENTREZID)))
+
+LR_int_restable %>%
+filter(source=="GO:BP", p_value < 0.05) %>% 
+  slice_head(n=10) %>% 
+  mutate(log10_p=(-log(p_value, base=10))) %>% 
+  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
+    geom_col(fill="#00BFC4")+
+  theme_bw()+
+  ylab("")+
+  xlab(paste0("-log10 p-value"))+
+  guides(fill="none")+
+  theme(axis.text.y = element_text(color="black"))+
+  ggtitle("Intersection LR")
+
+
+```
+#### NR
+
+```{r int_GO_NR}
+NR_int_resgenes <- gost(query = int_NR_n_RNAresp,
+                    organism = "hsapiens",
+                    significant = FALSE,
+                    ordered_query = FALSE,
+                    domain_scope = "custom",
+                    measure_underrepresentation = FALSE,
+                    evcodes = FALSE,
+                    user_threshold = 0.05,
+                    correction_method = c("fdr"),
+                    custom_bg = background_df$ENTREZID,
+                    sources=c("GO:BP","KEGG"))
+saveRDS(NR_int_resgenes,"data/GO_KEGG_analysis/NR_int_resgenes.RDS")
+
+NR_int_restable <- NR_int_resgenes$result %>% 
+  dplyr::select(c(source, term_id,
+                  term_name,intersection_size, 
+                   term_size, p_value))# %>% 
+
+NR_int_restable %>%
+   filter(source=="GO:BP", p_value < 0.05) %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(.,caption = "GO:BP terms found in NR neargenes intersected with RNA response genes" ) %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
+NR_int_restable %>%
+  filter(source=="KEGG") %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(., caption = "KEGG terms found in NR neargenes intersected with RNA response genes") %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+# intersect(unique(Resp_RNA$ENTREZID), unique(NR_peak_list_20k$ENTREZID)))
+
+NR_int_restable %>%
+filter(source=="GO:BP", p_value < 0.05) %>% 
+  slice_head(n=10) %>% 
+  mutate(log10_p=(-log(p_value, base=10))) %>% 
+  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
+    geom_col(fill="#C77CFF")+
+  theme_bw()+
+  ylab("")+
+  xlab(paste0("-log10 p-value"))+
+  guides(fill="none")+
+  theme(axis.text.y = element_text(color="black"))+
+  ggtitle("Intersection NR")
+
 
 ```
 
+
+#### not intersected NR
+
+```{r not_int_GO_NR}
+not_NR_int_resgenes <- gost(query = setdiff(NR_NG_list$ENTREZID, Resp_RNA$ENTREZID),
+                    organism = "hsapiens",
+                    significant = FALSE,
+                    ordered_query = FALSE,
+                    domain_scope = "custom",
+                    measure_underrepresentation = FALSE,
+                    evcodes = FALSE,
+                    user_threshold = 0.05,
+                    correction_method = c("fdr"),
+                    custom_bg = background_df$ENTREZID,
+                    sources=c("GO:BP","KEGG"))
+saveRDS(not_NR_int_resgenes,"data/GO_KEGG_analysis/not_NR_int_resgenes.RDS")
+
+not_NR_int_restable <- not_NR_int_resgenes$result %>% 
+  dplyr::select(c(source, term_id,
+                  term_name,intersection_size, 
+                   term_size, p_value))# %>% 
+
+not_NR_int_restable %>%
+   filter(source=="GO:BP", p_value < 0.05) %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(.,caption = "GO:BP terms found in NR neargenes intersected with RNA response genes" ) %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
+not_NR_int_restable %>%
+  filter(source=="KEGG") %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(., caption = "KEGG terms found in NR neargenes intersected with RNA response genes") %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+# intersect(unique(Resp_RNA$ENTREZID), unique(NR_peak_list_20k$ENTREZID)))
+
+not_NR_int_restable %>%
+filter(source=="GO:BP", p_value < 0.05) %>% 
+  slice_head(n=10) %>% 
+  mutate(log10_p=(-log(p_value, base=10))) %>% 
+  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
+    geom_col(fill="#C77CFF")+
+  theme_bw()+
+  ylab("")+
+  xlab(paste0("-log10 p-value"))+
+  guides(fill="none")+
+  theme(axis.text.y = element_text(color="black"))+
+  ggtitle("not Intersection NR")
+
+
+```
+
+
+#### not intersected LR
+
+```{r not_int_GO_LR}
+not_LR_int_resgenes <- gost(query =setdiff(LR_NG_list$ENTREZID, Resp_RNA$ENTREZID),
+                    organism = "hsapiens",
+                    significant = FALSE,
+                    ordered_query = FALSE,
+                    domain_scope = "custom",
+                    measure_underrepresentation = FALSE,
+                    evcodes = FALSE,
+                    user_threshold = 0.05,
+                    correction_method = c("fdr"),
+                    custom_bg = background_df$ENTREZID,
+                    sources=c("GO:BP","KEGG"))
+saveRDS(not_LR_int_resgenes,"data/GO_KEGG_analysis/not_LR_int_resgenes.RDS")
+
+not_LR_int_restable <- not_LR_int_resgenes$result %>% 
+  dplyr::select(c(source, term_id,
+                  term_name,intersection_size, 
+                   term_size, p_value))# %>% 
+
+not_LR_int_restable %>%
+   filter(source=="GO:BP", p_value < 0.05) %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(.,caption = "GO:BP terms found in LR neargenes intersected with RNA response genes" ) %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
+not_LR_int_restable %>%
+  filter(source=="KEGG") %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(., caption = "KEGG terms found in LR neargenes intersected with RNA response genes") %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+# intersect(unique(Resp_RNA$ENTREZID), unique(NR_peak_list_20k$ENTREZID)))
+
+not_LR_int_restable %>%
+filter(source=="GO:BP", p_value < 0.05) %>% 
+  slice_head(n=10) %>% 
+  mutate(log10_p=(-log(p_value, base=10))) %>% 
+  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
+    geom_col(fill="#00BFC4")+
+  theme_bw()+
+  ylab("")+
+  xlab(paste0("-log10 p-value"))+
+  guides(fill="none")+
+  theme(axis.text.y = element_text(color="black"))+
+  ggtitle("not Intersection LR")
+
+
+```
 
 ```{r}
 # library(clusterProfiler)
