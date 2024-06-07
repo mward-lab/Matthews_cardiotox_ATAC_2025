@@ -1,0 +1,2397 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+
+<meta name="author" content="ERM" />
+
+<meta name="date" content="2024-06-07" />
+
+<title>Analysis of RNA and ATAC data</title>
+
+<script src="site_libs/header-attrs-2.27/header-attrs.js"></script>
+<script src="site_libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="site_libs/bootstrap-3.3.5/css/cosmo.min.css" rel="stylesheet" />
+<script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
+<style>h1 {font-size: 34px;}
+       h1.title {font-size: 38px;}
+       h2 {font-size: 30px;}
+       h3 {font-size: 24px;}
+       h4 {font-size: 18px;}
+       h5 {font-size: 16px;}
+       h6 {font-size: 12px;}
+       code {color: inherit; background-color: rgba(0, 0, 0, 0.04);}
+       pre:not([class]) { background-color: white }</style>
+<script src="site_libs/jqueryui-1.13.2/jquery-ui.min.js"></script>
+<link href="site_libs/tocify-1.9.1/jquery.tocify.css" rel="stylesheet" />
+<script src="site_libs/tocify-1.9.1/jquery.tocify.js"></script>
+<script src="site_libs/navigation-1.1/tabsets.js"></script>
+<link href="site_libs/highlightjs-9.12.0/textmate.css" rel="stylesheet" />
+<script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+<script src="site_libs/kePrint-0.0.1/kePrint.js"></script>
+<link href="site_libs/lightable-0.0.1/lightable.css" rel="stylesheet" />
+<link href="site_libs/font-awesome-6.4.2/css/all.min.css" rel="stylesheet" />
+<link href="site_libs/font-awesome-6.4.2/css/v4-shims.min.css" rel="stylesheet" />
+
+<link rel="icon" href="https://github.com/workflowr/workflowr-assets/raw/main/img/reproducible.png">
+<!-- Add a small amount of space between sections. -->
+<style type="text/css">
+div.section {
+  padding-top: 12px;
+}
+</style>
+
+
+
+<style type="text/css">
+  code{white-space: pre-wrap;}
+  span.smallcaps{font-variant: small-caps;}
+  span.underline{text-decoration: underline;}
+  div.column{display: inline-block; vertical-align: top; width: 50%;}
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+  ul.task-list{list-style: none;}
+    </style>
+
+<style type="text/css">code{white-space: pre;}</style>
+<script type="text/javascript">
+if (window.hljs) {
+  hljs.configure({languages: []});
+  hljs.initHighlightingOnLoad();
+  if (document.readyState && document.readyState === "complete") {
+    window.setTimeout(function() { hljs.initHighlighting(); }, 0);
+  }
+}
+</script>
+
+
+
+
+
+
+
+
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+img {
+  max-width:100%;
+}
+.tabbed-pane {
+  padding-top: 12px;
+}
+.html-widget {
+  margin-bottom: 20px;
+}
+button.code-folding-btn:focus {
+  outline: none;
+}
+summary {
+  display: list-item;
+}
+details > summary > p:only-child {
+  display: inline;
+}
+pre code {
+  padding: 0;
+}
+</style>
+
+
+<style type="text/css">
+.dropdown-submenu {
+  position: relative;
+}
+.dropdown-submenu>.dropdown-menu {
+  top: 0;
+  left: 100%;
+  margin-top: -6px;
+  margin-left: -1px;
+  border-radius: 0 6px 6px 6px;
+}
+.dropdown-submenu:hover>.dropdown-menu {
+  display: block;
+}
+.dropdown-submenu>a:after {
+  display: block;
+  content: " ";
+  float: right;
+  width: 0;
+  height: 0;
+  border-color: transparent;
+  border-style: solid;
+  border-width: 5px 0 5px 5px;
+  border-left-color: #cccccc;
+  margin-top: 5px;
+  margin-right: -10px;
+}
+.dropdown-submenu:hover>a:after {
+  border-left-color: #adb5bd;
+}
+.dropdown-submenu.pull-left {
+  float: none;
+}
+.dropdown-submenu.pull-left>.dropdown-menu {
+  left: -100%;
+  margin-left: 10px;
+  border-radius: 6px 0 6px 6px;
+}
+</style>
+
+<script type="text/javascript">
+// manage active state of menu based on current page
+$(document).ready(function () {
+  // active menu anchor
+  href = window.location.pathname
+  href = href.substr(href.lastIndexOf('/') + 1)
+  if (href === "")
+    href = "index.html";
+  var menuAnchor = $('a[href="' + href + '"]');
+
+  // mark the anchor link active (and if it's in a dropdown, also mark that active)
+  var dropdown = menuAnchor.closest('li.dropdown');
+  if (window.bootstrap) { // Bootstrap 4+
+    menuAnchor.addClass('active');
+    dropdown.find('> .dropdown-toggle').addClass('active');
+  } else { // Bootstrap 3
+    menuAnchor.parent().addClass('active');
+    dropdown.addClass('active');
+  }
+
+  // Navbar adjustments
+  var navHeight = $(".navbar").first().height() + 15;
+  var style = document.createElement('style');
+  var pt = "padding-top: " + navHeight + "px; ";
+  var mt = "margin-top: -" + navHeight + "px; ";
+  var css = "";
+  // offset scroll position for anchor links (for fixed navbar)
+  for (var i = 1; i <= 6; i++) {
+    css += ".section h" + i + "{ " + pt + mt + "}\n";
+  }
+  style.innerHTML = "body {" + pt + "padding-bottom: 40px; }\n" + css;
+  document.head.appendChild(style);
+});
+</script>
+
+<!-- tabsets -->
+
+<style type="text/css">
+.tabset-dropdown > .nav-tabs {
+  display: inline-table;
+  max-height: 500px;
+  min-height: 44px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.tabset-dropdown > .nav-tabs > li.active:before, .tabset-dropdown > .nav-tabs.nav-tabs-open:before {
+  content: "\e259";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li.active:before {
+  content: "\e258";
+  font-family: 'Glyphicons Halflings';
+  border: none;
+}
+
+.tabset-dropdown > .nav-tabs > li.active {
+  display: block;
+}
+
+.tabset-dropdown > .nav-tabs > li > a,
+.tabset-dropdown > .nav-tabs > li > a:focus,
+.tabset-dropdown > .nav-tabs > li > a:hover {
+  border: none;
+  display: inline-block;
+  border-radius: 4px;
+  background-color: transparent;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li {
+  display: block;
+  float: none;
+}
+
+.tabset-dropdown > .nav-tabs > li {
+  display: none;
+}
+</style>
+
+<!-- code folding -->
+
+
+
+<style type="text/css">
+
+#TOC {
+  margin: 25px 0px 20px 0px;
+}
+@media (max-width: 768px) {
+#TOC {
+  position: relative;
+  width: 100%;
+}
+}
+
+@media print {
+.toc-content {
+  /* see https://github.com/w3c/csswg-drafts/issues/4434 */
+  float: right;
+}
+}
+
+.toc-content {
+  padding-left: 30px;
+  padding-right: 40px;
+}
+
+div.main-container {
+  max-width: 1200px;
+}
+
+div.tocify {
+  width: 20%;
+  max-width: 260px;
+  max-height: 85%;
+}
+
+@media (min-width: 768px) and (max-width: 991px) {
+  div.tocify {
+    width: 25%;
+  }
+}
+
+@media (max-width: 767px) {
+  div.tocify {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+.tocify ul, .tocify li {
+  line-height: 20px;
+}
+
+.tocify-subheader .tocify-item {
+  font-size: 0.90em;
+}
+
+.tocify .list-group-item {
+  border-radius: 0px;
+}
+
+
+</style>
+
+
+
+</head>
+
+<body>
+
+
+<div class="container-fluid main-container">
+
+
+<!-- setup 3col/9col grid for toc_float and main content  -->
+<div class="row">
+<div class="col-xs-12 col-sm-4 col-md-3">
+<div id="TOC" class="tocify">
+</div>
+</div>
+
+<div class="toc-content col-xs-12 col-sm-8 col-md-9">
+
+
+
+
+<div class="navbar navbar-default  navbar-fixed-top" role="navigation">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-bs-toggle="collapse" data-target="#navbar" data-bs-target="#navbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="index.html">ATAC_learning</a>
+    </div>
+    <div id="navbar" class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+        <li>
+  <a href="index.html">Home</a>
+</li>
+<li>
+  <a href="about.html">About</a>
+</li>
+<li>
+  <a href="license.html">License</a>
+</li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        <li>
+  <a href="https://github.com/reneeisnowhere/ATAC_learning">
+    <span class="fab fa-github"></span>
+     
+    Source code
+  </a>
+</li>
+      </ul>
+    </div><!--/.nav-collapse -->
+  </div><!--/.container -->
+</div><!--/.navbar -->
+
+<div id="header">
+
+
+
+<h1 class="title toc-ignore">Analysis of RNA and ATAC data</h1>
+<h4 class="author">ERM</h4>
+<h4 class="date">2024-06-07</h4>
+
+</div>
+
+
+<p>
+<button type="button" class="btn btn-default btn-workflowr btn-workflowr-report" data-toggle="collapse" data-target="#workflowr-report">
+<span class="glyphicon glyphicon-list" aria-hidden="true"></span>
+workflowr <span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span>
+</button>
+</p>
+<div id="workflowr-report" class="collapse">
+<ul class="nav nav-tabs">
+<li class="active">
+<a data-toggle="tab" href="#summary">Summary</a>
+</li>
+<li>
+<a data-toggle="tab" href="#checks"> Checks <span
+class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span>
+</a>
+</li>
+<li>
+<a data-toggle="tab" href="#versions">Past versions</a>
+</li>
+</ul>
+<div class="tab-content">
+<div id="summary" class="tab-pane fade in active">
+<p>
+<strong>Last updated:</strong> 2024-06-07
+</p>
+<p>
+<strong>Checks:</strong> <span
+class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> 7
+<span class="glyphicon glyphicon-exclamation-sign text-danger"
+aria-hidden="true"></span> 0
+</p>
+<p>
+<strong>Knit directory:</strong> <code>ATAC_learning/</code> <span
+class="glyphicon glyphicon-question-sign" aria-hidden="true"
+title="This is the local directory in which the code in this file was executed.">
+</span>
+</p>
+<p>
+This reproducible <a href="https://rmarkdown.rstudio.com">R Markdown</a>
+analysis was created with <a
+  href="https://github.com/workflowr/workflowr">workflowr</a> (version
+1.7.1). The <em>Checks</em> tab describes the reproducibility checks
+that were applied when the results were created. The <em>Past
+versions</em> tab lists the development history.
+</p>
+<hr>
+</div>
+<div id="checks" class="tab-pane fade">
+<div id="workflowr-checks" class="panel-group">
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRMarkdownfilestronguptodate">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>R Markdown file:</strong> up-to-date
+</a>
+</p>
+</div>
+<div id="strongRMarkdownfilestronguptodate"
+class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great! Since the R Markdown file has been committed to the Git
+repository, you know the exact version of the code that produced these
+results.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongEnvironmentstrongempty">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Environment:</strong> empty </a>
+</p>
+</div>
+<div id="strongEnvironmentstrongempty" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great job! The global environment was empty. Objects defined in the
+global environment can affect the analysis in your R Markdown file in
+unknown ways. For reproduciblity it’s best to always run the code in an
+empty environment.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongSeedstrongcodesetseed20231016code">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Seed:</strong>
+<code>set.seed(20231016)</code> </a>
+</p>
+</div>
+<div id="strongSeedstrongcodesetseed20231016code"
+class="panel-collapse collapse">
+<div class="panel-body">
+<p>The command <code>set.seed(20231016)</code> was run prior to running
+the code in the R Markdown file. Setting a seed ensures that any results
+that rely on randomness, e.g. subsampling or permutations, are
+reproducible.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongSessioninformationstrongrecorded">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Session information:</strong>
+recorded </a>
+</p>
+</div>
+<div id="strongSessioninformationstrongrecorded"
+class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great job! Recording the operating system, R version, and package
+versions is critical for reproducibility.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongCachestrongnone">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Cache:</strong> none </a>
+</p>
+</div>
+<div id="strongCachestrongnone" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Nice! There were no cached chunks for this analysis, so you can be
+confident that you successfully produced the results during this
+run.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongFilepathsstrongrelative">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>File paths:</strong> relative </a>
+</p>
+</div>
+<div id="strongFilepathsstrongrelative" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great job! Using relative paths to the files within your workflowr
+project makes it easier to run your code on other machines.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomreneeisnowhereATAClearningtreef967b0b87510de257ed6c20a9de85cde6485ae2atargetblankf967b0ba">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Repository version:</strong>
+<a href="https://github.com/reneeisnowhere/ATAC_learning/tree/f967b0b87510de257ed6c20a9de85cde6485ae2a" target="_blank">f967b0b</a>
+</a>
+</p>
+</div>
+<div
+id="strongRepositoryversionstrongahrefhttpsgithubcomreneeisnowhereATAClearningtreef967b0b87510de257ed6c20a9de85cde6485ae2atargetblankf967b0ba"
+class="panel-collapse collapse">
+<div class="panel-body">
+<p>
+Great! You are using Git for version control. Tracking code development
+and connecting the code version to the results is critical for
+reproducibility.
+</p>
+<p>
+The results in this page were generated with repository version
+<a href="https://github.com/reneeisnowhere/ATAC_learning/tree/f967b0b87510de257ed6c20a9de85cde6485ae2a" target="_blank">f967b0b</a>.
+See the <em>Past versions</em> tab to see a history of the changes made
+to the R Markdown and HTML files.
+</p>
+<p>
+Note that you need to be careful to ensure that all relevant files for
+the analysis have been committed to Git prior to generating the results
+(you can use <code>wflow_publish</code> or
+<code>wflow_git_commit</code>). workflowr only checks the R Markdown
+file, but you know if there are other scripts or data files that it
+depends on. Below is the status of the Git repository when the results
+were generated:
+</p>
+<pre><code>
+Ignored files:
+    Ignored:    .RData
+    Ignored:    .Rhistory
+    Ignored:    .Rproj.user/
+    Ignored:    data/ARR_SNP_table.csv
+    Ignored:    data/All_merged_peaks.tsv
+    Ignored:    data/CAD_gwas_dataframe.RDS
+    Ignored:    data/Collapsed_expressed_NG_peak_table.csv
+    Ignored:    data/DEG_toplist_sep_n45.RDS
+    Ignored:    data/FRiP_first_run.txt
+    Ignored:    data/Frip_1_reads.csv
+    Ignored:    data/Frip_2_reads.csv
+    Ignored:    data/Frip_3_reads.csv
+    Ignored:    data/Frip_4_reads.csv
+    Ignored:    data/Frip_5_reads.csv
+    Ignored:    data/Frip_6_reads.csv
+    Ignored:    data/GO_KEGG_analysis/
+    Ignored:    data/HF_SNP_table.csv
+    Ignored:    data/Ind1_75DA24h_dedup_peaks.csv
+    Ignored:    data/Ind1_TSS_peaks.RDS
+    Ignored:    data/Ind1_firstfragment_files.txt
+    Ignored:    data/Ind1_fragment_files.txt
+    Ignored:    data/Ind1_peaks_list.RDS
+    Ignored:    data/Ind1_summary.txt
+    Ignored:    data/Ind2_TSS_peaks.RDS
+    Ignored:    data/Ind2_fragment_files.txt
+    Ignored:    data/Ind2_peaks_list.RDS
+    Ignored:    data/Ind2_summary.txt
+    Ignored:    data/Ind3_TSS_peaks.RDS
+    Ignored:    data/Ind3_fragment_files.txt
+    Ignored:    data/Ind3_peaks_list.RDS
+    Ignored:    data/Ind3_summary.txt
+    Ignored:    data/Ind4_79B24h_dedup_peaks.csv
+    Ignored:    data/Ind4_TSS_peaks.RDS
+    Ignored:    data/Ind4_V24h_fraglength.txt
+    Ignored:    data/Ind4_fragment_files.txt
+    Ignored:    data/Ind4_fragment_filesN.txt
+    Ignored:    data/Ind4_peaks_list.RDS
+    Ignored:    data/Ind4_summary.txt
+    Ignored:    data/Ind5_TSS_peaks.RDS
+    Ignored:    data/Ind5_fragment_files.txt
+    Ignored:    data/Ind5_fragment_filesN.txt
+    Ignored:    data/Ind5_peaks_list.RDS
+    Ignored:    data/Ind5_summary.txt
+    Ignored:    data/Ind6_TSS_peaks.RDS
+    Ignored:    data/Ind6_fragment_files.txt
+    Ignored:    data/Ind6_peaks_list.RDS
+    Ignored:    data/Ind6_summary.txt
+    Ignored:    data/Knowles_4.RDS
+    Ignored:    data/Knowles_5.RDS
+    Ignored:    data/Knowles_6.RDS
+    Ignored:    data/MI_gwas.RDS
+    Ignored:    data/SNP_supp_schneider.RDS
+    Ignored:    data/all_TSSE_scores.RDS
+    Ignored:    data/aln_run1_results.txt
+    Ignored:    data/anno_ind1_DA24h.RDS
+    Ignored:    data/anno_ind4_V24h.RDS
+    Ignored:    data/background_n45_he_peaks.RDS
+    Ignored:    data/cardiac_muscle_FRIP.csv
+    Ignored:    data/cardiomyocyte_FRIP.csv
+    Ignored:    data/col_ng_peak.csv
+    Ignored:    data/cormotif_full_4_run.RDS
+    Ignored:    data/cormotif_full_4_run_he.RDS
+    Ignored:    data/cormotif_full_6_run.RDS
+    Ignored:    data/cormotif_full_6_run_he.RDS
+    Ignored:    data/cormotif_probability_45_list.csv
+    Ignored:    data/cormotif_probability_45_list_he.csv
+    Ignored:    data/cormotif_probability_all_6_list.csv
+    Ignored:    data/cormotif_probability_all_6_list_he.csv
+    Ignored:    data/embryo_heart_FRIP.csv
+    Ignored:    data/enhancer_list_ENCFF126UHK.bed
+    Ignored:    data/enhancerdata/
+    Ignored:    data/filt_Peaks_efit2.RDS
+    Ignored:    data/filt_Peaks_efit2_bl.RDS
+    Ignored:    data/filt_Peaks_efit2_n45.RDS
+    Ignored:    data/first_Peaksummarycounts.csv
+    Ignored:    data/first_run_frag_counts.txt
+    Ignored:    data/full_bedfiles/
+    Ignored:    data/gene_ref.csv
+    Ignored:    data/gwas_1_dataframe.RDS
+    Ignored:    data/gwas_2_dataframe.RDS
+    Ignored:    data/gwas_3_dataframe.RDS
+    Ignored:    data/gwas_4_dataframe.RDS
+    Ignored:    data/gwas_5_dataframe.RDS
+    Ignored:    data/high_conf_peak_counts.csv
+    Ignored:    data/high_conf_peak_counts.txt
+    Ignored:    data/high_conf_peaks_bl_counts.txt
+    Ignored:    data/high_conf_peaks_counts.txt
+    Ignored:    data/hits_files/
+    Ignored:    data/ind1_DA24hpeaks.RDS
+    Ignored:    data/ind1_TSSE.RDS
+    Ignored:    data/ind2_TSSE.RDS
+    Ignored:    data/ind3_TSSE.RDS
+    Ignored:    data/ind4_TSSE.RDS
+    Ignored:    data/ind4_V24hpeaks.RDS
+    Ignored:    data/ind5_TSSE.RDS
+    Ignored:    data/ind6_TSSE.RDS
+    Ignored:    data/initial_complete_stats_run1.txt
+    Ignored:    data/left_ventricle_FRIP.csv
+    Ignored:    data/mergedPeads.gff
+    Ignored:    data/mergedPeaks.gff
+    Ignored:    data/motif_list_full
+    Ignored:    data/motif_list_n45
+    Ignored:    data/motif_list_n45.RDS
+    Ignored:    data/multiqc_fastqc_run1.txt
+    Ignored:    data/multiqc_fastqc_run2.txt
+    Ignored:    data/multiqc_genestat_run1.txt
+    Ignored:    data/multiqc_genestat_run2.txt
+    Ignored:    data/my_hc_filt_counts.RDS
+    Ignored:    data/my_hc_filt_counts_n45.RDS
+    Ignored:    data/n45_bedfiles/
+    Ignored:    data/n45_files
+    Ignored:    data/other_papers/
+    Ignored:    data/peakAnnoList_1.RDS
+    Ignored:    data/peakAnnoList_2.RDS
+    Ignored:    data/peakAnnoList_24_full.RDS
+    Ignored:    data/peakAnnoList_24_n45.RDS
+    Ignored:    data/peakAnnoList_3.RDS
+    Ignored:    data/peakAnnoList_3_full.RDS
+    Ignored:    data/peakAnnoList_3_n45.RDS
+    Ignored:    data/peakAnnoList_4.RDS
+    Ignored:    data/peakAnnoList_5.RDS
+    Ignored:    data/peakAnnoList_6.RDS
+    Ignored:    data/peakAnnoList_full_motif.RDS
+    Ignored:    data/peakAnnoList_n45_motif.RDS
+    Ignored:    data/siglist_full.RDS
+    Ignored:    data/siglist_n45.RDS
+    Ignored:    data/test.list.RDS
+    Ignored:    data/testnames.txt
+    Ignored:    data/toplist_6.RDS
+    Ignored:    data/toplist_full.RDS
+    Ignored:    data/toplist_full_DAR_6.RDS
+    Ignored:    data/toplist_n45.RDS
+    Ignored:    data/trimmed_seq_length.csv
+    Ignored:    data/unclassified_full_set_peaks.RDS
+    Ignored:    data/unclassified_n45_set_peaks.RDS
+    Ignored:    data/xstreme/
+    Ignored:    trimmed_Ind1_75DA24h_S7.nodup.splited.bam/
+
+Untracked files:
+    Untracked:  EAR_2_plot.pdf
+    Untracked:  ESR_1_plot.pdf
+    Untracked:  Firstcorr plotATAC.pdf
+    Untracked:  IND1_2_3_6_corrplot.pdf
+    Untracked:  LR_3_plot.pdf
+    Untracked:  NR_1_plot.pdf
+    Untracked:  analysis/my_hc_filt_counts.csv
+    Untracked:  code/IGV_snapshot_code.R
+    Untracked:  code/LongDARlist.R
+    Untracked:  code/TSSE.R
+    Untracked:  code/just_for_Fun.R
+    Untracked:  code/toplist_assembly.R
+    Untracked:  lcpm_filtered_corplot.pdf
+    Untracked:  log2cpmfragcount.pdf
+    Untracked:  output/cormotif_probability_45_list.csv
+    Untracked:  output/cormotif_probability_all_6_list.csv
+    Untracked:  splited/
+    Untracked:  trimmed_Ind1_75DA24h_S7.nodup.fragment.size.distribution.pdf
+    Untracked:  trimmed_Ind1_75DA3h_S1.nodup.fragment.size.distribution.pdf
+
+Unstaged changes:
+    Modified:   analysis/CorMotif_data_n45.Rmd
+    Modified:   analysis/Fastqc_results.Rmd
+    Modified:   analysis/GO_KEGG_analysis.Rmd
+    Modified:   analysis/Jaspar_motif.Rmd
+    Modified:   analysis/Peak_calling.Rmd
+    Modified:   analysis/Smaller_set_DAR.Rmd
+
+</code></pre>
+<p>
+Note that any generated files, e.g. HTML, png, CSS, etc., are not
+included in this status report because it is ok for generated content to
+have uncommitted changes.
+</p>
+</div>
+</div>
+</div>
+</div>
+<hr>
+</div>
+<div id="versions" class="tab-pane fade">
+
+<p>
+These are the previous versions of the repository in which changes were
+made to the R Markdown (<code>analysis/ATAC_MRC_DAR_FC_RNA.Rmd</code>)
+and HTML (<code>docs/ATAC_MRC_DAR_FC_RNA.html</code>) files. If you’ve
+configured a remote Git repository (see <code>?wflow_git_remote</code>),
+click on the hyperlinks in the table below to view the files as they
+were in that past version.
+</p>
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+File
+</th>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+<th>
+Message
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+Rmd
+</td>
+<td>
+<a href="https://github.com/reneeisnowhere/ATAC_learning/blob/f967b0b87510de257ed6c20a9de85cde6485ae2a/analysis/ATAC_MRC_DAR_FC_RNA.Rmd" target="_blank">f967b0b</a>
+</td>
+<td>
+reneeisnowhere
+</td>
+<td>
+2024-06-07
+</td>
+<td>
+first publish of indexed page
+</td>
+</tr>
+<tr>
+<td>
+Rmd
+</td>
+<td>
+<a href="https://github.com/reneeisnowhere/ATAC_learning/blob/afad343337ac18c3aa798acf744a5e8c3957e6bd/analysis/ATAC_MRC_DAR_FC_RNA.Rmd" target="_blank">afad343</a>
+</td>
+<td>
+reneeisnowhere
+</td>
+<td>
+2024-06-06
+</td>
+<td>
+first commit
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<hr>
+</div>
+</div>
+</div>
+<style type="text/css">
+pre {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+pre[class] {
+  max-height: 200px;
+}
+</style>
+<pre class="r"><code>library(tidyverse)
+library(kableExtra)
+library(broom)
+library(RColorBrewer)
+# library(gprofiler2)
+# library(qvalue)
+library(ChIPseeker)
+library(&quot;TxDb.Hsapiens.UCSC.hg38.knownGene&quot;)
+library(&quot;org.Hs.eg.db&quot;)
+# library(ATACseqQC)
+library(rtracklayer)
+library(edgeR)
+library(ggfortify)
+library(limma)
+library(readr)
+library(BiocGenerics)
+library(gridExtra)
+library(VennDiagram)
+library(scales)
+# library(ggVennDiagram)
+library(Cormotif)
+library(BiocParallel)
+library(ggpubr)
+library(devtools)
+# install_github(&#39;davetang/bedr&#39;)
+library(bedr)
+library(biomaRt)
+library(eulerr)
+library(smplot2)
+library(genomation)
+library(ggsignif)</code></pre>
+<p>Analysis of ATAC and RNA seq data together</p>
+<p>Files to load: RNA response clusters, ATAC response clusters assigned
+to neargenes (RNA-expressed gene list), LogFC of DAR (DOX24h), LogFC of
+RNA (DOX24h)</p>
+<pre class="r"><code>toplistall_RNA &lt;- readRDS(&quot;data/other_papers/toplistall_RNA.RDS&quot;) 
+S13Table &lt;- read.csv( &quot;data/other_papers/S13Table_Matthews2024.csv&quot;,row.names = 1)
+##Making the RNA_MRC lists
+
+EAR_RNA &lt;- S13Table %&gt;% 
+  dplyr::filter(MOTIF==&quot;EAR&quot;) %&gt;% 
+  dplyr::select(ENTREZID) %&gt;% 
+  mutate(ENTREZID= as.character(ENTREZID))
+ESR_RNA &lt;- S13Table %&gt;% 
+  dplyr::filter(MOTIF==&quot;ESR&quot;)%&gt;% 
+  dplyr::select(ENTREZID)%&gt;% 
+  mutate(ENTREZID= as.character(ENTREZID))
+LR_RNA &lt;- S13Table %&gt;% 
+  dplyr::filter(MOTIF==&quot;LR&quot;)%&gt;% 
+  dplyr::select(ENTREZID)%&gt;% 
+  mutate(ENTREZID=as.character(ENTREZID))
+NR_RNA &lt;- S13Table %&gt;% 
+  dplyr::filter(MOTIF==&quot;NR&quot;)%&gt;% 
+  dplyr::select(ENTREZID)%&gt;% 
+  mutate(ENTREZID= as.character(ENTREZID))
+fills &lt;- c(&quot;#C77CFF&quot;,&quot;#F8766D&quot;,&quot;#7CAE00&quot;,  &quot;#00BFC4&quot; )
+
+Resp_RNA &lt;- EAR_RNA %&gt;% 
+  rbind(.,ESR_RNA) %&gt;% 
+  rbind(., LR_RNA) %&gt;% 
+  distinct(ENTREZID)
+###Because of how I applied the DEG system in RNA-seq analysis, the lFC is opposite of the 
+###counts.   I did trt-veh instead of veh-trt.  therefore I need to multiply lfc by -1 to get t
+###the right correlation.
+
+toplistall_RNA &lt;- toplistall_RNA %&gt;% 
+  mutate(logFC = logFC*(-1))
+DOX_24_toplist_RNA &lt;- toplistall_RNA %&gt;% 
+  dplyr::filter(time ==&quot;24_hours&quot; &amp; id == &quot;DOX&quot;)
+DOX_DEG_RNA_24h &lt;- toplistall_RNA %&gt;% 
+  dplyr::filter(time ==&quot;24_hours&quot; &amp; id == &quot;DOX&quot;) %&gt;% 
+  dplyr::filter(adj.P.Val&lt;0.05)
+DOX_3_toplist_RNA &lt;- toplistall_RNA %&gt;% 
+  dplyr::filter(time ==&quot;3_hours&quot; &amp; id == &quot;DOX&quot;)
+
+##Now I have the LFC lists and the DEG_DOX24h list
+
+
+
+
+exp_neargene_table &lt;- read_delim(&quot;data/n45_bedfiles/exp_neargene_table.tsv&quot;, 
+    delim = &quot;\t&quot;, escape_double = FALSE, 
+    trim_ws = TRUE)
+
+
+toplist_full_ATAC &lt;- readRDS(&quot;data/DEG_toplist_sep_n45.RDS&quot;)
+
+n45_fullpeaks_gr &lt;- readBed(&quot;data/n45_bedfiles/DAR_DEG_background.bed&quot;)
+# RNA_expresed_genes &lt;- toplistall_RNA %&gt;% 
+#   # dplyr::filter(adj.P.Val &lt;0.05) %&gt;% 
+#    mutate(expression = if_else(logFC&lt;0,&quot;down&quot;,&quot;up&quot;)) %&gt;% 
+#   dplyr::select(ENTREZID,SYMBOL,expression) %&gt;% 
+#   # dplyr::select(ENTREZID,SYMBOL) %&gt;% 
+#   unique(.)  
+# RNA_expresed_genes_DE &lt;- toplistall_RNA %&gt;% 
+#   dplyr::filter(adj.P.Val &lt;0.05) %&gt;%
+#   mutate(expression = if_else(logFC&lt;0,&quot;down&quot;,&quot;up&quot;)) %&gt;% 
+#   dplyr::select(ENTREZID,SYMBOL,expression) %&gt;% 
+#   unique(.)  
+##not sure if I need the collapsed list of peaks and assigned near-genes
+col_ng_peak &lt;- read.csv(&quot;data/col_ng_peak.csv&quot;,row.names = 1)
+peakAnnoList_n45_motif &lt;- readRDS(&quot;data/peakAnnoList_n45_motif.RDS&quot;)
+# list2env(peakAnnoList_n45_motif, envir = .GlobalEnv)
+
+peakAnnoList_3_n45 &lt;- readRDS(&quot;data/peakAnnoList_3_n45.RDS&quot;)
+peakAnnoList_24_n45&lt;- readRDS(&quot;data/peakAnnoList_24_n45.RDS&quot;)
+
+DOX_3hr &lt;- as.data.frame(peakAnnoList_3_n45$DOX_3_n45)
+DOX_3hr_gr &lt;- GRanges(DOX_3hr)
+EPI_3hr &lt;- as.data.frame(peakAnnoList_3_n45$EPI_3_n45)
+EPI_3hr_gr &lt;- GRanges(EPI_3hr)
+DNR_3hr &lt;- as.data.frame(peakAnnoList_3_n45$DNR_3_n45)
+DNR_3hr_gr &lt;- GRanges(DNR_3hr)
+MTX_3hr &lt;- as.data.frame(peakAnnoList_3_n45$MTX_3_n45)
+MTX_3hr_gr &lt;- GRanges(MTX_3hr)
+# TRZ_3hr &lt;- as.data.frame(peakAnnoList_3_n45$TRZ_3_n45)
+# TRZ_3hr_gr &lt;- GRanges(TRZ_3hr)
+DOX_3_peak_list_20k &lt;-  exp_neargene_table %&gt;%
+  dplyr::filter(dist_to_NG&lt;20000) %&gt;% 
+    dplyr::filter(peakid %in% DOX_3hr$id) 
+EPI_3_peak_list_20k &lt;-  exp_neargene_table %&gt;%
+  dplyr::filter(dist_to_NG&lt;20000) %&gt;% 
+    dplyr::filter(peakid %in% EPI_3hr$id) 
+DNR_3_peak_list_20k &lt;-  exp_neargene_table %&gt;%
+  dplyr::filter(dist_to_NG&lt;20000) %&gt;% 
+    dplyr::filter(peakid %in% DNR_3hr$id) 
+MTX_3_peak_list_20k &lt;-  exp_neargene_table %&gt;%
+  dplyr::filter(dist_to_NG&lt;20000) %&gt;% 
+    dplyr::filter(peakid %in% MTX_3hr$id) 
+
+
+
+DOX_24hr &lt;- as.data.frame(peakAnnoList_24_n45$DOX_24_n45)
+DOX_24hr_gr &lt;- GRanges(DOX_24hr)
+EPI_24hr &lt;- as.data.frame(peakAnnoList_24_n45$EPI_24_n45)
+EPI_24hr_gr &lt;- GRanges(EPI_24hr)
+DNR_24hr &lt;- as.data.frame(peakAnnoList_24_n45$DNR_24_n45)
+DNR_24hr_gr &lt;- GRanges(DNR_24hr)
+MTX_24hr &lt;- as.data.frame(peakAnnoList_24_n45$MTX_24_n45)
+MTX_24hr_gr &lt;- GRanges(MTX_24hr)
+# TRZ_24hr &lt;- as.data.frame(peakAnnoList_24_n45$TRZ_24_n45)
+# TRZ_24hr_gr &lt;- GRanges(TRZ_24hr)
+
+DOX_24_peak_list_20k &lt;-  exp_neargene_table %&gt;%
+  dplyr::filter(dist_to_NG&lt;20000) %&gt;% 
+    dplyr::filter(peakid %in% DOX_24hr$id) 
+EPI_24_peak_list_20k &lt;-  exp_neargene_table %&gt;%
+  dplyr::filter(dist_to_NG&lt;20000) %&gt;% 
+    dplyr::filter(peakid %in% EPI_24hr$id) 
+DNR_24_peak_list_20k &lt;-  exp_neargene_table %&gt;%
+  dplyr::filter(dist_to_NG&lt;20000) %&gt;% 
+    dplyr::filter(peakid %in% DNR_24hr$id) 
+MTX_24_peak_list_20k &lt;-  exp_neargene_table %&gt;%
+  dplyr::filter(dist_to_NG&lt;20000) %&gt;% 
+    dplyr::filter(peakid %in% MTX_24hr$id) 
+
+
+EAR_df &lt;- as.data.frame(peakAnnoList_n45_motif$EAR_n45_gr)
+EAR_df_gr &lt;-  GRanges(EAR_df)
+
+
+ESR_df &lt;- as.data.frame(peakAnnoList_n45_motif$ESR_n45_gr)
+ESR_df_gr &lt;-  GRanges(ESR_df)
+
+LR_df &lt;- as.data.frame(peakAnnoList_n45_motif$LR_n45_gr)
+LR_df_gr &lt;-  GRanges(LR_df)
+
+NR_df &lt;- as.data.frame(peakAnnoList_n45_motif$NR_n45_gr)
+NR_df_gr &lt;-  GRanges(NR_df)
+
+##Making the ATAC peak list by response category that are within 20 kb of near-gene
+EAR_peak_list_20k &lt;-  exp_neargene_table %&gt;%
+  dplyr::filter(dist_to_NG&lt;20000) %&gt;%
+   dplyr::filter(dist_to_NG&gt;=0) %&gt;%
+    dplyr::filter(peakid %in% EAR_df$id) %&gt;% 
+  dplyr::select(peakid, ENTREZID:dist_to_NG) %&gt;% 
+  mutate(MRC=&quot;EAR&quot;)
+
+ESR_peak_list_20k &lt;- exp_neargene_table %&gt;%
+  dplyr::filter(dist_to_NG&lt;20000) %&gt;%
+  dplyr::filter(dist_to_NG&gt;=0) %&gt;%
+    dplyr::filter(peakid %in% ESR_df$id) %&gt;%
+   dplyr::select(peakid, ENTREZID:dist_to_NG) %&gt;% 
+    mutate(MRC=&quot;ESR&quot;)
+
+LR_peak_list_20k &lt;- exp_neargene_table %&gt;%
+  dplyr::filter(dist_to_NG&lt;20000) %&gt;%
+  dplyr::filter(dist_to_NG&gt;=0) %&gt;%
+    dplyr::filter(peakid %in% LR_df$id) %&gt;% 
+   dplyr::select(peakid, ENTREZID:dist_to_NG) %&gt;% 
+    mutate(MRC=&quot;LR&quot;)
+
+NR_peak_list_20k &lt;- exp_neargene_table %&gt;%
+  dplyr::filter(dist_to_NG&lt;20000) %&gt;%
+  dplyr::filter(dist_to_NG&gt;=0) %&gt;%
+    dplyr::filter(peakid %in% NR_df$id) %&gt;%
+   dplyr::select(peakid, ENTREZID:dist_to_NG) %&gt;% 
+    mutate(MRC=&quot;NR&quot;)
+
+##master 20kb neargene response peaklist
+peak_list_20k_MRC &lt;- EAR_peak_list_20k %&gt;% 
+  rbind(ESR_peak_list_20k) %&gt;% 
+  rbind(LR_peak_list_20k) %&gt;% 
+  rbind(NR_peak_list_20k)
+
+DOX_DEGRNA_peaklist &lt;- peak_list_20k_MRC %&gt;% 
+  dplyr::filter(ENTREZID %in% DOX_DEG_RNA_24h$ENTREZID)
+
+all_ng_peaks &lt;- exp_neargene_table%&gt;%
+  dplyr::filter(dist_to_NG&lt;20000)%&gt;%
+dplyr::filter(dist_to_NG&gt;=0) 
+length(unique(all_ng_peaks$ENTREZID))</code></pre>
+<pre><code>[1] 12466</code></pre>
+<pre class="r"><code>Resp_ATAC_genes &lt;-  peak_list_20k_MRC %&gt;% 
+  dplyr:: filter(MRC != &quot;NR&quot;) %&gt;% 
+    distinct(ENTREZID)
+# gr_EAR_peak_list_20k &lt;-  col_ng_peak %&gt;%
+#   dplyr::filter(dist_to_NG&lt;20000) %&gt;%
+#     dplyr::filter(peakid %in% EAR_df$id) %&gt;% 
+#   mutate(MRC=&quot;EAR&quot;) %&gt;% 
+#   GRanges()
+# 
+# gr_ESR_peak_list_20k &lt;- col_ng_peak %&gt;%
+#   dplyr::filter(dist_to_NG&lt;20000) %&gt;%
+#     dplyr::filter(peakid %in% ESR_df$id) %&gt;% 
+#     mutate(MRC=&quot;ESR&quot;)%&gt;% 
+#   GRanges()
+# 
+# gr_LR_peak_list_20k &lt;- col_ng_peak %&gt;%
+#   dplyr::filter(dist_to_NG&lt;20000) %&gt;%
+#     dplyr::filter(peakid %in% LR_df$id) %&gt;% 
+#     mutate(MRC=&quot;LR&quot;)%&gt;% 
+#   GRanges()
+# 
+# gr_NR_peak_list_20k &lt;- col_ng_peak %&gt;%
+#   dplyr::filter(dist_to_NG&lt;20000) %&gt;%
+#     dplyr::filter(peakid %in% NR_df$id) %&gt;% 
+#     mutate(MRC=&quot;NR&quot;)%&gt;% 
+#   GRanges()</code></pre>
+<pre class="r"><code>genecount_EAR &lt;- EAR_peak_list_20k %&gt;% 
+  dplyr::filter(dist_to_NG &gt;=0) %&gt;% 
+  group_by(ensembl_id) %&gt;% 
+  count() %&gt;% 
+  as.data.frame() %&gt;% 
+  mutate(MRC=&quot;EAR&quot;)
+
+genecount_ESR &lt;- ESR_peak_list_20k %&gt;% 
+  dplyr::filter(dist_to_NG &gt;=0) %&gt;% 
+  group_by(ensembl_id) %&gt;% 
+  count() %&gt;% 
+  as.data.frame() %&gt;% 
+  mutate(MRC=&quot;ESR&quot;)
+
+
+genecount_LR &lt;- LR_peak_list_20k %&gt;% 
+  dplyr::filter(dist_to_NG &gt;=0) %&gt;% 
+  group_by(ensembl_id) %&gt;% 
+  count() %&gt;% 
+  as.data.frame() %&gt;% 
+  mutate(MRC=&quot;LR&quot;)
+
+genecount_NR &lt;- NR_peak_list_20k %&gt;% 
+  dplyr::filter(dist_to_NG &gt;=0) %&gt;% 
+  group_by(ensembl_id) %&gt;% 
+  count() %&gt;% 
+  as.data.frame() %&gt;% 
+  mutate(MRC=&quot;NR&quot;)
+
+
+genecount_all &lt;- genecount_EAR %&gt;% 
+  rbind(., genecount_ESR) %&gt;%
+  rbind(., genecount_LR) %&gt;%
+  rbind(., genecount_NR)
+  
+
+ggplot(genecount_EAR, aes(x=n))+
+  geom_histogram()</code></pre>
+<p><img src="figure/ATAC_MRC_DAR_FC_RNA.Rmd/countsof%20peaks%20in%20genes-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>ggplot(genecount_ESR, aes(x=n))+
+  geom_histogram()</code></pre>
+<p><img src="figure/ATAC_MRC_DAR_FC_RNA.Rmd/countsof%20peaks%20in%20genes-2.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>ggplot(genecount_LR, aes(x=n))+
+  geom_histogram()</code></pre>
+<p><img src="figure/ATAC_MRC_DAR_FC_RNA.Rmd/countsof%20peaks%20in%20genes-3.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>ggplot(genecount_NR, aes(x=n))+
+  geom_histogram()</code></pre>
+<p><img src="figure/ATAC_MRC_DAR_FC_RNA.Rmd/countsof%20peaks%20in%20genes-4.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>ggplot(genecount_all, aes(x=n))+
+  geom_density(aes(fill=MRC, alpha = 0.5))</code></pre>
+<p><img src="figure/ATAC_MRC_DAR_FC_RNA.Rmd/countsof%20peaks%20in%20genes-5.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>ggplot(genecount_all, aes(x=n))+
+  geom_density(aes(fill=MRC, alpha = 0.4)) + 
+  coord_cartesian(xlim=c(0,15))</code></pre>
+<p><img src="figure/ATAC_MRC_DAR_FC_RNA.Rmd/countsof%20peaks%20in%20genes-6.png" width="672" style="display: block; margin: auto;" /></p>
+<div id="mrc-overlaps-between-atac-and-rna-data" class="section level2">
+<h2>MRC overlaps between ATAC and RNA data</h2>
+<pre class="r"><code>length(intersect(Resp_RNA$ENTREZID, Resp_ATAC_genes$ENTREZID))</code></pre>
+<pre><code>[1] 4592</code></pre>
+<pre class="r"><code># length(unique(EAR_peak_list_20k$NCBI_gene))-length(intersect(unique(EAR_RNA$ENTREZID), unique(EAR_peak_list_20k$NCBI_gene)))
+fit_EAR &lt;- euler(c(
+  &#39;ATAC&#39; = length(unique(EAR_peak_list_20k$ENTREZID))-length(intersect(unique(EAR_RNA$ENTREZID), unique(EAR_peak_list_20k$ENTREZID))), 
+  &#39;RNA&#39; = length(unique(EAR_RNA$ENTREZID))-length(intersect(unique(EAR_RNA$ENTREZID), unique(EAR_peak_list_20k$ENTREZID))), 
+  &#39;ATAC&amp;RNA&#39; = length(intersect(unique(EAR_RNA$ENTREZID), unique(EAR_peak_list_20k$ENTREZID)))))
+
+
+fit_ESR &lt;- euler(c(
+  &#39;ATAC&#39; = length(unique(ESR_peak_list_20k$ENTREZID))-length(intersect(unique(ESR_RNA$ENTREZID), unique(ESR_peak_list_20k$ENTREZID))), 
+  &#39;RNA&#39; = length(unique(ESR_RNA$ENTREZID))-length(intersect(unique(ESR_RNA$ENTREZID), unique(ESR_peak_list_20k$ENTREZID))), 
+  &#39;ATAC&amp;RNA&#39; = length(intersect(unique(ESR_RNA$ENTREZID), unique(ESR_peak_list_20k$ENTREZID)))))
+
+fit_LR &lt;- euler(c(
+  &#39;ATAC&#39; = length(unique(LR_peak_list_20k$ENTREZID))-length(intersect(unique(LR_RNA$ENTREZID), unique(LR_peak_list_20k$ENTREZID))), 
+  &#39;RNA&#39; = length(unique(LR_RNA$ENTREZID))-length(intersect(unique(LR_RNA$ENTREZID), unique(LR_peak_list_20k$ENTREZID))), 
+  &#39;ATAC&amp;RNA&#39; = length(intersect(unique(LR_RNA$ENTREZID), unique(LR_peak_list_20k$ENTREZID)))))
+
+
+fit_NR &lt;- euler(c(
+  &#39;ATAC&#39; = length(unique(NR_peak_list_20k$ENTREZID))-length(intersect(unique(NR_RNA$ENTREZID), unique(NR_peak_list_20k$ENTREZID))), 
+  &#39;RNA&#39; = length(unique(NR_RNA$ENTREZID))-length(intersect(unique(NR_RNA$ENTREZID), unique(NR_peak_list_20k$ENTREZID))), 
+  &#39;ATAC&amp;RNA&#39; = length(intersect(unique(NR_RNA$ENTREZID), unique(NR_peak_list_20k$ENTREZID)))))
+
+
+fit_EAR_comRNA &lt;- euler(c(
+  &#39;ATAC&#39; = length(unique(EAR_peak_list_20k$ENTREZID))-length(intersect(unique(Resp_RNA$ENTREZID), unique(EAR_peak_list_20k$ENTREZID))), 
+  &#39;RNA&#39; = length(unique(Resp_RNA$ENTREZID))-length(intersect(unique(Resp_RNA$ENTREZID), unique(EAR_peak_list_20k$ENTREZID))), 
+  &#39;ATAC&amp;RNA&#39; = length(intersect(unique(Resp_RNA$ENTREZID), unique(EAR_peak_list_20k$ENTREZID)))))
+
+fit_ESR_comRNA &lt;- euler(c(
+  &#39;ATAC&#39; = length(unique(ESR_peak_list_20k$ENTREZID))-length(intersect(unique(Resp_RNA$ENTREZID), unique(ESR_peak_list_20k$ENTREZID))), 
+  &#39;RNA&#39; = length(unique(Resp_RNA$ENTREZID))-length(intersect(unique(Resp_RNA$ENTREZID), unique(ESR_peak_list_20k$ENTREZID))), 
+  &#39;ATAC&amp;RNA&#39; = length(intersect(unique(Resp_RNA$ENTREZID), unique(ESR_peak_list_20k$ENTREZID)))))
+
+fit_LR_comRNA &lt;- euler(c(
+  &#39;ATAC&#39; = length(unique(LR_peak_list_20k$ENTREZID))-length(intersect(unique(Resp_RNA$ENTREZID), unique(LR_peak_list_20k$ENTREZID))), 
+  &#39;RNA&#39; = length(unique(Resp_RNA$ENTREZID))-length(intersect(unique(Resp_RNA$ENTREZID), unique(LR_peak_list_20k$ENTREZID))), 
+  &#39;ATAC&amp;RNA&#39; = length(intersect(unique(Resp_RNA$ENTREZID), unique(LR_peak_list_20k$ENTREZID)))))
+
+
+fit_NR_comRNA &lt;- euler(c(
+  &#39;ATAC&#39; = length(unique(NR_peak_list_20k$ENTREZID))-length(intersect(unique(Resp_RNA$ENTREZID), unique(NR_peak_list_20k$ENTREZID))), 
+  &#39;RNA&#39; = length(unique(Resp_RNA$ENTREZID))-length(intersect(unique(Resp_RNA$ENTREZID), unique(NR_peak_list_20k$ENTREZID))), 
+  &#39;ATAC&amp;RNA&#39; = length(intersect(unique(Resp_RNA$ENTREZID), unique(NR_peak_list_20k$ENTREZID)))))
+
+
+fit_all_resp &lt;- euler(c(
+  &#39;ATAC&#39; = length(unique(Resp_ATAC_genes$ENTREZID))-length(intersect(unique(Resp_RNA$ENTREZID), unique(Resp_ATAC_genes$ENTREZID))), 
+  &#39;RNA&#39; = length(unique(Resp_RNA$ENTREZID))-length(intersect(unique(Resp_RNA$ENTREZID), unique(Resp_ATAC_genes$ENTREZID))), 
+  &#39;ATAC&amp;RNA&#39; = length(intersect(unique(Resp_RNA$ENTREZID), unique(Resp_ATAC_genes$ENTREZID)))))
+
+
+
+
+# fit_all &lt;- euler(c(&#39;ATAC_EAR&#39; = 5526, &#39;RNA_EAR&#39; = 306, &#39;ATAC_EAR&amp;RNA_EAR&#39; = 138,
+# &#39;ATAC_ESR&#39; = 9237 , &#39;RNA_ESR&#39;= 336,&#39;ATAC_ESR&amp;RNA_ESR&#39; =192,
+# &#39;ATAC_LR&#39; =12586 , &#39;RNA_LR&#39;=2370 ,&#39;ATAC_LR&amp;RNA_LR&#39; =3175,
+# &#39;ATAC_NR&#39; = 17176, &#39;RNA_NR&#39;= 1406,&#39;ATAC_NR&amp;RNA_NR&#39; =6098))
+plot(fit_EAR,quantities = TRUE,
+  fill = c(&quot;purple&quot;,&quot;cornflowerblue&quot;),
+  lty = 1,
+  labels = list(font = 6),
+  main=&quot;EAR motifs&quot;)                  </code></pre>
+<p><img src="figure/ATAC_MRC_DAR_FC_RNA.Rmd/Euler%20of%20MRCs-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>plot(fit_ESR,quantities = TRUE,
+  fill = c(&quot;purple&quot;,&quot;cornflowerblue&quot;),
+  lty = 1,
+  labels = list(font = 6),
+  main=&quot;ESR motifs&quot;) </code></pre>
+<p><img src="figure/ATAC_MRC_DAR_FC_RNA.Rmd/Euler%20of%20MRCs-2.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>plot(fit_LR,quantities = TRUE,
+  fill = c(&quot;purple&quot;,&quot;cornflowerblue&quot;),
+  lty = 1,
+  labels = list(font = 6),
+  main=&quot;LR motifs&quot;)                  </code></pre>
+<p><img src="figure/ATAC_MRC_DAR_FC_RNA.Rmd/Euler%20of%20MRCs-3.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>plot(fit_NR,quantities = TRUE,
+  fill = c(&quot;purple&quot;,&quot;cornflowerblue&quot;),
+  lty = 1,
+  labels = list(font = 6),
+  main=&quot;NR motifs&quot;) </code></pre>
+<p><img src="figure/ATAC_MRC_DAR_FC_RNA.Rmd/Euler%20of%20MRCs-4.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>plot(fit_EAR_comRNA,quantities = TRUE,
+  fill = c(&quot;purple&quot;,&quot;cornflowerblue&quot;),
+  lty = 1,
+  labels = list(font = 6),
+  main=&quot;ATAC EAR neargenes and RNA-response genes&quot;)                  </code></pre>
+<p><img src="figure/ATAC_MRC_DAR_FC_RNA.Rmd/Euler%20of%20MRCs-5.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>plot(fit_ESR_comRNA,quantities = TRUE,
+  fill = c(&quot;purple&quot;,&quot;cornflowerblue&quot;),
+  lty = 1,
+  labels = list(font = 6),
+  main=&quot;ATAC ESR neargenes and RNA-response genes&quot;) </code></pre>
+<p><img src="figure/ATAC_MRC_DAR_FC_RNA.Rmd/Euler%20of%20MRCs-6.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>plot(fit_LR_comRNA,quantities = TRUE,
+  fill = c(&quot;purple&quot;,&quot;cornflowerblue&quot;),
+  lty = 1,
+  labels = list(font = 6),
+  main=&quot;ATAC LR neargenes and RNA-response genes&quot;)                  </code></pre>
+<p><img src="figure/ATAC_MRC_DAR_FC_RNA.Rmd/Euler%20of%20MRCs-7.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>plot(fit_NR_comRNA,quantities = TRUE,
+  fill = c(&quot;purple&quot;,&quot;cornflowerblue&quot;),
+  lty = 1,
+  labels = list(font = 6),
+  main=&quot;ATAC NR neargenes and RNA-response genes&quot;)   </code></pre>
+<p><img src="figure/ATAC_MRC_DAR_FC_RNA.Rmd/Euler%20of%20MRCs-8.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code># total_NG &lt;-  
+length(unique(peak_list_20k_MRC$ENTREZID)) </code></pre>
+<pre><code>[1] 12457</code></pre>
+<pre class="r"><code>length(unique(S13Table$ENTREZID))</code></pre>
+<pre><code>[1] 14084</code></pre>
+<pre class="r"><code>length(unique(EAR_peak_list_20k$ENTREZID)) </code></pre>
+<pre><code>[1] 3541</code></pre>
+<pre class="r"><code>length(unique(ESR_peak_list_20k$ENTREZID)) </code></pre>
+<pre><code>[1] 5171</code></pre>
+<pre class="r"><code>length(unique(LR_peak_list_20k$ENTREZID)) </code></pre>
+<pre><code>[1] 8011</code></pre>
+<pre class="r"><code>length(unique(NR_peak_list_20k$ENTREZID)) </code></pre>
+<pre><code>[1] 11873</code></pre>
+<pre class="r"><code>### using all expressed genes and all near_genes
+# length(intersect(unique(peak_list_20k_MRC$ENTREZID), unique(S13Table$ENTREZID)))
+fit_NG &lt;- euler(c(
+  &#39;ATAC_NG&#39; = length(unique(peak_list_20k_MRC$ENTREZID))-    length(intersect(unique(peak_list_20k_MRC$ENTREZID), unique(S13Table$ENTREZID))), 
+  &#39;RNA_EG&#39; =length(unique(S13Table$ENTREZID))-
+length(intersect(unique(peak_list_20k_MRC$ENTREZID), unique(S13Table$ENTREZID))),
+  &#39;ATAC_NG&amp;RNA_EG&#39;= length(intersect(unique(peak_list_20k_MRC$ENTREZID), unique(S13Table$ENTREZID)))))
+
+plot(fit_NG,quantities = TRUE,
+  fill = c(&quot;purple&quot;,&quot;cornflowerblue&quot;),
+  lty = 1,
+  labels = list(font = 6),
+  main=&quot;near genes and RNA expressed genes overall&quot;)   </code></pre>
+<p><img src="figure/ATAC_MRC_DAR_FC_RNA.Rmd/Near%20gene%20proportions-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>plot(fit_all_resp,quantities = TRUE,
+  fill = c(&quot;purple&quot;,&quot;cornflowerblue&quot;),
+  lty = 1,
+  labels = list(font = 6),
+  main=&quot;ATAC MRC-response neargenes and RNA-response genes&quot;)     </code></pre>
+<p><img src="figure/ATAC_MRC_DAR_FC_RNA.Rmd/Near%20gene%20proportions-2.png" width="672" style="display: block; margin: auto;" /></p>
+</div>
+<div id="fold-change-inquiry" class="section level2">
+<h2>Fold change inquiry</h2>
+<p>Looking at FC correlation First with 3 hours, then filtering the set
+of logFC using the ENTREZID of the DEGs from DOX-24hr RNA.</p>
+<pre class="r"><code>## basically split the DAR/DEG lists into 3 and 24 hour 
+DOX_3_toplist_RNA &lt;- toplistall_RNA %&gt;% 
+  dplyr::filter(time ==&quot;3_hours&quot; &amp; id == &quot;DOX&quot;) #%&gt;%
+  # dplyr::filter(adj.P.Val&lt;0.05)
+
+DOX_3_toplist_ATAC &lt;- toplist_full_ATAC$DOX_3
+
+
+DOX_24_toplist_RNA &lt;- toplistall_RNA %&gt;% 
+  dplyr::filter(time ==&quot;24_hours&quot; &amp; id == &quot;DOX&quot;) %&gt;% 
+  dplyr::filter(adj.P.Val&lt;0.05)
+
+DOX_24_toplist_ATAC &lt;- toplist_full_ATAC$DOX_24
+
+### Then I joined the ATAC-FC and RNA_FC to the 20kb peaklist for each MRC
+
+MRC_EAR_FC_3hr &lt;-  EAR_peak_list_20k%&gt;%
+  left_join(., DOX_3_toplist_ATAC, by=c(&#39;peakid&#39;=&#39;peak&#39;)) %&gt;% 
+  left_join(., DOX_3_toplist_RNA, by=c(&quot;ENTREZID&quot;=&quot;ENTREZID&quot;),suffix=c(&quot;.ATAC&quot;,&quot;.RNA&quot;)) %&gt;% 
+  na.omit()
+
+MRC_ESR_FC_3hr &lt;- ESR_peak_list_20k %&gt;% 
+  left_join(., DOX_3_toplist_ATAC, by=c(&#39;peakid&#39;=&#39;peak&#39;)) %&gt;% 
+  left_join(., DOX_3_toplist_RNA, by=c(&quot;ENTREZID&quot;=&quot;ENTREZID&quot;),suffix=c(&quot;.ATAC&quot;,&quot;.RNA&quot;))%&gt;% 
+  na.omit()
+
+MRC_LR_FC_3hr &lt;- LR_peak_list_20k %&gt;% 
+  left_join(., DOX_3_toplist_ATAC, by=c(&#39;peakid&#39;=&#39;peak&#39;)) %&gt;% 
+  left_join(., DOX_3_toplist_RNA, by=c(&quot;ENTREZID&quot;=&quot;ENTREZID&quot;),suffix=c(&quot;.ATAC&quot;,&quot;.RNA&quot;))%&gt;% 
+  na.omit()
+
+MRC_NR_FC_3hr &lt;- NR_peak_list_20k %&gt;% 
+  left_join(., DOX_3_toplist_ATAC, by=c(&#39;peakid&#39;=&#39;peak&#39;)) %&gt;% 
+  left_join(., DOX_3_toplist_RNA, by=c(&quot;ENTREZID&quot;=&quot;ENTREZID&quot;),suffix=c(&quot;.ATAC&quot;,&quot;.RNA&quot;))%&gt;% 
+  na.omit()
+
+# MRC_EAR_FC_24hr &lt;- EAR_peak_list_20k %&gt;% left_join(., DOX_24_toplist_ATAC, by=c(&#39;peakid&#39;=&#39;peak&#39;)) %&gt;% left_join(., DOX_24_toplist_RNA, by=c(&quot;ENTREZID&quot;=&quot;ENTREZID&quot;),suffix=c(&quot;.ATAC&quot;,&quot;.RNA&quot;))
+# 
+# MRC_ESR_FC_24hr &lt;- ESR_peak_list_20k %&gt;% left_join(., DOX_24_toplist_ATAC, by=c(&#39;peakid&#39;=&#39;peak&#39;)) %&gt;% left_join(., DOX_24_toplist_RNA, by=c(&quot;ENTREZID&quot;=&quot;ENTREZID&quot;),suffix=c(&quot;.ATAC&quot;,&quot;.RNA&quot;))
+# MRC_LR_FC_24hr &lt;- LR_peak_list_20k %&gt;% left_join(., DOX_24_toplist_ATAC, by=c(&#39;peakid&#39;=&#39;peak&#39;)) %&gt;% left_join(., DOX_24_toplist_RNA, by=c(&quot;ENTREZID&quot;=&quot;ENTREZID&quot;),suffix=c(&quot;.ATAC&quot;,&quot;.RNA&quot;))
+# MRC_NR_FC_24hr &lt;- NR_peak_list_20k %&gt;% left_join(., DOX_24_toplist_ATAC, by=c(&#39;peakid&#39;=&#39;peak&#39;)) %&gt;% left_join(., DOX_24_toplist_RNA, by=c(&quot;ENTREZID&quot;=&quot;ENTREZID&quot;),suffix=c(&quot;.ATAC&quot;,&quot;.RNA&quot;))
+
+MRC_EAR_FC_3hr %&gt;% 
+  ggplot(., aes(x=logFC.ATAC, y= logFC.RNA))+
+  geom_point()+
+  geom_smooth(method=&quot;lm&quot;)+
+  sm_statCorr(corr_method = &#39;pearson&#39;)+
+  ggtitle(&quot;EAR DOX-3h lfc ATAC within 20kb and DOX-3h lfc RNA&quot;)</code></pre>
+<p><img src="figure/ATAC_MRC_DAR_FC_RNA.Rmd/FC%20manip-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>MRC_EAR_FC_3hr %&gt;% 
+  dplyr::filter(ENTREZID%in%DOX_DEG_RNA_24h$ENTREZID) %&gt;% 
+  ggplot(., aes(x=logFC.ATAC, y= logFC.RNA))+
+  geom_point()+
+  geom_smooth(method=&quot;lm&quot;)+
+  sm_statCorr(corr_method = &#39;pearson&#39;)+
+  ggtitle(&quot;EAR DOXDEG24hr test-3h lfc ATAC within 20kb and DOX-3h lfc RNA&quot;)</code></pre>
+<p><img src="figure/ATAC_MRC_DAR_FC_RNA.Rmd/FC%20manip-2.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>MRC_ESR_FC_3hr %&gt;% 
+  ggplot(., aes(x=logFC.ATAC, y= logFC.RNA))+
+  geom_point()+
+  geom_smooth(method=&quot;lm&quot;)+
+  sm_statCorr(corr_method = &#39;pearson&#39;)+
+  ggtitle(&quot;ESR DOX-3h lfc ATAC within 20kb and DOX-3h lfc RNA&quot;)</code></pre>
+<p><img src="figure/ATAC_MRC_DAR_FC_RNA.Rmd/FC%20manip-3.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>MRC_ESR_FC_3hr %&gt;% 
+  dplyr::filter(ENTREZID%in%DOX_DEG_RNA_24h$ENTREZID) %&gt;% 
+  ggplot(., aes(x=logFC.ATAC, y= logFC.RNA))+
+  geom_point()+
+  geom_smooth(method=&quot;lm&quot;)+
+  sm_statCorr(corr_method = &#39;pearson&#39;)+
+  ggtitle(&quot;ESR with DOX24h filter DOX-3h lfc ATAC within 20kb and DOX-3h lfc RNA&quot;)</code></pre>
+<p><img src="figure/ATAC_MRC_DAR_FC_RNA.Rmd/FC%20manip-4.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>MRC_LR_FC_3hr %&gt;% 
+  ggplot(., aes(x=logFC.ATAC, y= logFC.RNA))+
+  geom_point()+
+  geom_smooth(method=&quot;lm&quot;)+
+  sm_statCorr(corr_method = &#39;pearson&#39;)+
+  ggtitle(&quot;LR DOX-3h lfc ATAC within 20kb and DOX-3h lfc RNA&quot;)</code></pre>
+<p><img src="figure/ATAC_MRC_DAR_FC_RNA.Rmd/FC%20manip-5.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>MRC_LR_FC_3hr %&gt;% 
+  dplyr::filter(ENTREZID%in%DOX_DEG_RNA_24h$ENTREZID) %&gt;% 
+  ggplot(., aes(x=logFC.ATAC, y= logFC.RNA))+
+  geom_point()+
+  geom_smooth(method=&quot;lm&quot;)+
+  sm_statCorr(corr_method = &#39;pearson&#39;)+
+  ggtitle(&quot;with DOX24h filter LR DOX-3h lfc ATAC within 20kb and DOX-3h lfc RNA&quot;)</code></pre>
+<p><img src="figure/ATAC_MRC_DAR_FC_RNA.Rmd/FC%20manip-6.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>MRC_NR_FC_3hr %&gt;% 
+  ggplot(., aes(x=logFC.ATAC, y= logFC.RNA))+
+  geom_point()+
+  geom_smooth(method=&quot;lm&quot;)+
+  sm_statCorr(corr_method = &#39;pearson&#39;)+
+  ggtitle(&quot;NR DOX-3h lfc ATAC within 20kb and DOX-3h lfc RNA&quot;)</code></pre>
+<p><img src="figure/ATAC_MRC_DAR_FC_RNA.Rmd/FC%20manip-7.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>MRC_NR_FC_3hr %&gt;% 
+  dplyr::filter(ENTREZID%in%DOX_DEG_RNA_24h$ENTREZID) %&gt;% 
+  ggplot(., aes(x=logFC.ATAC, y= logFC.RNA))+
+  geom_point()+
+  geom_smooth(method=&quot;lm&quot;)+
+  sm_statCorr(corr_method = &#39;pearson&#39;)+
+  ggtitle(&quot;with DOX24h filter NR DOX-3h lfc ATAC within 20kb and DOX-3h lfc RNA&quot;)</code></pre>
+<p><img src="figure/ATAC_MRC_DAR_FC_RNA.Rmd/FC%20manip-8.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>rbind(MRC_EAR_FC_3hr, MRC_ESR_FC_3hr,MRC_LR_FC_3hr,MRC_NR_FC_3hr) %&gt;% 
+  mutate(MRC=factor(MRC, levels = c(&quot;NR&quot;,&quot;EAR&quot;,&quot;ESR&quot;,&quot;LR&quot;))) %&gt;% 
+  ggplot(., aes(x=MRC,y=logFC.ATAC))+
+geom_boxplot(fill=fills)</code></pre>
+<p><img src="figure/ATAC_MRC_DAR_FC_RNA.Rmd/FC%20manip-9.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>rbind(MRC_EAR_FC_3hr, MRC_ESR_FC_3hr,MRC_LR_FC_3hr,MRC_NR_FC_3hr) %&gt;% 
+  dplyr::filter(ENTREZID%in%DOX_DEG_RNA_24h$ENTREZID) %&gt;% 
+  mutate(MRC=factor(MRC, levels = c(&quot;NR&quot;,&quot;EAR&quot;,&quot;ESR&quot;,&quot;LR&quot;))) %&gt;% 
+  ggplot(., aes(x=MRC,y=logFC.ATAC))+
+geom_boxplot(fill=fills)</code></pre>
+<p><img src="figure/ATAC_MRC_DAR_FC_RNA.Rmd/FC%20manip-10.png" width="672" style="display: block; margin: auto;" /></p>
+<p>Looking at FC correlation First with 24 hours, then filtering the set
+of logFC using the ENTREZID of the DEGs from DOX-24hr RNA.</p>
+<pre class="r"><code>## basically split the DAR/DEG lists into 3 and 24 hour 
+
+DOX_24_toplist_RNA &lt;- toplistall_RNA %&gt;% 
+  dplyr::filter(time ==&quot;24_hours&quot; &amp; id == &quot;DOX&quot;) #%&gt;% 
+  # dplyr::filter(adj.P.Val&lt;0.05)
+
+DOX_24_toplist_ATAC &lt;- toplist_full_ATAC$DOX_24
+
+### Then I joined the ATAC-FC and RNA_FC to the 20kb peaklist for each MRC
+
+MRC_EAR_FC_24h &lt;-  EAR_peak_list_20k %&gt;% 
+  left_join(., DOX_24_toplist_ATAC, by=c(&#39;peakid&#39;=&#39;peak&#39;)) %&gt;% 
+  left_join(., DOX_24_toplist_RNA, by=c(&quot;ENTREZID&quot;=&quot;ENTREZID&quot;),suffix=c(&quot;.ATAC&quot;,&quot;.RNA&quot;))%&gt;% 
+  na.omit()
+
+MRC_ESR_FC_24h &lt;- ESR_peak_list_20k %&gt;% 
+  left_join(., DOX_24_toplist_ATAC, by=c(&#39;peakid&#39;=&#39;peak&#39;)) %&gt;% 
+  left_join(., DOX_24_toplist_RNA, by=c(&quot;ENTREZID&quot;=&quot;ENTREZID&quot;),suffix=c(&quot;.ATAC&quot;,&quot;.RNA&quot;))%&gt;% 
+  na.omit()
+
+MRC_LR_FC_24h &lt;- LR_peak_list_20k %&gt;% 
+  left_join(., DOX_24_toplist_ATAC, by=c(&#39;peakid&#39;=&#39;peak&#39;)) %&gt;% 
+  left_join(., DOX_24_toplist_RNA, by=c(&quot;ENTREZID&quot;=&quot;ENTREZID&quot;),suffix=c(&quot;.ATAC&quot;,&quot;.RNA&quot;))%&gt;% 
+  na.omit()
+
+MRC_NR_FC_24h &lt;- NR_peak_list_20k %&gt;% 
+  left_join(., DOX_24_toplist_ATAC, by=c(&#39;peakid&#39;=&#39;peak&#39;)) %&gt;% 
+  left_join(., DOX_24_toplist_RNA, by=c(&quot;ENTREZID&quot;=&quot;ENTREZID&quot;),suffix=c(&quot;.ATAC&quot;,&quot;.RNA&quot;))%&gt;% 
+  na.omit()
+
+
+MRC_EAR_FC_24h %&gt;% 
+  ggplot(., aes(x=logFC.ATAC, y= logFC.RNA))+
+  geom_point()+
+  geom_smooth(method=&quot;lm&quot;)+
+  sm_statCorr(corr_method = &#39;pearson&#39;)+
+  ggtitle(&quot;EAR DOX-24h lfc ATAC within 20kb and DOX-24h lfc RNA&quot;)</code></pre>
+<p><img src="figure/ATAC_MRC_DAR_FC_RNA.Rmd/FC%2024%20hour%20manip-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>MRC_EAR_FC_24h %&gt;% 
+  dplyr::filter(ENTREZID%in%DOX_DEG_RNA_24h$ENTREZID) %&gt;% 
+  ggplot(., aes(x=logFC.ATAC, y= logFC.RNA))+
+  geom_point()+
+  geom_smooth(method=&quot;lm&quot;)+
+  sm_statCorr(corr_method = &#39;pearson&#39;)+
+  ggtitle(&quot;EAR DOXDEG24hr test-24 lfc ATAC within 20kb and DOX-24h lfc RNA&quot;)</code></pre>
+<p><img src="figure/ATAC_MRC_DAR_FC_RNA.Rmd/FC%2024%20hour%20manip-2.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>MRC_ESR_FC_24h %&gt;% 
+  ggplot(., aes(x=logFC.ATAC, y= logFC.RNA))+
+  geom_point()+
+  geom_smooth(method=&quot;lm&quot;)+
+  sm_statCorr(corr_method = &#39;pearson&#39;)+
+  ggtitle(&quot;ESR DOX-24h lfc ATAC within 20kb and DOX-24h lfc RNA&quot;)</code></pre>
+<p><img src="figure/ATAC_MRC_DAR_FC_RNA.Rmd/FC%2024%20hour%20manip-3.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>MRC_ESR_FC_24h %&gt;% 
+  dplyr::filter(ENTREZID%in%DOX_DEG_RNA_24h$ENTREZID) %&gt;% 
+  ggplot(., aes(x=logFC.ATAC, y= logFC.RNA))+
+  geom_point()+
+  geom_smooth(method=&quot;lm&quot;)+
+  sm_statCorr(corr_method = &#39;pearson&#39;)+
+  ggtitle(&quot;ESR with DOX24h filter DOX-24h lfc ATAC within 20kb and DOX-24h lfc RNA&quot;)</code></pre>
+<p><img src="figure/ATAC_MRC_DAR_FC_RNA.Rmd/FC%2024%20hour%20manip-4.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>MRC_LR_FC_24h %&gt;% 
+  ggplot(., aes(x=logFC.ATAC, y= logFC.RNA))+
+  geom_point()+
+  geom_smooth(method=&quot;lm&quot;)+
+  sm_statCorr(corr_method = &#39;pearson&#39;)+
+  ggtitle(&quot;LR DOX-24h lfc ATAC within 20kb and DOX-24h lfc RNA&quot;)</code></pre>
+<p><img src="figure/ATAC_MRC_DAR_FC_RNA.Rmd/FC%2024%20hour%20manip-5.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>MRC_LR_FC_24h %&gt;% 
+  dplyr::filter(ENTREZID%in%DOX_DEG_RNA_24h$ENTREZID) %&gt;% 
+  ggplot(., aes(x=logFC.ATAC, y= logFC.RNA))+
+  geom_point()+
+  geom_smooth(method=&quot;lm&quot;)+
+  sm_statCorr(corr_method = &#39;pearson&#39;)+
+  ggtitle(&quot;with DOX24h filter LR DOX-24h lfc ATAC within 20kb and DOX-24h lfc RNA&quot;)</code></pre>
+<p><img src="figure/ATAC_MRC_DAR_FC_RNA.Rmd/FC%2024%20hour%20manip-6.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>MRC_NR_FC_24h %&gt;% 
+  ggplot(., aes(x=logFC.ATAC, y= logFC.RNA))+
+  geom_point()+
+  geom_smooth(method=&quot;lm&quot;)+
+  sm_statCorr(corr_method = &#39;pearson&#39;)+
+  ggtitle(&quot;NR DOX-24h lfc ATAC within 20kb and DOX-24h lfc RNA&quot;)</code></pre>
+<p><img src="figure/ATAC_MRC_DAR_FC_RNA.Rmd/FC%2024%20hour%20manip-7.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>MRC_NR_FC_24h %&gt;% 
+  dplyr::filter(ENTREZID%in%DOX_DEG_RNA_24h$ENTREZID) %&gt;% 
+  ggplot(., aes(x=logFC.ATAC, y= logFC.RNA))+
+  geom_point()+
+  geom_smooth(method=&quot;lm&quot;)+
+  sm_statCorr(corr_method = &#39;pearson&#39;)+
+  ggtitle(&quot;with DOX24h filter NR DOX-24h lfc ATAC within 20kb and DOX-24h lfc RNA&quot;)</code></pre>
+<p><img src="figure/ATAC_MRC_DAR_FC_RNA.Rmd/FC%2024%20hour%20manip-8.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>rbind(MRC_EAR_FC_24h, MRC_ESR_FC_24h,MRC_LR_FC_24h,MRC_NR_FC_24h) %&gt;% 
+  mutate(MRC=factor(MRC, levels = c(&quot;NR&quot;,&quot;EAR&quot;,&quot;ESR&quot;,&quot;LR&quot;))) %&gt;% 
+  ggplot(., aes(x=MRC,y=logFC.ATAC))+
+geom_boxplot(fill=fills)</code></pre>
+<p><img src="figure/ATAC_MRC_DAR_FC_RNA.Rmd/FC%2024%20hour%20manip-9.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>rbind(MRC_EAR_FC_24h, MRC_ESR_FC_24h,MRC_LR_FC_24h,MRC_NR_FC_24h) %&gt;% 
+  dplyr::filter(ENTREZID%in%DOX_DEG_RNA_24h$ENTREZID) %&gt;% 
+  mutate(MRC=factor(MRC, levels = c(&quot;NR&quot;,&quot;EAR&quot;,&quot;ESR&quot;,&quot;LR&quot;))) %&gt;% 
+  ggplot(., aes(x=MRC,y=logFC.ATAC))+
+geom_boxplot(fill=fills)</code></pre>
+<p><img src="figure/ATAC_MRC_DAR_FC_RNA.Rmd/FC%2024%20hour%20manip-10.png" width="672" style="display: block; margin: auto;" />
+note: Splitting into near or far regions did not increase
+correlation</p>
+<pre class="r"><code># MRC_EAR_FC_3hr %&gt;% 
+#   mutate(location=if_else(dist_to_NG&lt;2000, &quot;near&quot;,&quot;far&quot;)) %&gt;% 
+#   mutate(location=factor(location, levels = c(&quot;near&quot;,&quot;far&quot;))) %&gt;% 
+#   ggplot(., aes(x=logFC.ATAC, y= logFC.RNA))+
+#   geom_point()+
+#   geom_smooth(method=&quot;lm&quot;)+
+#   sm_statCorr(corr_method = &#39;pearson&#39;)+
+#   facet_wrap(~location)+
+#   ggtitle(&quot;EAR 3 hour FC split between 0-2kb, and 2kb-20kb&quot;)
+# 
+# 
+# MRC_EAR_FC_24hr %&gt;% 
+#   mutate(location=if_else(dist_to_NG&lt;2000, &quot;near&quot;,&quot;far&quot;)) %&gt;% 
+#   mutate(location=factor(location, levels = c(&quot;near&quot;,&quot;far&quot;))) %&gt;% 
+#   ggplot(., aes(x=logFC.ATAC, y= logFC.RNA))+
+#   geom_point()+
+#   geom_smooth(method=&quot;lm&quot;)+
+#   sm_statCorr(corr_method = &#39;pearson&#39;)+
+#   facet_wrap(~location)+
+#   ggtitle(&quot;EAR 24 hour FC split between 0-2kb, and 2kb-20kb&quot;)</code></pre>
+<pre class="r"><code># MRC_ESR_FC_24hr %&gt;% 
+#   mutate(location=if_else(dist_to_NG&lt;2000, &quot;near&quot;,&quot;far&quot;)) %&gt;% 
+#   mutate(location=factor(location, levels = c(&quot;near&quot;,&quot;far&quot;))) %&gt;% 
+#   ggplot(., aes(x=logFC.ATAC, y= logFC.RNA))+
+#   geom_point()+
+#   geom_smooth(method=&quot;lm&quot;)+
+#   sm_statCorr(corr_method = &#39;pearson&#39;)+
+#   facet_wrap(~location)+
+#   ggtitle(&quot;ESR 24 hour FC split between 0-2kb, and 2kb-20kb&quot;)
+# 
+# 
+# MRC_ESR_FC_3hr %&gt;% 
+#   mutate(location=if_else(dist_to_NG&lt;2000, &quot;near&quot;,&quot;far&quot;)) %&gt;% 
+#   mutate(location=factor(location, levels = c(&quot;near&quot;,&quot;far&quot;))) %&gt;% 
+#   ggplot(., aes(x=logFC.ATAC, y= logFC.RNA))+
+#   geom_point()+
+#   geom_smooth(method=&quot;lm&quot;)+
+#   sm_statCorr(corr_method = &#39;pearson&#39;)+
+#   facet_wrap(~location)+
+#   ggtitle(&quot;ESR 3 hour FC split between 0-2kb, and 2kb-20kb&quot;)</code></pre>
+<pre class="r"><code># MRC_LR_FC_24hr %&gt;% 
+#   mutate(location=if_else(dist_to_NG&lt;2000, &quot;near&quot;,&quot;far&quot;)) %&gt;% 
+#   mutate(location=factor(location, levels = c(&quot;near&quot;,&quot;far&quot;))) %&gt;% 
+#   ggplot(., aes(x=logFC.ATAC, y= logFC.RNA))+
+#   geom_point()+
+#   geom_smooth(method=&quot;lm&quot;)+
+#   sm_statCorr(corr_method = &#39;pearson&#39;)+
+#   facet_wrap(~location)+
+#   ggtitle(&quot;LR 24 hour FC split between 0-2kb, and 2kb-20kb&quot;)
+# 
+# 
+# MRC_LR_FC_3hr %&gt;% 
+#   mutate(location=if_else(dist_to_NG&lt;2000, &quot;near&quot;,&quot;far&quot;)) %&gt;% 
+#   mutate(location=factor(location, levels = c(&quot;near&quot;,&quot;far&quot;))) %&gt;% 
+#   ggplot(., aes(x=logFC.ATAC, y= logFC.RNA))+
+#   geom_point()+
+#   geom_smooth(method=&quot;lm&quot;)+
+#   sm_statCorr(corr_method = &#39;pearson&#39;)+
+#   facet_wrap(~location)+
+#   ggtitle(&quot;LR 3 hour FC split between 0-2kb, and 2kb-20kb&quot;)</code></pre>
+<pre class="r"><code>MRC_NR_FC_24h %&gt;% 
+  mutate(location=if_else(dist_to_NG&lt;2000, &quot;near&quot;,&quot;far&quot;)) %&gt;% 
+  mutate(location=factor(location, levels = c(&quot;near&quot;,&quot;far&quot;))) %&gt;% 
+  ggplot(., aes(x=logFC.ATAC, y= logFC.RNA))+
+  geom_point()+
+  geom_smooth(method=&quot;lm&quot;)+
+  sm_statCorr(corr_method = &#39;pearson&#39;)+
+  facet_wrap(~location)+
+  ggtitle(&quot;NR 24 hour FC split between 0-2kb, and 2kb-20kb&quot;)</code></pre>
+<p><img src="figure/ATAC_MRC_DAR_FC_RNA.Rmd/splitting%20by%20region%20NR-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>MRC_NR_FC_3hr %&gt;% 
+  mutate(location=if_else(dist_to_NG&lt;2000, &quot;near&quot;,&quot;far&quot;)) %&gt;% 
+  mutate(location=factor(location, levels = c(&quot;near&quot;,&quot;far&quot;))) %&gt;% 
+  ggplot(., aes(x=logFC.ATAC, y= logFC.RNA))+
+  geom_point()+
+  geom_smooth(method=&quot;lm&quot;)+
+  sm_statCorr(corr_method = &#39;pearson&#39;)+
+  facet_wrap(~location)+
+  ggtitle(&quot;NR 3 hour FC split between 0-2kb, and 2kb-20kb&quot;)</code></pre>
+<p><img src="figure/ATAC_MRC_DAR_FC_RNA.Rmd/splitting%20by%20region%20NR-2.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code># full_join(., DOX_3_toplist_ATAC, by=c(&#39;peakid&#39;=&#39;peak&#39;)) %&gt;% left_join(., DOX_3_toplist_RNA, by=c(&quot;ENTREZID&quot;=&quot;ENTREZID&quot;),suffix=c(&quot;.ATAC&quot;,&quot;.RNA&quot;))
+
+toplist_full_ATAC %&gt;% 
+  bind_rows(.,.id = &quot;id&quot;) %&gt;% 
+  dplyr::filter(peak %in% EAR_peak_list_20k$peakid) %&gt;% 
+  left_join(., (EAR_peak_list_20k %&gt;% dplyr::select(peakid:dist_to_NG)), by = c(&quot;peak&quot;=&quot;peakid&quot;)) %&gt;% 
+  separate(., col =id, into= c(&quot;id&quot;, &quot;time&quot;), sep=&quot;_&quot;) %&gt;% 
+  mutate(time = paste0(time,&quot;_hours&quot;)) %&gt;% 
+    left_join(., toplistall_RNA,by=c(&quot;ENTREZID&quot;=&quot;ENTREZID&quot;, &quot;time&quot;=&quot;time&quot;, &quot;id&quot;=&quot;id&quot;),suffix=c(&quot;.ATAC&quot;,&quot;.RNA&quot;)) %&gt;% 
+  # dplyr::filter(adj.P.Val.RNA &lt; 0.05) %&gt;%
+  # na.omit(logFC.RNA) %&gt;% 
+  mutate(time=factor(time, levels =c(&quot;3_hours&quot;,&quot;24_hours&quot;)), id=factor(id, levels =c(&quot;DOX&quot;,&quot;EPI&quot;,&quot;DNR&quot;,&quot;MTX&quot;,&quot;TRZ&quot;))) %&gt;% 
+  ggplot(., aes(x=logFC.ATAC,y=logFC.RNA))+
+  geom_point()+
+  geom_smooth(method=&quot;lm&quot;)+
+  sm_statCorr(corr_method = &#39;pearson&#39;)+
+  facet_wrap(~time+id, nrow =2, ncol = 5)+
+  ggtitle(&quot;FC across time and treatment&quot;)</code></pre>
+<p><img src="figure/ATAC_MRC_DAR_FC_RNA.Rmd/full%20breakdown-1.png" width="672" style="display: block; margin: auto;" />
+### RNA and DOX ATAC 24h</p>
+<pre class="r"><code>toplist_n45 &lt;- readRDS(&quot;data/toplist_n45.RDS&quot;)
+
+drug_pal &lt;- c(&quot;#8B006D&quot;,&quot;#DF707E&quot;,&quot;#F1B72B&quot;, &quot;#3386DD&quot;,&quot;#707031&quot;,&quot;#41B333&quot;)
+
+#   geom_boxplot()+
+#   geom_signif(
+#     comparisons = list(c(&quot;resp&quot;, &quot;no_resp&quot;)),
+#     map_signif_level = FALSE) +
+#   facet_wrap(~time)+
+#   ggtitle(&quot;Response gene abs log FC&quot;)+
+#   scale_fill_manual(values = drug_pal)+
+#   theme_bw()+
+#   
+#   theme(plot.title = element_text(size = rel(1.5), hjust = 0.5),
+#         axis.title = element_text(size = 15, color = &quot;black&quot;),
+#         # axis.ticks = element_line(linewidth = 1.5),
+#         # axis.line = element_line(linewidth = 1.5),
+#         strip.background = element_rect(fill = &quot;transparent&quot;),
+#         # axis.text.x = element_blank(),
+#         strip.text.x = element_text(size = 12, color = &quot;black&quot;, face = &quot;bold&quot;))
+fills &lt;- c(&quot;#C77CFF&quot;,&quot;#F8766D&quot;,&quot;#7CAE00&quot;,  &quot;#00BFC4&quot; )
+
+RNA_MRC_ATAC_LFC &lt;- DOX_24_toplist_ATAC %&gt;% 
+  left_join(., (all_ng_peaks %&gt;% dplyr::select(peakid,ENTREZID,ensembl_id,SYMBOL,dist_to_NG)), by=c(&quot;peak&quot;=&quot;peakid&quot;) ) %&gt;% 
+  dplyr::filter(ENTREZID %in% EAR_RNA$ENTREZID) %&gt;% 
+  dplyr::select(peak,logFC,adj.P.Val,ENTREZID:dist_to_NG) %&gt;% 
+  mutate(mrc=&quot;EAR_RNA&quot;) %&gt;% 
+  rbind(DOX_24_toplist_ATAC %&gt;% 
+          left_join(., (all_ng_peaks %&gt;% dplyr::select(peakid,ENTREZID,ensembl_id,SYMBOL,dist_to_NG)), by=c(&quot;peak&quot;=&quot;peakid&quot;) ) %&gt;% 
+          dplyr::filter(ENTREZID %in% ESR_RNA$ENTREZID) %&gt;% 
+          dplyr::select(peak,logFC,adj.P.Val,ENTREZID:dist_to_NG) %&gt;% 
+          mutate(mrc=&quot;ESR_RNA&quot;)) %&gt;% 
+  rbind(DOX_24_toplist_ATAC %&gt;% 
+  left_join(., (all_ng_peaks %&gt;% dplyr::select(peakid,ENTREZID,ensembl_id,SYMBOL,dist_to_NG)), by=c(&quot;peak&quot;=&quot;peakid&quot;) ) %&gt;% 
+  dplyr::filter(ENTREZID %in% LR_RNA$ENTREZID) %&gt;% 
+  dplyr::select(peak,logFC,adj.P.Val,ENTREZID:dist_to_NG) %&gt;% 
+  mutate(mrc=&quot;LR_RNA&quot;)) %&gt;% 
+  rbind(DOX_24_toplist_ATAC %&gt;% 
+  left_join(., (all_ng_peaks %&gt;% dplyr::select(peakid,ENTREZID,ensembl_id,SYMBOL,dist_to_NG)), by=c(&quot;peak&quot;=&quot;peakid&quot;) ) %&gt;% 
+  dplyr::filter(ENTREZID %in% NR_RNA$ENTREZID) %&gt;% 
+  dplyr::select(peak,logFC,adj.P.Val,ENTREZID:dist_to_NG) %&gt;% 
+  mutate(mrc=&quot;NR_RNA&quot;))
+
+RNA_MRC_ATAC_LFC %&gt;% 
+  dplyr::filter(ENTREZID %in% DOX_DEG_RNA_24h$ENTREZID) %&gt;% 
+  mutate(mrc =factor(mrc, levels = c(&quot;NR_RNA&quot;,&quot;EAR_RNA&quot;,&quot;ESR_RNA&quot;,&quot;LR_RNA&quot;))) %&gt;% 
+  ggplot(.,aes(x= mrc,y =logFC))+
+  geom_boxplot(fill=fills)+
+  theme_bw()+
+  ggtitle(&quot;RNA DOX24-DEG with ATAC peak log fold change across RNA response groups&quot;)+
+  geom_signif(
+    comparisons = list(c(&quot;NR_RNA&quot;,&quot;EAR_RNA&quot;),
+                       c(&quot;NR_RNA&quot;,&quot;ESR_RNA&quot;),
+                       c(&quot;NR_RNA&quot;,&quot;LR_RNA&quot;)),
+    map_signif_level = FALSE,
+    y_position=c(4.5, 5, 5.5)) </code></pre>
+<p><img src="figure/ATAC_MRC_DAR_FC_RNA.Rmd/ATAC%2024%20FC%20at%20res%20RNA-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>RNA_MRC_ATAC_LFC %&gt;% 
+  dplyr::filter(ENTREZID %in% DOX_DEG_RNA_24h$ENTREZID) %&gt;% 
+  group_by(mrc) %&gt;% 
+  summarise(Median_LFC= median(logFC), mean_LFC= mean(logFC))</code></pre>
+<pre><code># A tibble: 4 × 3
+  mrc     Median_LFC mean_LFC
+  &lt;chr&gt;        &lt;dbl&gt;    &lt;dbl&gt;
+1 EAR_RNA    0.223     0.225 
+2 ESR_RNA    0.113     0.174 
+3 LR_RNA     0.0478    0.114 
+4 NR_RNA     0.00615   0.0822</code></pre>
+<div id="rna-and-dox-atac-3h" class="section level3">
+<h3>RNA and DOX ATAC 3h</h3>
+<pre class="r"><code>RNA_MRC_ATAC_LFC_3 &lt;- DOX_3_toplist_ATAC %&gt;% 
+  left_join(., (all_ng_peaks %&gt;% dplyr::select(peakid,ENTREZID,ensembl_id,SYMBOL,dist_to_NG)), by=c(&quot;peak&quot;=&quot;peakid&quot;) ) %&gt;% 
+  dplyr::filter(ENTREZID %in% EAR_RNA$ENTREZID) %&gt;% 
+  dplyr::select(peak,logFC,adj.P.Val,ENTREZID:dist_to_NG) %&gt;% 
+  mutate(mrc=&quot;EAR_RNA&quot;) %&gt;% 
+  rbind(DOX_3_toplist_ATAC %&gt;% 
+          left_join(., (all_ng_peaks %&gt;% dplyr::select(peakid,ENTREZID,ensembl_id,SYMBOL,dist_to_NG)), by=c(&quot;peak&quot;=&quot;peakid&quot;) ) %&gt;% 
+          dplyr::filter(ENTREZID %in% ESR_RNA$ENTREZID) %&gt;% 
+          dplyr::select(peak,logFC,adj.P.Val,ENTREZID:dist_to_NG) %&gt;% 
+          mutate(mrc=&quot;ESR_RNA&quot;)) %&gt;% 
+  rbind(DOX_3_toplist_ATAC %&gt;% 
+  left_join(., (all_ng_peaks %&gt;% dplyr::select(peakid,ENTREZID,ensembl_id,SYMBOL,dist_to_NG)), by=c(&quot;peak&quot;=&quot;peakid&quot;) ) %&gt;% 
+  dplyr::filter(ENTREZID %in% LR_RNA$ENTREZID) %&gt;% 
+  dplyr::select(peak,logFC,adj.P.Val,ENTREZID:dist_to_NG) %&gt;% 
+  mutate(mrc=&quot;LR_RNA&quot;)) %&gt;% 
+  rbind(DOX_3_toplist_ATAC %&gt;% 
+  left_join(., (all_ng_peaks %&gt;% dplyr::select(peakid,ENTREZID,ensembl_id,SYMBOL,dist_to_NG)), by=c(&quot;peak&quot;=&quot;peakid&quot;) ) %&gt;% 
+  dplyr::filter(ENTREZID %in% NR_RNA$ENTREZID) %&gt;% 
+  dplyr::select(peak,logFC,adj.P.Val,ENTREZID:dist_to_NG) %&gt;% 
+  mutate(mrc=&quot;NR_RNA&quot;))
+
+RNA_MRC_ATAC_LFC_3 %&gt;% 
+   dplyr::filter(ENTREZID %in% DOX_DEG_RNA_24h$ENTREZID) %&gt;% 
+  mutate(mrc =factor(mrc, levels = c(&quot;NR_RNA&quot;,&quot;EAR_RNA&quot;,&quot;ESR_RNA&quot;,&quot;LR_RNA&quot;))) %&gt;% 
+  ggplot(.,aes(x= mrc,y =logFC))+
+  geom_boxplot(fill=fills)+
+  theme_bw()+
+  ggtitle(&quot;DOX3 hour ATAC peak lfc associated with neargenes that are 24hr DEG in RNA&quot;)+
+  geom_signif(
+    comparisons = list(c(&quot;NR_RNA&quot;,&quot;EAR_RNA&quot;),
+                       c(&quot;NR_RNA&quot;,&quot;ESR_RNA&quot;),
+                       c(&quot;NR_RNA&quot;,&quot;LR_RNA&quot;)),
+    map_signif_level = FALSE,
+    y_position=c(3.5, 4, 4.5)) </code></pre>
+<p><img src="figure/ATAC_MRC_DAR_FC_RNA.Rmd/ATAC%203%20FC%20at%20res%20RNA-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>RNA_MRC_ATAC_LFC_3 %&gt;% 
+   dplyr::filter(ENTREZID %in% DOX_DEG_RNA_24h$ENTREZID) %&gt;% 
+  group_by(mrc) %&gt;% 
+  summarise(Median_LFC= median(logFC))</code></pre>
+<pre><code># A tibble: 4 × 2
+  mrc     Median_LFC
+  &lt;chr&gt;        &lt;dbl&gt;
+1 EAR_RNA    0.00376
+2 ESR_RNA    0.0307 
+3 LR_RNA    -0.00841
+4 NR_RNA    -0.00184</code></pre>
+</div>
+<div id="atac-dox-24-hr" class="section level3">
+<h3>ATAC DOX 24 hr</h3>
+<p>Starting with all DOX24 ATAC peaks at 24 hour, filtering by response
+membership</p>
+<pre class="r"><code># 
+ATAC_MRC_ATAC_LFC &lt;- DOX_24_toplist_ATAC %&gt;%
+  dplyr::filter(peak %in% EAR_peak_list_20k$peakid) %&gt;%
+  mutate(mrc=&quot;EAR_ATAC&quot;) %&gt;%
+  rbind(DOX_24_toplist_ATAC %&gt;% 
+          dplyr::filter(peak %in% ESR_peak_list_20k$peakid) %&gt;% 
+          mutate(mrc=&quot;ESR_ATAC&quot;))%&gt;% 
+  rbind(DOX_24_toplist_ATAC %&gt;% 
+          dplyr::filter(peak %in% LR_peak_list_20k$peakid) %&gt;%
+          mutate(mrc=&quot;LR_ATAC&quot;)) %&gt;% 
+  rbind(DOX_24_toplist_ATAC %&gt;% 
+          dplyr::filter(peak %in% NR_peak_list_20k$peakid) %&gt;% 
+          mutate(mrc=&quot;NR_ATAC&quot;))
+
+ATAC_MRC_ATAC_LFC %&gt;% 
+  mutate(mrc =factor(mrc, levels = c(&quot;NR_ATAC&quot;,&quot;EAR_ATAC&quot;,&quot;ESR_ATAC&quot;,&quot;LR_ATAC&quot;))) %&gt;% 
+  ggplot(.,aes(x= mrc,y =logFC))+
+  geom_boxplot(fill=fills)+
+  theme_bw()+
+  ggtitle(&quot;ATAC response peak logFC by ATAC signature&quot;)+
+   geom_signif(
+    comparisons = list(c(&quot;NR_ATAC&quot;,&quot;EAR_ATAC&quot;),
+                       c(&quot;NR_ATAC&quot;,&quot;ESR_ATAC&quot;),
+                       c(&quot;NR_ATAC&quot;,&quot;LR_ATAC&quot;)),
+    map_signif_level = FALSE,
+    y_position=c(3.5, 4, 4.5)) </code></pre>
+<p><img src="figure/ATAC_MRC_DAR_FC_RNA.Rmd/ATAC%20LFC%20across%2024%20mrc-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>ATAC_MRC_ATAC_LFC %&gt;% 
+  left_join(., (all_ng_peaks %&gt;%
+                  dplyr::select(peakid,ENTREZID,ensembl_id,SYMBOL,dist_to_NG)), by=c(&quot;peak&quot;=&quot;peakid&quot;) ) %&gt;%
+  dplyr::filter(ENTREZID %in% DOX_DEG_RNA_24h$ENTREZID) %&gt;% 
+  mutate(mrc =factor(mrc, levels = c(&quot;NR_ATAC&quot;,&quot;EAR_ATAC&quot;,&quot;ESR_ATAC&quot;,&quot;LR_ATAC&quot;))) %&gt;% 
+  ggplot(.,aes(x= mrc,y =logFC))+
+  geom_boxplot(fill=fills)+
+  theme_bw()+
+  ggtitle(&quot;ATAC logFC across ATAC-response clusters with peaks filtered by \nneargene that is  DOX24hr DEGs&quot;)+
+  geom_signif(
+    comparisons = list(c(&quot;NR_ATAC&quot;,&quot;EAR_ATAC&quot;),
+                       c(&quot;NR_ATAC&quot;,&quot;ESR_ATAC&quot;),
+                       c(&quot;NR_ATAC&quot;,&quot;LR_ATAC&quot;)),
+    map_signif_level = FALSE,
+    y_position=c(3.5, 4, 4.5)) </code></pre>
+<p><img src="figure/ATAC_MRC_DAR_FC_RNA.Rmd/ATAC%20LFC%20across%2024%20mrc-2.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>ATAC_MRC_ATAC_LFC %&gt;% 
+  group_by(mrc) %&gt;% 
+  summarise(Median_LFC= median(logFC))</code></pre>
+<pre><code># A tibble: 4 × 2
+  mrc      Median_LFC
+  &lt;chr&gt;         &lt;dbl&gt;
+1 EAR_ATAC     0.0725
+2 ESR_ATAC    -0.787 
+3 LR_ATAC      1.04  
+4 NR_ATAC     -0.0386</code></pre>
+<pre class="r"><code>ATAC_MRC_ATAC_LFC %&gt;% 
+  left_join(., (all_ng_peaks %&gt;%
+                  dplyr::select(peakid,ENTREZID,ensembl_id,SYMBOL,dist_to_NG)), by=c(&quot;peak&quot;=&quot;peakid&quot;) ) %&gt;%
+  dplyr::filter(ENTREZID %in% DOX_DEG_RNA_24h$ENTREZID) %&gt;% 
+  group_by(mrc) %&gt;% 
+  summarise(Median_LFC= median(logFC))</code></pre>
+<pre><code># A tibble: 4 × 2
+  mrc      Median_LFC
+  &lt;chr&gt;         &lt;dbl&gt;
+1 EAR_ATAC     0.0753
+2 ESR_ATAC    -0.787 
+3 LR_ATAC      1.02  
+4 NR_ATAC     -0.0428</code></pre>
+</div>
+<div id="atac-dox-3-hr" class="section level3">
+<h3>ATAC DOX 3 hr</h3>
+<p>did not run</p>
+</div>
+<div
+id="dox-deg-response-genes-at-24-hours-and-atac-lfc-of-near-gene-related-peaks"
+class="section level3">
+<h3>DOX DEG response genes at 24 hours and ATAC LFC of near-gene related
+peaks</h3>
+<p>This is pretty much the same as above, however I do not filter peaks
+based on distance to near-gene to see if there was much change in the
+accessibility across response groups in the DOX24hr treatments. I then
+exclude peaks by their near-gene’s status of being a DOX DEG 24hr
+gene.</p>
+<pre class="r"><code>### list of DOX24 and DOX3 DEGs in EAR
+# toplistall_RNA %&gt;% 
+#   dplyr::filter(id==&quot;DOX&quot;) %&gt;% 
+#   dplyr::filter(ENTREZID %in% EAR_RNA$ENTREZID) %&gt;% 
+#   dplyr::filter(adj.P.Val&lt;0.5)
+# ### list of DOX24 and DOX3 DEGs in ESR
+# toplistall_RNA %&gt;% 
+#   dplyr::filter(id==&quot;DOX&quot;) %&gt;% 
+#   dplyr::filter(ENTREZID %in% ESR_RNA$ENTREZID) %&gt;% 
+#   dplyr::filter(adj.P.Val&lt;0.5)
+# ### list of DOX24 and DOX3 DEGs in LR
+# toplistall_RNA %&gt;% 
+#   dplyr::filter(id==&quot;DOX&quot;) %&gt;% 
+#   dplyr::filter(ENTREZID %in% LR_RNA$ENTREZID) %&gt;% 
+#   dplyr::filter(adj.P.Val&lt;0.5)
+# ### list of DOX24 and DOX3 DEGs in NR
+# toplistall_RNA %&gt;% 
+#   dplyr::filter(id==&quot;DOX&quot;) %&gt;% 
+#   dplyr::filter(ENTREZID %in% NR_RNA$ENTREZID) %&gt;% 
+#   dplyr::filter(adj.P.Val&lt;0.5)
+fills &lt;- c(&quot;#C77CFF&quot;,&quot;#F8766D&quot;,&quot;#7CAE00&quot;,  &quot;#00BFC4&quot; )
+### ATAC list to join the others to
+full_ATAC_FC &lt;- toplist_full_ATAC$DOX_24 %&gt;%
+  left_join(., (exp_neargene_table %&gt;%
+                  dplyr::select(peakid,ENTREZID,ensembl_id,SYMBOL,dist_to_NG)), by=c(&quot;peak&quot;=&quot;peakid&quot;) ) %&gt;%
+  mutate(mrc= if_else(ENTREZID %in% EAR_RNA$ENTREZID, &quot;EAR&quot;, 
+                      if_else(ENTREZID %in% ESR_RNA$ENTREZID, &quot;ESR&quot;, 
+                              if_else(ENTREZID %in% LR_RNA$ENTREZID, &quot;LR&quot;,
+                                      if_else(ENTREZID %in% NR_RNA$ENTREZID, &quot;NR&quot;,&quot;not-mrc&quot;))))) %&gt;% 
+  dplyr::filter(mrc != &quot;not-mrc&quot;) %&gt;% 
+  mutate(mrc=factor(mrc, levels = c(&quot;NR&quot;,&quot;EAR&quot;,&quot;ESR&quot;,&quot;LR&quot;)))
+
+
+
+full_ATAC_FC %&gt;% 
+  dplyr::filter(ENTREZID %in% DOX_DEG_RNA_24h$ENTREZID) %&gt;% 
+  ggplot(.,aes(x= mrc,y =logFC))+
+  geom_boxplot(fill=fills)+
+  theme_bw()+
+  ggtitle(&quot;DOX24hr lfc of peaks with neargenes that are\n DOX24-DEG at all distances from near gene&quot;)+
+  geom_signif(
+    comparisons = list(c(&quot;NR&quot;,&quot;EAR&quot;),
+                       c(&quot;NR&quot;,&quot;ESR&quot;),
+                       c(&quot;NR&quot;,&quot;LR&quot;)),
+    map_signif_level = FALSE,
+    y_position=c(3.5, 4, 4.5))  +
+  xlab(&quot;using RNA-response associated neargenes to sort peak&quot;)</code></pre>
+<p><img src="figure/ATAC_MRC_DAR_FC_RNA.Rmd/DOX24%20DEG%20resp%20genes-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>full_ATAC_FC %&gt;%
+  dplyr::filter(ENTREZID %in% DOX_DEG_RNA_24h$ENTREZID) %&gt;% 
+group_by(mrc) %&gt;% 
+  summarise(Median_LFC= median(logFC), hyper =sum(logFC&gt;0), hypo = sum(logFC&lt;0)) %&gt;% 
+  kable(.,caption=&quot;DOX24 median LFC and counts of hyper and hypo accesibility&quot;) %&gt;% 
+  kable_paper(&quot;striped&quot;, full_width = TRUE) %&gt;%
+  kable_styling(full_width = FALSE, font_size = 16) %&gt;%
+  scroll_box(height = &quot;500px&quot;)</code></pre>
+<div
+style="border: 1px solid #ddd; padding: 0px; overflow-y: scroll; height:500px; ">
+<table class=" lightable-paper lightable-striped table" style="font-family: &quot;Arial Narrow&quot;, arial, helvetica, sans-serif; margin-left: auto; margin-right: auto; font-size: 16px; width: auto !important; margin-left: auto; margin-right: auto;">
+<caption style="font-size: initial !important;">
+DOX24 median LFC and counts of hyper and hypo accesibility
+</caption>
+<thead>
+<tr>
+<th style="text-align:left;position: sticky; top:0; background-color: #FFFFFF;">
+mrc
+</th>
+<th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;">
+Median_LFC
+</th>
+<th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;">
+hyper
+</th>
+<th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;">
+hypo
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+NR
+</td>
+<td style="text-align:right;">
+0.0299955
+</td>
+<td style="text-align:right;">
+4186
+</td>
+<td style="text-align:right;">
+3979
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+EAR
+</td>
+<td style="text-align:right;">
+0.2080582
+</td>
+<td style="text-align:right;">
+485
+</td>
+<td style="text-align:right;">
+369
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+ESR
+</td>
+<td style="text-align:right;">
+0.1058357
+</td>
+<td style="text-align:right;">
+3530
+</td>
+<td style="text-align:right;">
+2933
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+LR
+</td>
+<td style="text-align:right;">
+0.0583179
+</td>
+<td style="text-align:right;">
+30115
+</td>
+<td style="text-align:right;">
+27376
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<pre class="r"><code>full_ATAC_FC %&gt;%
+  dplyr::filter(ENTREZID %in% DOX_DEG_RNA_24h$ENTREZID) %&gt;% 
+  dplyr::filter(dist_to_NG &lt;20000 &amp; dist_to_NG&gt;=0) %&gt;% 
+  ggplot(.,aes(x= mrc,y =logFC))+
+  geom_boxplot(fill=fills)+
+  theme_bw()+
+  ggtitle(&quot;DOX24hr lfc of peaks with neargenes that are\n within 20kb to nearest RNA-DEG&quot;)+
+geom_signif(
+    comparisons = list(c(&quot;NR&quot;,&quot;EAR&quot;),
+                       c(&quot;NR&quot;,&quot;ESR&quot;),
+                       c(&quot;NR&quot;,&quot;LR&quot;)),
+    map_signif_level = FALSE,
+    y_position=c(3.5, 4, 4.5)) +
+  xlab(&quot;using RNA-response associated neargenes to sort peak&quot;)</code></pre>
+<p><img src="figure/ATAC_MRC_DAR_FC_RNA.Rmd/DOX24%20DEG%20resp%20genes-2.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>full_ATAC_FC %&gt;%
+  dplyr::filter(ENTREZID %in% DOX_DEG_RNA_24h$ENTREZID) %&gt;% 
+   dplyr::filter(dist_to_NG &lt;20000 &amp; dist_to_NG&gt;=0) %&gt;% 
+   dplyr::filter(ENTREZID %in% DOX_DEG_RNA_24h$ENTREZID) %&gt;%
+group_by(mrc) %&gt;% 
+  summarise(Median_LFC= median(logFC), hyper =sum(logFC&gt;0), hypo = sum(logFC&lt;0)) %&gt;% 
+  kable(.,caption=&quot;DOX24 DAR median LFC and counts of hyper and hypo accesibility withpeaks within 20kb of neargene&quot;) %&gt;% 
+  kable_paper(&quot;striped&quot;, full_width = TRUE) %&gt;%
+  kable_styling(full_width = FALSE, font_size = 16) %&gt;%
+  scroll_box(height = &quot;500px&quot;)</code></pre>
+<div
+style="border: 1px solid #ddd; padding: 0px; overflow-y: scroll; height:500px; ">
+<table class=" lightable-paper lightable-striped table" style="font-family: &quot;Arial Narrow&quot;, arial, helvetica, sans-serif; margin-left: auto; margin-right: auto; font-size: 16px; width: auto !important; margin-left: auto; margin-right: auto;">
+<caption style="font-size: initial !important;">
+DOX24 DAR median LFC and counts of hyper and hypo accesibility withpeaks
+within 20kb of neargene
+</caption>
+<thead>
+<tr>
+<th style="text-align:left;position: sticky; top:0; background-color: #FFFFFF;">
+mrc
+</th>
+<th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;">
+Median_LFC
+</th>
+<th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;">
+hyper
+</th>
+<th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;">
+hypo
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+NR
+</td>
+<td style="text-align:right;">
+0.0061510
+</td>
+<td style="text-align:right;">
+2672
+</td>
+<td style="text-align:right;">
+2630
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+EAR
+</td>
+<td style="text-align:right;">
+0.2227613
+</td>
+<td style="text-align:right;">
+343
+</td>
+<td style="text-align:right;">
+246
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+ESR
+</td>
+<td style="text-align:right;">
+0.1132719
+</td>
+<td style="text-align:right;">
+2173
+</td>
+<td style="text-align:right;">
+1736
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+LR
+</td>
+<td style="text-align:right;">
+0.0477682
+</td>
+<td style="text-align:right;">
+19107
+</td>
+<td style="text-align:right;">
+17542
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<pre class="r"><code># 
+# exp_neargene_table %&gt;%  
+#   dplyr::filter(ENTREZID %in% DOX_DEG_RNA_24h$ENTREZID) %&gt;% 
+#   summarise(total=sum(dist_to_NG&gt;20000))</code></pre>
+<br>
+<p>
+<button type="button" class="btn btn-default btn-workflowr btn-workflowr-sessioninfo" data-toggle="collapse" data-target="#workflowr-sessioninfo" style="display: block;">
+<span class="glyphicon glyphicon-wrench" aria-hidden="true"></span>
+Session information
+</button>
+</p>
+<div id="workflowr-sessioninfo" class="collapse">
+<pre class="r"><code>sessionInfo()</code></pre>
+<pre><code>R version 4.3.1 (2023-06-16 ucrt)
+Platform: x86_64-w64-mingw32/x64 (64-bit)
+Running under: Windows 10 x64 (build 19045)
+
+Matrix products: default
+
+
+locale:
+[1] LC_COLLATE=English_United States.utf8 
+[2] LC_CTYPE=English_United States.utf8   
+[3] LC_MONETARY=English_United States.utf8
+[4] LC_NUMERIC=C                          
+[5] LC_TIME=English_United States.utf8    
+
+time zone: America/Chicago
+tzcode source: internal
+
+attached base packages:
+[1] grid      stats4    stats     graphics  grDevices utils     datasets 
+[8] methods   base     
+
+other attached packages:
+ [1] ggsignif_0.6.4                          
+ [2] genomation_1.34.0                       
+ [3] smplot2_0.2.3                           
+ [4] eulerr_7.0.2                            
+ [5] biomaRt_2.58.2                          
+ [6] bedr_1.0.7                              
+ [7] devtools_2.4.5                          
+ [8] usethis_2.2.3                           
+ [9] ggpubr_0.6.0                            
+[10] BiocParallel_1.36.0                     
+[11] Cormotif_1.48.0                         
+[12] affy_1.80.0                             
+[13] scales_1.3.0                            
+[14] VennDiagram_1.7.3                       
+[15] futile.logger_1.4.3                     
+[16] gridExtra_2.3                           
+[17] ggfortify_0.4.17                        
+[18] edgeR_4.0.16                            
+[19] limma_3.58.1                            
+[20] rtracklayer_1.62.0                      
+[21] org.Hs.eg.db_3.18.0                     
+[22] TxDb.Hsapiens.UCSC.hg38.knownGene_3.18.0
+[23] GenomicFeatures_1.54.4                  
+[24] AnnotationDbi_1.64.1                    
+[25] Biobase_2.62.0                          
+[26] GenomicRanges_1.54.1                    
+[27] GenomeInfoDb_1.38.8                     
+[28] IRanges_2.36.0                          
+[29] S4Vectors_0.40.2                        
+[30] BiocGenerics_0.48.1                     
+[31] ChIPseeker_1.38.0                       
+[32] RColorBrewer_1.1-3                      
+[33] broom_1.0.6                             
+[34] kableExtra_1.4.0                        
+[35] lubridate_1.9.3                         
+[36] forcats_1.0.0                           
+[37] stringr_1.5.1                           
+[38] dplyr_1.1.4                             
+[39] purrr_1.0.2                             
+[40] readr_2.1.5                             
+[41] tidyr_1.3.1                             
+[42] tibble_3.2.1                            
+[43] ggplot2_3.5.1                           
+[44] tidyverse_2.0.0                         
+[45] workflowr_1.7.1                         
+
+loaded via a namespace (and not attached):
+  [1] R.methodsS3_1.8.2                      
+  [2] vroom_1.6.5                            
+  [3] progress_1.2.3                         
+  [4] urlchecker_1.0.1                       
+  [5] nnet_7.3-19                            
+  [6] Biostrings_2.70.3                      
+  [7] vctrs_0.6.5                            
+  [8] digest_0.6.35                          
+  [9] png_0.1-8                              
+ [10] git2r_0.33.0                           
+ [11] ggrepel_0.9.5                          
+ [12] MASS_7.3-60.0.1                        
+ [13] reshape2_1.4.4                         
+ [14] httpuv_1.6.15                          
+ [15] qvalue_2.34.0                          
+ [16] withr_3.0.0                            
+ [17] xfun_0.44                              
+ [18] ggfun_0.1.5                            
+ [19] ellipsis_0.3.2                         
+ [20] memoise_2.0.1                          
+ [21] profvis_0.3.8                          
+ [22] systemfonts_1.1.0                      
+ [23] tidytree_0.4.6                         
+ [24] zoo_1.8-12                             
+ [25] gtools_3.9.5                           
+ [26] R.oo_1.26.0                            
+ [27] Formula_1.2-5                          
+ [28] prettyunits_1.2.0                      
+ [29] KEGGREST_1.42.0                        
+ [30] promises_1.3.0                         
+ [31] httr_1.4.7                             
+ [32] rstatix_0.7.2                          
+ [33] restfulr_0.0.15                        
+ [34] ps_1.7.6                               
+ [35] rstudioapi_0.16.0                      
+ [36] miniUI_0.1.1.1                         
+ [37] generics_0.1.3                         
+ [38] DOSE_3.28.2                            
+ [39] base64enc_0.1-3                        
+ [40] processx_3.8.4                         
+ [41] curl_5.2.1                             
+ [42] zlibbioc_1.48.2                        
+ [43] ggraph_2.2.1                           
+ [44] polylabelr_0.2.0                       
+ [45] polyclip_1.10-6                        
+ [46] GenomeInfoDbData_1.2.11                
+ [47] SparseArray_1.2.4                      
+ [48] interactiveDisplayBase_1.40.0          
+ [49] xtable_1.8-4                           
+ [50] evaluate_0.23                          
+ [51] S4Arrays_1.2.1                         
+ [52] BiocFileCache_2.10.2                   
+ [53] preprocessCore_1.64.0                  
+ [54] hms_1.1.3                              
+ [55] colorspace_2.1-0                       
+ [56] filelock_1.0.3                         
+ [57] magrittr_2.0.3                         
+ [58] later_1.3.2                            
+ [59] viridis_0.6.5                          
+ [60] ggtree_3.10.1                          
+ [61] lattice_0.22-6                         
+ [62] getPass_0.2-4                          
+ [63] XML_3.99-0.16.1                        
+ [64] shadowtext_0.1.3                       
+ [65] cowplot_1.1.3                          
+ [66] matrixStats_1.3.0                      
+ [67] Hmisc_5.1-3                            
+ [68] pillar_1.9.0                           
+ [69] nlme_3.1-164                           
+ [70] gridBase_0.4-7                         
+ [71] caTools_1.18.2                         
+ [72] compiler_4.3.1                         
+ [73] stringi_1.8.4                          
+ [74] SummarizedExperiment_1.32.0            
+ [75] GenomicAlignments_1.38.2               
+ [76] plyr_1.8.9                             
+ [77] crayon_1.5.2                           
+ [78] abind_1.4-5                            
+ [79] BiocIO_1.12.0                          
+ [80] gridGraphics_0.5-1                     
+ [81] locfit_1.5-9.9                         
+ [82] graphlayouts_1.1.1                     
+ [83] bit_4.0.5                              
+ [84] fastmatch_1.1-4                        
+ [85] whisker_0.4.1                          
+ [86] codetools_0.2-20                       
+ [87] bslib_0.7.0                            
+ [88] TxDb.Hsapiens.UCSC.hg19.knownGene_3.2.2
+ [89] mime_0.12                              
+ [90] splines_4.3.1                          
+ [91] Rcpp_1.0.12                            
+ [92] dbplyr_2.5.0                           
+ [93] HDO.db_0.99.1                          
+ [94] knitr_1.47                             
+ [95] blob_1.2.4                             
+ [96] utf8_1.2.4                             
+ [97] BiocVersion_3.18.1                     
+ [98] fs_1.6.4                               
+ [99] checkmate_2.3.1                        
+[100] pkgbuild_1.4.4                         
+[101] ggplotify_0.1.2                        
+[102] Matrix_1.6-5                           
+[103] callr_3.7.6                            
+[104] statmod_1.5.0                          
+[105] tzdb_0.4.0                             
+[106] svglite_2.1.3                          
+[107] tweenr_2.0.3                           
+[108] pkgconfig_2.0.3                        
+[109] tools_4.3.1                            
+[110] cachem_1.1.0                           
+[111] RSQLite_2.3.7                          
+[112] viridisLite_0.4.2                      
+[113] DBI_1.2.3                              
+[114] impute_1.76.0                          
+[115] fastmap_1.2.0                          
+[116] rmarkdown_2.27                         
+[117] Rsamtools_2.18.0                       
+[118] AnnotationHub_3.10.1                   
+[119] sass_0.4.9                             
+[120] patchwork_1.2.0                        
+[121] BiocManager_1.30.23                    
+[122] carData_3.0-5                          
+[123] rpart_4.1.23                           
+[124] farver_2.1.2                           
+[125] mgcv_1.9-1                             
+[126] tidygraph_1.3.1                        
+[127] scatterpie_0.2.2                       
+[128] yaml_2.3.8                             
+[129] MatrixGenerics_1.14.0                  
+[130] foreign_0.8-86                         
+[131] cli_3.6.2                              
+[132] lifecycle_1.0.4                        
+[133] lambda.r_1.2.4                         
+[134] sessioninfo_1.2.2                      
+[135] backports_1.5.0                        
+[136] timechange_0.3.0                       
+[137] gtable_0.3.5                           
+[138] rjson_0.2.21                           
+[139] parallel_4.3.1                         
+[140] ape_5.8                                
+[141] testthat_3.2.1.1                       
+[142] jsonlite_1.8.8                         
+[143] bitops_1.0-7                           
+[144] bit64_4.0.5                            
+[145] pwr_1.3-0                              
+[146] brio_1.1.5                             
+[147] yulab.utils_0.1.4                      
+[148] futile.options_1.0.1                   
+[149] highr_0.11                             
+[150] jquerylib_0.1.4                        
+[151] GOSemSim_2.28.1                        
+[152] R.utils_2.12.3                         
+[153] lazyeval_0.2.2                         
+[154] shiny_1.8.1.1                          
+[155] htmltools_0.5.8.1                      
+[156] enrichplot_1.22.0                      
+[157] GO.db_3.18.0                           
+[158] rappdirs_0.3.3                         
+[159] formatR_1.14                           
+[160] glue_1.7.0                             
+[161] XVector_0.42.0                         
+[162] RCurl_1.98-1.14                        
+[163] rprojroot_2.0.4                        
+[164] treeio_1.26.0                          
+[165] BSgenome_1.70.2                        
+[166] boot_1.3-30                            
+[167] igraph_2.0.3                           
+[168] R6_2.5.1                               
+[169] gplots_3.1.3.1                         
+[170] labeling_0.4.3                         
+[171] cluster_2.1.6                          
+[172] pkgload_1.3.4                          
+[173] aplot_0.2.2                            
+[174] DelayedArray_0.28.0                    
+[175] tidyselect_1.2.1                       
+[176] plotrix_3.8-4                          
+[177] htmlTable_2.4.2                        
+[178] ggforce_0.4.2                          
+[179] xml2_1.3.6                             
+[180] car_3.1-2                              
+[181] seqPattern_1.34.0                      
+[182] munsell_0.5.1                          
+[183] KernSmooth_2.23-24                     
+[184] affyio_1.72.0                          
+[185] data.table_1.15.4                      
+[186] htmlwidgets_1.6.4                      
+[187] fgsea_1.28.0                           
+[188] rlang_1.1.3                            
+[189] remotes_2.5.0                          
+[190] fansi_1.0.6                            </code></pre>
+</div>
+</div>
+</div>
+
+
+<!-- Adjust MathJax settings so that all math formulae are shown using
+TeX fonts only; see
+https://docs.mathjax.org/en/latest/web/configuration.html. This will make
+the presentation more consistent at the cost of the webpage sometimes
+taking slightly longer to load. Note that this only works because the
+footer is added to webpages before the MathJax javascript. -->
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    "HTML-CSS": { availableFonts: ["TeX"] }
+  });
+</script>
+
+
+
+
+</div>
+</div>
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+function bootstrapStylePandocTables() {
+  $('tr.odd').parent('tbody').parent('table').addClass('table table-condensed');
+}
+$(document).ready(function () {
+  bootstrapStylePandocTables();
+});
+
+
+</script>
+
+<!-- tabsets -->
+
+<script>
+$(document).ready(function () {
+  window.buildTabsets("TOC");
+});
+
+$(document).ready(function () {
+  $('.tabset-dropdown > .nav-tabs > li').click(function () {
+    $(this).parent().toggleClass('nav-tabs-open');
+  });
+});
+</script>
+
+<!-- code folding -->
+
+<script>
+$(document).ready(function ()  {
+
+    // temporarily add toc-ignore selector to headers for the consistency with Pandoc
+    $('.unlisted.unnumbered').addClass('toc-ignore')
+
+    // move toc-ignore selectors from section div to header
+    $('div.section.toc-ignore')
+        .removeClass('toc-ignore')
+        .children('h1,h2,h3,h4,h5').addClass('toc-ignore');
+
+    // establish options
+    var options = {
+      selectors: "h1,h2,h3",
+      theme: "bootstrap3",
+      context: '.toc-content',
+      hashGenerator: function (text) {
+        return text.replace(/[.\\/?&!#<>]/g, '').replace(/\s/g, '_');
+      },
+      ignoreSelector: ".toc-ignore",
+      scrollTo: 0
+    };
+    options.showAndHide = true;
+    options.smoothScroll = true;
+
+    // tocify
+    var toc = $("#TOC").tocify(options).data("toc-tocify");
+});
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
