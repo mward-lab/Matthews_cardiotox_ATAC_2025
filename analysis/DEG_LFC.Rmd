@@ -1,0 +1,784 @@
+---
+title: "DEG_LFC"
+author: "ERM"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE,
+	warning = FALSE
+)
+```
+
+```{css, echo=FALSE}
+pre {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+pre[class] {
+  max-height: 200px;
+}
+```
+
+```{r package loading, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(ggsignif)
+# library(cowplot)
+# library(ggpubr)
+
+# library(sjmisc)
+library(kableExtra)
+library(broom)
+# library(biomaRt)
+library(RColorBrewer)
+# library(gprofiler2)
+# library(qvalue)
+library(ChIPseeker)
+library("TxDb.Hsapiens.UCSC.hg38.knownGene")
+library("org.Hs.eg.db")
+# library(ATACseqQC)
+library(rtracklayer)
+library(edgeR)
+library(ggfortify)
+library(limma)
+library(readr)
+library(BiocGenerics)
+library(gridExtra)
+library(VennDiagram)
+library(scales)
+# library(ggVennDiagram)
+library(Cormotif)
+library(BiocParallel)
+library(ggpubr)
+library(devtools)
+# install_github('davetang/bedr')
+library(bedr)
+# library(JASPAR2022)
+# library(TFBSTools)
+# library(MotifDb)
+library(BSgenome.Hsapiens.UCSC.hg38)
+library(plyranges)
+library(genomation)
+library(smplot2)
+
+```
+
+
+Data files to load
+
+```{r Fileloading}
+toplist_ATAC <- readRDS("data/toplist_n45.RDS")
+toplistall_RNA <- readRDS("data/other_papers/toplistall_RNA.RDS") 
+toplistall_RNA <- toplistall_RNA %>% 
+  mutate(logFC = logFC*(-1))
+
+toplist_full_n45 <- readRDS("data/DEG_toplist_sep_n45.RDS")
+
+
+DOX_24_toplist_RNA <- toplistall_RNA %>% 
+  dplyr::filter(time =="24_hours" & id == "DOX")
+
+DOX_3_toplist_RNA <- toplistall_RNA %>% 
+  dplyr::filter(time =="3_hours" & id == "DOX")
+
+DOX_24_toplist_ATAC <- toplist_ATAC %>% 
+  dplyr::filter(time =="24 hours" & trt == "DOX")
+
+DOX_3_toplist_ATAC <- toplist_ATAC %>% 
+  dplyr::filter(time =="3 hours" & trt == "DOX")
+
+EPI_24_toplist_RNA <- toplistall_RNA %>% 
+  dplyr::filter(time =="24_hours" & id == "EPI")
+
+EPI_3_toplist_RNA <- toplistall_RNA %>% 
+  dplyr::filter(time =="3_hours" & id == "EPI")
+
+EPI_24_toplist_ATAC <- toplist_ATAC %>% 
+  dplyr::filter(time =="24 hours" & trt == "EPI")
+
+EPI_3_toplist_ATAC <- toplist_ATAC %>% 
+  dplyr::filter(time =="3 hours" & trt == "EPI")
+
+DNR_24_toplist_RNA <- toplistall_RNA %>% 
+  dplyr::filter(time =="24_hours" & id == "DNR")
+
+DNR_3_toplist_RNA <- toplistall_RNA %>% 
+  dplyr::filter(time =="3_hours" & id == "DNR")
+
+DNR_24_toplist_ATAC <- toplist_ATAC %>% 
+  dplyr::filter(time =="24 hours" & trt == "DNR")
+
+DNR_3_toplist_ATAC <- toplist_ATAC %>% 
+  dplyr::filter(time =="3 hours" & trt == "DNR")
+
+MTX_24_toplist_RNA <- toplistall_RNA %>% 
+  dplyr::filter(time =="24_hours" & id == "MTX")
+
+MTX_3_toplist_RNA <- toplistall_RNA %>% 
+  dplyr::filter(time =="3_hours" & id == "MTX")
+
+MTX_24_toplist_ATAC <- toplist_ATAC %>% 
+  dplyr::filter(time =="24 hours" & trt == "MTX")
+
+MTX_3_toplist_ATAC <- toplist_ATAC %>% 
+  dplyr::filter(time =="3 hours" & trt == "MTX")
+
+TRZ_24_toplist_RNA <- toplistall_RNA %>% 
+  dplyr::filter(time =="24_hours" & id == "TRZ")
+
+TRZ_3_toplist_RNA <- toplistall_RNA %>% 
+  dplyr::filter(time =="3_hours" & id == "TRZ")
+
+TRZ_24_toplist_ATAC <- toplist_ATAC %>% 
+  dplyr::filter(time =="24 hours" & trt == "TRZ")
+
+TRZ_3_toplist_ATAC <- toplist_ATAC %>% 
+  dplyr::filter(time =="3 hours" & trt == "TRZ")
+
+
+
+exp_neargene_table <- read_delim("data/n45_bedfiles/exp_neargene_table.tsv", 
+    delim = "\t", escape_double = FALSE, 
+    trim_ws = TRUE)
+
+
+# toplist_full_ATAC <- readRDS("data/DEG_toplist_sep_n45.RDS")
+
+# n45_fullpeaks_gr <- readBed("data/n45_bedfiles/DAR_DEG_background.bed")
+background_n45 <- as.data.frame(genomation::readBed("data/n45_bedfiles/DAR_DEG_background.bed"))
+peakAnnoList_3_n45 <- readRDS("data/peakAnnoList_3_n45.RDS")
+peakAnnoList_24_n45<- readRDS("data/peakAnnoList_24_n45.RDS")
+# DOX_tss_24h <- as.data.frame(peakAnnoList_24_n45$DOX_24_n45) 
+# DOX_tss_3h <- as.data.frame(peakAnnoList_3_n45$DOX_3_n45) 
+
+Allpeaks_anno <- as.data.frame(peakAnnoList_24_n45$background)
+
+DOX_DEG_RNA_24h <- toplistall_RNA %>% 
+  dplyr::filter(time =="24_hours" & id == "DOX") %>% 
+  dplyr::filter(adj.P.Val<0.05)
+
+# notDOX_DEG_RNA_24h <- toplistall_RNA %>% 
+#   dplyr::filter(time =="24_hours" & id == "DOX") %>% 
+#   dplyr::filter(adj.P.Val>=0.05)
+
+DOX_DEG_RNA_3h <- toplistall_RNA %>% 
+  dplyr::filter(time =="3_hours" & id == "DOX") %>% 
+  dplyr::filter(adj.P.Val<0.05)
+
+# notDOX_DEG_RNA_3h <- toplistall_RNA %>% 
+#   dplyr::filter(time =="3_hours" & id == "DOX") %>% 
+#   dplyr::filter(adj.P.Val>=0.05)
+
+
+# EPI_tss_24h <- as.data.frame(peakAnnoList_24_n45$EPI_24_n45) 
+# EPI_tss_3h <- as.data.frame(peakAnnoList_3_n45$EPI_3_n45) 
+
+EPI_DEG_RNA_24h <- toplistall_RNA %>% 
+  dplyr::filter(time =="24_hours" & id == "EPI") %>% 
+  dplyr::filter(adj.P.Val<0.05)
+# 
+# notEPI_DEG_RNA_24h <- toplistall_RNA %>% 
+#   dplyr::filter(time =="24_hours" & id == "EPI") %>% 
+#   dplyr::filter(adj.P.Val>=0.05)
+
+EPI_DEG_RNA_3h <- toplistall_RNA %>% 
+  dplyr::filter(time =="3_hours" & id == "EPI") %>% 
+  dplyr::filter(adj.P.Val<0.05)
+
+# notEPI_DEG_RNA_3h <- toplistall_RNA %>% 
+#   dplyr::filter(time =="3_hours" & id == "EPI") %>% 
+#   dplyr::filter(adj.P.Val>=0.05)
+
+# DNR_tss_24h <- as.data.frame(peakAnnoList_24_n45$DNR_24_n45) 
+# DNR_tss_3h <- as.data.frame(peakAnnoList_3_n45$DNR_3_n45) 
+
+DNR_DEG_RNA_24h <- toplistall_RNA %>% 
+  dplyr::filter(time =="24_hours" & id == "DNR") %>% 
+  dplyr::filter(adj.P.Val<0.05)
+
+# notDNR_DEG_RNA_24h <- toplistall_RNA %>% 
+#   dplyr::filter(time =="24_hours" & id == "DNR") %>% 
+#   dplyr::filter(adj.P.Val>=0.05)
+
+DNR_DEG_RNA_3h <- toplistall_RNA %>% 
+  dplyr::filter(time =="3_hours" & id == "DNR") %>% 
+  dplyr::filter(adj.P.Val<0.05)
+
+# notDNR_DEG_RNA_3h <- toplistall_RNA %>% 
+#   dplyr::filter(time =="3_hours" & id == "DNR") %>% 
+#   dplyr::filter(adj.P.Val>=0.05)
+
+
+# MTX_tss_24h <- as.data.frame(peakAnnoList_24_n45$MTX_24_n45) 
+# MTX_tss_3h <- as.data.frame(peakAnnoList_3_n45$MTX_3_n45) 
+
+MTX_DEG_RNA_24h <- toplistall_RNA %>% 
+  dplyr::filter(time =="24_hours" & id == "MTX") %>% 
+  dplyr::filter(adj.P.Val<0.05)
+# 
+# notMTX_DEG_RNA_24h <- toplistall_RNA %>% 
+#   dplyr::filter(time =="24_hours" & id == "MTX") %>% 
+#   dplyr::filter(adj.P.Val>=0.05)
+
+MTX_DEG_RNA_3h <- toplistall_RNA %>% 
+  dplyr::filter(time =="3_hours" & id == "MTX") %>% 
+  dplyr::filter(adj.P.Val<0.05)
+
+# notMTX_DEG_RNA_3h <- toplistall_RNA %>% 
+#   dplyr::filter(time =="3_hours" & id == "MTX") %>% 
+#   dplyr::filter(adj.P.Val>=0.05)
+
+# TRZ_tss_24h <- as.data.frame(peakAnnoList_24_n45$TRZ_24_n45) 
+# TRZ_tss_3h <- as.data.frame(peakAnnoList_3_n45$TRZ_3_n45) 
+
+TRZ_DEG_RNA_24h <- toplistall_RNA %>% 
+  dplyr::filter(time =="24_hours" & id == "TRZ") %>% 
+  dplyr::filter(adj.P.Val<0.05)
+
+# notTRZ_DEG_RNA_24h <- toplistall_RNA %>% 
+#   dplyr::filter(time =="24_hours" & id == "TRZ") %>% 
+#   dplyr::filter(adj.P.Val>=0.05)
+
+TRZ_DEG_RNA_3h <- toplistall_RNA %>% 
+  dplyr::filter(time =="3_hours" & id == "TRZ") %>% 
+  dplyr::filter(adj.P.Val<0.05)
+# 
+# notTRZ_DEG_RNA_3h <- toplistall_RNA %>% 
+#   dplyr::filter(time =="3_hours" & id == "TRZ") %>% 
+#   dplyr::filter(adj.P.Val>=0.05)
+
+```
+
+
+## DOX 3 hour and 24 hour LFC 
+
+
+All peaks joined with RNA LFC using neargene.
+
+```{r DOX 3hr 24hr}
+DOX_3_toplist_ATAC %>% 
+  left_join(., exp_neargene_table,by=c("peak"= "peakid")) %>% 
+  dplyr::select(trt, time,peak, logFC,ENTREZID,ensembl_id, SYMBOL)%>% 
+  dplyr::filter(!grepl("chrX",peak)) %>% 
+  left_join(., (DOX_3_toplist_RNA %>% dplyr::select(ENTREZID,logFC)), by= c("ENTREZID"="ENTREZID"),suffix=c(".ATAC",".RNA")) %>% 
+  ggplot(., aes(x=logFC.ATAC, y=logFC.RNA))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  sm_statCorr(corr_method = 'pearson')+
+  ggtitle("DOX-3h lfc ATAC v DOX-3h lfc RNA")
+
+DOX_24_toplist_ATAC %>% 
+  left_join(., exp_neargene_table,by=c("peak"= "peakid")) %>% 
+  dplyr::select(trt, time,peak, logFC,ENTREZID,ensembl_id, SYMBOL)%>% 
+  dplyr::filter(!grepl("chrX",peak)) %>% 
+  left_join(., (DOX_24_toplist_RNA %>% dplyr::select(ENTREZID,logFC)), by= c("ENTREZID"="ENTREZID"),suffix=c(".ATAC",".RNA")) %>% 
+  ggplot(., aes(x=logFC.ATAC, y=logFC.RNA))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  sm_statCorr(corr_method = 'pearson')+
+  ggtitle("DOX-24h lfc ATAC v DOX-24h lfc RNA")
+
+
+```
+
+### DOX TSS location only
+
+I took the background of annotated genes (not expressed near genes, just nearest actual gene),
+I then filtered that list to only include peaks that span a TSS (distance to TSS = 0)
+I then added the  assigned closest expressed near-gene table that I made using peaks to link.
+Next I made sure the peaks were unique and added in ATAC LFC for the treatment by 3 hours or 24 hours by peak.
+Last, I linked the LFC-RNA at 3 or 24 hours to the respective ATAC_LFC using neargene associated with that peak.  This is all without limits of distance to neargene.
+```{r DOX TSS location using neargene for logFC}
+
+Allpeaks_anno  %>% 
+  dplyr::filter(distanceToTSS==0) %>% 
+  dplyr::select(distanceToTSS,id) %>% 
+  left_join(., exp_neargene_table,by=c("id"= "peakid")) %>% 
+  distinct(id,.keep_all = TRUE) %>% 
+  left_join(., DOX_3_toplist_ATAC,by=c("id"="peak")) %>% 
+  dplyr::select(distanceToTSS,id,ENTREZID,ensembl_id,SYMBOL,logFC) %>% 
+  left_join(., (DOX_3_toplist_RNA %>% dplyr::select(ENTREZID,logFC)), by= c("ENTREZID"="ENTREZID"),suffix=c(".ATAC",".RNA")) %>% 
+  ggplot(., aes(x=logFC.ATAC, y=logFC.RNA))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  sm_statCorr(corr_method = 'pearson')+
+  ggtitle("DOX-3h lfc ATAC v DOX-3h lfc RNA with peaks at TSS")
+
+
+Allpeaks_anno  %>% 
+  dplyr::filter(distanceToTSS==0) %>% 
+  dplyr::select(distanceToTSS,id) %>% 
+  left_join(., exp_neargene_table,by=c("id"= "peakid")) %>% 
+  distinct(id,.keep_all = TRUE) %>% 
+  left_join(., DOX_24_toplist_ATAC,by=c("id"="peak")) %>% 
+  dplyr::select(distanceToTSS,id,ENTREZID,ensembl_id,SYMBOL,logFC) %>% 
+  left_join(., (DOX_24_toplist_RNA %>% dplyr::select(ENTREZID,logFC)), by= c("ENTREZID"="ENTREZID"),suffix=c(".ATAC",".RNA")) %>% 
+  ggplot(., aes(x=logFC.ATAC, y=logFC.RNA))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  sm_statCorr(corr_method = 'pearson')+
+  ggtitle("DOX-24h lfc ATAC v DOX-24h lfc RNA with peaks at TSS")
+
+
+```
+### DOX Boxplots
+
+This the ATAC-LFC of near genes that are annotated as being either a DOX DEG or not. (ie DOX 3hr ATAC to DOX 3hr RNA DEG/not DEG). 
+
+```{r DOX boxplots dEG}
+DOX_3_toplist_ATAC %>% 
+  left_join(., exp_neargene_table,by=c("peak"= "peakid")) %>% 
+  dplyr::select(trt, time,peak, logFC,ENTREZID,ensembl_id, SYMBOL)%>% 
+  dplyr::filter(!grepl("chrX",peak)) %>% 
+  left_join(., (DOX_3_toplist_RNA %>% dplyr::select(ENTREZID,logFC)), by= c("ENTREZID"="ENTREZID"),suffix=c(".ATAC",".RNA")) %>% 
+  mutate(DEG_stat=if_else(ENTREZID %in% DOX_DEG_RNA_3h$ENTREZID,"DEG-yes","DEG-no")) %>% 
+  ggplot(., aes(x=DEG_stat, y=logFC.ATAC))+
+  geom_boxplot() +
+  theme_bw()+
+  ggtitle("DOX 3hr ATAC logFC by 3 hr DOX DEG RNA status")+
+   geom_signif(
+    comparisons = list(c("DEG-no","DEG-yes")),
+              test = t.test,         
+    map_signif_level = FALSE)
+    # y_position=c(3.5, 4, 4.5)) 
+
+DOX_24_toplist_ATAC %>% 
+  left_join(., exp_neargene_table,by=c("peak"= "peakid")) %>% 
+  dplyr::select(trt, time,peak, logFC,ENTREZID,ensembl_id, SYMBOL)%>% 
+  dplyr::filter(!grepl("chrX",peak)) %>% 
+  left_join(., (DOX_24_toplist_RNA %>% dplyr::select(ENTREZID,logFC)), by= c("ENTREZID"="ENTREZID"),suffix=c(".ATAC",".RNA")) %>% 
+  mutate(DEG_stat=if_else(ENTREZID %in% DOX_DEG_RNA_24h$ENTREZID,"DEG-yes","DEG-no")) %>% 
+  ggplot(., aes(x=DEG_stat, y=logFC.ATAC))+
+  geom_boxplot() +
+  theme_bw()+
+  ggtitle("DOX 24hr ATAC logFC by 24 hr DOX DEG RNA status")+
+   geom_signif(
+    comparisons = list(c("DEG-no","DEG-yes")),
+    test = t.test,
+                       
+    map_signif_level = FALSE)
+
+
+```
+
+
+## EPI 3 hour and 24 hour LFC 
+
+All peaks joined with RNA LFC using neargene.
+
+```{r EPI 3hr 24hr}
+EPI_3_toplist_ATAC %>% 
+  left_join(., exp_neargene_table,by=c("peak"= "peakid")) %>% 
+  dplyr::select(trt, time,peak, logFC,ENTREZID,ensembl_id, SYMBOL)%>% 
+  dplyr::filter(!grepl("chrX",peak)) %>% 
+  left_join(., (EPI_3_toplist_RNA %>% dplyr::select(ENTREZID,logFC)), by= c("ENTREZID"="ENTREZID"),suffix=c(".ATAC",".RNA")) %>% 
+  ggplot(., aes(x=logFC.ATAC, y=logFC.RNA))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  sm_statCorr(corr_method = 'pearson')+
+  ggtitle("EPI-3h lfc ATAC v EPI-3h lfc RNA")
+
+EPI_24_toplist_ATAC %>% 
+  left_join(., exp_neargene_table,by=c("peak"= "peakid")) %>% 
+  dplyr::select(trt, time,peak, logFC,ENTREZID,ensembl_id, SYMBOL)%>% 
+  dplyr::filter(!grepl("chrX",peak)) %>% 
+  left_join(., (EPI_24_toplist_RNA %>% dplyr::select(ENTREZID,logFC)), by= c("ENTREZID"="ENTREZID"),suffix=c(".ATAC",".RNA")) %>% 
+  ggplot(., aes(x=logFC.ATAC, y=logFC.RNA))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  sm_statCorr(corr_method = 'pearson')+
+  ggtitle("EPI-24h lfc ATAC v EPI-24h lfc RNA")
+
+
+```
+
+### TSS location only, by neargene
+
+```{r EPI TSS location using neargene for logFC}
+
+Allpeaks_anno  %>% 
+  dplyr::filter(distanceToTSS==0) %>% 
+  dplyr::select(distanceToTSS,id) %>% 
+  left_join(., exp_neargene_table,by=c("id"= "peakid")) %>% 
+  distinct(id,.keep_all = TRUE) %>% 
+  left_join(., EPI_3_toplist_ATAC,by=c("id"="peak")) %>% 
+  dplyr::select(distanceToTSS,id,ENTREZID,ensembl_id,SYMBOL,logFC) %>% 
+  left_join(., (EPI_3_toplist_RNA %>% dplyr::select(ENTREZID,logFC)), by= c("ENTREZID"="ENTREZID"),suffix=c(".ATAC",".RNA")) %>% 
+  ggplot(., aes(x=logFC.ATAC, y=logFC.RNA))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  sm_statCorr(corr_method = 'pearson')+
+  ggtitle("EPI-3h lfc ATAC v EPI-3h lfc RNA with peaks at TSS")
+
+
+Allpeaks_anno  %>% 
+  dplyr::filter(distanceToTSS==0) %>% 
+  dplyr::select(distanceToTSS,id) %>% 
+  left_join(., exp_neargene_table,by=c("id"= "peakid")) %>% 
+  distinct(id,.keep_all = TRUE) %>% 
+  left_join(., EPI_24_toplist_ATAC,by=c("id"="peak")) %>% 
+  dplyr::select(distanceToTSS,id,ENTREZID,ensembl_id,SYMBOL,logFC) %>% 
+  left_join(., (EPI_24_toplist_RNA %>% dplyr::select(ENTREZID,logFC)), by= c("ENTREZID"="ENTREZID"),suffix=c(".ATAC",".RNA")) %>% 
+  ggplot(., aes(x=logFC.ATAC, y=logFC.RNA))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  sm_statCorr(corr_method = 'pearson')+
+  ggtitle("EPI-24h lfc ATAC v EPI-24h lfc RNA with peaks at TSS")
+
+
+```
+### EPI Boxplots
+
+```{r EPI boxplots dEG}
+EPI_3_toplist_ATAC %>% 
+  left_join(., exp_neargene_table,by=c("peak"= "peakid")) %>% 
+  dplyr::select(trt, time,peak, logFC,ENTREZID,ensembl_id, SYMBOL)%>% 
+  dplyr::filter(!grepl("chrX",peak)) %>% 
+  left_join(., (EPI_3_toplist_RNA %>% dplyr::select(ENTREZID,logFC)), by= c("ENTREZID"="ENTREZID"),suffix=c(".ATAC",".RNA")) %>% 
+  mutate(DEG_stat=if_else(ENTREZID %in% EPI_DEG_RNA_3h$ENTREZID,"DEG-yes","DEG-no")) %>% 
+  ggplot(., aes(x=DEG_stat, y=logFC.ATAC))+
+  geom_boxplot() +
+  theme_bw()+
+  ggtitle("EPI 3hr ATAC logFC by 3 hr EPI DEG RNA status")+
+   geom_signif(
+    comparisons = list(c("DEG-no","DEG-yes")),
+                    test = t.test,   
+    map_signif_level = FALSE)
+    # y_position=c(3.5, 4, 4.5)) 
+
+EPI_24_toplist_ATAC %>% 
+  left_join(., exp_neargene_table,by=c("peak"= "peakid")) %>% 
+  dplyr::select(trt, time,peak, logFC,ENTREZID,ensembl_id, SYMBOL)%>% 
+  dplyr::filter(!grepl("chrX",peak)) %>% 
+  left_join(., (EPI_24_toplist_RNA %>% dplyr::select(ENTREZID,logFC)), by= c("ENTREZID"="ENTREZID"),suffix=c(".ATAC",".RNA")) %>% 
+  mutate(DEG_stat=if_else(ENTREZID %in% EPI_DEG_RNA_24h$ENTREZID,"DEG-yes","DEG-no")) %>% 
+  ggplot(., aes(x=DEG_stat, y=logFC.ATAC))+
+  geom_boxplot() +
+  theme_bw()+
+  ggtitle("EPI 24hr ATAC logFC by 24 hr EPI DEG RNA status")+
+   geom_signif(
+    comparisons = list(c("DEG-no","DEG-yes")),
+           test = t.test,            
+    map_signif_level = FALSE)
+
+
+```
+
+## DNR 3 hour and 24 hour LFC 
+
+
+All peaks joined with RNA LFC using neargene.
+
+```{r DNR 3hr 24hr}
+DNR_3_toplist_ATAC %>% 
+  left_join(., exp_neargene_table,by=c("peak"= "peakid")) %>% 
+  dplyr::select(trt, time,peak, logFC,ENTREZID,ensembl_id, SYMBOL)%>% 
+  dplyr::filter(!grepl("chrX",peak)) %>% 
+  left_join(., (DNR_3_toplist_RNA %>% dplyr::select(ENTREZID,logFC)), by= c("ENTREZID"="ENTREZID"),suffix=c(".ATAC",".RNA")) %>% 
+  ggplot(., aes(x=logFC.ATAC, y=logFC.RNA))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  sm_statCorr(corr_method = 'pearson')+
+  ggtitle("DNR-3h lfc ATAC v DNR-3h lfc RNA")
+
+DNR_24_toplist_ATAC %>% 
+  left_join(., exp_neargene_table,by=c("peak"= "peakid")) %>% 
+  dplyr::select(trt, time,peak, logFC,ENTREZID,ensembl_id, SYMBOL)%>% 
+  dplyr::filter(!grepl("chrX",peak)) %>% 
+  left_join(., (DNR_24_toplist_RNA %>% dplyr::select(ENTREZID,logFC)), by= c("ENTREZID"="ENTREZID"),suffix=c(".ATAC",".RNA")) %>% 
+  ggplot(., aes(x=logFC.ATAC, y=logFC.RNA))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  sm_statCorr(corr_method = 'pearson')+
+  ggtitle("DNR-24h lfc ATAC v DNR-24h lfc RNA")
+
+
+```
+
+### TSS location only, by neargene
+
+```{r DNR TSS location using neargene for logFC}
+
+Allpeaks_anno  %>% 
+  dplyr::filter(distanceToTSS==0) %>% 
+  dplyr::select(distanceToTSS,id) %>% 
+  left_join(., exp_neargene_table,by=c("id"= "peakid")) %>% 
+  distinct(id,.keep_all = TRUE) %>% 
+  left_join(., DNR_3_toplist_ATAC,by=c("id"="peak")) %>% 
+  dplyr::select(distanceToTSS,id,ENTREZID,ensembl_id,SYMBOL,logFC) %>% 
+  left_join(., (DNR_3_toplist_RNA %>% dplyr::select(ENTREZID,logFC)), by= c("ENTREZID"="ENTREZID"),suffix=c(".ATAC",".RNA")) %>% 
+  ggplot(., aes(x=logFC.ATAC, y=logFC.RNA))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  sm_statCorr(corr_method = 'pearson')+
+  ggtitle("DNR-3h lfc ATAC v DNR-3h lfc RNA with peaks at TSS")
+
+
+Allpeaks_anno  %>% 
+  dplyr::filter(distanceToTSS==0) %>% 
+  dplyr::select(distanceToTSS,id) %>% 
+  left_join(., exp_neargene_table,by=c("id"= "peakid")) %>% 
+  distinct(id,.keep_all = TRUE) %>% 
+  left_join(., DNR_24_toplist_ATAC,by=c("id"="peak")) %>% 
+  dplyr::select(distanceToTSS,id,ENTREZID,ensembl_id,SYMBOL,logFC) %>% 
+  left_join(., (DNR_24_toplist_RNA %>% dplyr::select(ENTREZID,logFC)), by= c("ENTREZID"="ENTREZID"),suffix=c(".ATAC",".RNA")) %>% 
+  ggplot(., aes(x=logFC.ATAC, y=logFC.RNA))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  sm_statCorr(corr_method = 'pearson')+
+  ggtitle("DNR-24h lfc ATAC v DNR-24h lfc RNA with peaks at TSS")
+
+
+```
+### DNR Boxplots
+
+```{r DNR boxplots dEG}
+DNR_3_toplist_ATAC %>% 
+  left_join(., exp_neargene_table,by=c("peak"= "peakid")) %>% 
+  dplyr::select(trt, time,peak, logFC,ENTREZID,ensembl_id, SYMBOL)%>% 
+  dplyr::filter(!grepl("chrX",peak)) %>% 
+  left_join(., (DNR_3_toplist_RNA %>% dplyr::select(ENTREZID,logFC)), by= c("ENTREZID"="ENTREZID"),suffix=c(".ATAC",".RNA")) %>% 
+  mutate(DEG_stat=if_else(ENTREZID %in% DNR_DEG_RNA_3h$ENTREZID,"DEG-yes","DEG-no")) %>% 
+  ggplot(., aes(x=DEG_stat, y=logFC.ATAC))+
+  geom_boxplot() +
+  theme_bw()+
+  ggtitle("DNR 3hr ATAC logFC by 3 hr DNR DEG RNA status")+
+   geom_signif(
+    comparisons = list(c("DEG-no","DEG-yes")),
+           test = t.test,            
+    map_signif_level = FALSE)
+    # y_position=c(3.5, 4, 4.5)) 
+
+DNR_24_toplist_ATAC %>% 
+  left_join(., exp_neargene_table,by=c("peak"= "peakid")) %>% 
+  dplyr::select(trt, time,peak, logFC,ENTREZID,ensembl_id, SYMBOL)%>% 
+  dplyr::filter(!grepl("chrX",peak)) %>% 
+  left_join(., (DNR_24_toplist_RNA %>% dplyr::select(ENTREZID,logFC)), by= c("ENTREZID"="ENTREZID"),suffix=c(".ATAC",".RNA")) %>% 
+  mutate(DEG_stat=if_else(ENTREZID %in% DNR_DEG_RNA_24h$ENTREZID,"DEG-yes","DEG-no")) %>% 
+  ggplot(., aes(x=DEG_stat, y=logFC.ATAC))+
+  geom_boxplot() +
+  theme_bw()+
+  ggtitle("DNR 24hr ATAC logFC by 24 hr DNR DEG RNA status")+
+   geom_signif(
+    comparisons = list(c("DEG-no","DEG-yes")),
+          test = t.test,             
+    map_signif_level = FALSE)
+
+
+```
+
+
+## MTX 3 hour and 24 hour LFC 
+
+
+All peaks joined with RNA LFC using neargene.
+
+```{r MTX 3hr 24hr}
+MTX_3_toplist_ATAC %>% 
+  left_join(., exp_neargene_table,by=c("peak"= "peakid")) %>% 
+  dplyr::select(trt, time,peak, logFC,ENTREZID,ensembl_id, SYMBOL)%>% 
+  dplyr::filter(!grepl("chrX",peak)) %>% 
+  left_join(., (MTX_3_toplist_RNA %>% dplyr::select(ENTREZID,logFC)), by= c("ENTREZID"="ENTREZID"),suffix=c(".ATAC",".RNA")) %>% 
+  ggplot(., aes(x=logFC.ATAC, y=logFC.RNA))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  sm_statCorr(corr_method = 'pearson')+
+  ggtitle("MTX-3h lfc ATAC v MTX-3h lfc RNA")
+
+MTX_24_toplist_ATAC %>% 
+  left_join(., exp_neargene_table,by=c("peak"= "peakid")) %>% 
+  dplyr::select(trt, time,peak, logFC,ENTREZID,ensembl_id, SYMBOL)%>% 
+  dplyr::filter(!grepl("chrX",peak)) %>% 
+  left_join(., (MTX_24_toplist_RNA %>% dplyr::select(ENTREZID,logFC)), by= c("ENTREZID"="ENTREZID"),suffix=c(".ATAC",".RNA")) %>% 
+  ggplot(., aes(x=logFC.ATAC, y=logFC.RNA))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  sm_statCorr(corr_method = 'pearson')+
+  ggtitle("MTX-24h lfc ATAC v MTX-24h lfc RNA")
+
+
+```
+
+### TSS location only, by neargene
+
+```{r MTX TSS location using neargene for logFC}
+
+Allpeaks_anno  %>% 
+  dplyr::filter(distanceToTSS==0) %>% 
+  dplyr::select(distanceToTSS,id) %>% 
+  left_join(., exp_neargene_table,by=c("id"= "peakid")) %>% 
+  distinct(id,.keep_all = TRUE) %>% 
+  left_join(., MTX_3_toplist_ATAC,by=c("id"="peak")) %>% 
+  dplyr::select(distanceToTSS,id,ENTREZID,ensembl_id,SYMBOL,logFC) %>% 
+  left_join(., (MTX_3_toplist_RNA %>% dplyr::select(ENTREZID,logFC)), by= c("ENTREZID"="ENTREZID"),suffix=c(".ATAC",".RNA")) %>% 
+  ggplot(., aes(x=logFC.ATAC, y=logFC.RNA))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  sm_statCorr(corr_method = 'pearson')+
+  ggtitle("MTX-3h lfc ATAC v MTX-3h lfc RNA with peaks at TSS")
+
+
+Allpeaks_anno  %>% 
+  dplyr::filter(distanceToTSS==0) %>% 
+  dplyr::select(distanceToTSS,id) %>% 
+  left_join(., exp_neargene_table,by=c("id"= "peakid")) %>% 
+  distinct(id,.keep_all = TRUE) %>% 
+  left_join(., MTX_24_toplist_ATAC,by=c("id"="peak")) %>% 
+  dplyr::select(distanceToTSS,id,ENTREZID,ensembl_id,SYMBOL,logFC) %>% 
+  left_join(., (MTX_24_toplist_RNA %>% dplyr::select(ENTREZID,logFC)), by= c("ENTREZID"="ENTREZID"),suffix=c(".ATAC",".RNA")) %>% 
+  ggplot(., aes(x=logFC.ATAC, y=logFC.RNA))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  sm_statCorr(corr_method = 'pearson')+
+  ggtitle("MTX-24h lfc ATAC v MTX-24h lfc RNA with peaks at TSS")
+
+
+```
+### MTX Boxplots
+
+```{r MTX boxplots dEG}
+MTX_3_toplist_ATAC %>% 
+  left_join(., exp_neargene_table,by=c("peak"= "peakid")) %>% 
+  dplyr::select(trt, time,peak, logFC,ENTREZID,ensembl_id, SYMBOL)%>% 
+  dplyr::filter(!grepl("chrX",peak)) %>% 
+  left_join(., (MTX_3_toplist_RNA %>% dplyr::select(ENTREZID,logFC)), by= c("ENTREZID"="ENTREZID"),suffix=c(".ATAC",".RNA")) %>% 
+  mutate(DEG_stat=if_else(ENTREZID %in% MTX_DEG_RNA_3h$ENTREZID,"DEG-yes","DEG-no")) %>% 
+  ggplot(., aes(x=DEG_stat, y=logFC.ATAC))+
+  geom_boxplot() +
+  theme_bw()+
+  ggtitle("MTX 3hr ATAC logFC by 3 hr MTX DEG RNA status")+
+   geom_signif(
+    comparisons = list(c("DEG-no","DEG-yes")),
+       test = t.test,                
+    map_signif_level = FALSE)
+    # y_position=c(3.5, 4, 4.5)) 
+
+MTX_24_toplist_ATAC %>% 
+  left_join(., exp_neargene_table,by=c("peak"= "peakid")) %>% 
+  dplyr::select(trt, time,peak, logFC,ENTREZID,ensembl_id, SYMBOL)%>% 
+  dplyr::filter(!grepl("chrX",peak)) %>% 
+  left_join(., (MTX_24_toplist_RNA %>% dplyr::select(ENTREZID,logFC)), by= c("ENTREZID"="ENTREZID"),suffix=c(".ATAC",".RNA")) %>% 
+  mutate(DEG_stat=if_else(ENTREZID %in% MTX_DEG_RNA_24h$ENTREZID,"DEG-yes","DEG-no")) %>% 
+  ggplot(., aes(x=DEG_stat, y=logFC.ATAC))+
+  geom_boxplot() +
+  theme_bw()+
+  ggtitle("MTX 24hr ATAC logFC by 24 hr MTX DEG RNA status")+
+   geom_signif(
+    comparisons = list(c("DEG-no","DEG-yes")),
+     test = t.test,                  
+    map_signif_level = FALSE)
+
+
+
+```
+
+
+## TRZ 3 hour and 24 hour LFC 
+
+
+All peaks joined with RNA LFC using neargene.
+
+```{r TRZ 3hr 24hr}
+TRZ_3_toplist_ATAC %>% 
+  left_join(., exp_neargene_table,by=c("peak"= "peakid")) %>% 
+  dplyr::select(trt, time,peak, logFC,ENTREZID,ensembl_id, SYMBOL)%>% 
+  dplyr::filter(!grepl("chrX",peak)) %>% 
+  left_join(., (TRZ_3_toplist_RNA %>% dplyr::select(ENTREZID,logFC)), by= c("ENTREZID"="ENTREZID"),suffix=c(".ATAC",".RNA")) %>% 
+  ggplot(., aes(x=logFC.ATAC, y=logFC.RNA))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  sm_statCorr(corr_method = 'pearson')+
+  ggtitle("TRZ-3h lfc ATAC v TRZ-3h lfc RNA")
+
+TRZ_24_toplist_ATAC %>% 
+  left_join(., exp_neargene_table,by=c("peak"= "peakid")) %>% 
+  dplyr::select(trt, time,peak, logFC,ENTREZID,ensembl_id, SYMBOL)%>% 
+  dplyr::filter(!grepl("chrX",peak)) %>% 
+  left_join(., (TRZ_24_toplist_RNA %>% dplyr::select(ENTREZID,logFC)), by= c("ENTREZID"="ENTREZID"),suffix=c(".ATAC",".RNA")) %>% 
+  ggplot(., aes(x=logFC.ATAC, y=logFC.RNA))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  sm_statCorr(corr_method = 'pearson')+
+  ggtitle("TRZ-24h lfc ATAC v TRZ-24h lfc RNA")
+
+
+```
+
+### TSS location only, by neargene
+
+```{r TRZ TSS location using neargene for logFC}
+
+
+# note:  Peaks are all annotated the same here.  I first pull the chipseeker distanceToTSS data with peak id, since all peaks are within the 
+Allpeaks_anno  %>% 
+  dplyr::filter(distanceToTSS==0) %>% 
+  dplyr::select(distanceToTSS,id) %>% 
+  left_join(., exp_neargene_table,by=c("id"= "peakid")) %>% 
+  distinct(id,.keep_all = TRUE) %>% 
+  left_join(., TRZ_3_toplist_ATAC,by=c("id"="peak")) %>% 
+  dplyr::select(distanceToTSS,id,ENTREZID,ensembl_id,SYMBOL,logFC) %>% 
+  left_join(., (TRZ_3_toplist_RNA %>% dplyr::select(ENTREZID,logFC)), by= c("ENTREZID"="ENTREZID"),suffix=c(".ATAC",".RNA")) %>% 
+  ggplot(., aes(x=logFC.ATAC, y=logFC.RNA))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  sm_statCorr(corr_method = 'pearson')+
+  ggtitle("TRZ-3h lfc ATAC v TRZ-3h lfc RNA with peaks at TSS")
+
+
+Allpeaks_anno  %>% 
+  dplyr::filter(distanceToTSS==0) %>% 
+  dplyr::select(distanceToTSS,id) %>% 
+  left_join(., exp_neargene_table,by=c("id"= "peakid")) %>% 
+  distinct(id,.keep_all = TRUE) %>% 
+  left_join(., TRZ_24_toplist_ATAC,by=c("id"="peak")) %>% 
+  dplyr::select(distanceToTSS,id,ENTREZID,ensembl_id,SYMBOL,logFC) %>% 
+  left_join(., (TRZ_24_toplist_RNA %>% dplyr::select(ENTREZID,logFC)), by= c("ENTREZID"="ENTREZID"),suffix=c(".ATAC",".RNA")) %>% 
+  ggplot(., aes(x=logFC.ATAC, y=logFC.RNA))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  sm_statCorr(corr_method = 'pearson')+
+  ggtitle("TRZ-24h lfc ATAC v TRZ-24h lfc RNA with peaks at TSS")
+
+
+```
+### TRZ Boxplots
+
+```{r TRZ boxplots dEG}
+TRZ_3_toplist_ATAC %>% 
+  left_join(., exp_neargene_table,by=c("peak"= "peakid")) %>% 
+  dplyr::select(trt, time,peak, logFC,ENTREZID,ensembl_id, SYMBOL)%>% 
+  dplyr::filter(!grepl("chrX",peak)) %>% 
+  left_join(., (TRZ_3_toplist_RNA %>% dplyr::select(ENTREZID,logFC)), by= c("ENTREZID"="ENTREZID"),suffix=c(".ATAC",".RNA")) %>% 
+  mutate(DEG_stat=if_else(ENTREZID %in% TRZ_DEG_RNA_3h$ENTREZID,"DEG-yes","DEG-no")) %>% 
+  ggplot(., aes(x=DEG_stat, y=logFC.ATAC))+
+  geom_boxplot() +
+  theme_bw()+
+  ggtitle("TRZ 3hr ATAC logFC by 3 hr TRZ DEG RNA status")+
+   geom_signif(
+    comparisons = list(c("DEG-no","DEG-yes")),
+        test = t.test,               
+    map_signif_level = FALSE)
+    # y_position=c(3.5, 4, 4.5)) 
+
+TRZ_24_toplist_ATAC %>% 
+  left_join(., exp_neargene_table,by=c("peak"= "peakid")) %>% 
+  dplyr::select(trt, time,peak, logFC,ENTREZID,ensembl_id, SYMBOL)%>% 
+  dplyr::filter(!grepl("chrX",peak)) %>% 
+  left_join(., (TRZ_24_toplist_RNA %>% dplyr::select(ENTREZID,logFC)), by= c("ENTREZID"="ENTREZID"),suffix=c(".ATAC",".RNA")) %>% 
+  mutate(DEG_stat=if_else(ENTREZID %in% TRZ_DEG_RNA_24h$ENTREZID,"DEG-yes","DEG-no")) %>% 
+  ggplot(., aes(x=DEG_stat, y=logFC.ATAC))+
+  geom_boxplot() +
+  theme_bw()+
+  ggtitle("TRZ 24hr ATAC logFC by 24 hr TRZ DEG RNA status")+
+   geom_signif(
+    comparisons = list(c("DEG-no","DEG-yes")),
+      test = t.test,                 
+    map_signif_level = FALSE)
+
+
+
+```
