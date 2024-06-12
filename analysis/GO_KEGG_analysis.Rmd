@@ -90,13 +90,16 @@ exp_neargene_table <- read_delim("data/n45_bedfiles/exp_neargene_table.tsv",
     delim = "\t", escape_double = FALSE, 
     trim_ws = TRUE)
 background_genes <- read.csv("data/other_papers/backgroundRNAlist.csv", row.names = 1)
-# col_ng_peak <- exp_neargene_table %>%
-#   group_by(chr, start, end, peakid) %>%
-#     summarise(NCBI_gene = paste(unique(ENTREZID),collapse=","),
-#               ensembl_ID= paste(unique(ensembl_id),collapse = ","),
-#               SYMBOL= paste(unique(SYMBOL),collapse = ",") , 
-#               dist_to_NG =min(dist_to_NG))
-# 
+col_specfic_peak <- exp_neargene_table %>%
+  group_by(chr, start, end, peakid) %>%
+    summarise(NCBI_gene = paste(unique(ENTREZID),collapse=","),
+              ensembl_ID= paste(unique(ensembl_id),collapse = ","),
+              SYMBOL= paste(unique(SYMBOL),collapse = ",") ,
+              dist_to_NG =min(dist_to_NG))
+col_specfic_peak_near <- col_specfic_peak %>% 
+   dplyr::filter(dist_to_NG<20000) %>% 
+  unite(location, c("chr","start","end"), sep = ":", remove=FALSE) 
+
 
 EAR_NG_list <- exp_neargene_table %>% 
     dplyr::filter(peakid %in% EAR_df$id) %>%
@@ -105,22 +108,52 @@ EAR_NG_list <- exp_neargene_table %>%
   distinct()
 
 ESR_NG_list <- exp_neargene_table %>% 
-    dplyr::filter(peakid %in% ESR_df$id) %>% 
-   dplyr::filter(dist_to_NG<20000) %>% 
+    dplyr::filter(peakid %in% ESR_df$id) %>%
+  dplyr::filter(dist_to_NG<20000) %>% 
   dplyr::select(ENTREZID) %>% 
   distinct()
 
 LR_NG_list <- exp_neargene_table %>% 
     dplyr::filter(peakid %in% LR_df$id) %>%
-   dplyr::filter(dist_to_NG<20000) %>% 
+  dplyr::filter(dist_to_NG<20000) %>% 
   dplyr::select(ENTREZID) %>% 
   distinct()
 
 NR_NG_list <- exp_neargene_table %>% 
-    dplyr::filter(peakid %in% NR_df$id) %>% 
-   dplyr::filter(dist_to_NG<20000) %>% 
+    dplyr::filter(peakid %in% NR_df$id) %>%
+  dplyr::filter(dist_to_NG<20000) %>% 
   dplyr::select(ENTREZID) %>% 
   distinct()
+
+EAR_peakspecific_list <- exp_neargene_table %>% 
+    dplyr::filter(peakid %in% EAR_df$id) %>%
+  dplyr::filter(dist_to_NG<20000) %>% 
+ unite(location, c("chr","start","end"), sep = ":", remove=FALSE) %>% 
+  dplyr::select(location,peakid,ENTREZID) %>% 
+  distinct()
+
+
+ESR_peakspecific_list <- exp_neargene_table %>% 
+    dplyr::filter(peakid %in% ESR_df$id) %>% 
+   dplyr::filter(dist_to_NG<20000) %>% 
+  unite(location, c("chr","start","end"), sep = ":", remove=FALSE) %>% 
+  dplyr::select(location,peakid,ENTREZID) %>% 
+  distinct()
+
+LR_peakspecific_list <- exp_neargene_table %>% 
+    dplyr::filter(peakid %in% LR_df$id) %>%
+   dplyr::filter(dist_to_NG<20000) %>% 
+  unite(location, c("chr","start","end"), sep = ":", remove=FALSE) %>% 
+  dplyr::select(location,peakid,ENTREZID) %>% 
+  distinct()
+
+NR_peakspecific_list <- exp_neargene_table %>% 
+    dplyr::filter(peakid %in% NR_df$id) %>% 
+   dplyr::filter(dist_to_NG<20000) %>% 
+  unite(location, c("chr","start","end"), sep = ":", remove=FALSE) %>% 
+  dplyr::select(location,peakid,ENTREZID) %>% 
+  distinct()
+
 
 # background_genes <- exp_neargene_table %>% 
 #   dplyr::select(ENTREZID) %>% 
@@ -1899,6 +1932,560 @@ filter(source=="GO:BP", p_value < 0.05) %>%
   xlab(paste0("-log10 p-value"))+
   guides(fill="none")+
   theme(axis.text.y = element_text(color="black"))+
-  ggtitle("NR_hypo accessiblle gene list")
+  ggtitle("NR_hypo accessible gene list")
 
 ```
+
+
+## experimental GO
+```{r noodles}
+
+### Trying to make lists of DEG RNA neargene peaks and that are hyper and hypo accessible for AC only peaks
+
+siglist_n45 <- readRDS("data/siglist_n45.RDS")
+peak_3hr_list <- sapply(siglist_n45[1:4], "[","peak")
+peak_24hr_list <- sapply(siglist_n45[6:9], "[","peak")
+
+ggVennDiagram(peak_24hr_list)
+
+test <-calculate.overlap(peak_24hr_list)
+AC_only <- test$a12
+
+TOP2_only <- test$a6
+
+length(intersect(TOP2_only,NR_df$id))
+length(intersect(TOP2_only,LR_df$id))
+length(intersect(TOP2_only,ESR_df$id))
+length(intersect(TOP2_only,EAR_df$id))
+
+
+length(intersect(AC_only,NR_df$id))
+length(intersect(AC_only,LR_df$id))
+length(intersect(AC_only,ESR_df$id))
+length(intersect(AC_only,EAR_df$id))
+
+
+
+NR_hyper_list_AC <- exp_neargene_table %>%
+  dplyr::filter(peakid %in% intersect(AC_only,NR_df$id)) %>%
+  dplyr:: filter(peakid %in% DOX24h_peaks_hyper_list$peak) %>%
+  dplyr::filter(dist_to_NG<20000) %>% 
+  dplyr::select(ENTREZID) %>% 
+  distinct()
+
+NR_hypo_list_AC <- exp_neargene_table %>%
+  dplyr::filter(peakid %in% intersect(AC_only,NR_df$id)) %>%
+  dplyr:: filter(peakid %in% DOX24h_peaks_hypo_list$peak) %>%
+  dplyr::filter(dist_to_NG<20000) %>% 
+  dplyr::select(ENTREZID) %>% 
+  distinct()
+# NR_hyper_resgenes_AC <- gost(query =intersect(NR_hyper_list_AC$ENTREZID,Resp_RNA$ENTREZID),
+#                     organism = "hsapiens",
+#                     significant = FALSE,
+#                     ordered_query = FALSE,
+#                     domain_scope = "custom",
+#                     measure_underrepresentation = FALSE,
+#                     evcodes = FALSE,
+#                     user_threshold = 0.05,
+#                     correction_method = c("fdr"),
+#                     custom_bg = background_genes$ENTREZID,
+#                     sources=c("GO:BP","KEGG"))
+# saveRDS(NR_hyper_resgenes_AC,"data/GO_KEGG_analysis/NR_hyper_resgenes_AC.RDS")
+
+
+NR_hypo_resgenes_AC <- readRDS("data/GO_KEGG_analysis/NR_hypo_resgenes_AC.RDS")
+
+NR_hypo_restable_AC <- NR_hypo_resgenes_AC$result %>% 
+  dplyr::select(c(source, term_id,
+                  term_name,intersection_size, 
+                   term_size, p_value))# %>% 
+
+NR_hypo_restable_AC %>%
+   filter(source=="GO:BP", p_value < 0.05) %>%
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(.,caption = "GO:BP terms found in NR_hypo neargenes") %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
+NR_hypo_restable_AC %>%
+  filter(source=="KEGG") %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(., caption = "KEGG terms found in NR_hypo accesible genes") %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+# intersect(unique(Resp_RNA$ENTREZID), unique(NR_peak_list_20k$ENTREZID)))
+
+NR_hypo_restable_AC %>%
+filter(source=="GO:BP", p_value < 0.05) %>% 
+  slice_head(n=10) %>% 
+  mutate(log10_p=(-log(p_value, base=10))) %>% 
+  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
+    geom_col(fill="#C77CFF")+
+  theme_bw()+
+  ylab("")+
+  xlab(paste0("-log10 p-value"))+
+  guides(fill="none")+
+  theme(axis.text.y = element_text(color="black"))+
+  ggtitle("NR_hypo accessible gene list")
+
+
+
+NR_hyper_resgenes_AC <- readRDS("data/GO_KEGG_analysis/NR_hyper_resgenes_AC.RDS")
+
+NR_hyper_restable_AC <- NR_hyper_resgenes_AC$result %>% 
+  dplyr::select(c(source, term_id,
+                  term_name,intersection_size, 
+                   term_size, p_value))# %>% 
+
+NR_hyper_restable_AC %>%
+   filter(source=="GO:BP", p_value < 0.05) %>%
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(.,caption = "GO:BP terms found in NR_hypo neargenes") %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
+NR_hyper_restable_AC %>%
+  filter(source=="KEGG") %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(., caption = "KEGG terms found in NR_hypo accesible genes") %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+# intersect(unique(Resp_RNA$ENTREZID), unique(NR_peak_list_20k$ENTREZID)))
+
+NR_hyper_restable_AC %>%
+filter(source=="GO:BP", p_value < 0.05) %>% 
+  slice_head(n=10) %>% 
+  mutate(log10_p=(-log(p_value, base=10))) %>% 
+  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
+    geom_col(fill="#C77CFF")+
+  theme_bw()+
+  ylab("")+
+  xlab(paste0("-log10 p-value"))+
+  guides(fill="none")+
+  theme(axis.text.y = element_text(color="black"))+
+  ggtitle("NR_hypo accessible gene list")
+
+
+```
+
+```{r EAR_AC check}
+EAR_hyper_list_AC <- exp_neargene_table %>%
+  dplyr::filter(peakid %in% intersect(AC_only,EAR_df$id)) %>%
+  dplyr:: filter(peakid %in% DOX24h_peaks_hyper_list$peak) %>%
+  dplyr::filter(dist_to_NG<20000) %>% 
+  dplyr::select(ENTREZID) %>% 
+  distinct()
+
+EAR_hypo_list_AC <- exp_neargene_table %>%
+  dplyr::filter(peakid %in% intersect(AC_only,EAR_df$id)) %>%
+  dplyr:: filter(peakid %in% DOX24h_peaks_hypo_list$peak) %>%
+  dplyr::filter(dist_to_NG<20000) %>% 
+  dplyr::select(ENTREZID) %>% 
+  distinct()
+# EAR_hypo_resgenes_AC <- gost(query =intersect(EAR_hypo_list_AC$ENTREZID,Resp_RNA$ENTREZID),
+#                     organism = "hsapiens",
+#                     significant = FALSE,
+#                     ordered_query = FALSE,
+#                     domain_scope = "custom",
+#                     measure_underrepresentation = FALSE,
+#                     evcodes = FALSE,
+#                     user_threshold = 0.05,
+#                     correction_method = c("fdr"),
+#                     custom_bg = background_genes$ENTREZID,
+#                     sources=c("GO:BP","KEGG"))
+# saveRDS(EAR_hypo_resgenes_AC,"data/GO_KEGG_analysis/EAR_hypo_resgenes_AC.RDS")
+
+
+EAR_hypo_resgenes_AC <- readRDS("data/GO_KEGG_analysis/EAR_hypo_resgenes_AC.RDS")
+
+EAR_hypo_restable_AC <- EAR_hypo_resgenes_AC$result %>% 
+  dplyr::select(c(source, term_id,
+                  term_name,intersection_size, 
+                   term_size, p_value))# %>% 
+
+EAR_hypo_restable_AC %>%
+   # filter(source=="GO:BP", p_value < 0.05) %>%
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(.,caption = "GO:BP terms found in EAR_hypo neargenes") %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
+EAR_hypo_restable_AC %>%
+  filter(source=="KEGG") %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(., caption = "KEGG terms found in EAR_hypo accesible genes") %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+# intersect(unique(Resp_RNA$ENTREZID), unique(EAR_peak_list_20k$ENTREZID)))
+
+EAR_hypo_restable_AC %>%
+# filter(source=="GO:BP", p_value < 0.05) %>% 
+  slice_head(n=10) %>% 
+  mutate(log10_p=(-log(p_value, base=10))) %>% 
+  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
+    geom_col(fill="#C77CFF")+
+  theme_bw()+
+  ylab("")+
+  xlab(paste0("-log10 p-value"))+
+  guides(fill="none")+
+  theme(axis.text.y = element_text(color="black"))+
+  ggtitle("EAR_hypo accessible gene list")
+
+
+
+EAR_hyper_resgenes_AC <- readRDS("data/GO_KEGG_analysis/EAR_hyper_resgenes_AC.RDS")
+
+EAR_hyper_restable_AC <- EAR_hyper_resgenes_AC$result %>% 
+  dplyr::select(c(source, term_id,
+                  term_name,intersection_size, 
+                   term_size, p_value))# %>% 
+
+EAR_hyper_restable_AC %>%
+   filter(source=="GO:BP", p_value < 0.05) %>%
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(.,caption = "GO:BP terms found in EAR_hypo neargenes") %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
+EAR_hyper_restable_AC %>%
+  filter(source=="KEGG") %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(., caption = "KEGG terms found in EAR_hypo accesible genes") %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+# intersect(unique(Resp_RNA$ENTREZID), unique(EAR_peak_list_20k$ENTREZID)))
+
+EAR_hyper_restable_AC %>%
+filter(source=="GO:BP", p_value < 0.05) %>% 
+  slice_head(n=10) %>% 
+  mutate(log10_p=(-log(p_value, base=10))) %>% 
+  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
+    geom_col(fill="#F8766D")+
+  theme_bw()+
+  ylab("")+
+  xlab(paste0("-log10 p-value"))+
+  guides(fill="none")+
+  theme(axis.text.y = element_text(color="black"))+
+  ggtitle("EAR_hypo accessible gene list")
+
+
+
+```
+
+
+```{r  ESR}
+
+
+ESR_hyper_list_AC <- exp_neargene_table %>%
+  dplyr::filter(peakid %in% intersect(AC_only,ESR_df$id)) %>%
+  dplyr:: filter(peakid %in% DOX24h_peaks_hyper_list$peak) %>%
+  dplyr::filter(dist_to_NG<20000) %>% 
+  dplyr::select(ENTREZID) %>% 
+  distinct()
+
+ESR_hypo_list_AC <- exp_neargene_table %>%
+  dplyr::filter(peakid %in% intersect(AC_only,ESR_df$id)) %>%
+  dplyr:: filter(peakid %in% DOX24h_peaks_hypo_list$peak) %>%
+  dplyr::filter(dist_to_NG<20000) %>% 
+  dplyr::select(ENTREZID) %>% 
+  distinct()
+# ESR_hypo_resgenes_AC <- gost(query =intersect(ESR_hypo_list_AC$ENTREZID,Resp_RNA$ENTREZID),
+#                     organism = "hsapiens",
+#                     significant = FALSE,
+#                     ordered_query = FALSE,
+#                     domain_scope = "custom",
+#                     measure_underrepresentation = FALSE,
+#                     evcodes = FALSE,
+#                     user_threshold = 0.05,
+#                     correction_method = c("fdr"),
+#                     custom_bg = background_genes$ENTREZID,
+#                     sources=c("GO:BP","KEGG"))
+# saveRDS(ESR_hypo_resgenes_AC,"data/GO_KEGG_analysis/ESR_hypo_resgenes_AC.RDS")
+
+
+ESR_hypo_resgenes_AC <- readRDS("data/GO_KEGG_analysis/ESR_hypo_resgenes_AC.RDS")
+
+ESR_hypo_restable_AC <- ESR_hypo_resgenes_AC$result %>% 
+  dplyr::select(c(source, term_id,
+                  term_name,intersection_size, 
+                   term_size, p_value))# %>% 
+
+ESR_hypo_restable_AC %>%
+   filter(source=="GO:BP", p_value < 0.05) %>%
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(.,caption = "GO:BP terms found in ESR_hypo neargenes") %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
+ESR_hypo_restable_AC %>%
+  filter(source=="KEGG") %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(., caption = "KEGG terms found in ESR_hypo accesible genes") %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+# intersect(unique(Resp_RNA$ENTREZID), unique(ESR_peak_list_20k$ENTREZID)))
+
+ESR_hypo_restable_AC %>%
+filter(source=="GO:BP", p_value < 0.05) %>% 
+  slice_head(n=10) %>% 
+  mutate(log10_p=(-log(p_value, base=10))) %>% 
+  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
+    geom_col(fill="#C77CFF")+
+  theme_bw()+
+  ylab("")+
+  xlab(paste0("-log10 p-value"))+
+  guides(fill="none")+
+  theme(axis.text.y = element_text(color="black"))+
+  ggtitle("ESR_hypo accessible gene list")
+
+
+
+ESR_hyper_resgenes_AC <- readRDS("data/GO_KEGG_analysis/ESR_hyper_resgenes_AC.RDS")
+
+ESR_hyper_restable_AC <- ESR_hyper_resgenes_AC$result %>% 
+  dplyr::select(c(source, term_id,
+                  term_name,intersection_size, 
+                   term_size, p_value))# %>% 
+
+ESR_hyper_restable_AC %>%
+   filter(source=="GO:BP", p_value < 0.05) %>%
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(.,caption = "GO:BP terms found in ESR_hypo neargenes") %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
+ESR_hyper_restable_AC %>%
+  filter(source=="KEGG") %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(., caption = "KEGG terms found in ESR_hypo accesible genes") %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+# intersect(unique(Resp_RNA$ENTREZID), unique(ESR_peak_list_20k$ENTREZID)))
+
+ESR_hyper_restable_AC %>%
+filter(source=="GO:BP", p_value < 0.05) %>% 
+  slice_head(n=10) %>% 
+  mutate(log10_p=(-log(p_value, base=10))) %>% 
+  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
+    geom_col(fill="#C77CFF")+
+  theme_bw()+
+  ylab("")+
+  xlab(paste0("-log10 p-value"))+
+  guides(fill="none")+
+  theme(axis.text.y = element_text(color="black"))+
+  ggtitle("ESR_hypo accessible gene list")
+
+
+
+```
+
+### peakspecific GO
+
+What I did:  using the `col_specific_peak_near` data frame as background (all peaks),
+I used peaks assigned to each Response section as the query to see what was going on in each response group.  They basically all said the same thing.  Cellular process and Biological process enrichment.
+
+When I looked at KEGG pathways,  the first thing on everyone's enrichment list was KEGG Terms, but then I saw some interesting things (see below)
+
+
+
+```{r peakspecific by location}
+# peakspecific_NR <- gost(query =NR_peakspecific_list$location,
+#                     organism = "hsapiens",
+#                     significant = FALSE,
+#                     ordered_query = FALSE,
+#                     domain_scope = "custom",
+#                     measure_underrepresentation = FALSE,
+#                     evcodes = FALSE,
+#                     user_threshold = 0.05,
+#                     correction_method = c("fdr"),
+#                     custom_bg = col_specfic_peak_near$location,
+#                     sources=c("GO:BP","KEGG"))
+
+# saveRDS(peakspecific_EAR,"data/GO_KEGG_analysis/peakspecific_EAR.RDS")
+# saveRDS(peakspecific_ESR,"data/GO_KEGG_analysis/peakspecific_ESR.RDS")
+# saveRDS(peakspecific_LR,"data/GO_KEGG_analysis/peakspecific_LR.RDS")
+# saveRDS(peakspecific_NR,"data/GO_KEGG_analysis/peakspecific_NR.RDS")
+
+peakspecific_EAR <-readRDS("data/GO_KEGG_analysis/peakspecific_EAR.RDS")
+peakspecific_ESR <- readRDS("data/GO_KEGG_analysis/peakspecific_EsR.RDS")
+peakspecific_LR <- readRDS("data/GO_KEGG_analysis/peakspecific_LR.RDS")
+peakspecific_NR <- readRDS("data/GO_KEGG_analysis/peakspecific_NR.RDS")
+
+
+peak_spec_restableNR <- peakspecific_NR$result %>% 
+  dplyr::select(c(source, term_id,
+                  term_name,intersection_size, 
+                   term_size, p_value))# %>% 
+peak_spec_restableEAR <- peakspecific_EAR$result %>% 
+  dplyr::select(c(source, term_id,
+                  term_name,intersection_size, 
+                   term_size, p_value))# %>% 
+
+peak_spec_restableESR <- peakspecific_ESR$result %>% 
+  dplyr::select(c(source, term_id,
+                  term_name,intersection_size, 
+                   term_size, p_value))# %>% 
+
+peak_spec_restableLR <- peakspecific_LR$result %>% 
+  dplyr::select(c(source, term_id,
+                  term_name,intersection_size, 
+                   term_size, p_value))# %>% 
+
+
+peak_spec_restableLR %>%
+   filter(source=="KEGG", p_value < 0.05) %>%
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(.,caption = "GO:BP terms found in LR peak enriched terms") %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+peak_spec_restableESR %>%
+   filter(source=="KEGG", p_value < 0.05) %>%
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(.,caption = "GO:BP terms found in ESR peak enriched terms") %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+peak_spec_restableEAR %>%
+   filter(source=="KEGG", p_value < 0.05) %>%
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(.,caption = "GO:BP terms found in EAR peak enriched terms") %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+peak_spec_restableNR %>%
+   filter(source=="KEGG", p_value < 0.05) %>%
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(.,caption = "GO:BP terms found in NR peak enriched terms") %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
+```
+
+Now I will try hyper/hypo accessible with the same background:
+
+
+```{r hypohyper peak enrich}
+
+hypo_EAR_ps <- EAR_peakspecific_list %>% dplyr::select(peakid,location) %>% dplyr::filter(peakid %in%  DOX24h_peaks_hypo_list$peak)
+
+hyper_EAR_ps <- EAR_peakspecific_list %>% dplyr::select(peakid,location) %>% dplyr::filter(peakid %in%  DOX24h_peaks_hyper_list$peak)
+
+hypo_ESR_ps <- ESR_peakspecific_list %>% dplyr::select(peakid,location) %>% dplyr::filter(peakid %in%  DOX24h_peaks_hypo_list$peak)
+
+hyper_ESR_ps <- ESR_peakspecific_list %>% dplyr::select(peakid,location) %>% dplyr::filter(peakid %in%  DOX24h_peaks_hyper_list$peak)
+
+hypo_LR_ps <- LR_peakspecific_list %>% dplyr::select(peakid,location) %>% dplyr::filter(peakid %in%  DOX24h_peaks_hypo_list$peak)
+
+hyper_LR_ps <- LR_peakspecific_list %>% dplyr::select(peakid,location) %>% dplyr::filter(peakid %in%  DOX24h_peaks_hyper_list$peak)
+
+hypo_NR_ps <- NR_peakspecific_list %>% dplyr::select(peakid,location) %>% dplyr::filter(peakid %in%  DOX24h_peaks_hypo_list$peak)
+
+hyper_NR_ps <- NR_peakspecific_list %>% dplyr::select(peakid,location) %>% dplyr::filter(peakid %in%  DOX24h_peaks_hyper_list$peak)
+  
+
+# peakspecific_NR_hyper <- gost(query = unique(hyper_NR_ps$location),
+#                     organism = "hsapiens",
+#                     significant = FALSE,
+#                     ordered_query = FALSE,
+#                     domain_scope = "custom",
+#                     measure_underrepresentation = FALSE,
+#                     evcodes = FALSE,
+#                     user_threshold = 0.05,
+#                     correction_method = c("fdr"),
+#                     custom_bg = col_specfic_peak_near$location,
+#                     sources=c("GO:BP","KEGG"))
+
+# saveRDS(peakspecific_EAR_hyper,"data/GO_KEGG_analysis/peakspecific_EAR_hyper.RDS")
+# saveRDS(peakspecific_EAR_hypo,"data/GO_KEGG_analysis/peakspecific_EAR_hypo.RDS")
+# 
+# saveRDS(peakspecific_ESR_hyper,"data/GO_KEGG_analysis/peakspecific_ESR_hyper.RDS")
+# saveRDS(peakspecific_ESR_hypo,"data/GO_KEGG_analysis/peakspecific_ESR_hypo.RDS")
+
+# saveRDS(peakspecific_LR_hyper,"data/GO_KEGG_analysis/peakspecific_LR_hyper.RDS")
+# saveRDS(peakspecific_LR_hypo,"data/GO_KEGG_analysis/peakspecific_LR_hypo.RDS")
+
+# saveRDS(peakspecific_NR_hyper,"data/GO_KEGG_analysis/peakspecific_NR_hyper.RDS")
+# saveRDS(peakspecific_NR_hypo,"data/GO_KEGG_analysis/peakspecific_NR_hypo.RDS")
+
+
+
+```
+

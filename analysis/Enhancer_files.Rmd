@@ -62,6 +62,7 @@ library(TFBSTools)
 library(MotifDb)
 library(BSgenome.Hsapiens.UCSC.hg38)
 library(plyranges)
+library(genomation)
 
 ```
 
@@ -107,77 +108,102 @@ peakAnnoList_n45_motif <- readRDS("data/peakAnnoList_n45_motif.RDS")
 
 peakAnnoList_3_n45 <- readRDS("data/peakAnnoList_3_n45.RDS")
 peakAnnoList_24_n45<- readRDS("data/peakAnnoList_24_n45.RDS")
+
+all_peak_gr <- as.GRanges(peakAnnoList_24_n45$background)
+
+Joined_tss_neargene <- all_peak_gr %>% 
+  as.data.frame() %>% 
+  dplyr::select(seqnames:id,geneId,distanceToTSS) %>% 
+  dplyr::filter(!grepl("chrX",id)& !grepl("chrY",id))%>%
+  dplyr::rename("close_geneId"="geneId") %>% 
+  mutate(start=start+1) %>% 
+  left_join(., col_ng_peak, by=c("id"="peakid", "start"="start","end"="end")) %>% 
+  dplyr::rename("NCBI_gene_NG"="NCBI_gene") 
+
+  
+### THESE ARE DAR peaks (not total peaks)
+
+
+
 DOX_3hr <- as.data.frame(peakAnnoList_3_n45$DOX_3_n45)
-DOX_3hr_gr <- GRanges(DOX_3hr)
+DOX_3hr_gr <- as.GRanges(peakAnnoList_3_n45$DOX_3_n45)
 EPI_3hr <- as.data.frame(peakAnnoList_3_n45$EPI_3_n45)
-EPI_3hr_gr <- GRanges(EPI_3hr)
+EPI_3hr_gr <- as.GRanges(peakAnnoList_3_n45$EPI_3_n45)
 DNR_3hr <- as.data.frame(peakAnnoList_3_n45$DNR_3_n45)
-DNR_3hr_gr <- GRanges(DNR_3hr)
+DNR_3hr_gr <- as.GRanges(peakAnnoList_3_n45$DNR_3_n45)
 MTX_3hr <- as.data.frame(peakAnnoList_3_n45$MTX_3_n45)
-MTX_3hr_gr <- GRanges(MTX_3hr)
-# TRZ_3hr <- as.data.frame(peakAnnoList_3_n45$TRZ_3_n45)
+MTX_3hr_gr <- as.GRanges(peakAnnoList_3_n45$MTX_3_n45)
+# # TRZ_3hr <- as.data.frame(peakAnnoList_3_n45$TRZ_3_n45)
 # TRZ_3hr_gr <- GRanges(TRZ_3hr)
-DOX_3_peak_list_20k <-  col_ng_peak %>%
-  dplyr::filter(dist_to_NG<20000) %>% 
-    dplyr::filter(peakid %in% DOX_3hr$id) 
-EPI_3_peak_list_20k <-  col_ng_peak %>%
-  dplyr::filter(dist_to_NG<20000) %>% 
-    dplyr::filter(peakid %in% EPI_3hr$id) 
-DNR_3_peak_list_20k <-  col_ng_peak %>%
-  dplyr::filter(dist_to_NG<20000) %>% 
-    dplyr::filter(peakid %in% DNR_3hr$id) 
-MTX_3_peak_list_20k <-  col_ng_peak %>%
-  dplyr::filter(dist_to_NG<20000) %>% 
-    dplyr::filter(peakid %in% MTX_3hr$id) 
+DOX_3_peak_list <-  col_ng_peak %>%
+  # dplyr::filter(dist_to_NG<20000) %>%
+    dplyr::filter(peakid %in% DOX_3hr$id)
+EPI_3_peak_list <-  col_ng_peak %>%
+  # dplyr::filter(dist_to_NG<20000) %>%
+    dplyr::filter(peakid %in% EPI_3hr$id)
+DNR_3_peak_list <-  col_ng_peak %>%
+  # dplyr::filter(dist_to_NG<20000) %>%
+    dplyr::filter(peakid %in% DNR_3hr$id)
+MTX_3_peak_list <-  col_ng_peak %>%
+  # dplyr::filter(dist_to_NG<20000) %>%
+    dplyr::filter(peakid %in% MTX_3hr$id)
 
-
+### THESE ARE DAR peaks (not total peaks)
 
 DOX_24hr <- as.data.frame(peakAnnoList_24_n45$DOX_24_n45)
-DOX_24hr_gr <- GRanges(DOX_24hr)
+DOX_24hr_gr <- as.GRanges(peakAnnoList_24_n45$DOX_24_n45)
 EPI_24hr <- as.data.frame(peakAnnoList_24_n45$EPI_24_n45)
-EPI_24hr_gr <- GRanges(EPI_24hr)
+EPI_24hr_gr <-as.GRanges(peakAnnoList_24_n45$EPI_24_n45)
 DNR_24hr <- as.data.frame(peakAnnoList_24_n45$DNR_24_n45)
-DNR_24hr_gr <- GRanges(DNR_24hr)
+DNR_24hr_gr <- as.GRanges(peakAnnoList_24_n45$DNR_24_n45)
 MTX_24hr <- as.data.frame(peakAnnoList_24_n45$MTX_24_n45)
-MTX_24hr_gr <- GRanges(MTX_24hr)
+MTX_24hr_gr <- as.GRanges(peakAnnoList_24_n45$MTX_24_n45)
 # TRZ_24hr <- as.data.frame(peakAnnoList_24_n45$TRZ_24_n45)
-# TRZ_24hr_gr <- GRanges(TRZ_24hr)
-
-DOX_24_peak_list_20k <-  col_ng_peak %>%
-  dplyr::filter(dist_to_NG<20000) %>% 
-    dplyr::filter(peakid %in% DOX_24hr$id) 
-EPI_24_peak_list_20k <-  col_ng_peak %>%
-  dplyr::filter(dist_to_NG<20000) %>% 
-    dplyr::filter(peakid %in% EPI_24hr$id) 
-DNR_24_peak_list_20k <-  col_ng_peak %>%
-  dplyr::filter(dist_to_NG<20000) %>% 
-    dplyr::filter(peakid %in% DNR_24hr$id) 
-MTX_24_peak_list_20k <-  col_ng_peak %>%
-  dplyr::filter(dist_to_NG<20000) %>% 
-    dplyr::filter(peakid %in% MTX_24hr$id) 
+# TRZ_24hr_gr <- as.GRanges(peakAnnoList_24_n45$TRZ_24_n45)
+## THESE ARE DAR peaks (not total peaks)
+DOX_24_peak_list <-  col_ng_peak %>%
+  # dplyr::filter(dist_to_NG<20000) %>%
+    dplyr::filter(peakid %in% DOX_24hr$id)
+EPI_24_peak_list <-  col_ng_peak %>%
+  # dplyr::filter(dist_to_NG<20000) %>%
+    dplyr::filter(peakid %in% EPI_24hr$id)
+DNR_24_peak_list <-  col_ng_peak %>%
+  # dplyr::filter(dist_to_NG<20000) %>%
+    dplyr::filter(peakid %in% DNR_24hr$id)
+MTX_24_peak_list <-  col_ng_peak %>%
+  # dplyr::filter(dist_to_NG<20000) %>%
+    dplyr::filter(peakid %in% MTX_24hr$id)
 
 
 EAR_df <- as.data.frame(peakAnnoList_n45_motif$EAR_n45_gr)
-EAR_df_gr <-  GRanges(EAR_df)
+EAR_df_gr <-  as.GRanges(peakAnnoList_n45_motif$EAR_n45_gr)
 
 
 ESR_df <- as.data.frame(peakAnnoList_n45_motif$ESR_n45_gr)
-ESR_df_gr <-  GRanges(ESR_df)
+ESR_df_gr <- as.GRanges(peakAnnoList_n45_motif$ESR_n45_gr)
 
 LR_df <- as.data.frame(peakAnnoList_n45_motif$LR_n45_gr)
-LR_df_gr <-  GRanges(LR_df)
+LR_df_gr <-  as.GRanges(peakAnnoList_n45_motif$LR_n45_gr)
 
 NR_df <- as.data.frame(peakAnnoList_n45_motif$NR_n45_gr)
-NR_df_gr <-  GRanges(NR_df)
+NR_df_gr <-  as.GRanges(peakAnnoList_n45_motif$NR_n45_gr)
 
 
 EAR_peak_list_20k <-  col_ng_peak %>%
   dplyr::filter(dist_to_NG<20000) %>%
     dplyr::filter(peakid %in% EAR_df$id) %>% 
-  mutate(MRC="EAR")
+  mutate(MRC="EAR") 
+
+EAR_peak_list <-  col_ng_peak %>%
+    dplyr::filter(peakid %in% EAR_df$id) %>% 
+  mutate(MRC="EAR") 
 
 ESR_peak_list_20k <- col_ng_peak %>%
   dplyr::filter(dist_to_NG<20000) %>%
+    dplyr::filter(peakid %in% ESR_df$id) %>% 
+    mutate(MRC="ESR")
+
+ESR_peak_list<- col_ng_peak %>%
     dplyr::filter(peakid %in% ESR_df$id) %>% 
     mutate(MRC="ESR")
 
@@ -186,8 +212,15 @@ LR_peak_list_20k <- col_ng_peak %>%
     dplyr::filter(peakid %in% LR_df$id) %>% 
     mutate(MRC="LR")
 
+LR_peak_list <- col_ng_peak %>%
+    dplyr::filter(peakid %in% LR_df$id) %>% 
+    mutate(MRC="LR")
+
 NR_peak_list_20k <- col_ng_peak %>%
   dplyr::filter(dist_to_NG<20000) %>%
+    dplyr::filter(peakid %in% NR_df$id) %>% 
+    mutate(MRC="NR")
+NR_peak_list <- col_ng_peak %>%
     dplyr::filter(peakid %in% NR_df$id) %>% 
     mutate(MRC="NR")
 
@@ -196,31 +229,32 @@ peak_list_20k_MRC <- EAR_peak_list_20k %>%
   rbind(LR_peak_list_20k) %>% 
   rbind(NR_peak_list_20k)
 
+peak_list_MRC <- EAR_peak_list %>% 
+  rbind(ESR_peak_list) %>% 
+  rbind(LR_peak_list) %>% 
+  rbind(NR_peak_list)
 
-
-gr_EAR_peak_list_20k <-  col_ng_peak %>%
-  dplyr::filter(dist_to_NG<20000) %>%
+gr_EAR_peak_list<-  col_ng_peak %>%
     dplyr::filter(peakid %in% EAR_df$id) %>% 
   mutate(MRC="EAR") %>% 
   GRanges()
 
-gr_ESR_peak_list_20k <- col_ng_peak %>%
-  dplyr::filter(dist_to_NG<20000) %>%
+gr_ESR_peak_list <- col_ng_peak %>%
     dplyr::filter(peakid %in% ESR_df$id) %>% 
     mutate(MRC="ESR")%>% 
   GRanges()
 
-gr_LR_peak_list_20k <- col_ng_peak %>%
-  dplyr::filter(dist_to_NG<20000) %>%
+gr_LR_peak_list <- col_ng_peak %>%
     dplyr::filter(peakid %in% LR_df$id) %>% 
     mutate(MRC="LR")%>% 
   GRanges()
 
-gr_NR_peak_list_20k <- col_ng_peak %>%
-  dplyr::filter(dist_to_NG<20000) %>%
+gr_NR_peak_list <- col_ng_peak %>%
     dplyr::filter(peakid %in% NR_df$id) %>% 
     mutate(MRC="NR")%>% 
+
   GRanges()
+
 n45_fullpeaks_gr <- readBed("data/n45_bedfiles/DAR_DEG_background.bed")
 ###file for ATACseq replicability
 ENCFF544RZR <-readRDS ("data/n45_bedfiles/ENCFF533RZR_gr.RDS")
@@ -235,22 +269,28 @@ ENCFF544RZR <-readRDS ("data/n45_bedfiles/ENCFF533RZR_gr.RDS")
 #    GRanges()
  
 Snyder_overlaps <- join_overlap_intersect(n45_fullpeaks_gr,ENCFF544RZR)
-84725
-length(find_overlaps(ENCFF544RZR,n45_fullpeaks_gr))
-test <- (subsetByOverlaps(n45_fullpeaks_gr,ENCFF544RZR))
-test %>% 
-  as.data.frame() %>% 
-  distinct(name)
-head(Snyder_overlaps)
+# 84725
+# length(find_overlaps(ENCFF544RZR,n45_fullpeaks_gr))
+# test <- (subsetByOverlaps(n45_fullpeaks_gr,ENCFF544RZR))
+# test %>% 
+#   as.data.frame() %>% 
+#   distinct(name)
+# head(Snyder_overlaps)
+toplist_ATAC <- readRDS("data/toplist_n45.RDS")
+
+toplist_DOX24_ATAC <- toplist_ATAC %>% 
+  dplyr::filter(trt=="DOX" & time=="24 hours")
+
 ```
 
 ### MRC venns
 
+These are Venns using the Neargenes between each set of peaks
 ```{r Venns of data}
-ggVennDiagram::ggVennDiagram(list(unique(EAR_peak_list_20k$ensembl_ID), 
-                                  unique(ESR_peak_list_20k$ensembl_ID),  
-                                  unique(LR_peak_list_20k$ensembl_ID), 
-                                  unique(NR_peak_list_20k$ensembl_ID)),
+ggVennDiagram::ggVennDiagram(list(unique(EAR_peak_list$ensembl_ID), 
+                                  unique(ESR_peak_list$ensembl_ID),  
+                                  unique(LR_peak_list$ensembl_ID), 
+                                  unique(NR_peak_list$ensembl_ID)),
                              category.names = c("EAR_NG","ESR_NG","LR_NG","NR_NG"),
               show_intersect = FALSE,
               set_color = "black",
@@ -260,163 +300,378 @@ ggVennDiagram::ggVennDiagram(list(unique(EAR_peak_list_20k$ensembl_ID),
               label_alpha = 1,
               label_color = "black",
               edge_lty = "solid", set_size = 4)+
-  ggtitle("Near gene distribution for peaks within 20kb")
+  ggtitle("Near gene distribution for all peaks")+
+  scale_x_continuous(expand = expansion(mult = .2))
 
 
 
-ggVennDiagram::ggVennDiagram(list(unique(EAR_peak_list_20k$NCBI_gene),EAR_RNA$ENTREZID),
+ggVennDiagram::ggVennDiagram(list(unique(EAR_peak_list$NCBI_gene),EAR_RNA$ENTREZID),
               category.names = c("EAR_ATAC","EAR_RNA"), label = "count")+
-  labs(title = "EAR MRC-neargenes and expressed-RNA_MRC 20kb")+
-  theme(plot.title = element_text(size = rel(1.5), hjust = 0.5))
+  labs(title = "EAR ATAC-neargenes and expressed response RNA")+
+  theme(plot.title = element_text(size = rel(1.5), hjust = 0.5))+
+  scale_x_continuous(expand = expansion(mult = .2))
+  
 
-ggVennDiagram::ggVennDiagram(list(unique(ESR_peak_list_20k$NCBI_gene),ESR_RNA$ENTREZID),
+ggVennDiagram::ggVennDiagram(list(unique(ESR_peak_list$NCBI_gene),ESR_RNA$ENTREZID),
               category.names = c("ESR_ATAC","ESR_RNA"), label = "count")+
-  labs(title = "ESR MRC-neargenes and expressed-RNA_MRC 20kb")+
-  theme(plot.title = element_text(size = rel(1.5), hjust = 0.5))
+  labs(title = "ESRATAC-neargenes and expressed response RNA")+
+  theme(plot.title = element_text(size = rel(1.5), hjust = 0.5))+
+  scale_x_continuous(expand = expansion(mult = .2))
 
-ggVennDiagram::ggVennDiagram(list(unique(LR_peak_list_20k$NCBI_gene),LR_RNA$ENTREZID),
+ggVennDiagram::ggVennDiagram(list(unique(LR_peak_list$NCBI_gene),LR_RNA$ENTREZID),
               category.names = c("LR_ATAC","LR_RNA"), label = "count")+
-  labs(title = "LR MRC-neargenes and expressed-RNA_MRC 20kb")+
-  theme(plot.title = element_text(size = rel(1.5), hjust = 0.5))
+  labs(title = "LR ATAC-neargenes and expressed response RNA")+
+  theme(plot.title = element_text(size = rel(1.5), hjust = 0.5))+
+  scale_x_continuous(expand = expansion(mult = .2))
 
-ggVennDiagram::ggVennDiagram(list(unique(NR_peak_list_20k$NCBI_gene),NR_RNA$ENTREZID),
+ggVennDiagram::ggVennDiagram(list(unique(NR_peak_list$NCBI_gene),NR_RNA$ENTREZID),
               category.names = c("NR_ATAC","NR_RNA"), label = "count")+
-  labs(title = "NR MRC-neargenes and expressed-RNA_MRC 20kb")+
-  theme(plot.title = element_text(size = rel(1.5), hjust = 0.5))
+  labs(title = "NR ATAC-neargenes and expressed response RNA")+
+  theme(plot.title = element_text(size = rel(1.5), hjust = 0.5))+ 
+  scale_x_continuous(expand = expansion(mult = .2))
 
 
 ```
 
-### Enhancers and MRC
+### Enhancers and Response clusters
+
+
+First:  obtained a list of cis Regulatory Elements from Encode Screen
+[(https://screen.encodeproject.org/#)]
+
+
 ```{r  enhancers of the heart}
 # BiocManager::install("plyranges")
-enhancers_HLV_46F <- genomation::readBed("C:/Users/renee/Downloads/Supplements folde manuscriptr/ENCODE/heart_left_ventricle_tissue_female_adult_46_years.enhancers.bed")
-enh_HLV_46Fdf <- enhancers_HLV_46F %>% 
-  as.data.frame() %>% 
-  mutate(enh_type= if_else(itemRgb == "255,205,0","dELS","pELS"))
+# enhancers_HLV_46F <- genomation::readBed("C:/Users/renee/Downloads/Supplements folde manuscriptr/ENCODE/heart_left_ventricle_tissue_female_adult_46_years.enhancers.bed")
+ cREs_HLV_46F <- genomation::readBed("data/enhancerdata/ENCFF867HAD_ENCFF152PBB_ENCFF352YYH_ENCFF252IVK.7group.bed")
 
-testset <- findOverlaps(NR_df_gr,enhancers_HLV_46F)
-NR_enhancerlike <- join_overlap_intersect(gr_NR_peak_list_20k,enhancers_HLV_46F)
-LR_enhancerlike <- join_overlap_intersect(gr_LR_peak_list_20k,enhancers_HLV_46F)
-ESR_enhancerlike <- join_overlap_intersect(gr_ESR_peak_list_20k,enhancers_HLV_46F)
-EAR_enhancerlike <- join_overlap_intersect(gr_EAR_peak_list_20k,enhancers_HLV_46F)
+cREs_HLV_53F <- genomation::readBed("data/enhancerdata/ENCFF417JSF_ENCFF651XRK_ENCFF320IPT_ENCFF440RUS.7group.bed") 
+ 
+NR_cREs <- join_overlap_intersect(gr_NR_peak_list,cREs_HLV_46F)
+LR_cREs <- join_overlap_intersect(gr_LR_peak_list,cREs_HLV_46F)
+ESR_cREs <- join_overlap_intersect(gr_ESR_peak_list,cREs_HLV_46F)
+EAR_cREs <- join_overlap_intersect(gr_EAR_peak_list,cREs_HLV_46F)
 
+# NR_cREs_all <- join_overlap_intersect(NR_df_gr,cREs_HLV_46F)
+# LR_cREs_all <- join_overlap_intersect(LR_df_gr,cREs_HLV_46F)
+# ESR_cREs_all <- join_overlap_intersect(ESR_df_gr,cREs_HLV_46F)
+# EAR_cREs_all <- join_overlap_intersect(EAR_df_gr,cREs_HLV_46F)
 
+# Whole_peaks <- join_overlap_intersect(n45_fullpeaks_gr, cREs_HLV_46F)
 
-enhancerdf <- data.frame("MRC"=c("NR", "LR","ESR","EAR"), 
-              "cRE_yes"=c(length(findOverlaps(enhancers_HLV_46F,NR_df_gr)),
-                        length(findOverlaps(enhancers_HLV_46F,LR_df_gr)),
-                        length(findOverlaps(enhancers_HLV_46F,ESR_df_gr)),
-                        length(findOverlaps(enhancers_HLV_46F,EAR_df_gr))),
-              "cRE_no"=c(length(NR_df$seqnames)-length(findOverlaps(enhancers_HLV_46F,NR_df_gr)),
-                       length(LR_df$seqnames)-length(findOverlaps(enhancers_HLV_46F,LR_df_gr)), 
-                       length(ESR_df$seqnames)-length(findOverlaps(enhancers_HLV_46F,ESR_df_gr)),
-                       length(EAR_df$seqnames)-length(findOverlaps(enhancers_HLV_46F,EAR_df_gr))))
-
-enhancerdf <- data.frame("MRC"=c("NR", "LR","ESR","EAR"), 
-              "cRE_yes"=c(length(findOverlaps(enhancers_HLV_46F,NR_df_gr)),
-                        length(findOverlaps(enhancers_HLV_46F,LR_df_gr)),
-                        length(findOverlaps(enhancers_HLV_46F,ESR_df_gr)),
-                        length(findOverlaps(enhancers_HLV_46F,EAR_df_gr))),
-              "cRE_no"=c(length(NR_df$seqnames)-length(findOverlaps(enhancers_HLV_46F,NR_df_gr)),
-                       length(LR_df$seqnames)-length(findOverlaps(enhancers_HLV_46F,LR_df_gr)), 
-                       length(ESR_df$seqnames)-length(findOverlaps(enhancers_HLV_46F,ESR_df_gr)),
-                       length(EAR_df$seqnames)-length(findOverlaps(enhancers_HLV_46F,EAR_df_gr))))
-
-
-
-
-
-
-testdf <- enhancerdf %>% 
-  column_to_rownames("MRC") %>% 
-  as.matrix() 
-paste("Late Response chi")
-chisq.test(testdf[c(1,2),])
-paste("Early sustained Response chi")
-chisq.test(testdf[c(1,3),])
-paste("Early-acute Response chi")
-chisq.test(testdf[c(1,4),])
-
-enhancerdf %>% 
-      pivot_longer(., cols=c(cRE_yes,cRE_no), names_to = "Enh_status", values_to = "count") %>% 
-  mutate(MRC=factor(MRC, levels = c("NR","EAR", "ESR","LR"))) %>% 
-  ggplot(., aes(x = MRC, y= count ))+
-    geom_bar(position ="fill", stat="identity", aes(fill=Enh_status))
-unique(enhancers_HLV_46F$blockCount)
-
-
-MRC_enh_like_df <- NR_enhancerlike %>% 
-  as.data.frame() %>% 
-  mutate(MRC="NR") %>% 
-  rbind(., LR_enhancerlike %>% 
-           as.data.frame() %>% 
-           mutate(MRC="LR")) %>% 
-  rbind(., ESR_enhancerlike %>% 
-           as.data.frame() %>% 
-           mutate(MRC="ESR")) %>% 
-  rbind(.,EAR_enhancerlike %>% 
-           as.data.frame() %>% 
-           mutate(MRC="EAR")) %>% 
-   mutate(enh_type= if_else(itemRgb == "255,205,0","dELS","pELS"))
-
-MRC_enh_like_df %>% 
-  group_by(MRC, enh_type) %>% 
+NR_cREs %>%
+  as.data.frame() %>%
+  group_by(blockCount) %>%
   count() %>% 
-  pivot_wider(id_cols= MRC, names_from = enh_type, values_from = n) %>% ##this worked to display as a table via kable
-  mutate(total_20kb_peaks = if_else(MRC == "EAR",4813,if_else(MRC =="ESR",10122,if_else(MRC=="LR",25610,54209)))) %>% 
-  kable(.,booktabs = TRUE,caption="ATAC peaks that overlap Encode heart enhancer-like sequences"  ) %>% 
-  kable_paper("basic", full_width = FALSE) %>%
-  kable_styling(position="center", font_size = 20) %>%
-  scroll_box(height = "500px")
+  mutate(MRC="NR", per=n/(length(unique(NR_cREs$peakid)))) %>% 
+  kable(., caption=paste0("No Response peaks overlapping cREs n= ", length(unique(NR_cREs$peakid)))) %>% 
+  kable_paper("striped", full_width = TRUE) %>%
+  kable_styling(full_width = FALSE, font_size = 14)
 
 
-
-MRC_enh_like_df %>% 
-  group_by(MRC, enh_type) %>% 
+LR_cREs%>%
+  as.data.frame() %>%
+  group_by(blockCount) %>%
   count() %>% 
-  pivot_wider(id_cols= MRC, names_from = enh_type, values_from = n) %>% ##this worked to display as a table via kable
-  mutate(total_20kb_peaks = if_else(MRC == "EAR",4813,if_else(MRC =="ESR",10122,if_else(MRC=="LR",25610,54209)))) %>% 
-  pivot_longer(dELS:pELS, names_to = "enh_type", values_to = "enh") %>% 
-  mutate(enh_type=factor(enh_type, levels = c("pELS","dELS")), not_enh=total_20kb_peaks-enh) %>% 
-  pivot_longer(enh:not_enh, names_to="enh_status", values_to="count") %>% 
-  mutate(enh_status=factor(enh_status, levels = c("not_enh", "enh"))) %>% 
-  mutate(MRC = factor(MRC, levels = c("NR","EAR","ESR","LR"))) %>% 
-   ggplot(., aes(x = MRC, y= count ))+
-    geom_bar(position ="fill", stat="identity", aes(fill=enh_status))+
-  facet_wrap(~enh_type) + 
+  mutate(MRC="LR", per=n/25610) %>% 
+kable(., caption="Late Response peaks overlapping cREs") %>% 
+  kable_paper("striped", full_width = TRUE) %>%
+  kable_styling(full_width = FALSE, font_size = 14)
+
+ESR_cREs %>%
+  as.data.frame() %>%
+  # dplyr::filter(blockCount=="CTCF-only,CTCF-bound") %>%
+  group_by(blockCount) %>%
+ count() %>% 
+  mutate(MRC="ESR", per=n/10122) %>% 
+  kable(., caption="Early-sustained response peaks overlapping cREs") %>% 
+  kable_paper("striped", full_width = TRUE) %>%
+  kable_styling(full_width = FALSE, font_size = 14)
+
+
+EAR_cREs %>%
+  as.data.frame() %>%
+  group_by(blockCount) %>%
+  count() %>% 
+  mutate(MRC="EAR", per=n/4813) %>% 
+  kable(., caption="Early acute response peaks overlapping cREs") %>% 
+  kable_paper("striped") %>%
+  kable_styling(full_width = FALSE, font_size = 14)
+```
+
+### Visualization of categories:
+
+First, filtering cRE set by type to include 'CTCF-only,CTCF-bound', 'PLS', 'PLS,CTCF-bound','dELS', 'dELS,CTCF-bound', 'pELS', 'pELS,CTCF-bound'.
+
+Second, reclassify (new column) to group the CTCF-bound into their respective groups so only 4 groups, ("CTCF-only","PLS","dELS", "pELS") are created.
+
+Third, left-join the DOX24hr ATAC LFC to data set and boxplot by group.
+
+PLS= promoter like sequences
+pELS= proximal enhancer like sequences
+dELS=distal enhancer like sequences
+
+```{r  EARcRE maps}
+adj_toplist_DOX24_ATAC <- toplist_DOX24_ATAC%>% 
+  dplyr::filter(adj.P.Val<0.05,.keepall=TRUE)
+
+EAR_cREs %>%
+  as.data.frame() %>%
+  dplyr::filter(blockCount=="CTCF-only,CTCF-bound"|blockCount =="PLS"|blockCount =="PLS,CTCF-bound"|blockCount =="dELS"|blockCount =="dELS,CTCF-bound"|blockCount =="pELS"|blockCount =="pELS,CTCF-bound") %>% 
+  mutate(type=if_else(blockCount=="CTCF-only,CTCF-bound","CTCF-only",
+                      if_else(grepl("PLS",blockCount),"Promoter-like",
+                              if_else(grepl("pELS",blockCount),"Proximal enhancer-like", "Distal enhancer-like"),blockCount))) %>% 
+  left_join(., toplist_DOX24_ATAC, by =c("peakid"="peak")) %>% 
+  na.omit() %>% 
+  dplyr::select(logFC,peakid,type) %>% 
+  mutate(direction=if_else(logFC>0,"open","closed")) %>% 
+  mutate(type=factor(type, levels = c("Promoter-like","Proximal enhancer-like","Distal enhancer-like","CTCF-only"))) %>%
+  mutate(direction=factor(direction, levels=c("open","closed"))) %>% 
+  ggplot(., aes(y=type, x=logFC,group=type))+
+  geom_boxplot() +
+  scale_fill_discrete()+
+  ggtitle(paste0("EAR n = ",length(unique(EAR_cREs$peakid))," out of ", length(unique(EAR_df$id)), " total peaks (",sprintf("%.1f",length(unique(EAR_cREs$peakid))/length(unique(EAR_df$id))*100),"%)"))+
+  # facet_wrap(~direction)+
   theme_bw()
-  
-  
+
+
+
+ESR_cREs %>%
+  as.data.frame() %>%
+  dplyr::filter(blockCount=="CTCF-only,CTCF-bound"|blockCount =="PLS"|blockCount =="PLS,CTCF-bound"|blockCount =="dELS"|blockCount =="dELS,CTCF-bound"|blockCount =="pELS"|blockCount =="pELS,CTCF-bound") %>% 
+  mutate(type=if_else(blockCount=="CTCF-only,CTCF-bound","CTCF-only",
+                      if_else(grepl("PLS",blockCount),"Promoter-like",
+                              if_else(grepl("pELS",blockCount),"Proximal enhancer-like", "Distal enhancer-like"),blockCount))) %>% 
+  left_join(., toplist_DOX24_ATAC, by =c("peakid"="peak")) %>% 
+  na.omit() %>% 
+  dplyr::select(logFC,peakid,type) %>% 
+  mutate(direction=if_else(logFC>0,"open","closed")) %>% 
+  mutate(type=factor(type, levels = c("Promoter-like","Proximal enhancer-like","Distal enhancer-like","CTCF-only"))) %>%
+  mutate(direction=factor(direction, levels=c("open","closed"))) %>% 
+   ggplot(., aes(y=type, x=logFC,group=type))+
+  geom_boxplot() +
+  scale_fill_discrete()+
+  ggtitle(paste0("ESR n = ",length(unique(ESR_cREs$peakid))," out of ", length(unique(ESR_df$id)), " total peaks (",sprintf("%.1f",length(unique(ESR_cREs$peakid))/length(unique(ESR_df$id))*100),"%)"))+
+  # facet_wrap(~direction)+
+  theme_bw()
+
+
+LR_cREs %>%
+  as.data.frame() %>%
+  dplyr::filter(blockCount=="CTCF-only,CTCF-bound"|blockCount =="PLS"|blockCount =="PLS,CTCF-bound"|blockCount =="dELS"|blockCount =="dELS,CTCF-bound"|blockCount =="pELS"|blockCount =="pELS,CTCF-bound") %>% 
+  mutate(type=if_else(blockCount=="CTCF-only,CTCF-bound","CTCF-only",
+                      if_else(grepl("PLS",blockCount),"Promoter-like",
+                              if_else(grepl("pELS",blockCount),"Proximal enhancer-like", "Distal enhancer-like"),blockCount))) %>% 
+  left_join(., toplist_DOX24_ATAC, by =c("peakid"="peak")) %>% 
+  na.omit() %>% 
+  dplyr::select(logFC,peakid,type) %>% 
+  mutate(direction=if_else(logFC>0,"open","closed")) %>% 
+  mutate(type=factor(type, levels = c("Promoter-like","Proximal enhancer-like","Distal enhancer-like","CTCF-only"))) %>%
+  mutate(direction=factor(direction, levels=c("open","closed"))) %>% 
+  ggplot(., aes(y=type, x=logFC,group=type))+
+  geom_boxplot() +
+  scale_fill_discrete()+
+  ggtitle(paste0("LR n = ",length(unique(LR_cREs$peakid))," out of ", length(unique(LR_df$id)), " total peaks (",sprintf("%.1f",length(unique(LR_cREs$peakid))/length(unique(LR_df$id))*100),"%)"))+
+  # facet_wrap(~direction)+
+  theme_bw()
+
+
+NR_cREs %>%
+  as.data.frame() %>%
+  dplyr::filter(blockCount=="CTCF-only,CTCF-bound"|blockCount =="PLS"|blockCount =="PLS,CTCF-bound"|blockCount =="dELS"|blockCount =="dELS,CTCF-bound"|blockCount =="pELS"|blockCount =="pELS,CTCF-bound") %>% 
+  mutate(type=if_else(blockCount=="CTCF-only,CTCF-bound","CTCF-only",
+                      if_else(grepl("PLS",blockCount),"Promoter-like",
+                              if_else(grepl("pELS",blockCount),"Proximal enhancer-like", "Distal enhancer-like"),blockCount))) %>% 
+  left_join(., toplist_DOX24_ATAC, by =c("peakid"="peak")) %>% 
+  na.omit() %>% 
+  dplyr::select(logFC,peakid,type) %>% 
+  mutate(direction=if_else(logFC>0,"open","closed")) %>% 
+  mutate(type=factor(type, levels = c("Promoter-like","Proximal enhancer-like","Distal enhancer-like","CTCF-only"))) %>%
+  mutate(direction=factor(direction, levels=c("open","closed"))) %>% 
+   ggplot(., aes(y=type, x=logFC,group=type))+
+  geom_boxplot() +
+  # facet_wrap(~direction)+
+  ggtitle(paste0("NR n = ",length(unique(NR_cREs$peakid))," out of ", length(unique(NR_df$id)), " total peaks (",sprintf("%.1f",length(unique(NR_cREs$peakid))/length(unique(NR_df$id))*100),"%)"))+
+  theme_bw()
+
+# cREs_HLV_46F %>%
+#   as.data.frame()# %>%
+#   dplyr::filter(blockCount=="CTCF-only,CTCF-bound"|blockCount =="PLS"|blockCount =="PLS,CTCF-bound"|blockCount =="dELS"|blockCount =="dELS,CTCF-bound"|blockCount =="pELS"|blockCount =="pELS,CTCF-bound") %>% 
+#   mutate(type=if_else(blockCount=="CTCF-only,CTCF-bound","CTCF-only",
+#                       if_else(grepl("PLS",blockCount),"Promoter-like",
+#                               if_else(grepl("pELS",blockCount),"Proximal enhancer-like", "Distal enhancer-like"),blockCount))) %>% 
+#   right_join(., toplist_DOX24_ATAC, by =c("peakid"="peak")) %>% 
+#     
+
 
 
 ```
 
-| Cluster | enhancers                                            | not enhancers                                                                |
-|------------------------|------------------------|------------------------|
-| NR      | `r length(findOverlaps(enhancers_HLV_46F,NR_df_gr))` | `r length(NR_df$seqnames)-length(findOverlaps(enhancers_HLV_46F,NR_df_gr))`  |
-| LR      | `r length(findOverlaps(enhancers_HLV_46F,LR_df_gr))` | `r length(LR_df$seqnames)-length(findOverlaps(enhancers_HLV_46F,LR_df_gr))` |
-| ESR     | `r length(findOverlaps(enhancers_HLV_46F,ESR_df_gr))` | `r length(ESR_df$seqnames)-length(findOverlaps(enhancers_HLV_46F,ESR_df_gr))` |
-| EAR     | `r length(findOverlaps(enhancers_HLV_46F,EAR_df_gr))` | `r length(EAR_df$seqnames)-length(findOverlaps(enhancers_HLV_46F,EAR_df_gr))` |
+###  EAR cREs with all peaks
+```{r enhacerstuffforlater EAR}
+toplist_DOX24_ATAC_nop <- toplist_ATAC %>% 
+  dplyr::filter(trt=="DOX" & time=="24 hours")
+EAR_cREs_all %>%
+  as.data.frame() %>%
+  group_by(blockCount) %>%
+  count() %>% 
+  mutate(MRC="EAR", per=n/7321) %>% 
+  kable(., caption="Early acute response peaks (7321) overlapping cREs") %>% 
+  kable_paper("striped") %>%
+  kable_styling(full_width = FALSE, font_size = 14)
 
-note the above table does not correct for many to one, as in many enhancers can map to one peak....   I learned how to use plyr
+EAR_cREs_all %>%
+  as.data.frame() %>%
+  dplyr::filter(blockCount=="CTCF-only,CTCF-bound"|blockCount =="PLS"|blockCount =="PLS,CTCF-bound"|blockCount =="dELS"|blockCount =="dELS,CTCF-bound"|blockCount =="pELS"|blockCount =="pELS,CTCF-bound") %>% 
+  mutate(type=if_else(blockCount=="CTCF-only,CTCF-bound","CTCF-only",
+                      if_else(grepl("PLS",blockCount),"Promoter-like",
+                              if_else(grepl("pELS",blockCount),"Proximal enhancer-like", "Distal enhancer-like"),blockCount))) %>% 
+  left_join(., toplist_DOX24_ATAC_nop, by =c("id"="peak")) %>% 
+  na.omit() %>% 
+  dplyr::select(logFC,id,type) %>% 
+  mutate(direction=if_else(logFC>0,"open","closed")) %>% 
+  mutate(type=factor(type, levels = c("Promoter-like","Proximal enhancer-like","Distal enhancer-like","CTCF-only"))) %>%
+  mutate(direction=factor(direction, levels=c("open","closed"))) %>% 
+  ggplot(., aes(y=type, x=logFC,group=type))+
+  geom_boxplot() +
+  scale_fill_discrete()+
+  ggtitle("EAR")+
+  # facet_wrap(~direction)+
+  theme_bw()
+```
+
+
+
+###  ESR cREs with all peaks
+```{r enhacerstuffforlater ESR}
+toplist_DOX24_ATAC_nop <- toplist_ATAC %>% 
+  dplyr::filter(trt=="DOX" & time=="24 hours")
+ESR_cREs_all %>%
+  as.data.frame() %>%
+  group_by(blockCount) %>%
+  count() %>% 
+  mutate(MRC="ESR", per=n/15665) %>% 
+  kable(., caption="Early sustained response peaks (15,665) overlapping cREs") %>% 
+  kable_paper("striped") %>%
+  kable_styling(full_width = FALSE, font_size = 14)
+
+ESR_cREs_all %>%
+  as.data.frame() %>%
+  dplyr::filter(blockCount=="CTCF-only,CTCF-bound"|blockCount =="PLS"|blockCount =="PLS,CTCF-bound"|blockCount =="dELS"|blockCount =="dELS,CTCF-bound"|blockCount =="pELS"|blockCount =="pELS,CTCF-bound") %>% 
+  mutate(type=if_else(blockCount=="CTCF-only,CTCF-bound","CTCF-only",
+                      if_else(grepl("PLS",blockCount),"Promoter-like",
+                              if_else(grepl("pELS",blockCount),"Proximal enhancer-like", "Distal enhancer-like"),blockCount))) %>% 
+  left_join(., toplist_DOX24_ATAC_nop, by =c("id"="peak")) %>% 
+  na.omit() %>% 
+  dplyr::select(logFC,id,type) %>% 
+  mutate(direction=if_else(logFC>0,"open","closed")) %>% 
+  mutate(type=factor(type, levels = c("Promoter-like","Proximal enhancer-like","Distal enhancer-like","CTCF-only"))) %>%
+  mutate(direction=factor(direction, levels=c("open","closed"))) %>% 
+  ggplot(., aes(y=type, x=logFC,group=type))+
+  geom_boxplot() +
+  scale_fill_discrete()+
+  ggtitle("ESR")+
+  # facet_wrap(~direction)+
+  theme_bw()
+```
+
+
+###  LR cREs with all peaks
+```{r enhacerstuffforlater LR}
+toplist_DOX24_ATAC_nop <- toplist_ATAC %>% 
+  dplyr::filter(trt=="DOX" & time=="24 hours")
+LR_cREs_all %>%
+  as.data.frame() %>%
+  group_by(blockCount) %>%
+  count() %>% 
+  mutate(MRC="LR", per=n/41759) %>% 
+  kable(., caption="Late response peaks (41,759) overlapping cREs") %>% 
+  kable_paper("striped") %>%
+  kable_styling(full_width = FALSE, font_size = 14)
+
+LR_cREs_all %>%
+  as.data.frame() %>%
+  dplyr::filter(blockCount=="CTCF-only,CTCF-bound"|blockCount =="PLS"|blockCount =="PLS,CTCF-bound"|blockCount =="dELS"|blockCount =="dELS,CTCF-bound"|blockCount =="pELS"|blockCount =="pELS,CTCF-bound") %>% 
+  mutate(type=if_else(blockCount=="CTCF-only,CTCF-bound","CTCF-only",
+                      if_else(grepl("PLS",blockCount),"Promoter-like",
+                              if_else(grepl("pELS",blockCount),"Proximal enhancer-like", "Distal enhancer-like"),blockCount))) %>% 
+  left_join(., toplist_DOX24_ATAC_nop, by =c("id"="peak")) %>% 
+  na.omit() %>% 
+  dplyr::select(logFC,id,type) %>% 
+  mutate(direction=if_else(logFC>0,"open","closed")) %>% 
+  mutate(type=factor(type, levels = c("Promoter-like","Proximal enhancer-like","Distal enhancer-like","CTCF-only"))) %>%
+  mutate(direction=factor(direction, levels=c("open","closed"))) %>% 
+  ggplot(., aes(y=type, x=logFC,group=type))+
+  geom_boxplot() +
+  scale_fill_discrete()+
+  ggtitle("LR")+
+  # facet_wrap(~direction)+
+  theme_bw()
+```
+
+
+
+###  NR cREs with all peaks
+```{r enhacerstuffforlater NR}
+toplist_DOX24_ATAC_nop <- toplist_ATAC %>% 
+  dplyr::filter(trt=="DOX" & time=="24 hours")
+NR_cREs_all %>%
+  as.data.frame() %>%
+  group_by(blockCount) %>%
+  count() %>% 
+  mutate(MRC="NR", per=n/83658) %>% 
+  kable(., caption="No response peaks (83,658) overlapping cREs") %>% 
+  kable_paper("striped") %>%
+  kable_styling(full_width = FALSE, font_size = 14)
+
+NR_cREs_all %>%
+  as.data.frame() %>%
+  dplyr::filter(blockCount=="CTCF-only,CTCF-bound"|blockCount =="PLS"|blockCount =="PLS,CTCF-bound"|blockCount =="dELS"|blockCount =="dELS,CTCF-bound"|blockCount =="pELS"|blockCount =="pELS,CTCF-bound") %>% 
+  mutate(type=if_else(blockCount=="CTCF-only,CTCF-bound","CTCF-only",
+                      if_else(grepl("PLS",blockCount),"Promoter-like",
+                              if_else(grepl("pELS",blockCount),"Proximal enhancer-like", "Distal enhancer-like"),blockCount))) %>% 
+  left_join(., toplist_DOX24_ATAC_nop, by =c("id"="peak")) %>% 
+  na.omit() %>% 
+  dplyr::select(logFC,id,type) %>% 
+  mutate(direction=if_else(logFC>0,"open","closed")) %>% 
+  mutate(type=factor(type, levels = c("Promoter-like","Proximal enhancer-like","Distal enhancer-like","CTCF-only"))) %>%
+  mutate(direction=factor(direction, levels=c("open","closed"))) %>% 
+  ggplot(., aes(y=type, x=logFC,group=type))+
+  geom_boxplot() +
+  scale_fill_discrete()+
+  ggtitle("NR")+
+  # facet_wrap(~direction)+
+  theme_bw()
+```
+
+
+
+
+| Cluster | eREs                                           | not cREs                                                                |
+|------------------------|------------------------|------------------------|
+| NR      | `r length(unique(NR_cREs$peakid))` | `r length(unique(NR_df$id))-length(unique(NR_cREs$peakid))`  |
+| LR      | `r length(unique(LR_cREs$peakid))` | `r length(unique(LR_df$id))-length(unique(LR_cREs$peakid))` |
+| ESR     | `r length(unique(ESR_cREs$peakid))` | `r length(unique(ESR_df$id))-length(unique(ESR_cREs$peakid))` |
+| EAR     | `r length(unique(EAR_cREs$peakid))` | `r length(unique(EAR_df$id))-length(unique(EAR_cREs$peakid))` |
+
+
 
 ```{r making enhancer NG sets}
-EAR_20k_peaks_gr <- GRanges(EAR_peak_list_20k)
-ESR_20k_peaks_gr <- GRanges(ESR_peak_list_20k)
-LR_20k_peaks_gr <- GRanges(LR_peak_list_20k)
-NR_20k_peaks_gr <- GRanges(NR_peak_list_20k)
-
-EAR_enh_peaks_20k <- as.data.frame(subsetByOverlaps(EAR_20k_peaks_gr,enhancers_HLV_46F))
-ESR_enh_peaks_20k <- as.data.frame(subsetByOverlaps(ESR_20k_peaks_gr,enhancers_HLV_46F))
-LR_enh_peaks_20k <- as.data.frame(subsetByOverlaps(LR_20k_peaks_gr,enhancers_HLV_46F))
-NR_enh_peaks_20k <- as.data.frame(subsetByOverlaps(NR_20k_peaks_gr,enhancers_HLV_46F))
+# EAR_20k_peaks_gr <- GRanges(EAR_peak_list_20k)
+# ESR_20k_peaks_gr <- GRanges(ESR_peak_list_20k)
+# LR_20k_peaks_gr <- GRanges(LR_peak_list_20k)
+# NR_20k_peaks_gr <- GRanges(NR_peak_list_20k)
+# 
+# EAR_enh_peaks_20k <- as.data.frame(subsetByOverlaps(EAR_20k_peaks_gr,enhancers_HLV_46F))
+# ESR_enh_peaks_20k <- as.data.frame(subsetByOverlaps(ESR_20k_peaks_gr,enhancers_HLV_46F))
+# LR_enh_peaks_20k <- as.data.frame(subsetByOverlaps(LR_20k_peaks_gr,enhancers_HLV_46F))
+# NR_enh_peaks_20k <- as.data.frame(subsetByOverlaps(NR_20k_peaks_gr,enhancers_HLV_46F))
 # saveRDS(EAR_enh_peaks_20k,"data/enhancerdata/EAR_enh_peaks_20k.RDS")
 # saveRDS(ESR_enh_peaks_20k,"data/enhancerdata/ESR_enh_peaks_20k.RDS")
 # saveRDS(LR_enh_peaks_20k,"data/enhancerdata/LR_enh_peaks_20k.RDS")
 # saveRDS(NR_enh_peaks_20k,"data/enhancerdata/NR_enh_peaks_20k.RDS")
-
-findOverlaps(enhancers_HLV_46F,NR_df_gr)
+### making a set that is with all peaks in motif
+# EAR_enh_peaks_20k <- subsetByOverlaps(NR_df_gr,enhancers_HLV_46F)
 
 ```
 
@@ -425,11 +680,11 @@ findOverlaps(enhancers_HLV_46F,NR_df_gr)
 
 
 ```{r DAR venns 3hr }
-ggVennDiagram::ggVennDiagram(list(DOX_3_peak_list_20k$peakid, 
-                                  EPI_3_peak_list_20k$peakid,  
-                                  DNR_3_peak_list_20k$peakid, 
-                                  MTX_3_peak_list_20k$peakid),
-                             category.names = c("DOX peaks","EPI peaks","DNR peaks","MTX peaks"),
+ggVennDiagram::ggVennDiagram(list(DOX_3_peak_list$peakid, 
+                                  EPI_3_peak_list$peakid,  
+                                  DNR_3_peak_list$peakid, 
+                                  MTX_3_peak_list$peakid),
+                             category.names = c("DOX peaks\n3 hour","EPI peaks\n3 hour","DNR peaks\n3 hour","MTX peaks\n3 hour"),
               show_intersect = FALSE,
               set_color = "black",
               label = "count",
@@ -439,11 +694,11 @@ ggVennDiagram::ggVennDiagram(list(DOX_3_peak_list_20k$peakid,
               label_color = "black",
               edge_lty = "solid", set_size = 4)
 
-ggVennDiagram::ggVennDiagram(list(unique(DOX_3_peak_list_20k$ensembl_ID), 
-                                  unique(EPI_3_peak_list_20k$ensembl_ID),  
-                                  unique(DNR_3_peak_list_20k$ensembl_ID), 
-                                  unique(MTX_3_peak_list_20k$ensembl_ID)),
-                             category.names = c("DOX_NG","EPI_NG","DNR_NG","MTX_NG"),
+ggVennDiagram::ggVennDiagram(list(unique(DOX_3_peak_list$ensembl_ID), 
+                                  unique(EPI_3_peak_list$ensembl_ID),  
+                                  unique(DNR_3_peak_list$ensembl_ID), 
+                                  unique(MTX_3_peak_list$ensembl_ID)),
+                             category.names = c("DOX_NG\n3 hour","EPI_NG\n3 hour","DNR_NG\n3 hour","MTX_NG\n3 hour"),
               show_intersect = FALSE,
               set_color = "black",
               label = "count",
@@ -453,15 +708,15 @@ ggVennDiagram::ggVennDiagram(list(unique(DOX_3_peak_list_20k$ensembl_ID),
               label_color = "black",
               edge_lty = "solid", set_size = 4)
 
-enhancerdf_DAR_3hr <- data.frame("DAR"=c("DOX_3", "EPI_3","DNR_3","MTX_3"), 
-              "cRE_yes"=c(length(findOverlaps(enhancers_HLV_46F,DOX_3hr_gr)),
-                        length(findOverlaps(enhancers_HLV_46F,EPI_3hr_gr)),
-                        length(findOverlaps(enhancers_HLV_46F,DNR_3hr_gr)),
-                        length(findOverlaps(enhancers_HLV_46F,MTX_3hr_gr))),
-              "cRE_no"=c(length(DOX_3hr_gr$geneId)-length(findOverlaps(enhancers_HLV_46F,DOX_3hr_gr)),
-                       length(EPI_3hr_gr$geneId)-length(findOverlaps(enhancers_HLV_46F,EPI_3hr_gr)), 
-                       length(DNR_3hr_gr$geneId)-length(findOverlaps(enhancers_HLV_46F,DNR_3hr_gr)),
-                       length(MTX_3hr_gr$geneId)-length(findOverlaps(enhancers_HLV_46F,MTX_3hr_gr))))
+# enhancerdf_DAR_3hr <- data.frame("DAR"=c("DOX_3", "EPI_3","DNR_3","MTX_3"), 
+#               "cRE_yes"=c(length(findOverlaps(enhancers_HLV_46F,DOX_3hr_gr)),
+#                         length(findOverlaps(enhancers_HLV_46F,EPI_3hr_gr)),
+#                         length(findOverlaps(enhancers_HLV_46F,DNR_3hr_gr)),
+#                         length(findOverlaps(enhancers_HLV_46F,MTX_3hr_gr))),
+#               "cRE_no"=c(length(DOX_3hr_gr$geneId)-length(findOverlaps(enhancers_HLV_46F,DOX_3hr_gr)),
+#                        length(EPI_3hr_gr$geneId)-length(findOverlaps(enhancers_HLV_46F,EPI_3hr_gr)), 
+#                        length(DNR_3hr_gr$geneId)-length(findOverlaps(enhancers_HLV_46F,DNR_3hr_gr)),
+#                        length(MTX_3hr_gr$geneId)-length(findOverlaps(enhancers_HLV_46F,MTX_3hr_gr))))
 
 
 
@@ -471,10 +726,10 @@ enhancerdf_DAR_3hr <- data.frame("DAR"=c("DOX_3", "EPI_3","DNR_3","MTX_3"),
 
 
 ```{r DAR venns 24hr }
-ggVennDiagram::ggVennDiagram(list(DOX_24_peak_list_20k$peakid, 
-                                  EPI_24_peak_list_20k$peakid,  
-                                  DNR_24_peak_list_20k$peakid, 
-                                  MTX_24_peak_list_20k$peakid),
+ggVennDiagram::ggVennDiagram(list(DOX_24_peak_list$peakid, 
+                                  EPI_24_peak_list$peakid,  
+                                  DNR_24_peak_list$peakid, 
+                                  MTX_24_peak_list$peakid),
                              category.names = c("DOX peaks","EPI peaks","DNR peaks","MTX peaks"),
               show_intersect = FALSE,
               set_color = "black",
@@ -485,10 +740,10 @@ ggVennDiagram::ggVennDiagram(list(DOX_24_peak_list_20k$peakid,
               label_color = "black",
               edge_lty = "solid", set_size = 4)
 
-ggVennDiagram::ggVennDiagram(list(unique(DOX_24_peak_list_20k$ensembl_ID), 
-                                  unique(EPI_24_peak_list_20k$ensembl_ID),  
-                                  unique(DNR_24_peak_list_20k$ensembl_ID), 
-                                  unique(MTX_24_peak_list_20k$ensembl_ID)),
+ggVennDiagram::ggVennDiagram(list(unique(DOX_24_peak_list$ensembl_ID), 
+                                  unique(EPI_24_peak_list$ensembl_ID),  
+                                  unique(DNR_24_peak_list$ensembl_ID), 
+                                  unique(MTX_24_peak_list$ensembl_ID)),
                              category.names = c("DOX_NG","EPI_NG","DNR_NG","MTX_NG"),
               show_intersect = FALSE,
               set_color = "black",
@@ -499,15 +754,15 @@ ggVennDiagram::ggVennDiagram(list(unique(DOX_24_peak_list_20k$ensembl_ID),
               label_color = "black",
               edge_lty = "solid", set_size = 4)
 
-enhancerdf_DAR_24hr <- data.frame("DAR"=c("DOX_24", "EPI_24","DNR_24","MTX_24"), 
-              "cRE_yes"=c(length(findOverlaps(enhancers_HLV_46F,DOX_24hr_gr)),
-                        length(findOverlaps(enhancers_HLV_46F,EPI_24hr_gr)),
-                        length(findOverlaps(enhancers_HLV_46F,DNR_24hr_gr)),
-                        length(findOverlaps(enhancers_HLV_46F,MTX_24hr_gr))),
-              "cRE_no"=c(length(DOX_24hr_gr$geneId)-length(findOverlaps(enhancers_HLV_46F,DOX_24hr_gr)),
-                       length(EPI_24hr_gr$geneId)-length(findOverlaps(enhancers_HLV_46F,EPI_24hr_gr)), 
-                       length(DNR_24hr_gr$geneId)-length(findOverlaps(enhancers_HLV_46F,DNR_24hr_gr)),
-                       length(MTX_24hr_gr$geneId)-length(findOverlaps(enhancers_HLV_46F,MTX_24hr_gr))))
+# enhancerdf_DAR_24hr <- data.frame("DAR"=c("DOX_24", "EPI_24","DNR_24","MTX_24"), 
+#               "cRE_yes"=c(length(findOverlaps(enhancers_HLV_46F,DOX_24hr_gr)),
+#                         length(findOverlaps(enhancers_HLV_46F,EPI_24hr_gr)),
+#                         length(findOverlaps(enhancers_HLV_46F,DNR_24hr_gr)),
+#                         length(findOverlaps(enhancers_HLV_46F,MTX_24hr_gr))),
+#               "cRE_no"=c(length(DOX_24hr_gr$geneId)-length(findOverlaps(enhancers_HLV_46F,DOX_24hr_gr)),
+#                        length(EPI_24hr_gr$geneId)-length(findOverlaps(enhancers_HLV_46F,EPI_24hr_gr)), 
+#                        length(DNR_24hr_gr$geneId)-length(findOverlaps(enhancers_HLV_46F,DNR_24hr_gr)),
+#                        length(MTX_24hr_gr$geneId)-length(findOverlaps(enhancers_HLV_46F,MTX_24hr_gr))))
 
 
 ```
