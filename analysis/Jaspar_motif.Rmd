@@ -93,9 +93,44 @@ xstreme_ESR_v_NR <-readRDS("data/xstreme/xstreme_ESR_v_NR.RDS")
 
 xstreme_LR_v_NR <- readRDS("data/xstreme/xstreme_LR_v_NR.RDS")
 
+peakAnnoList_n45_motif <- readRDS("data/peakAnnoList_n45_motif.RDS")
+EAR_df <- as.data.frame(peakAnnoList_n45_motif$EAR_n45_gr)
+EAR_df_gr <-  as.GRanges(peakAnnoList_n45_motif$EAR_n45_gr)
+
+ESR_df <- as.data.frame(peakAnnoList_n45_motif$ESR_n45_gr)
+ESR_df_gr <-  as.GRanges(peakAnnoList_n45_motif$ESR_n45_gr)
+
+LR_df <- as.data.frame(peakAnnoList_n45_motif$LR_n45_gr)
+LR_df_gr <- as.GRanges(peakAnnoList_n45_motif$LR_n45_gr)
+ 
+NR_df <- as.data.frame(peakAnnoList_n45_motif$NR_n45_gr)
+NR_df_gr <-  as.GRanges(peakAnnoList_n45_motif$NR_n45_gr)
+
+toplistall_RNA <- readRDS("data/other_papers/toplistall_RNA.RDS") 
+###Because of how I applied the DEG system in RNA-seq analysis, the lFC is opposite of the 
+###counts.   I did trt-veh instead of veh-trt.  therefore I need to multiply lfc by -1 to get t
+###the right correlation.
+
+toplistall_RNA <- toplistall_RNA %>% 
+  mutate(logFC = logFC*(-1))
+
+RNA_expresed_genes <- toplistall_RNA %>% 
+  # dplyr::filter(adj.P.Val <0.05) %>% 
+   mutate(expression = if_else(logFC<0,"down","up")) %>% 
+  dplyr::select(ENTREZID,SYMBOL,expression) %>% 
+  # dplyr::select(ENTREZID,SYMBOL) %>% 
+  unique(.)  
+RNA_expresed_genes_DE <- toplistall_RNA %>% 
+  dplyr::filter(adj.P.Val <0.05) %>%
+  mutate(expression = if_else(logFC<0,"down","up")) %>% 
+  dplyr::select(ENTREZID,SYMBOL,expression) %>% 
+  unique(.) 
+
+
+
 ```
 
-
+### Enrichment all peaks to NR peaks
 ```{r simmotif, message=FALSE, warning=FALSE}
 xstreme_EAR_v_NR %>% 
   dplyr::select(SIM_MOTIF,ALT_ID, ID,SEA_PVALUE,EVALUE) %>% 
@@ -156,8 +191,9 @@ gene_list_SEA <- xstreme_EAR_v_NR %>%
   
 ```
 
-
-
+#### After running SEA only on each data set
+This was using all peaks but allowing SEA to be run using random method as background.
+motif combinations by similarity were not applied.
 ```{r SEA-checks notthe same as sea_EAR!}
 
 EAR_sea <- read_delim("~/Ward Lab/Cardiotoxicity/ATAC-folder/motif enrichment/just_the MRCs/EAR_sea.tsv", 
@@ -200,64 +236,9 @@ LR_sea %>%
 ```
 
 
-
-### Looking at SEA data
-
-
-```{r SEA data, eval=FALSE, include=FALSE}
-
-ggplot(hits_ESR_250, aes(start))+
-  # geom_histogram(bins = 100)
-  geom_density()
-
-ggplot(hits_NR_ZNF384, aes(relScore))+
-  geom_histogram(bins = 100)
-
-hits_LR_PRDM1 %>%
-  mutate(id_mrc="LR") %>% 
-  rbind(.,(hits_NR_PRDM1  %>%
-  mutate(id_mrc="NR"))) %>%
-   rbind(.,(hits_ESR_PRDM1 %>%
-  mutate(id_mrc="ESR"))) %>%
-   rbind(.,(hits_EAR_PRDM1  %>%
-  mutate(id_mrc="EAR"))) %>%
-  dplyr::filter(relScore > .60)  %>% 
-  mutate(position=start-1000, line ="cut") %>% 
-  # rbind((hits_LR_PRDM1 %>% mutate(position=start-1000, line="full", id_mrc="LR") )) %>% 
-  #  rbind((hits_EAR_PRDM1 %>% mutate(position=start-1000, line="full",id_mrc="EAR") )) %>% 
-  #  rbind((hits_ESR_PRDM1 %>% mutate(position=start-1000, line="full",id_mrc="ESR") )) %>% 
-  #  rbind((hits_NR_PRDM1 %>% mutate(position=start-1000, line="full",id_mrc="NR") )) %>% 
-  
-  ggplot(.,aes(position, color=id_mrc, linetype = line))+
-  geom_density(size=1) +
-  coord_cartesian(xlim= c(-500,500))
-
-
-```
-
-
-
+Here was me just focusing on motifs that were transcription factor binding motifs only
 ```{r lists of genes and motifs}
 
-toplistall_RNA <- readRDS("data/other_papers/toplistall_RNA.RDS") 
-###Because of how I applied the DEG system in RNA-seq analysis, the lFC is opposite of the 
-###counts.   I did trt-veh instead of veh-trt.  therefore I need to multiply lfc by -1 to get t
-###the right correlation.
-
-toplistall_RNA <- toplistall_RNA %>% 
-  mutate(logFC = logFC*(-1))
-
-RNA_expresed_genes <- toplistall_RNA %>% 
-  # dplyr::filter(adj.P.Val <0.05) %>% 
-   mutate(expression = if_else(logFC<0,"down","up")) %>% 
-  dplyr::select(ENTREZID,SYMBOL,expression) %>% 
-  # dplyr::select(ENTREZID,SYMBOL) %>% 
-  unique(.)  
-RNA_expresed_genes_DE <- toplistall_RNA %>% 
-  dplyr::filter(adj.P.Val <0.05) %>%
-  mutate(expression = if_else(logFC<0,"down","up")) %>% 
-  dplyr::select(ENTREZID,SYMBOL,expression) %>% 
-  unique(.) 
 
 motifgenes_EAR_v_NR <- xstreme_EAR_v_NR %>% 
   dplyr::select(SIM_MOTIF,ALT_ID, ID,SITES,EVALUE) %>% 
@@ -301,62 +282,6 @@ gene_list_SEA %>%
 
 
   
-```
-
-```{r loading essential files for peak tests}
-peakAnnoList_n45_motif <- readRDS("data/peakAnnoList_n45_motif.RDS")
-# list2env(peakAnnoList_n45_motif, envir = .GlobalEnv)
-EAR_df <- as.data.frame(peakAnnoList_n45_motif$EAR_n45_gr)
-EAR_df_gr <-  GRanges(EAR_df)
-
-ESR_df <- as.data.frame(peakAnnoList_n45_motif$ESR_n45_gr)
-ESR_df_gr <-  GRanges(ESR_df)
-
-LR_df <- as.data.frame(peakAnnoList_n45_motif$LR_n45_gr)
-LR_df_gr <-  GRanges(LR_df)
- 
-NR_df <- as.data.frame(peakAnnoList_n45_motif$NR_n45_gr)
-NR_df_gr <-  GRanges(NR_df)
-
-
-# ESR_peaks_resized = resize(ESR_df_gr, width = 2000, fix='center')
-# EAR_peaks_resized = resize(EAR_df_gr, width = 2000, fix='center')
-# LR_peaks_resized = resize(LR_df_gr, width = 2000, fix='center')
-# NR_peaks_resized = resize(NR_df_gr, width = 2000, fix='center')
-
-ESR_peaks_resized_250 = resize(ESR_df_gr, width = 500, fix='center')
-EAR_peaks_resized_250 = resize(EAR_df_gr, width = 500, fix='center')
-LR_peaks_resized_250 = resize(LR_df_gr, width = 500, fix='center')
-NR_peaks_resized_250 = resize(NR_df_gr, width =500, fix='center')
-
-seq_ESR_250 = getSeq(BSgenome.Hsapiens.UCSC.hg38, ESR_peaks_resized_250)
-seq_EAR_250 = getSeq(BSgenome.Hsapiens.UCSC.hg38, EAR_peaks_resized_250)
-seq_LR_250 = getSeq(BSgenome.Hsapiens.UCSC.hg38, LR_peaks_resized_250)
-seq_NR_250 = getSeq(BSgenome.Hsapiens.UCSC.hg38, NR_peaks_resized_250)
-
-# 
-# ESR_peaks_resized_500 = resize(ESR_df_gr, width = 1000, fix='center')
-# EAR_peaks_resized_500 = resize(EAR_df_gr, width = 1000, fix='center')
-# LR_peaks_resized_500 = resize(LR_df_gr, width = 1000, fix='center')
-# NR_peaks_resized_500 = resize(NR_df_gr, width = 1000, fix='center')
-# ESR_peaks_resized_site = resize(ESR_df_gr,  fix='center')
-
-# seq_ESR = getSeq(BSgenome.Hsapiens.UCSC.hg38, ESR_peaks_resized)
-# seq_EAR = getSeq(BSgenome.Hsapiens.UCSC.hg38, EAR_peaks_resized)
-# seq_LR = getSeq(BSgenome.Hsapiens.UCSC.hg38, LR_peaks_resized)
-# seq_NR = getSeq(BSgenome.Hsapiens.UCSC.hg38, NR_peaks_resized)
-# 
-# seq_ESR_500 = getSeq(BSgenome.Hsapiens.UCSC.hg38, ESR_peaks_resized_500)
-# seq_EAR_500 = getSeq(BSgenome.Hsapiens.UCSC.hg38, EAR_peaks_resized_500)
-# seq_LR_500 = getSeq(BSgenome.Hsapiens.UCSC.hg38, LR_peaks_resized_500)
-# seq_NR_500 = getSeq(BSgenome.Hsapiens.UCSC.hg38, NR_peaks_resized_500)
-# 
-# seq_ESR_norm = getSeq(BSgenome.Hsapiens.UCSC.hg38, ESR_df_gr)
-# seq_EAR_norm = getSeq(BSgenome.Hsapiens.UCSC.hg38, EAR_df_gr)
-# seq_LR_norm = getSeq(BSgenome.Hsapiens.UCSC.hg38, LR_df_gr)
-# seq_NR_norm = getSeq(BSgenome.Hsapiens.UCSC.hg38, NR_df_gr)
-
-
 ```
 
 ```{r motif exploring, echo=TRUE}
@@ -405,9 +330,6 @@ expr_LR_tfs <- data.frame(LR_TFs=intersect(motif_LR_list$motif_ALT_ID, unique(RN
 # ggVennDiagram::ggVennDiagram(list(expr_EAR_tfs,expr_ESR_tfs, expr_LR_tfs))
 ```
 
-
-
-
 From SEA of EAR peaks:
 
 I obtained a list of all tf motifs that were found enriched based on shuffled sequences of the peak sequences.  The EAR cluster has a total of `r length(EAR_df$seqnames)` peaks with a minimum width of `r min(EAR_df$width)` bps and a maximum width of `r max(EAR_df$width)` bps.  The average width and median width are `r mean(EAR_df$width)` and `r median(EAR_df$width)` bps respectively. There were a total of `r length(motif_EAR_list$motif_ID)` unique motifs found. Of those motifs found, `r count(expr_EAR_tfs)` TFs were expressed in my data.   
@@ -425,40 +347,11 @@ I obtained a list of all tf motifs that were found enriched based on shuffled se
 
 The EAR and ESR sets share `r length(intersect(motif_ESR_list$motif_ID, motif_EAR_list$motif_ID))` motifs out of a total of `r length(union(motif_EAR_list$motif_ID, motif_ESR_list$motif_ID))` total motifs between them.
 
-
-```{r filterSEA_EAR}
-# EAR_passing_sequences %>% 
-#   group_by(motif_ALT_ID) %>% 
-#   dplyr::filter(motif_ALT_ID %in% expr_EAR_tfs$EAR_TFs)
-
-##top 20 motifs with expressedTFS
-
-EAR_sea %>% 
-  dplyr::filter(ALT_ID %in% expr_EAR_tfs$EAR_TFs) %>% 
-  slice_head(n=20) %>% 
-  ggplot(., aes(y=reorder(ALT_ID,-LOG_QVALUE)))+
-  geom_col(aes(x=(-log10(QVALUE))))+
-  geom_point(aes(x=`TP%`))+
- theme_bw()+
-  ggtitle("expressed EAR enriched motifs")
+### All enriched motifs found
 
 
-ESR_sea %>% 
-  dplyr::filter(ALT_ID %in% expr_ESR_tfs$ESR_TFs) %>% 
-  slice_head(n=20) %>% 
-  ggplot(., aes(y=reorder(ALT_ID,-LOG_QVALUE)))+
-  geom_col(aes(x=(-log10(QVALUE))))+
-  geom_point(aes(x=`TP%`))+
- theme_bw()+
-  ggtitle("expressed ESR enriched motifs")
-
-
-
-```
-### TF motifs in each response cluster
-
-
-### enriched motifs
+This area was for all motifs found in Xtreme analysis using NR peaks as background.
+#### EAR
 
 ```{r enriched motifs EAR}
 
@@ -485,7 +378,7 @@ ggplot(., aes (y= reorder(motif_name,log10Evalue))) +
   ggtitle("Early-acute response peaks")
  
 ```
-
+#### ESR
 ```{r enriched motifs ESR}
 xstreme_ESR_v_NR %>% 
    left_join(., sea_ESR, by= c("ALT_ID"="ALT_ID","CONSENSUS"="CONSENSUS", "ID"="ID"))%>% 
@@ -510,7 +403,7 @@ ggplot(., aes (y= reorder(motif_name,log10Evalue))) +
 
 ```
 
-
+#### LR
 
 ```{r enriched motifs LR}
 xstreme_LR_v_NR %>% 
@@ -544,13 +437,63 @@ ggplot(., aes (y= reorder(motif_name,log10Evalue))) +
 
 ```
 
+### Filtering using Fold Change values
+
+This section is for applying hyper and hypo accessibility to each response cluster.  
+Basic first attempt is using DOX24 hour DAR logFC to split each response cluster into hyper- accessible (logFC >0) and hypo-accessible groups.  For hyper-accessible I will append a **U** at the end of the response cluster (eg EAR**U**) and for hypo-accessible I will append a **D** at the end of the response cluster name(eg EAR**D**).
+
+```{r creating U and D}
+### need to load Toplistall aTAC data.
+
+toplist_full_ATAC <- readRDS("data/DEG_toplist_sep_n45.RDS")
+
+```
 
 
+## motif and peak section (incomplete)
 
 
-### genes and expression
+```{r loading essential files for peak tests}
+
+# ESR_peaks_resized = resize(ESR_df_gr, width = 2000, fix='center')
+# EAR_peaks_resized = resize(EAR_df_gr, width = 2000, fix='center')
+# LR_peaks_resized = resize(LR_df_gr, width = 2000, fix='center')
+# NR_peaks_resized = resize(NR_df_gr, width = 2000, fix='center')
+
+ESR_peaks_resized_250 = resize(ESR_df_gr, width = 500, fix='center')
+EAR_peaks_resized_250 = resize(EAR_df_gr, width = 500, fix='center')
+LR_peaks_resized_250 = resize(LR_df_gr, width = 500, fix='center')
+NR_peaks_resized_250 = resize(NR_df_gr, width =500, fix='center')
+
+seq_ESR_250 = getSeq(BSgenome.Hsapiens.UCSC.hg38, ESR_peaks_resized_250)
+seq_EAR_250 = getSeq(BSgenome.Hsapiens.UCSC.hg38, EAR_peaks_resized_250)
+seq_LR_250 = getSeq(BSgenome.Hsapiens.UCSC.hg38, LR_peaks_resized_250)
+seq_NR_250 = getSeq(BSgenome.Hsapiens.UCSC.hg38, NR_peaks_resized_250)
+
+# 
+# ESR_peaks_resized_500 = resize(ESR_df_gr, width = 1000, fix='center')
+# EAR_peaks_resized_500 = resize(EAR_df_gr, width = 1000, fix='center')
+# LR_peaks_resized_500 = resize(LR_df_gr, width = 1000, fix='center')
+# NR_peaks_resized_500 = resize(NR_df_gr, width = 1000, fix='center')
+# ESR_peaks_resized_site = resize(ESR_df_gr,  fix='center')
+
+# seq_ESR = getSeq(BSgenome.Hsapiens.UCSC.hg38, ESR_peaks_resized)
+# seq_EAR = getSeq(BSgenome.Hsapiens.UCSC.hg38, EAR_peaks_resized)
+# seq_LR = getSeq(BSgenome.Hsapiens.UCSC.hg38, LR_peaks_resized)
+# seq_NR = getSeq(BSgenome.Hsapiens.UCSC.hg38, NR_peaks_resized)
+# 
+# seq_ESR_500 = getSeq(BSgenome.Hsapiens.UCSC.hg38, ESR_peaks_resized_500)
+# seq_EAR_500 = getSeq(BSgenome.Hsapiens.UCSC.hg38, EAR_peaks_resized_500)
+# seq_LR_500 = getSeq(BSgenome.Hsapiens.UCSC.hg38, LR_peaks_resized_500)
+# seq_NR_500 = getSeq(BSgenome.Hsapiens.UCSC.hg38, NR_peaks_resized_500)
+# 
+# seq_ESR_norm = getSeq(BSgenome.Hsapiens.UCSC.hg38, ESR_df_gr)
+# seq_EAR_norm = getSeq(BSgenome.Hsapiens.UCSC.hg38, EAR_df_gr)
+# seq_LR_norm = getSeq(BSgenome.Hsapiens.UCSC.hg38, LR_df_gr)
+# seq_NR_norm = getSeq(BSgenome.Hsapiens.UCSC.hg38, NR_df_gr)
 
 
+```
 
 #### BACH2
 
@@ -983,13 +926,7 @@ hits_NR_TP53 %>%
 
 ```
 
-
-
-
-
-
 #### NRF1
-
 ```{r NRF1}
 # 
 # motifs_NRF1 = query(query(MotifDb, 'Hsapiens'), 'NRF1')
@@ -1087,11 +1024,6 @@ hits_NR_NRF1 %>%
 
 
 ```
-
-
-
-
-
 
 #### NFIC_TLX1
 
@@ -1199,7 +1131,6 @@ hits_NR_NFIC_TLX1 %>%
 
 
 #### PRDM1
-
 ```{r PRDM1}
 # 
 # motifs_PRDM1 = query(query(MotifDb, 'Hsapiens'), 'PRDM1')
@@ -1260,10 +1191,6 @@ hits_NR_PRDM1 %>%
 
 
 ```
-
-
-
-
 #### TBX1
 
 ```{r TBX1}
@@ -1363,7 +1290,6 @@ hits_NR_TBX1 %>%
 ```
 
 #### GLI1
-
 ```{r GLI1}
 # 
 # motifs_GLI1 = query(query(MotifDb, 'Hsapiens'), 'GLI1')
@@ -1468,10 +1394,7 @@ hits_NR_GLI1 %>%
 
 ```
 
-
-
 #### ZNF460
-
 ```{r ZNF460}
 # # 
 # motifs_ZNF460 = query(query(MotifDb, 'Hsapiens'), 'ZNF460')
@@ -1542,11 +1465,6 @@ hits_NR_ZNF460_250 %>%
   # coord_cartesian(xlim= c(-500,500))
 
 ```
-
-
-
-
-
 #### MEF2A
 
 
