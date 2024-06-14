@@ -443,12 +443,101 @@ This section is for applying hyper and hypo accessibility to each response clust
 Basic first attempt is using DOX24 hour DAR logFC to split each response cluster into hyper- accessible (logFC >0) and hypo-accessible groups.  For hyper-accessible I will append a **U** at the end of the response cluster (eg EAR**U**) and for hypo-accessible I will append a **D** at the end of the response cluster name(eg EAR**D**).
 
 ```{r creating U and D}
-### need to load Toplistall aTAC data.
+### need to load Top list of all aTAC data.
 
 toplist_full_ATAC <- readRDS("data/DEG_toplist_sep_n45.RDS")
+DOX_24 <- toplist_full_ATAC$DOX_24
+
+# DOX_24 %>% dplyr::filter(logFC>0) %>% 
+#     separate_wider_delim(.,peak, names = c( "chr","start","end"), delim= ".",cols_remove = FALSE) %>%
+#      dplyr::rename("name"="peak") %>% 
+#      mutate(strand=".") %>% 
+#      GRanges() %>% 
+#      rtracklayer::export(., con="data/hyper_files/tot_hyper.bed",format="bed", ignore.strand = FALSE)
+# 
+# DOX_24 %>% dplyr::filter(logFC<0) %>% 
+#     separate_wider_delim(.,peak, names = c( "chr","start","end"), delim= ".",cols_remove = FALSE) %>%
+#      dplyr::rename("name"="peak") %>% 
+#      mutate(strand=".") %>% 
+#      GRanges() %>% 
+#      rtracklayer::export(., con="data/hypo_files/tot_hypo.bed",format="bed", ignore.strand = FALSE)
+
+# as.GRanges(toplist_full_ATAC$DOX_24)
+
+# DOX_24 %>%
+#   dplyr::filter(peak %in% EAR_df$id) %>% 
+#   dplyr::filter(logFC>0) 
+
+
+tot_hypo <- DOX_24 %>% dplyr::filter(logFC<0)
+
+EARU <-  DOX_24 %>%
+  dplyr::filter(peak %in% EAR_df$id) %>% 
+    dplyr::filter(logFC>0) 
+
+
+     
+
+EARD <-  DOX_24 %>%
+  dplyr::filter(peak %in% EAR_df$id) %>% 
+    dplyr::filter(logFC<0)
+
+ESRU <-  DOX_24 %>%
+  dplyr::filter(peak %in% ESR_df$id) %>% 
+    dplyr::filter(logFC>0)
+
+ESRD <-  DOX_24 %>%
+  dplyr::filter(peak %in% ESR_df$id) %>% 
+    dplyr::filter(logFC<0)
+LRU <-  DOX_24 %>%
+  dplyr::filter(peak %in% LR_df$id) %>% 
+    dplyr::filter(logFC>0)
+
+LRD <-  DOX_24 %>%
+  dplyr::filter(peak %in% LR_df$id) %>% 
+    dplyr::filter(logFC<0)
+NRU <-  DOX_24 %>%
+  dplyr::filter(peak %in% NR_df$id) %>% 
+    dplyr::filter(logFC>0)
+
+NRD <-  DOX_24 %>%
+  dplyr::filter(peak %in% NR_df$id) %>% 
+    dplyr::filter(logFC<0)
+
+
+
 
 ```
 
+```{r saving files, eval=FALSE, include=TRUE}
+# script to convert into each file needed for up and down
+df_names <- list(EAR_df,ESR_df,LR_df,NR_df)
+names(df_names) <- c("EAR_df","ESR_df","LR_df","NR_df")
+
+for (i in 1:4){
+a<- df_names[[i]]
+names(df_names)[1]
+
+DOX_24 %>%
+  dplyr::filter(peak %in% a$id) %>% 
+  dplyr::filter(logFC>0) %>% 
+  separate_wider_delim(.,peak, names = c( "chr","start","end"), delim= ".",cols_remove = FALSE) %>%
+     dplyr::rename("name"="peak") %>% 
+     mutate(strand=".") %>% 
+     GRanges() %>% 
+     rtracklayer::export(., con=paste0("data/hyper_files/U_",names(df_names)[i],".bed"),format="bed", ignore.strand = FALSE)
+
+DOX_24 %>%
+  dplyr::filter(peak %in% a$id) %>% 
+  dplyr::filter(logFC<0) %>% 
+  separate_wider_delim(.,peak, names = c( "chr","start","end"), delim= ".",cols_remove = FALSE) %>%
+     dplyr::rename("name"="peak") %>% 
+     mutate(strand=".") %>% 
+     GRanges() %>% 
+     rtracklayer::export(., con=paste0("data/hypo_files/D_",names(df_names)[i],".bed"),format="bed", ignore.strand = FALSE)
+}                        
+                       
+```
 
 ## motif and peak section (incomplete)
 
