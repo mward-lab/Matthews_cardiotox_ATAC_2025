@@ -70,21 +70,51 @@ library(BSgenome.Hsapiens.UCSC.hg38)
 # xstreme_ESR_v_NR <-ESR_v_NR_full_xstreme %>%
 #   slice_head(n = length(.$ID)-3)
 # saveRDS(xstreme_ESR_v_NR, "data/xstreme/xstreme_ESR_v_NR.RDS")
-# sea_EAR <- read_delim("~/Ward Lab/Cardiotoxicity/ATAC-folder/motif enrichment/full peak set Jaspar core vertebrates/EAR_v_NR_appXSTREME_5.5.51713891248048-1903497910.tar/appXSTREME_5.5.51713891248048-1903497910/sea_disc_out/sea.tsv", 
-#     delim = "\t", escape_double = FALSE, 
+# sea_EAR <- read_delim("~/Ward Lab/Cardiotoxicity/ATAC-folder/motif enrichment/full peak set Jaspar core vertebrates/EAR_v_NR_appXSTREME_5.5.51713891248048-1903497910.tar/appXSTREME_5.5.51713891248048-1903497910/sea_disc_out/sea.tsv",
+#     delim = "\t", escape_double = FALSE,
 #     trim_ws = TRUE)%>%
 #   slice_head(n = length(.$ID)-3)
 # saveRDS(sea_EAR, "data/xstreme/sea_EAR.RDS")
-# sea_ESR <- sea_ESR%>%
+# sea_LRU <- sea_LRU%>%
 #   slice_head(n = length(.$ID)-3)
-# saveRDS(sea_ESR, "data/xstreme/sea_ESR.RDS")
+# saveRDS(sea_LRU, "data/xstreme/sea_LRU.RDS")
 # sea_LR <- sea_LR%>%
 #   slice_head(n = length(.$ID)-3)
 # saveRDS(sea_LR, "data/xstreme/sea_LR.RDS")
 
+# saveRDS(xstreme_EARD, "data/xstreme/xstreme_EARD.RDS")
+# saveRDS(xstreme_EARU, "data/xstreme/xstreme_EARU.RDS")
+# saveRDS(xstreme_ESRD, "data/xstreme/xstreme_ESRD.RDS")
+# saveRDS(xstreme_ESRU, "data/xstreme/xstreme_ESRU.RDS")
+# saveRDS(xstreme_LRD, "data/xstreme/xstreme_LRD.RDS")
+# saveRDS(xstreme_LRU, "data/xstreme/xstreme_LRU.RDS")
+
+
+
+
+
+
 sea_EAR <- readRDS("data/xstreme/sea_EAR.RDS")
 sea_ESR <- readRDS("data/xstreme/sea_ESR.RDS")
 sea_LR <- readRDS("data/xstreme/sea_LR.RDS")
+
+sea_EARD <- readRDS("data/xstreme/sea_EARD.RDS")
+sea_ESRD <- readRDS("data/xstreme/sea_ESRD.RDS")
+sea_LRD <- readRDS("data/xstreme/sea_LRD.RDS")
+sea_EARU <- readRDS("data/xstreme/sea_EARU.RDS")
+sea_ESRU <- readRDS("data/xstreme/sea_ESRU.RDS")
+sea_LRU <- readRDS("data/xstreme/sea_LRU.RDS")
+
+
+
+
+xstreme_EARD <- readRDS("data/xstreme/xstreme_EARD.RDS")
+xstreme_EARU <- readRDS("data/xstreme/xstreme_EARU.RDS")
+xstreme_ESRD <- readRDS("data/xstreme/xstreme_ESRD.RDS")
+xstreme_ESRU <- readRDS("data/xstreme/xstreme_ESRU.RDS")
+xstreme_LRD <- readRDS("data/xstreme/xstreme_LRD.RDS")
+xstreme_LRU <- readRDS("data/xstreme/xstreme_LRU.RDS")
+
 
 
 xstreme_EAR_v_NR <- readRDS("data/xstreme/xstreme_EAR_v_NR.RDS")
@@ -150,7 +180,7 @@ xstreme_ESR_v_NR %>%
    dplyr::mutate_if(is.numeric, funs(as.character(signif(., 3)))) %>%
   # separate(SIM_MOTIF, into= c("SIM_MOTIF", "NAME"), sep= " ") %>% 
   # dplyr::filter(., EVALUE<0.05) %>% 
-  dplyr::mutate_if(is.numeric, funs(as.character(signif(., 3)))) %>%
+  # dplyr::mutate_if(is.numeric, funs(as.character(signif(., 3)))) %>%
   kable(., caption = "Enriched motifs in ESR v NR") %>%
   kable_paper("striped", full_width = TRUE) %>%
   kable_styling(full_width = FALSE, font_size = 16) %>%
@@ -190,6 +220,130 @@ gene_list_SEA <- xstreme_EAR_v_NR %>%
   
   
 ```
+
+### Enrichment Hyper peaks to NR hyper peaks
+```{r simmotifUP, message=FALSE, warning=FALSE}
+xstreme_EARU %>% 
+  dplyr::select(SIM_MOTIF,ALT_ID, ID,SEA_PVALUE,EVALUE) %>% 
+  arrange(.,EVALUE) %>% 
+  # separate(SIM_MOTIF, into= c("SIM_MOTIF", "NAME"), sep= " ") %>% 
+  # dplyr::filter(., EVALUE<0.05) %>% 
+  dplyr::mutate_if(is.numeric, funs(as.character(signif(., 3)))) %>%
+  kable(., caption = "Enriched motifs in EAR v NR hyper") %>%
+  kable_paper("striped", full_width = TRUE) %>%
+  kable_styling(full_width = FALSE, font_size = 16) %>%
+  scroll_box(height = "500px")
+
+
+xstreme_ESRU %>% 
+ dplyr::select(SIM_MOTIF,ALT_ID, ID,SEA_PVALUE,EVALUE) %>% 
+   arrange(.,EVALUE) %>% 
+   dplyr::mutate_if(is.numeric, funs(as.character(signif(., 3)))) %>%
+  # separate(SIM_MOTIF, into= c("SIM_MOTIF", "NAME"), sep= " ") %>% 
+  # dplyr::filter(., EVALUE<0.05) %>% 
+  dplyr::mutate_if(is.numeric, funs(as.character(signif(., 3)))) %>%
+  kable(., caption = "Enriched motifs in ESR v NR hyper") %>%
+  kable_paper("striped", full_width = TRUE) %>%
+  kable_styling(full_width = FALSE, font_size = 16) %>%
+  scroll_box(height = "800px")
+
+xstreme_LRU %>% 
+  dplyr::select(SIM_MOTIF,ALT_ID, ID,SEA_PVALUE,EVALUE) %>% 
+  arrange(.,EVALUE) %>%
+   dplyr::mutate_if(is.numeric, funs(as.character(signif(., 3)))) %>%
+  # separate(SIM_MOTIF, into= c("SIM_MOTIF", "NAME"), sep= " ") %>% 
+  # dplyr::filter(., EVALUE<0.05) %>% 
+  kable(., caption = "Enriched motifs  (EVALUE < 0.05) in LR v NR hyper") %>%
+  kable_paper("striped", full_width = TRUE) %>%
+  kable_styling(full_width = FALSE, font_size = 16) %>%
+  scroll_box(height = "800px")
+### selecting just the list of names and checking for expression
+
+
+gene_list_SEA_hyper <- xstreme_EARU %>% 
+ dplyr::select(SIM_MOTIF,ALT_ID, ID,SEA_PVALUE,EVALUE) %>% 
+  arrange(.,EVALUE) %>% 
+  separate(SIM_MOTIF, into= c("SIM_MOTIF", "NAME"), sep= " ") %>% 
+  mutate(MCR="EAR") %>% 
+  bind_rows(xstreme_ESRU %>% 
+ dplyr::select(SIM_MOTIF,ALT_ID, ID,SEA_PVALUE,EVALUE) %>% 
+  arrange(.,EVALUE) %>% 
+  separate(SIM_MOTIF, into= c("SIM_MOTIF", "NAME"), sep= " ") %>% 
+ mutate(MCR="ESR")) %>% 
+  bind_rows(xstreme_LRU %>% 
+  dplyr::select(SIM_MOTIF,ALT_ID, ID,SEA_PVALUE,EVALUE) %>% 
+  arrange(.,EVALUE) %>% 
+  separate(SIM_MOTIF, into= c("SIM_MOTIF", "NAME"), sep= " ") %>% 
+    mutate(MCR="LR")) %>% 
+  dplyr::filter(!is.na(NAME)) %>%  
+  mutate(NAME= gsub("[()]","",NAME)) %>% 
+ distinct(NAME)
+  
+  
+```
+
+
+### Enrichment Hypo peaks to NR hypo peaks
+```{r simmotifDOWN, message=FALSE, warning=FALSE}
+xstreme_EARD %>% 
+  dplyr::select(SIM_MOTIF,ALT_ID, ID,SEA_PVALUE,EVALUE) %>% 
+  arrange(.,EVALUE) %>% 
+  # separate(SIM_MOTIF, into= c("SIM_MOTIF", "NAME"), sep= " ") %>% 
+  # dplyr::filter(., EVALUE<0.05) %>% 
+  dplyr::mutate_if(is.numeric, funs(as.character(signif(., 3)))) %>%
+  kable(., caption = "Enriched motifs in EAR v NR hypo") %>%
+  kable_paper("striped", full_width = TRUE) %>%
+  kable_styling(full_width = FALSE, font_size = 16) %>%
+  scroll_box(height = "500px")
+
+
+xstreme_ESRD %>% 
+ dplyr::select(SIM_MOTIF,ALT_ID, ID,SEA_PVALUE,EVALUE) %>% 
+   arrange(.,EVALUE) %>% 
+   dplyr::mutate_if(is.numeric, funs(as.character(signif(., 3)))) %>%
+  # separate(SIM_MOTIF, into= c("SIM_MOTIF", "NAME"), sep= " ") %>% 
+  # dplyr::filter(., EVALUE<0.05) %>% 
+  dplyr::mutate_if(is.numeric, funs(as.character(signif(., 3)))) %>%
+  kable(., caption = "Enriched motifs in ESR v NR hypo") %>%
+  kable_paper("striped", full_width = TRUE) %>%
+  kable_styling(full_width = FALSE, font_size = 16) %>%
+  scroll_box(height = "800px")
+
+xstreme_LRD %>% 
+  dplyr::select(SIM_MOTIF,ALT_ID, ID,SEA_PVALUE,EVALUE) %>% 
+  arrange(.,EVALUE) %>%
+   dplyr::mutate_if(is.numeric, funs(as.character(signif(., 3)))) %>%
+  # separate(SIM_MOTIF, into= c("SIM_MOTIF", "NAME"), sep= " ") %>% 
+  # dplyr::filter(., EVALUE<0.05) %>% 
+  kable(., caption = "Enriched motifs  (EVALUE < 0.05) in LR v NR hypo") %>%
+  kable_paper("striped", full_width = TRUE) %>%
+  kable_styling(full_width = FALSE, font_size = 16) %>%
+  scroll_box(height = "800px")
+### selecting just the list of names and checking for expression
+
+
+gene_list_SEA_hypo <- xstreme_EARD %>% 
+ dplyr::select(SIM_MOTIF,ALT_ID, ID,SEA_PVALUE,EVALUE) %>% 
+  arrange(.,EVALUE) %>% 
+  separate(SIM_MOTIF, into= c("SIM_MOTIF", "NAME"), sep= " ") %>% 
+  mutate(MCR="EAR") %>% 
+  bind_rows(xstreme_ESRD %>% 
+ dplyr::select(SIM_MOTIF,ALT_ID, ID,SEA_PVALUE,EVALUE) %>% 
+  arrange(.,EVALUE) %>% 
+  separate(SIM_MOTIF, into= c("SIM_MOTIF", "NAME"), sep= " ") %>% 
+ mutate(MCR="ESR")) %>% 
+  bind_rows(xstreme_LRD %>% 
+  dplyr::select(SIM_MOTIF,ALT_ID, ID,SEA_PVALUE,EVALUE) %>% 
+  arrange(.,EVALUE) %>% 
+  separate(SIM_MOTIF, into= c("SIM_MOTIF", "NAME"), sep= " ") %>% 
+    mutate(MCR="LR")) %>% 
+  dplyr::filter(!is.na(NAME)) %>%  
+  mutate(NAME= gsub("[()]","",NAME)) %>% 
+ distinct(NAME)
+  
+  
+```
+
 
 #### After running SEA only on each data set
 This was using all peaks but allowing SEA to be run using random method as background.
@@ -378,6 +532,65 @@ ggplot(., aes (y= reorder(motif_name,log10Evalue))) +
   ggtitle("Early-acute response peaks")
  
 ```
+##### EAR hyper
+
+```{r enriched motifs EAR hyper}
+
+xstreme_EARU %>% 
+  left_join(., sea_EARU, by= c("ALT_ID"="ALT_ID","CONSENSUS"="CONSENSUS", "ID"="ID")) %>% 
+  dplyr::select(CLUSTER, SITES,SIM_MOTIF,ALT_ID, ID,EVALUE.x, TP:'FP%')%>% 
+  separate(SIM_MOTIF, into= c("SIM_MOTIF", "NAME"), sep= " ") %>% 
+  arrange(.,EVALUE.x) %>%
+ # dplyr::mutate_if(is.numeric, funs(as.character(signif(., 3))))#%>%
+  mutate(log10Evalue= log(EVALUE.x, base = 10)*(-1)) %>% 
+  mutate(motif_name= gsub("[()]","",NAME), mrc="EAR") %>% 
+  mutate(motif_name=if_else(is.na(motif_name),ID,motif_name)) %>% 
+# dplyr::filter(!is.na(motif_name)) %>% 
+  # group_by(mrc) %>% 
+   # dplyr::arrange(.,desc(log(EVALUE.y), base = 10)) %>% 
+ggplot(., aes (y= reorder(motif_name,log10Evalue))) +
+  geom_col(aes(x=log10Evalue),fill="pink2") +
+   geom_point(aes(x=`TP%`), size =5)+
+   geom_line(aes(x=`TP%`,y= motif_name, group=log10Evalue))+
+  scale_x_continuous(sec.axis = dup_axis(name="Percent of peaks with motif"))+
+  # geom_text(aes())
+  theme_classic()+
+  ylab("Enriched TF motif")+
+  ggtitle("Early-acute response peaks- hyper accessible")
+ 
+```
+
+##### EAR hypo
+
+```{r enriched motifs EAR hypo}
+
+xstreme_EARD %>% 
+  left_join(., sea_EARD, by= c("ALT_ID"="ALT_ID","CONSENSUS"="CONSENSUS", "ID"="ID")) %>% 
+  dplyr::select(CLUSTER, SITES,SIM_MOTIF,ALT_ID, ID,EVALUE.x, TP:'FP%')%>% 
+  separate(SIM_MOTIF, into= c("SIM_MOTIF", "NAME"), sep= " ") %>% 
+  arrange(.,EVALUE.x) %>%
+ # dplyr::mutate_if(is.numeric, funs(as.character(signif(., 3))))#%>%
+  mutate(log10Evalue= log(EVALUE.x, base = 10)*(-1)) %>% 
+  mutate(motif_name= gsub("[()]","",NAME), mrc="EAR") %>% 
+  mutate(motif_name=if_else(is.na(motif_name),ID,motif_name)) %>% 
+# dplyr::filter(!is.na(motif_name)) %>% 
+  # group_by(mrc) %>% 
+   # dplyr::arrange(.,desc(log(EVALUE.y), base = 10)) %>% 
+ggplot(., aes (y= reorder(motif_name,log10Evalue))) +
+  geom_col(aes(x=log10Evalue),fill="pink2") +
+   geom_point(aes(x=`TP%`), size =5)+
+   geom_line(aes(x=`TP%`,y= motif_name, group=log10Evalue))+
+  scale_x_continuous(sec.axis = dup_axis(name="Percent of peaks with motif"))+
+  # geom_text(aes())
+  theme_classic()+
+  ylab("Enriched TF motif")+
+  ggtitle("Early-acute response peaks hypo accessible")
+ 
+```
+
+
+
+
 #### ESR
 ```{r enriched motifs ESR}
 xstreme_ESR_v_NR %>% 
@@ -402,6 +615,72 @@ ggplot(., aes (y= reorder(motif_name,log10Evalue))) +
   ggtitle("Early-sustained response peaks")
 
 ```
+
+
+
+##### ESR hyper
+```{r enriched motifs ESR hyper}
+xstreme_ESRU %>% 
+   left_join(., sea_ESRU, by= c("ALT_ID"="ALT_ID","ID"="ID"))%>% 
+  dplyr::select(CLUSTER, SITES,SIM_MOTIF,ALT_ID, ID,EVALUE.x, TP:'FP%')%>% 
+  separate(SIM_MOTIF, into= c("SIM_MOTIF", "NAME"), sep= " ") %>% 
+  arrange(.,EVALUE.x) %>%
+  mutate(log10Evalue= log(EVALUE.x, base = 10)*(-1)) %>% 
+   group_by(NAME) %>% 
+  mutate(RowGroup=cumsum(NAME != 0)) %>% 
+  # ungroup() %>% 
+  mutate(motif_name= gsub("[()]","",NAME), mrc="EAR") %>% 
+  mutate(motif_name=if_else(is.na(motif_name),ID,motif_name)) %>% 
+  mutate(motif_name=if_else(is.na(motif_name),ID,if_else(motif_name=="ZSCAN4",paste(motif_name, RowGroup, sep="_"),motif_name)))%>%
+ # dplyr::filter(!is.na(motif_name)) %>% 
+  # group_by(mrc) %>% 
+ggplot(., aes (y= reorder(motif_name,log10Evalue))) +
+  geom_col(aes(x=log10Evalue),fill="lightgreen") +
+   geom_point(aes(x=`TP%`), size =4)+
+   # geom_line(aes(x=`TP%`,y= motif_name, group=log10Evalue))+
+  # geom_text(aes())
+  scale_x_continuous(sec.axis = dup_axis(name="Percent of peaks with motif"))+
+  theme_classic()+
+  ylab("Enriched TF motif")+
+  ggtitle("Early-sustained response peaks hyper accessible")
+
+```
+
+
+
+##### ESR hypo
+```{r enriched motifs ESR hypo}
+xstreme_ESRD %>% 
+   left_join(., sea_ESRD, by= c("ALT_ID"="ALT_ID", "ID"="ID"))%>% 
+  dplyr::select(CLUSTER, SITES,SIM_MOTIF,ALT_ID, ID,EVALUE.x, TP:'FP%')%>% 
+  separate(SIM_MOTIF, into= c("SIM_MOTIF", "NAME"), sep= " ") %>% 
+  arrange(.,EVALUE.x) %>%
+ # dplyr::mutate_if(is.numeric, funs(as.character(signif(., 3))))#%>%
+  mutate(log10Evalue= log(EVALUE.x, base = 10)*(-1)) %>% 
+   group_by(NAME) %>% 
+  mutate(RowGroup=cumsum(NAME != 0)) %>% 
+  ungroup() %>% 
+  mutate(motif_name= gsub("[()]","",NAME), mrc="EAR") %>% 
+  mutate(motif_name=if_else(is.na(motif_name),ID,motif_name)) %>% 
+  mutate(motif_name=if_else(is.na(motif_name),ID,if_else(motif_name=="ZNF449",paste(motif_name, RowGroup, sep="_"),motif_name)))%>%
+# dplyr::filter(!is.na(motif_name)) %>% 
+  # group_by(mrc) %>% 
+ggplot(., aes (y= reorder(motif_name,log10Evalue))) +
+  geom_col(aes(x=log10Evalue),fill="lightgreen") +
+   geom_point(aes(x=`TP%`), size =3)+
+   # geom_line(aes(x=`TP%`,y= motif_name, group=log10Evalue))+
+  # geom_text(aes())
+  scale_x_continuous(sec.axis = dup_axis(name="Percent of peaks with motif"))+
+  theme_classic()+
+  ylab("Enriched TF motif")+
+  ggtitle("Early-sustained response peaks hypo accessible")
+
+```
+
+
+
+
+
 
 #### LR
 
@@ -436,6 +715,78 @@ ggplot(., aes (y= reorder(motif_name,log10Evalue))) +
 
 
 ```
+
+
+##### LR hyper
+
+```{r enriched motifs LR hyper}
+xstreme_LRU %>% 
+    left_join(., sea_LRU, by= c("ALT_ID"="ALT_ID", "ID"="ID")) %>% 
+  dplyr::select(CLUSTER, SITES,SIM_MOTIF,ALT_ID, ID,EVALUE.x, TP:'FP%')%>% 
+  separate(SIM_MOTIF, into= c("SIM_MOTIF", "NAME"), sep= " ") %>% 
+  arrange(.,EVALUE.x) %>%
+ # dplyr::mutate_if(is.numeric, funs(as.character(signif(., 3))))#%>%
+  mutate(log10Evalue= log(EVALUE.x, base = 10)*(-1)) %>% 
+   group_by(NAME) %>% 
+  mutate(RowGroup=cumsum(NAME != 0)) %>% 
+  ungroup() %>% 
+  mutate(motif_name= gsub("[()]","",NAME), mrc="LR") %>% 
+   mutate(motif_name=if_else(is.na(motif_name),ID,if_else(motif_name=="ZNF384",paste(motif_name, RowGroup, sep="_"),motif_name)))%>%
+ 
+  mutate(`TP%`=as.numeric(`TP%`)) %>%
+# dplyr::filter(!is.na(motif_name)) %>% 
+  # group_by(mrc) %>% 
+ggplot(., aes (y= reorder(motif_name,log10Evalue))) +
+  geom_col(aes(x=log10Evalue),fill="cyan") +
+    geom_point(aes(x=`TP%`), size =5)+
+   # geom_line(aes(x=TP, group=mrc))+
+  # geom_text(aes())
+  scale_x_continuous(sec.axis = dup_axis(name="Percent of peaks with motif"))+
+  theme_classic()+
+  ylab("Enriched TF motif")+
+  ggtitle("Late response peaks hyper accessible")
+
+
+
+
+```
+
+
+
+##### LR hypo
+
+```{r enriched motifs LR hypo}
+xstreme_LRD %>% 
+    left_join(., sea_LRD, by= c("ALT_ID"="ALT_ID", "ID"="ID")) %>% 
+  dplyr::select(CLUSTER, SITES,SIM_MOTIF,ALT_ID, ID,EVALUE.x, TP:'FP%')%>% 
+  separate(SIM_MOTIF, into= c("SIM_MOTIF", "NAME"), sep= " ") %>% 
+  arrange(.,EVALUE.x) %>%
+ # dplyr::mutate_if(is.numeric, funs(as.character(signif(., 3))))#%>%
+  mutate(log10Evalue= log(EVALUE.x, base = 10)*(-1)) %>% 
+   group_by(NAME) %>% 
+  mutate(RowGroup=cumsum(NAME != 0)) %>% 
+  ungroup() %>% 
+  mutate(motif_name= gsub("[()]","",NAME), mrc="LR") %>% 
+   mutate(motif_name=if_else(is.na(motif_name),ID,if_else(motif_name=="ZNF384",paste(motif_name, RowGroup, sep="_"),motif_name)))%>%
+ 
+  mutate(`TP%`=as.numeric(`TP%`)) %>%
+# dplyr::filter(!is.na(motif_name)) %>% 
+  # group_by(mrc) %>% 
+ggplot(., aes (y= reorder(motif_name,log10Evalue))) +
+  geom_col(aes(x=log10Evalue),fill="cyan") +
+    geom_point(aes(x=`TP%`), size =5)+
+   # geom_line(aes(x=TP, group=mrc))+
+  # geom_text(aes())
+  scale_x_continuous(sec.axis = dup_axis(name="Percent of peaks with motif"))+
+  theme_classic()+
+  ylab("Enriched TF motif")+
+  ggtitle("Late response peaks hypo accessible")
+
+
+
+
+```
+
 
 ### Filtering using Fold Change values
 
