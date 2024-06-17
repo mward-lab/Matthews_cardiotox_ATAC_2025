@@ -432,7 +432,8 @@ EAR_cREs %>%
   scale_fill_discrete()+
   ggtitle(paste0("EAR n = ",length(unique(EAR_cREs$peakid))," out of ", length(unique(EAR_df$id)), " total peaks (",sprintf("%.1f",length(unique(EAR_cREs$peakid))/length(unique(EAR_df$id))*100),"%)"))+
   # facet_wrap(~direction)+
-  theme_bw()
+  theme_bw()+
+  xlim(-4,4)
 
 
 
@@ -453,7 +454,8 @@ ESR_cREs %>%
   scale_fill_discrete()+
   ggtitle(paste0("ESR n = ",length(unique(ESR_cREs$peakid))," out of ", length(unique(ESR_df$id)), " total peaks (",sprintf("%.1f",length(unique(ESR_cREs$peakid))/length(unique(ESR_df$id))*100),"%)"))+
   # facet_wrap(~direction)+
-  theme_bw()
+  theme_bw()+
+  xlim(-4,4)
 
 
 LR_cREs %>%
@@ -473,8 +475,8 @@ LR_cREs %>%
   scale_fill_discrete()+
   ggtitle(paste0("LR n = ",length(unique(LR_cREs$peakid))," out of ", length(unique(LR_df$id)), " total peaks (",sprintf("%.1f",length(unique(LR_cREs$peakid))/length(unique(LR_df$id))*100),"%)"))+
   # facet_wrap(~direction)+
-  theme_bw()
-
+  theme_bw()+
+  xlim(-4,4)
 
 NR_cREs %>%
   as.data.frame() %>%
@@ -488,11 +490,13 @@ NR_cREs %>%
   mutate(direction=if_else(logFC>0,"open","closed")) %>% 
   mutate(type=factor(type, levels = c("Promoter-like","Proximal enhancer-like","Distal enhancer-like","CTCF-only"))) %>%
   mutate(direction=factor(direction, levels=c("open","closed"))) %>% 
-   ggplot(., aes(y=type, x=logFC,group=type))+
+   ggplot(., aes(y=type, x=logFC,fill=direction))+
   geom_boxplot() +
   # facet_wrap(~direction)+
   ggtitle(paste0("NR n = ",length(unique(NR_cREs$peakid))," out of ", length(unique(NR_df$id)), " total peaks (",sprintf("%.1f",length(unique(NR_cREs$peakid))/length(unique(NR_df$id))*100),"%)"))+
-  theme_bw()
+  theme_bw()+
+  xlim(-4,4)
+
 
 # cREs_HLV_46F %>%
 #   as.data.frame()# %>%
@@ -506,6 +510,81 @@ NR_cREs %>%
 
 
 ```
+### All response (EAR+ESR+LR peaks that overlap enhancer, then split for logFC at DOX24)
+
+
+
+```{r logFC all response}
+
+respcREs <-
+EAR_cREs %>% 
+as.data.frame() %>%
+  dplyr::filter(blockCount=="CTCF-only,CTCF-bound"|blockCount =="PLS"|blockCount =="PLS,CTCF-bound"|blockCount =="dELS"|blockCount =="dELS,CTCF-bound"|blockCount =="pELS"|blockCount =="pELS,CTCF-bound") %>% 
+  mutate(type=if_else(blockCount=="CTCF-only,CTCF-bound","CTCF-only",
+                      if_else(grepl("PLS",blockCount),"Promoter-like",
+                              if_else(grepl("pELS",blockCount),"Proximal enhancer-like", "Distal enhancer-like"),blockCount))) %>% 
+  rbind(ESR_cREs %>% 
+as.data.frame() %>%
+  dplyr::filter(blockCount=="CTCF-only,CTCF-bound"|blockCount =="PLS"|blockCount =="PLS,CTCF-bound"|blockCount =="dELS"|blockCount =="dELS,CTCF-bound"|blockCount =="pELS"|blockCount =="pELS,CTCF-bound") %>% 
+  mutate(type=if_else(blockCount=="CTCF-only,CTCF-bound","CTCF-only",
+                      if_else(grepl("PLS",blockCount),"Promoter-like",
+                              if_else(grepl("pELS",blockCount),"Proximal enhancer-like", "Distal enhancer-like"),blockCount)))) %>% 
+  rbind(LR_cREs %>% 
+as.data.frame() %>%
+  dplyr::filter(blockCount=="CTCF-only,CTCF-bound"|blockCount =="PLS"|blockCount =="PLS,CTCF-bound"|blockCount =="dELS"|blockCount =="dELS,CTCF-bound"|blockCount =="pELS"|blockCount =="pELS,CTCF-bound") %>% 
+  mutate(type=if_else(blockCount=="CTCF-only,CTCF-bound","CTCF-only",
+                      if_else(grepl("PLS",blockCount),"Promoter-like",
+                              if_else(grepl("pELS",blockCount),"Proximal enhancer-like", "Distal enhancer-like"),blockCount)))) %>% 
+   left_join(., toplist_DOX24_ATAC, by =c("peakid"="peak")) %>% 
+  dplyr::select(peakid, NCBI_gene,ensembl_ID,SYMBOL,name, type, logFC,adj.P.Val) %>% 
+  mutate(status=if_else(logFC>=0,"open","closed")) 
+
+respcREs %>% 
+  # dplyr::filter(adj.P.Val<0.05) %>% 
+
+  ggplot(., aes(y=type, x=logFC, fill=status))+
+  geom_boxplot() +
+  # facet_wrap(~direction)+
+  ggtitle("Log FC of cREs across response groups ")+
+  theme_bw()+
+  xlim(-4,4)
+  
+
+```
+### Overlap of all peaks with enhancers
+
+```{r}
+fullOL <- join_overlap_intersect(all_peak_gr,cREs_HLV_46F)
+fullOLtable <- fullOL %>% 
+as.data.frame() %>%
+  dplyr::filter(blockCount=="CTCF-only,CTCF-bound"|blockCount =="PLS"|blockCount =="PLS,CTCF-bound"|blockCount =="dELS"|blockCount =="dELS,CTCF-bound"|blockCount =="pELS"|blockCount =="pELS,CTCF-bound") %>% 
+  mutate(type=if_else(blockCount=="CTCF-only,CTCF-bound","CTCF-only",
+                      if_else(grepl("PLS",blockCount),"Promoter-like",
+                              if_else(grepl("pELS",blockCount),"Proximal enhancer-like", "Distal enhancer-like"),blockCount))) %>% 
+left_join(., toplist_DOX24_ATAC, by =c("id"="peak")) %>% 
+  dplyr::select(id, annotation, type, logFC,adj.P.Val) %>% 
+  mutate(status=if_else(logFC>=0,"open","closed")) 
+   
+fullOLtable %>% 
+ggplot(., aes(y=type, x=logFC, fill=status))+
+  geom_boxplot() +
+  # facet_wrap(~direction)+
+  ggtitle("Log FC across all peaks ")+
+  theme_bw()+
+  xlim(-4,4)
+  
+fullOLtable %>% 
+  group_by(type,status) %>% 
+  count() %>%
+  pivot_wider(., id_cols="type",names_from = "status",values_from = n) %>% 
+  mutate(total=closed+open) %>% 
+  kable(., caption="Breakdown of peaks overlapping cREs") %>% 
+  kable_paper("striped") %>%
+  kable_styling(full_width = FALSE, font_size = 14)
+
+
+```
+
 
 ###  EAR cREs with all peaks
 ```{r enhacerstuffforlater EAR}
