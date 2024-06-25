@@ -23,7 +23,7 @@ pre[class] {
   max-height: 200px;
 }
 ```
-
+####Loading
 ```{r package loading, message=FALSE, warning=FALSE}
 library(tidyverse)
 # library(ggsignif)
@@ -56,7 +56,7 @@ library(BiocParallel)
 library(ggpubr)
 library(devtools)
 # install_github('davetang/bedr')
-library(bedr)
+# library(bedr)
 library(JASPAR2022)
 library(TFBSTools)
 library(MotifDb)
@@ -95,6 +95,10 @@ exp_neargene_table <- read_delim("data/n45_bedfiles/exp_neargene_table.tsv",
     delim = "\t", escape_double = FALSE, 
     trim_ws = TRUE)
 
+TSS_NG_data <- read_delim("data/n45_bedfiles/TSS_NG_data.tsv", 
+    delim = "\t", escape_double = FALSE, 
+    trim_ws = TRUE)
+
 # col_ng_peak <- exp_neargene_table %>%
 #   group_by(chr, start, end, peakid) %>%
 #     summarise(NCBI_gene = paste(unique(ENTREZID),collapse=","),
@@ -111,14 +115,16 @@ peakAnnoList_24_n45<- readRDS("data/peakAnnoList_24_n45.RDS")
 
 all_peak_gr <- as.GRanges(peakAnnoList_24_n45$background)
 
-Joined_tss_neargene <- all_peak_gr %>% 
+Joined_tss_neargene <- all_peak_gr %>%
   as.data.frame() %>% 
   dplyr::select(seqnames:id,geneId,distanceToTSS) %>% 
   dplyr::filter(!grepl("chrX",id)& !grepl("chrY",id))%>%
   dplyr::rename("close_geneId"="geneId") %>% 
   mutate(start=start+1) %>% 
-  left_join(., col_ng_peak, by=c("id"="peakid", "start"="start","end"="end")) %>% 
-  dplyr::rename("NCBI_gene_NG"="NCBI_gene") 
+  left_join(., TSS_NG_data, by=c("id"="peakid", "start"="start","end"="end")) %>%
+  dplyr::select(seqnames.x:close_geneId,distanceToTSS, entrezgene_id:dist_to_NG)
+  
+
 
   
 ### THESE ARE DAR peaks (not total peaks)
@@ -188,7 +194,63 @@ LR_df_gr <-  as.GRanges(peakAnnoList_n45_motif$LR_n45_gr)
 NR_df <- as.data.frame(peakAnnoList_n45_motif$NR_n45_gr)
 NR_df_gr <-  as.GRanges(peakAnnoList_n45_motif$NR_n45_gr)
 
+EAR_peak_list_all <-  TSS_NG_data %>%
+    dplyr::filter(peakid %in% EAR_df$id) %>% 
+  mutate(MRC="EAR") 
 
+ESR_peak_list_all <- TSS_NG_data %>%
+    dplyr::filter(peakid %in% ESR_df$id) %>% 
+    mutate(MRC="ESR")
+
+LR_peak_list_all <- TSS_NG_data %>%
+    dplyr::filter(peakid %in% LR_df$id) %>% 
+    mutate(MRC="LR")
+
+NR_peak_list_all <- TSS_NG_data %>%
+    dplyr::filter(peakid %in% NR_df$id) %>% 
+    mutate(MRC="NR")
+
+peak_list_all_MRC <- EAR_peak_list_all %>% 
+  rbind(ESR_peak_list_all) %>% 
+  rbind(LR_peak_list_all) %>% 
+  rbind(NR_peak_list_all)
+
+
+gr_EAR_peak_list<-  TSS_NG_data %>%
+    dplyr::filter(peakid %in% EAR_df$id) %>% 
+  mutate(MRC="EAR") %>%
+  distinct() %>% 
+  GRanges()
+
+gr_ESR_peak_list <- TSS_NG_data %>%
+    dplyr::filter(peakid %in% ESR_df$id) %>% 
+    mutate(MRC="ESR")%>% 
+ distinct() %>% 
+  GRanges()
+
+gr_LR_peak_list <- TSS_NG_data %>%
+    dplyr::filter(peakid %in% LR_df$id) %>% 
+    mutate(MRC="LR")%>% 
+  distinct() %>% 
+  GRanges()
+
+gr_NR_peak_list <- TSS_NG_data %>%
+    dplyr::filter(peakid %in% NR_df$id) %>% 
+    mutate(MRC="NR")%>% 
+  distinct() %>% 
+  GRanges()
+
+toplist_ATAC <- readRDS("data/toplist_n45.RDS")
+
+toplist_DOX24_ATAC <- toplist_ATAC %>% 
+  dplyr::filter(trt=="DOX" & time=="24 hours")
+median_24_lfc <- readRDS("data/median_24_lfc.RDS") %>% ungroup()
+median_3_lfc <- readRDS("data/median_3_lfc.RDS") %>% ungroup()
+
+
+```
+
+```{r test block, eval=FALSE, message=FALSE, warning=FALSE, include=FALSE}
 EAR_peak_list_20k <-  col_ng_peak %>%
   dplyr::filter(dist_to_NG<20000) %>%
     dplyr::filter(peakid %in% EAR_df$id) %>% 
@@ -252,10 +314,11 @@ gr_LR_peak_list <- col_ng_peak %>%
 gr_NR_peak_list <- col_ng_peak %>%
     dplyr::filter(peakid %in% NR_df$id) %>% 
     mutate(MRC="NR")%>% 
-
   GRanges()
 
 n45_fullpeaks_gr <- readBed("data/n45_bedfiles/DAR_DEG_background.bed")
+
+Top2b_peaks_gr <- readBed("data/n45_bedfiles/TOP2B_CM.bed")
 ###file for ATACseq replicability
 ENCFF544RZR <-readRDS ("data/n45_bedfiles/ENCFF533RZR_gr.RDS")
 # ENCFFFF544RZR_bed <- read_delim("data/n45_bedfiles/ENCFF134HBK.bed", 
@@ -287,10 +350,10 @@ toplist_DOX24_ATAC <- toplist_ATAC %>%
 
 These are Venns using the Neargenes between each set of peaks
 ```{r Venns of data}
-ggVennDiagram::ggVennDiagram(list(unique(EAR_peak_list$ensembl_ID), 
-                                  unique(ESR_peak_list$ensembl_ID),  
-                                  unique(LR_peak_list$ensembl_ID), 
-                                  unique(NR_peak_list$ensembl_ID)),
+ggVennDiagram::ggVennDiagram(list(unique(EAR_peak_list_all$entrezgene_id), 
+                                  unique(ESR_peak_list_all$entrezgene_id),  
+                                  unique(LR_peak_list_all$entrezgene_id), 
+                                  unique(NR_peak_list_all$entrezgene_id)),
                              category.names = c("EAR_NG","ESR_NG","LR_NG","NR_NG"),
               show_intersect = FALSE,
               set_color = "black",
@@ -305,29 +368,29 @@ ggVennDiagram::ggVennDiagram(list(unique(EAR_peak_list$ensembl_ID),
 
 
 
-ggVennDiagram::ggVennDiagram(list(unique(EAR_peak_list$NCBI_gene),EAR_RNA$ENTREZID),
+ggVennDiagram::ggVennDiagram(list(as.character(EAR_peak_list_all$entrezgene_id),EAR_RNA$ENTREZID),
               category.names = c("EAR_ATAC","EAR_RNA"), label = "count")+
-  labs(title = "EAR ATAC-neargenes and expressed response RNA")+
-  theme(plot.title = element_text(size = rel(1.5), hjust = 0.5))+
-  scale_x_continuous(expand = expansion(mult = .2))
+  labs(title = "EAR ATAC-neargenes and\n expressed response RNA")+
+  theme(plot.title = element_text(size = rel(1.0), hjust = 0.5))+
+  scale_x_continuous(expand = expansion(mult = .2))+
   
 
-ggVennDiagram::ggVennDiagram(list(unique(ESR_peak_list$NCBI_gene),ESR_RNA$ENTREZID),
+ggVennDiagram::ggVennDiagram(list(as.character(ESR_peak_list_all$entrezgene_id),ESR_RNA$ENTREZID),
               category.names = c("ESR_ATAC","ESR_RNA"), label = "count")+
-  labs(title = "ESRATAC-neargenes and expressed response RNA")+
-  theme(plot.title = element_text(size = rel(1.5), hjust = 0.5))+
-  scale_x_continuous(expand = expansion(mult = .2))
+  labs(title = "ESRATAC-neargenes and\n expressed response RNA")+
+  theme(plot.title = element_text(size = rel(1.0), hjust = 0.5))+
+  scale_x_continuous(expand = expansion(mult = .2))+
 
-ggVennDiagram::ggVennDiagram(list(unique(LR_peak_list$NCBI_gene),LR_RNA$ENTREZID),
+ggVennDiagram::ggVennDiagram(list(as.character(LR_peak_list_all$entrezgene_id),LR_RNA$ENTREZID),
               category.names = c("LR_ATAC","LR_RNA"), label = "count")+
-  labs(title = "LR ATAC-neargenes and expressed response RNA")+
-  theme(plot.title = element_text(size = rel(1.5), hjust = 0.5))+
-  scale_x_continuous(expand = expansion(mult = .2))
+  labs(title = "LR ATAC-neargenes and\n expressed response RNA")+
+  theme(plot.title = element_text(size = rel(1.0), hjust = 0.5))+
+  scale_x_continuous(expand = expansion(mult = .2))+
 
-ggVennDiagram::ggVennDiagram(list(unique(NR_peak_list$NCBI_gene),NR_RNA$ENTREZID),
+ggVennDiagram::ggVennDiagram(list(as.character(NR_peak_list_all$entrezgene_id),NR_RNA$ENTREZID),
               category.names = c("NR_ATAC","NR_RNA"), label = "count")+
-  labs(title = "NR ATAC-neargenes and expressed response RNA")+
-  theme(plot.title = element_text(size = rel(1.5), hjust = 0.5))+ 
+  labs(title = "NR ATAC-neargenes and\n expressed response RNA")+
+  theme(plot.title = element_text(size = rel(1.0), hjust = 0.5))+ 
   scale_x_continuous(expand = expansion(mult = .2))
 
 
@@ -397,6 +460,13 @@ EAR_cREs %>%
   kable(., caption="Early acute response peaks overlapping cREs") %>% 
   kable_paper("striped") %>%
   kable_styling(full_width = FALSE, font_size = 14)
+
+
+median_24_lfc <- readRDS("data/median_24_lfc.RDS") %>% ungroup()
+median_3_lfc <- readRDS("data/median_3_lfc.RDS") %>% ungroup()
+
+
+
 ```
 
 ### Visualization of categories:
@@ -553,8 +623,11 @@ respcREs %>%
 ```
 ### Overlap of all peaks with enhancers
 
-```{r}
+```{r  Full Overlap}
 fullOL <- join_overlap_intersect(all_peak_gr,cREs_HLV_46F)
+
+
+
 fullOLtable <- fullOL %>% 
 as.data.frame() %>%
   dplyr::filter(blockCount=="CTCF-only,CTCF-bound"|blockCount =="PLS"|blockCount =="PLS,CTCF-bound"|blockCount =="dELS"|blockCount =="dELS,CTCF-bound"|blockCount =="pELS"|blockCount =="pELS,CTCF-bound") %>% 
@@ -582,6 +655,41 @@ fullOLtable %>%
   kable_paper("striped") %>%
   kable_styling(full_width = FALSE, font_size = 14)
 
+
+fullOL_medtable <- fullOL %>% 
+as.data.frame() %>%
+  dplyr::filter(blockCount=="CTCF-only,CTCF-bound"|blockCount =="PLS"|blockCount =="PLS,CTCF-bound"|blockCount =="dELS"|blockCount =="dELS,CTCF-bound"|blockCount =="pELS"|blockCount =="pELS,CTCF-bound") %>% 
+  mutate(type=if_else(blockCount=="CTCF-only,CTCF-bound","CTCF-only",
+                      if_else(grepl("PLS",blockCount),"Promoter-like",
+                              if_else(grepl("pELS",blockCount),"Proximal enhancer-like", "Distal enhancer-like"),blockCount))) %>% 
+left_join(., median_24_lfc, by =c("id"="peak")) %>% 
+  dplyr::select(id, annotation, type, median) %>% 
+  mutate(status=if_else(median>=0,"open","closed")) 
+
+fullOL_medtable %>% 
+ mutate(status=factor(status, levels=c("open","closed"))) %>% 
+  ggplot(., aes(y=type, x=median))+
+  # geom_boxplot(aes(fill=status)) +
+  geom_boxplot()+
+  scale_fill_discrete()+
+  ggtitle("All peaks and median logFC")+
+  # facet_wrap(~direction)+
+  theme_bw()
+fullOL_medtable %>% 
+group_by(type,status) %>% 
+  count() %>%
+  pivot_wider(., id_cols="type",names_from = "status",values_from = n) %>% 
+  mutate(total=closed+open) %>% 
+  kable(., caption="Breakdown of peaks overlapping cREs") %>% 
+  kable_paper("striped") %>%
+  kable_styling(full_width = FALSE, font_size = 14)
+
+test <- join_overlap_left(all_peak_gr,cREs_HLV_46F)
+test %>% 
+  as.data.frame %>% 
+  dplyr::filter(is.na(blockCount)) %>% 
+  dplyr::select(id) %>% 
+  left_join(., median_24_lfc,by=c("id"="peak"))
 
 ```
 
@@ -617,6 +725,105 @@ EAR_cREs %>%
   ggtitle("EAR")+
   # facet_wrap(~direction)+
   theme_bw()
+
+```
+### Full Overlap 24 hours
+```{r FullOL 24hours}
+
+fullOL_medtable %>% 
+ mutate(status=factor(status, levels=c("open","closed"))) %>% 
+  dplyr::filter(id %in% EAR_df$id) %>% 
+  ggplot(., aes(y=type, x=median))+
+  geom_boxplot() +
+  scale_fill_discrete()+
+  ggtitle("EAR peaks and median logFC 24 hours")+
+  # facet_wrap(~direction)+
+  theme_bw()+
+  coord_cartesian(xlim=c(-4,4))
+fullOL_medtable %>% 
+ mutate(status=factor(status, levels=c("open","closed"))) %>% 
+  dplyr::filter(id %in% ESR_df$id) %>% 
+  ggplot(., aes(y=type, x=median))+
+  geom_boxplot() +
+  scale_fill_discrete()+
+  ggtitle("ESR peaks and median logFC 24 hours")+
+  # facet_wrap(~direction)+
+  theme_bw()+
+  coord_cartesian(xlim=c(-4,4))
+fullOL_medtable %>% 
+ mutate(status=factor(status, levels=c("open","closed"))) %>% 
+  dplyr::filter(id %in% LR_df$id) %>% 
+  ggplot(., aes(y=type, x=median))+
+  geom_boxplot() +
+  scale_fill_discrete()+
+  ggtitle("LR peaks and median logFC 24 hours")+
+  # facet_wrap(~direction)+
+  theme_bw()+
+  coord_cartesian(xlim=c(-4,4))
+fullOL_medtable%>% 
+ mutate(status=factor(status, levels=c("open","closed"))) %>% 
+  dplyr::filter(id %in% NR_df$id) %>% 
+  ggplot(., aes(y=type, x=median))+
+  geom_boxplot() +
+  scale_fill_discrete()+
+  ggtitle("NR peaks and median logFC 24 hours")+
+  # facet_wrap(~direction)+
+  theme_bw()+
+  coord_cartesian(xlim=c(-4,4))
+```
+### Full Overlap 3 hours
+```{r FullOL 3hours}
+fullOL_medtable_3h <- fullOL %>% 
+as.data.frame() %>%
+  dplyr::filter(blockCount=="CTCF-only,CTCF-bound"|blockCount =="PLS"|blockCount =="PLS,CTCF-bound"|blockCount =="dELS"|blockCount =="dELS,CTCF-bound"|blockCount =="pELS"|blockCount =="pELS,CTCF-bound") %>% 
+  mutate(type=if_else(blockCount=="CTCF-only,CTCF-bound","CTCF-only",
+                      if_else(grepl("PLS",blockCount),"Promoter-like",
+                              if_else(grepl("pELS",blockCount),"Proximal enhancer-like", "Distal enhancer-like"),blockCount))) %>% 
+left_join(., median_3_lfc, by =c("id"="peak")) %>% 
+  dplyr::select(id, annotation, type, median) %>% 
+  mutate(status=if_else(median>=0,"open","closed")) 
+
+fullOL_medtable_3h %>% 
+ mutate(status=factor(status, levels=c("open","closed"))) %>% 
+  dplyr::filter(id %in% EAR_df$id) %>% 
+  ggplot(., aes(y=type, x=median))+
+  geom_boxplot() +
+  scale_fill_discrete()+
+  ggtitle("EAR peaks and median logFC 3 hours")+
+  # facet_wrap(~direction)+
+  theme_bw()+
+  coord_cartesian(xlim=c(-4,4))
+fullOL_medtable_3h %>% 
+ mutate(status=factor(status, levels=c("open","closed"))) %>% 
+  dplyr::filter(id %in% ESR_df$id) %>% 
+  ggplot(., aes(y=type, x=median))+
+  geom_boxplot() +
+  scale_fill_discrete()+
+  ggtitle("ESR peaks and median logFC 3 hours")+
+  # facet_wrap(~direction)+
+  theme_bw()+
+   coord_cartesian(xlim=c(-4,4))
+fullOL_medtable_3h %>% 
+ mutate(status=factor(status, levels=c("open","closed"))) %>% 
+  dplyr::filter(id %in% LR_df$id) %>% 
+  ggplot(., aes(y=type, x=median))+
+  geom_boxplot() +
+  scale_fill_discrete()+
+  ggtitle("LR peaks and median logFC 3 hours")+
+  # facet_wrap(~direction)+
+  theme_bw()+
+   coord_cartesian(xlim=c(-4,4))
+fullOL_medtable_3h %>% 
+ mutate(status=factor(status, levels=c("open","closed"))) %>% 
+  dplyr::filter(id %in% NR_df$id) %>% 
+  ggplot(., aes(y=type, x=median))+
+  geom_boxplot() +
+  scale_fill_discrete()+
+  ggtitle("NR peaks and median logFC 3 hours")+
+  # facet_wrap(~direction)+
+  theme_bw()+
+   coord_cartesian(xlim=c(-4,4))
+
 ```
 
 
@@ -879,44 +1086,89 @@ ggVennDiagram::ggVennDiagram(list(unique(DOX_24_peak_list$ensembl_ID),
 ###### noodling around
 ```{r crazy enhancergwas, eval=FALSE, include=FALSE}
 
-gwas_list <- readRDS("data/test.list.RDS")
+fullOL_medtable_3h <- fullOL %>% 
+as.data.frame() %>%
+  dplyr::filter(blockCount=="CTCF-only,CTCF-bound"|blockCount =="PLS"|blockCount =="PLS,CTCF-bound"|blockCount =="dELS"|blockCount =="dELS,CTCF-bound"|blockCount =="pELS"|blockCount =="pELS,CTCF-bound") %>% 
+  mutate(type=if_else(blockCount=="CTCF-only,CTCF-bound","CTCF-only",
+                      if_else(grepl("PLS",blockCount),"Promoter-like",
+                              if_else(grepl("pELS",blockCount),"Proximal enhancer-like", "Distal enhancer-like"),blockCount))) %>% 
+left_join(., median_3_lfc, by =c("id"="peak")) %>% 
+  dplyr::select(id, annotation, type, median) %>% 
+  mutate(status=if_else(median>=0,"open","closed")) 
 
-list2env(gwas_list, envir = .GlobalEnv)
+fullOL_medtable_3h %>% 
+ mutate(status=factor(status, levels=c("open","closed"))) %>% 
+  ggplot(., aes(y=type, x=median))+
+  geom_boxplot(aes(fill=status)) +
+  scale_fill_discrete()+
+  ggtitle("All peaks and median logFC")+
+  # facet_wrap(~direction)+
+  theme_bw()
 
-##gwas2 is ARR,  gwas4 is HD
-gwas_2_gr_noext
-gwas_4_gr_noext
-# findOverlaps(enhancers_HLV_46F,gwas_2_gr_noext)
-# ARR_SNPS <- subsetByOverlaps(enhancers_HLV_46F,gwas_2_gr_noext)
-# arr_list <- as.data.frame(ARR_SNPS)
-# (findOverlaps(ARR_SNPS,NR_df_gr))
-# (findOverlaps(ARR_SNPS,LR_df_gr))
-# (findOverlaps(ARR_SNPS,ESR_df_gr))
-# (findOverlaps(ARR_SNPS,EAR_df_gr))
-# 
-# subsetByOverlaps(NR_df_gr, ARR_SNPS)
-# subsetByOverlaps(LR_df_gr, ARR_SNPS)
-# subsetByOverlaps(ESR_df_gr, ARR_SNPS)
-# subsetByOverlaps(EAR_df_gr, ARR_SNPS)
+```
 
-# 
-# 
-# findOverlaps(enhancers_HLV_46F,gwas_4_gr_noext)
-# HD_SNPS <- subsetByOverlaps(enhancers_HLV_46F,gwas_4_gr_noext)
-# HD_list <- as.data.frame(HD_SNPS)
-# (findOverlaps(HD_SNPS,NR_df_gr))
-# (findOverlaps(HD_SNPS,LR_df_gr))
-# (findOverlaps(HD_SNPS,ESR_df_gr))
-# (findOverlaps(HD_SNPS,EAR_df_gr))
-# 
-# subsetByOverlaps(NR_df_gr,HD_SNPS)
-#  LRgene <- subsetByOverlaps(LR_df_gr, HD_SNPS)
-#  LRgene$transcriptId
-# subsetByOverlaps(ESR_df_gr, HD_SNPS)
-# subsetByOverlaps(EAR_df_gr, HD_SNPS)
+### Top2b
+
+```{r Top2b peaks}
+
+### created the marked dataframe with mRC
+Peak_MRC_table <- TSS_NG_data %>%
+    distinct(peakid, .keep_all = TRUE) %>% 
+    mutate(mrc=if_else(peakid %in% EAR_df$id, "EAR",
+                     if_else(peakid %in% ESR_df$id,"ESR",
+                             if_else(peakid %in% LR_df$id,"LR",
+                                     if_else(peakid %in% NR_df$id,"NR","not_mrc")))))%>%
+    dplyr::select(peakid:end,entrezgene_id:mrc) 
+  
+##overlapping and intersection top2b peaks with my peaks
+top2Boverlap <- join_overlap_intersect(all_peak_gr,Top2b_peaks_gr)
+
+### TAking the list of peaks dataframe by MRC and joining with marked group above so neargenes by TSS are joined thenchecking for distance to neargene across categories
+
+peak_list_all_MRC %>% 
+  dplyr::filter(peakid %in% top2Boverlap$id) %>% 
+  dplyr::select(peakid,MRC) %>% 
+  left_join(.,Peak_MRC_table, by=c("peakid"="peakid")) %>% 
+  ggplot(., aes(x=mrc,y=dist_to_NG))+
+  geom_boxplot()
+peak_list_all_MRC %>% 
+  dplyr::filter(peakid %in% top2Boverlap$id) %>% 
+  dplyr::select(peakid,MRC) %>% 
+  left_join(.,median_24_lfc, by=c("peakid"="peak")) %>% 
+  ggplot(., aes(x=MRC,y=median))+
+  geom_boxplot()  +
+  theme_bw()+
+  ggtitle("24 hr median logFC across response peaks overlapped with TOP2B")+
+  coord_cartesian(ylim= c(-3.5,2))
+
+peak_list_all_MRC %>% 
+  dplyr::filter(peakid %in% top2Boverlap$id) %>% 
+  dplyr::select(peakid,MRC) %>% 
+  left_join(.,median_3_lfc, by=c("peakid"="peak")) %>% 
+  ggplot(., aes(x=MRC,y=median))+
+  geom_boxplot()  +
+   theme_bw()+
+  ggtitle("3 hr median logFC across response peaks overlapped with TOP2B")+
+  coord_cartesian(ylim= c(-3.5,2))
+
+
+  
+
+```````
+
+### Counts of peaks-
+
+```{r top2b_cluster}
+peak_list_all_MRC %>% 
+  dplyr::filter(peakid %in% top2Boverlap$id) %>% 
+  dplyr::select(peakid,MRC) %>% 
+  left_join(.,Peak_MRC_table, by=c("peakid"="peakid")) %>% 
+  group_by(MRC) %>% 
+  tally
 
 
 
 
 
 ```
+

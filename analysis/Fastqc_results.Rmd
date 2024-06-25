@@ -872,5 +872,42 @@ total_reads_summary %>%
 
 ```
 
+```{r total reads adding plots}
+total_reads_summary %>% 
+  pivot_longer(., cols=c(total_mapped_reads,nuclear_mapped_reads,unique_mapped_reads,dedup_reads), names_to="plotting_data", values_to = "counts") %>% 
+  dplyr::filter(indv !="4") %>% 
+  dplyr::filter(indv !="5") %>% 
+  mutate(plotting_data=factor(plotting_data, levels =c("total_mapped_reads","nuclear_mapped_reads","unique_mapped_reads","dedup_reads")))  %>% 
+  ggplot(., aes(x=plotting_data, y=counts))+
+  geom_boxplot(aes(fill=indv))+
+ scale_fill_brewer(palette = "Dark2")+
+  theme_bw() +
+  facet_wrap(~time)
+
+
+
+
+total_reads_summary %>% 
+  pivot_longer(., cols=c(total_mapped_reads,nuclear_mapped_reads,unique_mapped_reads,dedup_reads), names_to="plotting_data", values_to = "counts") %>% 
+  dplyr::filter(indv !="4") %>% 
+  dplyr::filter(indv !="5") %>% 
+  mutate(plotting_data=factor(plotting_data, levels =c("total_mapped_reads","nuclear_mapped_reads","unique_mapped_reads","dedup_reads")))  %>% 
+  ggplot(., aes(x=trt, y=dedup_read_pairs))+
+  geom_boxplot(aes(fill=trt))+
+ geom_boxplot(aes(fill=trt))+
+  geom_point(aes(col=indv, size =3))+
+  facet_wrap(time~.)+
+   scale_fill_manual(values=drug_pal_fac)+
+  scale_color_brewer(palette = "Dark2")+
+  ggtitle("Deduplicated read pairs")+
+  theme_bw()
+  
+
+
+total_reads_summary %>% 
+    dplyr::filter(indv !="4") %>% 
+  dplyr::filter(indv !="5") %>% 
+ summary()
+```
 
 

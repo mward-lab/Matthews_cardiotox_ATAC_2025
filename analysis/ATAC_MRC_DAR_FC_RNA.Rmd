@@ -946,6 +946,8 @@ ATAC_MRC_ATAC_LFC %>%
 
 ```
 
+
+
 ### ATAC DOX 3 hr
 did not run
 ```{r ATAC LFC across 3 mrc, eval=FALSE, warning=FALSE, include=FALSE}
@@ -1528,6 +1530,89 @@ full_ATAC_FC_TRZ3 %>%
   kable_paper("striped", full_width = TRUE) %>%
   kable_styling(full_width = FALSE, font_size = 16) %>%
   scroll_box(height = "500px")
+
+
+```
+
+
+### ATAC median at 24 and 3 hour 
+
+```{r median atac}
+median_24_lfc <- readRDS("data/median_24_lfc.RDS") %>% ungroup()
+median_3_lfc <- readRDS("data/median_3_lfc.RDS") %>% ungroup()
+
+Peak_MRC_table %>%    
+    left_join(., median_3_lfc, by=c("peakid"="peak")) %>% 
+      dplyr::filter(mrc != "not_mrc") %>%
+    group_by(mrc) %>% 
+    mutate(mrc=factor(mrc, levels = c("NR","EAR","ESR","LR"))) %>% 
+    ggplot(., aes(x=mrc, y=median))+
+    geom_boxplot(fill=fills)+
+    theme_bw()+
+  ggtitle("ALL 3 hr lfc of peaks by ATAC response group")+
+  geom_signif(
+    comparisons = list(c("NR","EAR"),
+                       c("NR","ESR"),
+                       c("NR","LR")),
+    map_signif_level = FALSE,
+    test=t.test,
+    y_position=c(3.5, 4, 4.5))  +
+  xlab("ATAC response group")
+
+Peak_MRC_table %>%    
+    left_join(., median_3_lfc, by=c("peakid"="peak")) %>% 
+      # dplyr::filter(mrc != "not_mrc") %>%
+    group_by(mrc) %>% 
+    mutate(mrc=factor(mrc, levels = c("NR","EAR","ESR","LR","not_mrc"))) %>% 
+    ggplot(., aes(x=mrc, y=median))+
+    geom_boxplot(fill=c(fills,"green"))+
+    theme_bw()+
+  ggtitle("ALL 3 hr lfc of peaks by ATAC response group")+
+  geom_signif(
+    comparisons = list(c("NR","EAR"),
+                       c("NR","ESR"),
+                       c("NR","LR")),
+    map_signif_level = FALSE,
+    test=t.test,
+    y_position=c(3.5, 4, 4.5))  +
+  xlab("ATAC response group")
+
+Peak_MRC_table %>%    
+    left_join(., median_24_lfc, by=c("peakid"="peak")) %>% 
+      dplyr::filter(mrc != "not_mrc") %>%
+    group_by(mrc) %>% 
+    mutate(mrc=factor(mrc, levels = c("NR","EAR","ESR","LR"))) %>% 
+    ggplot(., aes(x=mrc, y=median))+
+    geom_boxplot(fill=fills)+
+    theme_bw()+
+  ggtitle("ALL 24 hr median lfc of peaks by ATAC response group")+
+  geom_signif(
+    comparisons = list(c("NR","EAR"),
+                       c("NR","ESR"),
+                       c("NR","LR")),
+    map_signif_level = FALSE,
+    test=t.test,
+    y_position=c(3.5, 4, 4.5))  +
+  xlab("ATAC response group")
+
+Peak_MRC_table %>%    
+    left_join(., median_24_lfc, by=c("peakid"="peak")) %>% 
+      # dplyr::filter(mrc != "not_mrc") %>%
+    group_by(mrc) %>% 
+    mutate(mrc=factor(mrc, levels = c("NR","EAR","ESR","LR","not_mrc"))) %>% 
+    ggplot(., aes(x=mrc, y=median))+
+    geom_boxplot(fill=c(fills,"green"))+
+    theme_bw()+
+  ggtitle("ALL 24 median hr lfc of peaks by ATAC response group")+
+  geom_signif(
+    comparisons = list(c("NR","EAR"),
+                       c("NR","ESR"),
+                       c("NR","LR")),
+    map_signif_level = FALSE,
+    test=t.test,
+    y_position=c(3.5, 4, 4.5))  +
+  xlab("ATAC response group")
+
 
 
 ```

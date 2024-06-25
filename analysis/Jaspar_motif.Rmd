@@ -524,8 +524,8 @@ xstreme_EAR_v_NR %>%
 ggplot(., aes (y= reorder(motif_name,log10Evalue))) +
   geom_col(aes(x=log10Evalue),fill="pink2") +
    geom_point(aes(x=`TP%`), size =5)+
-   geom_line(aes(x=`TP%`,y= motif_name, group=log10Evalue))+
-  scale_x_continuous(sec.axis = dup_axis(name="Percent of peaks with motif"))+
+   # geom_line(aes(x=`TP%`,y= motif_name, group=log10Evalue))+
+  scale_x_continuous(sec.axis = sec_axis(transform= ~.,name="Percent of peaks with motif"))+
   # geom_text(aes())
   theme_classic()+
   ylab("Enriched TF motif")+
@@ -537,9 +537,9 @@ ggplot(., aes (y= reorder(motif_name,log10Evalue))) +
 ```{r enriched motifs EAR hyper}
 
 xstreme_EARU %>% 
-  left_join(., sea_EARU, by= c("ALT_ID"="ALT_ID","CONSENSUS"="CONSENSUS", "ID"="ID")) %>% 
+  left_join(., (sea_EARU %>% dplyr::select(ID:'FP%')), by= c("ALT_ID"="ALT_ID","CONSENSUS"="CONSENSUS", "ID"="ID"))# %>% 
   dplyr::select(CLUSTER, SITES,SIM_MOTIF,ALT_ID, ID,EVALUE.x, TP:'FP%')%>% 
-  separate(SIM_MOTIF, into= c("SIM_MOTIF", "NAME"), sep= " ") %>% 
+  separate(SIM_MOTIF, into= c("SIM_MOTIF", "NAME"), sep= " ") #%>% 
   arrange(.,EVALUE.x) %>%
  # dplyr::mutate_if(is.numeric, funs(as.character(signif(., 3))))#%>%
   mutate(log10Evalue= log(EVALUE.x, base = 10)*(-1)) %>% 
@@ -552,7 +552,7 @@ ggplot(., aes (y= reorder(motif_name,log10Evalue))) +
   geom_col(aes(x=log10Evalue),fill="pink2") +
    geom_point(aes(x=`TP%`), size =5)+
    geom_line(aes(x=`TP%`,y= motif_name, group=log10Evalue))+
-  scale_x_continuous(sec.axis = dup_axis(name="Percent of peaks with motif"))+
+  scale_x_continuous(sec.axis = sec_axis(transform= ~./10,name="Percent of peaks with motif"))+
   # geom_text(aes())
   theme_classic()+
   ylab("Enriched TF motif")+
@@ -798,6 +798,8 @@ Basic first attempt is using DOX24 hour DAR logFC to split each response cluster
 
 toplist_full_ATAC <- readRDS("data/DEG_toplist_sep_n45.RDS")
 DOX_24 <- toplist_full_ATAC$DOX_24
+median_24_lfc <- readRDS("data/median_24_lfc.RDS") %>% ungroup()
+median_3_lfc <- readRDS("data/median_3_lfc.RDS") %>% ungroup()
 
 # DOX_24 %>% dplyr::filter(logFC>0) %>% 
 #     separate_wider_delim(.,peak, names = c( "chr","start","end"), delim= ".",cols_remove = FALSE) %>%
@@ -826,8 +828,6 @@ EARU <-  DOX_24 %>%
   dplyr::filter(peak %in% EAR_df$id) %>% 
     dplyr::filter(logFC>0) 
 
-
-     
 
 EARD <-  DOX_24 %>%
   dplyr::filter(peak %in% EAR_df$id) %>% 
@@ -860,6 +860,8 @@ NRD <-  DOX_24 %>%
 
 ```
 
+
+
 ```{r saving files, eval=FALSE, include=TRUE}
 # script to convert into each file needed for up and down
 df_names <- list(EAR_df,ESR_df,LR_df,NR_df)
@@ -867,26 +869,27 @@ names(df_names) <- c("EAR_df","ESR_df","LR_df","NR_df")
 
 for (i in 1:4){
 a<- df_names[[i]]
-names(df_names)[1]
 
-DOX_24 %>%
+median_24_lfc  %>%
   dplyr::filter(peak %in% a$id) %>% 
-  dplyr::filter(logFC>0) %>% 
+  dplyr::filter(median>0) %>% 
   separate_wider_delim(.,peak, names = c( "chr","start","end"), delim= ".",cols_remove = FALSE) %>%
      dplyr::rename("name"="peak") %>% 
      mutate(strand=".") %>% 
-     GRanges() %>% 
-     rtracklayer::export(., con=paste0("data/hyper_files/U_",names(df_names)[i],".bed"),format="bed", ignore.strand = FALSE)
+     GRanges() %>%
+     rtracklayer::export(., con=paste0("data/hyper_files/U_",names(df_names)[i],"_24_med.bed"),format="bed", ignore.strand = FALSE)
 
-DOX_24 %>%
+median_24_lfc  %>%
   dplyr::filter(peak %in% a$id) %>% 
-  dplyr::filter(logFC<0) %>% 
+  dplyr::filter(median<0) %>% 
   separate_wider_delim(.,peak, names = c( "chr","start","end"), delim= ".",cols_remove = FALSE) %>%
      dplyr::rename("name"="peak") %>% 
      mutate(strand=".") %>% 
-     GRanges() %>% 
-     rtracklayer::export(., con=paste0("data/hypo_files/D_",names(df_names)[i],".bed"),format="bed", ignore.strand = FALSE)
-}                        
+     GRanges() %>%
+     rtracklayer::export(., con=paste0("data/hypo_files/D_",names(df_names)[i],"_24_med.bed"),format="bed", ignore.strand = FALSE)
+}      
+
+
                        
 ```
 

@@ -755,9 +755,9 @@ log_filt_hc_n45 %>%
 #     na.omit(.) %>% GRanges(.) %>% 
 #   rtracklayer::export.bed(., con="data/n45_bedfiles/MTX_24_n45.bed", format="bed", ignore.strand = FALSE)
 #     # write.table(.,file = "data/n45_bedfiles/MTX_24_n45.bed", row.names =FALSE,col.name=FALSE)
-
+# 
 # txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
-# TSS = getBioRegion(TxDb=txdb, upstream=2000, downstream=2000, by = "gene", 
+# TSS = getBioRegion(TxDb=txdb, upstream=2000, downstream=2000, by = "gene",
 #                    type = "start_site")
 
 # DOX_3_n45_gr <- bed_to_granges("data/n45_bedfiles/DOX_3_n45.bed")
@@ -780,6 +780,12 @@ log_filt_hc_n45 %>%
 # peakAnnoList_24_n45<- lapply(my_list_24_n45, annotatePeak, tssRegion =c(-2000,2000), TxDb= txdb)
 # names(peakAnnoList_24_n45) <- c("DOX_24_n45" ,"EPI_24_n45", "DNR_24_n45", "MTX_24_n45", "background")
 # saveRDS(peakAnnoList_24_n45, "data/peakAnnoList_24_n45.RDS")
+# TRZ_3_toplist_ATAC
+# TRZ_24_toplist_ATAC
+# 
+# PeakAnno
+
+
 peakAnnoList_3_n45 <- readRDS("data/peakAnnoList_3_n45.RDS")
 peakAnnoList_24_n45<- readRDS("data/peakAnnoList_24_n45.RDS")
 
@@ -1026,14 +1032,421 @@ facet_wrap(~time+trt, nrow =2, ncol = 5)+
 
 ```
 
+### 3 hour Correlation of all peaks
 
-```{r lookat hand2as1}
+```{r look correlation plots 3 hours}
+
+toplist_n45 %>% 
+  dplyr::filter(time=="3 hours") %>% 
+  dplyr::select(trt:logFC) %>% 
+  pivot_wider(id_cols= c(peak,time), names_from=trt, values_from = logFC) %>% 
+  ggplot(., aes (x=DOX, y=DNR))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  sm_statCorr(corr_method = 'pearson')
+toplist_n45 %>% 
+  dplyr::filter(time=="3 hours") %>% 
+  dplyr::select(trt:logFC) %>% 
+  pivot_wider(id_cols= c(peak,time), names_from=trt, values_from = logFC) %>% 
+  ggplot(., aes (x=DOX, y=EPI))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  sm_statCorr(corr_method = 'pearson')
+toplist_n45 %>% 
+  dplyr::filter(time=="3 hours") %>% 
+  dplyr::select(trt:logFC) %>% 
+  pivot_wider(id_cols= c(peak,time), names_from=trt, values_from = logFC) %>% 
+  ggplot(., aes (x=DOX, y=MTX))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  sm_statCorr(corr_method = 'pearson')
+toplist_n45 %>% 
+  dplyr::filter(time=="3 hours") %>% 
+  dplyr::select(trt:logFC) %>% 
+  pivot_wider(id_cols= c(peak,time), names_from=trt, values_from = logFC) %>% 
+  ggplot(., aes (x=DOX, y=TRZ))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  sm_statCorr(corr_method = 'pearson')
+
+
+# fulltoplistpivot
+# 
+# toplist_n45 %>% 
+#   dplyr::filter(time=="3 hours") %>% 
+#   dplyr::select(trt:logFC) %>% 
+#   pivot_wider(id_cols= c(peak,time), names_from=trt, values_from = logFC) 
+# toplist_n45 %>% 
+#   dplyr::filter(time=="24 hours") %>% 
+#   dplyr::select(trt:logFC) %>% 
+#   pivot_wider(id_cols= c(peak,time), names_from=trt, values_from = logFC) 
 
 
 
+```
+
+
+
+### EAR Cluster
+
+```{r EARlook correlation plots 3 hours}
+
+toplist_n45 %>% 
+  dplyr::filter(time=="3 hours", peak %in% EAR_peak_list$peakid) %>% 
+  pivot_wider(id_cols= c(peak,time), names_from=trt, values_from = logFC) %>% 
+  ggplot(., aes (x=DOX, y=DNR))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  sm_statCorr(corr_method = 'pearson')
+toplist_n45 %>% 
+  dplyr::filter(time=="3 hours", peak %in% EAR_peak_list$peakid) %>% 
+  dplyr::select(trt:logFC) %>% 
+  pivot_wider(id_cols= c(peak,time), names_from=trt, values_from = logFC) %>% 
+  ggplot(., aes (x=DOX, y=EPI))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  sm_statCorr(corr_method = 'pearson')
+toplist_n45 %>% 
+dplyr::filter(time=="3 hours", peak %in% EAR_peak_list$peakid) %>% 
+  dplyr::select(trt:logFC) %>% 
+  pivot_wider(id_cols= c(peak,time), names_from=trt, values_from = logFC) %>% 
+  ggplot(., aes (x=DOX, y=MTX))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  sm_statCorr(corr_method = 'pearson')
+toplist_n45 %>% 
+  dplyr::filter(time=="3 hours", peak %in% EAR_peak_list$peakid) %>% 
+  dplyr::select(trt:logFC) %>% 
+  pivot_wider(id_cols= c(peak,time), names_from=trt, values_from = logFC) %>% 
+  ggplot(., aes (x=DOX, y=TRZ))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  sm_statCorr(corr_method = 'pearson')
+
+
+```
+
+### ESR Cluster
+
+```{r ESRlook correlation plots 3 hours}
+
+toplist_n45 %>% 
+  dplyr::filter(time=="3 hours", peak %in% ESR_peak_list$peakid) %>% 
+  pivot_wider(id_cols= c(peak,time), names_from=trt, values_from = logFC) %>% 
+  ggplot(., aes (x=DOX, y=DNR))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  sm_statCorr(corr_method = 'pearson')
+toplist_n45 %>% 
+  dplyr::filter(time=="3 hours", peak %in% ESR_peak_list$peakid) %>% 
+  dplyr::select(trt:logFC) %>% 
+  pivot_wider(id_cols= c(peak,time), names_from=trt, values_from = logFC) %>% 
+  ggplot(., aes (x=DOX, y=EPI))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  sm_statCorr(corr_method = 'pearson')
+toplist_n45 %>% 
+dplyr::filter(time=="3 hours", peak %in% ESR_peak_list$peakid) %>% 
+  dplyr::select(trt:logFC) %>% 
+  pivot_wider(id_cols= c(peak,time), names_from=trt, values_from = logFC) %>% 
+  ggplot(., aes (x=DOX, y=MTX))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  sm_statCorr(corr_method = 'pearson')
+toplist_n45 %>% 
+  dplyr::filter(time=="3 hours", peak %in% ESR_peak_list$peakid) %>% 
+  dplyr::select(trt:logFC) %>% 
+  pivot_wider(id_cols= c(peak,time), names_from=trt, values_from = logFC) %>% 
+  ggplot(., aes (x=DOX, y=TRZ))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  sm_statCorr(corr_method = 'pearson')
+
+
+```
+
+
+### LR Cluster
+
+```{r LRlook correlation plots 3 hours}
+
+toplist_n45 %>% 
+  dplyr::filter(time=="3 hours", peak %in% LR_peak_list$peakid) %>% 
+  pivot_wider(id_cols= c(peak,time), names_from=trt, values_from = logFC) %>% 
+  ggplot(., aes (x=DOX, y=DNR))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  sm_statCorr(corr_method = 'pearson')
+toplist_n45 %>% 
+  dplyr::filter(time=="3 hours", peak %in% LR_peak_list$peakid) %>% 
+  dplyr::select(trt:logFC) %>% 
+  pivot_wider(id_cols= c(peak,time), names_from=trt, values_from = logFC) %>% 
+  ggplot(., aes (x=DOX, y=EPI))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  sm_statCorr(corr_method = 'pearson')
+toplist_n45 %>% 
+dplyr::filter(time=="3 hours", peak %in% LR_peak_list$peakid) %>% 
+  dplyr::select(trt:logFC) %>% 
+  pivot_wider(id_cols= c(peak,time), names_from=trt, values_from = logFC) %>% 
+  ggplot(., aes (x=DOX, y=MTX))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  sm_statCorr(corr_method = 'pearson')
+toplist_n45 %>% 
+  dplyr::filter(time=="3 hours", peak %in% LR_peak_list$peakid) %>% 
+  dplyr::select(trt:logFC) %>% 
+  pivot_wider(id_cols= c(peak,time), names_from=trt, values_from = logFC) %>% 
+  ggplot(., aes (x=DOX, y=TRZ))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  sm_statCorr(corr_method = 'pearson')
+
+
+```
+
+
+### NR Cluster
+
+```{r NRlook correlation plots 3 hours}
+
+toplist_n45 %>% 
+  dplyr::filter(time=="3 hours", peak %in% NR_peak_list$peakid) %>% 
+  pivot_wider(id_cols= c(peak,time), names_from=trt, values_from = logFC) %>% 
+  ggplot(., aes (x=DOX, y=DNR))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  sm_statCorr(corr_method = 'pearson')
+toplist_n45 %>% 
+  dplyr::filter(time=="3 hours", peak %in% NR_peak_list$peakid) %>% 
+  dplyr::select(trt:logFC) %>% 
+  pivot_wider(id_cols= c(peak,time), names_from=trt, values_from = logFC) %>% 
+  ggplot(., aes (x=DOX, y=EPI))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  sm_statCorr(corr_method = 'pearson')
+toplist_n45 %>% 
+dplyr::filter(time=="3 hours", peak %in% NR_peak_list$peakid) %>% 
+  dplyr::select(trt:logFC) %>% 
+  pivot_wider(id_cols= c(peak,time), names_from=trt, values_from = logFC) %>% 
+  ggplot(., aes (x=DOX, y=MTX))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  sm_statCorr(corr_method = 'pearson')
+toplist_n45 %>% 
+  dplyr::filter(time=="3 hours", peak %in% NR_peak_list$peakid) %>% 
+  dplyr::select(trt:logFC) %>% 
+  pivot_wider(id_cols= c(peak,time), names_from=trt, values_from = logFC) %>% 
+  ggplot(., aes (x=DOX, y=TRZ))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  sm_statCorr(corr_method = 'pearson')
+
+
+```
+
+
+
+
+### 24 hour Correlation of all peaks
+
+```{r look correlation plots 24 hours}
+
+toplist_n45 %>% 
+  dplyr::filter(time=="24 hours") %>% 
+  dplyr::select(trt:logFC) %>% 
+  pivot_wider(id_cols= c(peak,time), names_from=trt, values_from = logFC) %>% 
+  ggplot(., aes (x=DOX, y=DNR))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  sm_statCorr(corr_method = 'pearson')
+toplist_n45 %>% 
+  dplyr::filter(time=="24 hours") %>% 
+  dplyr::select(trt:logFC) %>% 
+  pivot_wider(id_cols= c(peak,time), names_from=trt, values_from = logFC) %>% 
+  ggplot(., aes (x=DOX, y=EPI))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  sm_statCorr(corr_method = 'pearson')
+toplist_n45 %>% 
+  dplyr::filter(time=="24 hours") %>% 
+  dplyr::select(trt:logFC) %>% 
+  pivot_wider(id_cols= c(peak,time), names_from=trt, values_from = logFC) %>% 
+  ggplot(., aes (x=DOX, y=MTX))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  sm_statCorr(corr_method = 'pearson')
+toplist_n45 %>% 
+  dplyr::filter(time=="24 hours") %>% 
+  dplyr::select(trt:logFC) %>% 
+  pivot_wider(id_cols= c(peak,time), names_from=trt, values_from = logFC) %>% 
+  ggplot(., aes (x=DOX, y=TRZ))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  sm_statCorr(corr_method = 'pearson')
 
 
 
 
 
 ```
+
+### EAR Cluster
+
+```{r EARlook correlation plots 24 hours}
+
+toplist_n45 %>% 
+  dplyr::filter(time=="24 hours", peak %in% EAR_peak_list$peakid) %>% 
+  pivot_wider(id_cols= c(peak,time), names_from=trt, values_from = logFC) %>% 
+  ggplot(., aes (x=DOX, y=DNR))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  sm_statCorr(corr_method = 'pearson')
+toplist_n45 %>% 
+  dplyr::filter(time=="24 hours", peak %in% EAR_peak_list$peakid) %>% 
+  dplyr::select(trt:logFC) %>% 
+  pivot_wider(id_cols= c(peak,time), names_from=trt, values_from = logFC) %>% 
+  ggplot(., aes (x=DOX, y=EPI))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  sm_statCorr(corr_method = 'pearson')
+toplist_n45 %>% 
+dplyr::filter(time=="24 hours", peak %in% EAR_peak_list$peakid) %>% 
+  dplyr::select(trt:logFC) %>% 
+  pivot_wider(id_cols= c(peak,time), names_from=trt, values_from = logFC) %>% 
+  ggplot(., aes (x=DOX, y=MTX))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  sm_statCorr(corr_method = 'pearson')
+toplist_n45 %>% 
+  dplyr::filter(time=="24 hours", peak %in% EAR_peak_list$peakid) %>% 
+  dplyr::select(trt:logFC) %>% 
+  pivot_wider(id_cols= c(peak,time), names_from=trt, values_from = logFC) %>% 
+  ggplot(., aes (x=DOX, y=TRZ))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  sm_statCorr(corr_method = 'pearson')
+
+
+```
+
+### ESR Cluster
+
+```{r ESRlook correlation plots 24 hours}
+
+toplist_n45 %>% 
+  dplyr::filter(time=="24 hours", peak %in% ESR_peak_list$peakid) %>% 
+  pivot_wider(id_cols= c(peak,time), names_from=trt, values_from = logFC) %>% 
+  ggplot(., aes (x=DOX, y=DNR))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  sm_statCorr(corr_method = 'pearson')
+toplist_n45 %>% 
+  dplyr::filter(time=="24 hours", peak %in% ESR_peak_list$peakid) %>% 
+  dplyr::select(trt:logFC) %>% 
+  pivot_wider(id_cols= c(peak,time), names_from=trt, values_from = logFC) %>% 
+  ggplot(., aes (x=DOX, y=EPI))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  sm_statCorr(corr_method = 'pearson')
+toplist_n45 %>% 
+dplyr::filter(time=="24 hours", peak %in% ESR_peak_list$peakid) %>% 
+  dplyr::select(trt:logFC) %>% 
+  pivot_wider(id_cols= c(peak,time), names_from=trt, values_from = logFC) %>% 
+  ggplot(., aes (x=DOX, y=MTX))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  sm_statCorr(corr_method = 'pearson')
+toplist_n45 %>% 
+  dplyr::filter(time=="24 hours", peak %in% ESR_peak_list$peakid) %>% 
+  dplyr::select(trt:logFC) %>% 
+  pivot_wider(id_cols= c(peak,time), names_from=trt, values_from = logFC) %>% 
+  ggplot(., aes (x=DOX, y=TRZ))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  sm_statCorr(corr_method = 'pearson')
+
+
+```
+
+
+### LR Cluster
+
+```{r LRlook correlation plots 24 hours}
+
+toplist_n45 %>% 
+  dplyr::filter(time=="24 hours", peak %in% LR_peak_list$peakid) %>% 
+  pivot_wider(id_cols= c(peak,time), names_from=trt, values_from = logFC) %>% 
+  ggplot(., aes (x=DOX, y=DNR))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  sm_statCorr(corr_method = 'pearson')
+toplist_n45 %>% 
+  dplyr::filter(time=="24 hours", peak %in% LR_peak_list$peakid) %>% 
+  dplyr::select(trt:logFC) %>% 
+  pivot_wider(id_cols= c(peak,time), names_from=trt, values_from = logFC) %>% 
+  ggplot(., aes (x=DOX, y=EPI))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  sm_statCorr(corr_method = 'pearson')
+toplist_n45 %>% 
+dplyr::filter(time=="24 hours", peak %in% LR_peak_list$peakid) %>% 
+  dplyr::select(trt:logFC) %>% 
+  pivot_wider(id_cols= c(peak,time), names_from=trt, values_from = logFC) %>% 
+  ggplot(., aes (x=DOX, y=MTX))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  sm_statCorr(corr_method = 'pearson')
+toplist_n45 %>% 
+  dplyr::filter(time=="24 hours", peak %in% LR_peak_list$peakid) %>% 
+  dplyr::select(trt:logFC) %>% 
+  pivot_wider(id_cols= c(peak,time), names_from=trt, values_from = logFC) %>% 
+  ggplot(., aes (x=DOX, y=TRZ))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  sm_statCorr(corr_method = 'pearson')
+
+
+```
+
+
+### NR Cluster
+
+```{r NRlook correlation plots 24 hours}
+
+toplist_n45 %>% 
+  dplyr::filter(time=="24 hours", peak %in% NR_peak_list$peakid) %>% 
+  pivot_wider(id_cols= c(peak,time), names_from=trt, values_from = logFC) %>% 
+  ggplot(., aes (x=DOX, y=DNR))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  sm_statCorr(corr_method = 'pearson')
+toplist_n45 %>% 
+  dplyr::filter(time=="24 hours", peak %in% NR_peak_list$peakid) %>% 
+  dplyr::select(trt:logFC) %>% 
+  pivot_wider(id_cols= c(peak,time), names_from=trt, values_from = logFC) %>% 
+  ggplot(., aes (x=DOX, y=EPI))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  sm_statCorr(corr_method = 'pearson')
+toplist_n45 %>% 
+dplyr::filter(time=="24 hours", peak %in% NR_peak_list$peakid) %>% 
+  dplyr::select(trt:logFC) %>% 
+  pivot_wider(id_cols= c(peak,time), names_from=trt, values_from = logFC) %>% 
+  ggplot(., aes (x=DOX, y=MTX))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  sm_statCorr(corr_method = 'pearson')
+toplist_n45 %>% 
+  dplyr::filter(time=="24 hours", peak %in% NR_peak_list$peakid) %>% 
+  dplyr::select(trt:logFC) %>% 
+  pivot_wider(id_cols= c(peak,time), names_from=trt, values_from = logFC) %>% 
+  ggplot(., aes (x=DOX, y=TRZ))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  sm_statCorr(corr_method = 'pearson')
+
+
+```
+
+
