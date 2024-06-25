@@ -759,40 +759,6 @@ NR_cREs %>%
 ```
 
 
-###  EAR cREs with all peaks
-```{r enhacerstuffforlater EAR}
-toplist_DOX24_ATAC_nop <- toplist_ATAC %>% 
-  dplyr::filter(trt=="DOX" & time=="24 hours")
-EAR_cREs %>%
-  as.data.frame() %>%
-  group_by(blockCount) %>%
-  count() %>% 
-  mutate(MRC="EAR", per=n/7321) %>% 
-  kable(., caption="Early acute response peaks (7321) overlapping cREs") %>% 
-  kable_paper("striped") %>%
-  kable_styling(full_width = FALSE, font_size = 14)
-
-EAR_cREs %>%
-  as.data.frame() %>%
-  dplyr::filter(blockCount=="CTCF-only,CTCF-bound"|blockCount =="PLS"|blockCount =="PLS,CTCF-bound"|blockCount =="dELS"|blockCount =="dELS,CTCF-bound"|blockCount =="pELS"|blockCount =="pELS,CTCF-bound") %>% 
-  mutate(type=if_else(blockCount=="CTCF-only,CTCF-bound","CTCF-only",
-                      if_else(grepl("PLS",blockCount),"Promoter-like",
-                              if_else(grepl("pELS",blockCount),"Proximal enhancer-like", "Distal enhancer-like"),blockCount))) %>% 
-  left_join(., toplist_DOX24_ATAC_nop, by =c("peakid"="peak")) %>% 
-  na.omit() %>% 
-  dplyr::select(logFC,peakid,type) %>% 
-  mutate(direction=if_else(logFC>0,"open","closed")) %>% 
-  mutate(type=factor(type, levels = c("Promoter-like","Proximal enhancer-like","Distal enhancer-like","CTCF-only"))) %>%
-  mutate(direction=factor(direction, levels=c("open","closed"))) %>% 
-  ggplot(., aes(y=type, x=logFC,group=type))+
-  geom_boxplot() +
-  scale_fill_discrete()+
-  ggtitle("EAR")+
-  # facet_wrap(~direction)+
-  theme_bw()
-
-```
-
 | Cluster | eREs                                           | not cREs                                                                |
 |------------------------|------------------------|------------------------|
 | NR      | `r length(unique(NR_cREs$peakid))` | `r length(unique(NR_df$id))-length(unique(NR_cREs$peakid))`  |
