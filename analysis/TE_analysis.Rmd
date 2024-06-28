@@ -1,0 +1,385 @@
+---
+title: "TEs and my data"
+author: "ERM"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE,
+	warning = FALSE
+)
+```
+
+```{css, echo=FALSE}
+pre {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+pre[class] {
+  max-height: 200px;
+}
+```
+
+```{r package loading, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(kableExtra)
+library(broom)
+library(RColorBrewer)
+# library(gprofiler2)
+# library(qvalue)
+library(ChIPseeker)
+library("TxDb.Hsapiens.UCSC.hg38.knownGene")
+library("org.Hs.eg.db")
+# library(ATACseqQC)
+library(rtracklayer)
+library(edgeR)
+library(ggfortify)
+library(limma)
+library(readr)
+library(BiocGenerics)
+library(gridExtra)
+library(VennDiagram)
+library(scales)
+# library(ggVennDiagram)
+library(Cormotif)
+library(BiocParallel)
+library(ggpubr)
+library(devtools)
+# install_github('davetang/bedr')
+# library(bedr)
+library(biomaRt)
+library(eulerr)
+library(smplot2)
+library(genomation)
+library(ggsignif)
+library(plyranges)
+library(ggrepel)
+```
+##### loading data
+```{r first data sets}
+repeatmasker <- read.delim("data/other_papers/repeatmasker.tsv")
+
+TSS_NG_data <- read_delim("data/n45_bedfiles/TSS_NG_data.tsv", 
+    delim = "\t", escape_double = FALSE, 
+    trim_ws = TRUE)
+Collapsed_peaks <- read_delim("data/n45_bedfiles/TSS_NG_data_collapsed_peaks.tsv",
+                              delim = "\t", 
+                              escape_double = FALSE, 
+                              trim_ws = TRUE)
+TSS_data_gf <- TSS_NG_data %>% 
+  dplyr::filter(seqnames != "chrX") %>% 
+  dplyr::filter(seqnames != "chrY") %>%
+  GRanges()
+
+Col_TSS_data_gr <- Collapsed_peaks %>% 
+  dplyr::filter(seqnames != "chrX") %>% 
+  dplyr::filter(seqnames != "chrY") %>%
+  GRanges()
+
+reClass_list <- repeatmasker %>% 
+  distinct(repClass)
+
+Line_repeats <- repeatmasker %>% 
+  dplyr::filter(repClass == "LINE") %>% 
+ makeGRangesFromDataFrame(., keep.extra.columns = TRUE, seqnames.field = "genoName", start.field = "genoStart", end.field = "genoEnd",starts.in.df.are.0based=TRUE)
+
+Sine_repeats <- repeatmasker %>% 
+  dplyr::filter(repClass == "SINE") %>% 
+ makeGRangesFromDataFrame(., keep.extra.columns = TRUE, seqnames.field = "genoName", start.field = "genoStart", end.field = "genoEnd",starts.in.df.are.0based=TRUE)
+
+LTR_repeats <- repeatmasker %>% 
+  dplyr::filter(repClass == "LTR") %>% 
+ makeGRangesFromDataFrame(., keep.extra.columns = TRUE, seqnames.field = "genoName", start.field = "genoStart", end.field = "genoEnd",starts.in.df.are.0based=TRUE)
+
+DNA_repeats <- repeatmasker %>% 
+  dplyr::filter(repClass == "DNA") %>% 
+ makeGRangesFromDataFrame(., keep.extra.columns = TRUE, seqnames.field = "genoName", start.field = "genoStart", end.field = "genoEnd",starts.in.df.are.0based=TRUE)
+
+retroposon_repeats <- repeatmasker %>% 
+  dplyr::filter(repClass == "Retroposon") %>% 
+ makeGRangesFromDataFrame(., keep.extra.columns = TRUE, seqnames.field = "genoName", start.field = "genoStart", end.field = "genoEnd",starts.in.df.are.0based=TRUE)
+
+
+all_TEs_gr <- repeatmasker %>% 
+ makeGRangesFromDataFrame(., keep.extra.columns = TRUE, seqnames.field = "genoName", start.field = "genoStart", end.field = "genoEnd",starts.in.df.are.0based=TRUE)
+
+peakAnnoList_n45_motif <- readRDS("data/peakAnnoList_n45_motif.RDS")
+
+EAR_df <- as.data.frame(peakAnnoList_n45_motif$EAR_n45_gr)
+# EAR_df_gr <-  as.GRanges(peakAnnoList_n45_motif$EAR_n45_gr)
+
+
+ESR_df <- as.data.frame(peakAnnoList_n45_motif$ESR_n45_gr)
+# ESR_df_gr <- as.GRanges(peakAnnoList_n45_motif$ESR_n45_gr)
+
+LR_df <- as.data.frame(peakAnnoList_n45_motif$LR_n45_gr)
+# LR_df_gr <-  as.GRanges(peakAnnoList_n45_motif$LR_n45_gr)
+
+NR_df <- as.data.frame(peakAnnoList_n45_motif$NR_n45_gr)
+# NR_df_gr <-  as.GRanges(peakAnnoList_n45_motif$NR_n45_gr)
+
+
+```
+
+##  TE distrubution:
+
+This code below was my first attempt at finding how many peaks overlap more than 50% of TEs from the repeatmasker list.  The first output
+
+```{r  data about TEs}
+# length(retroposon_repeats)
+# ##5974
+# length(Sine_repeats)
+# ##1910631
+# length(Line_repeats)
+# ## 1614481
+# length(LTR_repeats)
+# ## 770551
+# length(DNA_repeats)
+# ## 512404
+# intersect_ranges(TSS_data_gf,retroposon_repeats)
+# intersect_ranges(TSS_data_gf,Line_repeats)
+# intersect_ranges(TSS_data_gf,Sine_repeats)
+# intersect_ranges(TSS_data_gf,LTR_repeats)
+# intersect_ranges(TSS_data_gf,DNA_repeats)
+# intersect_ranges(TSS_data_gf,all_TEs_gr)
+fullDF_overlap <- join_overlap_intersect(TSS_data_gf,all_TEs_gr)
+fullDF_overlap %>% 
+  as.data.frame() %>% 
+  group_by(repClass) %>%  
+  tally %>% 
+  kable(., caption="Count of peaks by TE class; overlap 1 bp or greater") %>% 
+  kable_paper("striped", full_width = TRUE) %>%
+  kable_styling(full_width = FALSE, font_size = 14)
+
+
+### This is how I subset only those peaks who cover >50% of TEs
+hits <- findOverlaps(TSS_data_gf,all_TEs_gr)
+overlaps <- pintersect(TSS_data_gf[queryHits(hits)], all_TEs_gr[subjectHits(hits)])
+percentOverlap <- width(overlaps) / width(all_TEs_gr[subjectHits(hits)])
+hits <- hits[percentOverlap > 0.5]
+
+testingol <- TSS_data_gf[queryHits(hits)]
+testingol %>% as.data.frame() %>% 
+  left_join(., (fullDF_overlap %>% as.data.frame(.)), by =c("seqnames"="seqnames","start"="start","end"="end","peakid"="peakid", "NG_start"="NG_start", "end_position"="end_position", "entrezgene_id"="entrezgene_id", "ensembl_gene_id"="ensembl_gene_id","dist_to_NG"="dist_to_NG", "width"="width", "strand"="strand", "hgnc_symbol" = "hgnc_symbol")) %>% 
+  group_by(repClass) %>% 
+  tally %>% 
+  kable(., caption="Count of peaks by TE class; overlap> 50%") %>% 
+  kable_paper("striped", full_width = TRUE) %>%
+  kable_styling(full_width = FALSE, font_size = 14)
+```
+  After the above data frames were run, I realized I ran the data using a dataframe where a peak is listed more than once because it was assigned more than one neargene ( one-to-many relationships).   I changed the code to use the 'collapsed' data frame.  This means the data frame was simplified to only include peaks one time, but those peaks that were assigned to more than one neargene had the assigned neargenes condesed and separated by a comma into the same column to create a one-to-one relationship dataframe.  (yes, wordy i know)
+```{r run again}
+######################################################
+Col_fullDF_overlap <- join_overlap_intersect(Col_TSS_data_gr,all_TEs_gr)
+Col_fullDF_overlap %>% 
+  as.data.frame() %>% 
+  group_by(repClass) %>%  
+  tally %>% 
+  kable(., caption="Count of peaks by TE class; overlap at least 1 bp; using one:one df ") %>% 
+  kable_paper("striped", full_width = TRUE) %>%
+  kable_styling(full_width = FALSE, font_size = 14)
+
+hits_col <- findOverlaps(Col_TSS_data_gr,all_TEs_gr)
+
+overlaps_col <- pintersect(Col_TSS_data_gr[queryHits(hits_col)], all_TEs_gr[subjectHits(hits_col)])
+percentOverlap_col <- width(overlaps_col) / width(all_TEs_gr[subjectHits(hits_col)])
+hits_col2 <- hits_col[percentOverlap_col > 0.5]
+
+testingol_col2 <- Col_TSS_data_gr[queryHits(hits_col2)]
+testingol_col2 %>% as.data.frame() %>% 
+  left_join(., (Col_fullDF_overlap %>% as.data.frame(.)), by =c("seqnames"="seqnames","start"="start","end"="end","peakid"="peakid", "NCBI_gene"="NCBI_gene", "ensembl_ID"="ensembl_ID","dist_to_NG"="dist_to_NG", "width"="width", "strand"="strand", "SYMBOL" = "SYMBOL")) %>% 
+  group_by(repClass) %>% 
+  tally %>% 
+  kable(., caption="Count of peaks by TE class; overlap> 50%; using one:one df") %>% 
+  kable_paper("striped", full_width = TRUE) %>%
+  kable_styling(full_width = FALSE, font_size = 14)
+  
+testingol_col2 %>% 
+  as.data.frame() %>% 
+  group_by(peakid) %>% 
+  tally %>% 
+  summary()
+
+
+```
+
+The data above shows the unique peak count of TE overlaps, followed by the table that includes only those TEs that overlap a peak by more than 50%.  The third summary shows how many peaks overlap more than one TE.  Most peaks only overlap 1  TE, but several peaks overlap 2 or more TEs.  
+
+
+This next data is a breakdown of the number of TEs by response group.
+
+```{r}
+
+TE_mrc_status_list <- testingol_col2 %>% as.data.frame() %>% 
+  left_join(., (Col_fullDF_overlap %>% as.data.frame(.)), by =c("seqnames"="seqnames","start"="start","end"="end","peakid"="peakid", "NCBI_gene"="NCBI_gene", "ensembl_ID"="ensembl_ID","dist_to_NG"="dist_to_NG", "width"="width", "strand"="strand", "SYMBOL" = "SYMBOL")) %>% 
+    dplyr::select(peakid,repName,repClass,repFamily) %>% 
+  mutate(TEstatus=if_else(is.na(repClass),"not_TE_peak","TE_peak")) %>% 
+   mutate(mrc=if_else(peakid %in% EAR_df$id, "EAR",
+                     if_else(peakid %in% ESR_df$id,"ESR",
+                             if_else(peakid %in% LR_df$id,"LR",
+                                     if_else(peakid %in% NR_df$id,"NR","not_mrc"))))) 
+
+scale_fill_TE <-  function(...){
+    ggplot2:::manual_scale(
+        'fill', 
+        values = setNames(c( "#8DD3C7", "#FFFFB3", "#BEBADA" ,"#FB8072", "#80B1D3", "#FDB462", "#B3DE69", "#FCCDE5", "#D9D9D9","#BC80BD", "#CCEBC5"), unique(TE_mrc_status_list$repClass)), 
+        ...
+    )
+}
+
+# saveRDS(TE_mrc_status_list,"data/TE_info/TE_mrc_status_list.RDS")
+TE_ALL_count <- TE_mrc_status_list %>% 
+  dplyr::filter(TEstatus =="TE_peak") %>% 
+  dplyr::filter(mrc!="not_mrc") %>% 
+  count
+TE_mrc_status_list %>% 
+   mutate(repClass=factor(repClass)) %>% 
+  group_by(repClass) %>% 
+  dplyr::filter(TEstatus =="TE_peak") %>% 
+   count(repClass) %>% 
+   arrange(desc(n)) %>% 
+  mutate(repClass = fct_rev(fct_inorder(repClass))) %>% 
+  mutate(text_y = cumsum(n) - n/2) %>% 
+  ggplot(., aes(x = "", y = n, fill = repClass)) +
+  geom_col(color = "black") +
+  coord_polar(theta = "y", start = 0)+
+   # geom_label(aes(label = repClass),
+   #          position = position_stack(vjust = .8)) +
+  # geom_label(aes(label=repClass, y=text_y))
+   geom_label_repel(aes(label = repClass),
+                     position = position_stack(vjust = .3),
+                     show.legend = FALSE,max.overlaps = 50) +
+  theme_void()+
+  ggtitle("TE breakdown of all peaks",subtitle = paste(TE_ALL_count$n))+
+  scale_fill_TE()
+
+
+```
+### TE by response cluster
+
+```{r EAR}
+TE_EAR_count <- TE_mrc_status_list %>% 
+  dplyr::filter(TEstatus =="TE_peak"&mrc=="EAR") %>% 
+  count
+
+TE_mrc_status_list %>% 
+   mutate(repClass=factor(repClass)) %>% 
+  group_by(repClass) %>% 
+  dplyr::filter(TEstatus =="TE_peak"&mrc=="EAR") %>% 
+   count(repClass) %>% 
+   mutate(perc= n/sum(n)) %>% 
+   arrange(desc(n)) %>% 
+  mutate(repClass = fct_rev(fct_inorder(repClass))) %>% 
+  mutate(text_y = cumsum(n) - n/2) %>% 
+  ggplot(., aes(x = "", y = n, fill = repClass)) +
+  geom_col(color = "black") +
+  coord_polar(theta = "y", start = 0)+
+   # geom_label(aes(label = repClass),
+   #          position = position_stack(vjust = .8)) +
+  # geom_label(aes(label=repClass, y=text_y))
+   geom_label_repel(aes(label = n),
+                     position = position_stack(vjust = .3),
+                     show.legend = FALSE,max.overlaps = 50) +
+  theme_void()+
+  ggtitle("EAR-TE peak breakdown",subtitle = paste(TE_EAR_count$n))+
+  scale_fill_TE()
+
+
+
+```
+
+
+```{r ESR-te}
+TE_ESR_count <- TE_mrc_status_list %>% 
+  dplyr::filter(TEstatus =="TE_peak"&mrc=="ESR") %>% 
+  count
+
+TE_mrc_status_list %>% 
+   mutate(repClass=factor(repClass)) %>% 
+  group_by(repClass) %>% 
+  dplyr::filter(TEstatus =="TE_peak"&mrc=="ESR") %>% 
+   count(repClass) %>% 
+   mutate(perc= n/sum(n)) %>% 
+   arrange(desc(n)) %>% 
+  mutate(repClass = fct_rev(fct_inorder(repClass))) %>% 
+  mutate(text_y = cumsum(n) - n/2) %>% 
+  ggplot(., aes(x = "", y = n, fill = repClass)) +
+  geom_col(color = "black") +
+  coord_polar(theta = "y", start = 0)+
+   # geom_label(aes(label = repClass),
+   #          position = position_stack(vjust = .8)) +
+  # geom_label(aes(label=repClass, y=text_y))
+   geom_label_repel(aes(label = n),
+                     position = position_stack(vjust = .3),
+                     show.legend = FALSE,max.overlaps = 50) +
+  theme_void()+
+  ggtitle("ESR-TE peak breakdown", subtitle = paste(TE_ESR_count$n))+
+   scale_fill_TE()
+
+
+```
+
+
+```{r LRTE}
+TE_LR_count <- TE_mrc_status_list %>% 
+  dplyr::filter(TEstatus =="TE_peak"&mrc=="LR") %>% 
+  count
+TE_mrc_status_list %>% 
+   mutate(repClass=factor(repClass)) %>% 
+  group_by(repClass) %>% 
+  dplyr::filter(TEstatus =="TE_peak"&mrc=="LR") %>% 
+   count(repClass) %>% 
+   mutate(perc= n/sum(n)) %>% 
+   arrange(desc(n)) %>% 
+  mutate(repClass = fct_rev(fct_inorder(repClass))) %>% 
+  mutate(text_y = cumsum(n) - n/2) %>% 
+  ggplot(., aes(x = "", y = n, fill = repClass)) +
+  geom_col(color = "black") +
+  coord_polar(theta = "y", start = 0)+
+   # geom_label(aes(label = repClass),
+   #          position = position_stack(vjust = .8)) +
+  # geom_label(aes(label=repClass, y=text_y))
+   geom_label_repel(aes(label = n),
+                     position = position_stack(vjust = .3),
+                     show.legend = FALSE,max.overlaps = 50) +
+  theme_void()+
+  ggtitle("LR-TE peak breakdown",subtitle=paste(TE_LR_count$n))+
+   scale_fill_TE()
+
+```
+
+
+```{r NR-te}
+TE_NR_count <- TE_mrc_status_list %>% 
+  #  mutate(repClass=factor(repClass)) %>% 
+  # group_by(repClass) %>% 
+  dplyr::filter(TEstatus =="TE_peak"&mrc=="NR") %>% 
+  count
+TE_mrc_status_list %>% 
+   mutate(repClass=factor(repClass)) %>% 
+  group_by(repClass) %>% 
+  dplyr::filter(TEstatus =="TE_peak"&mrc=="NR") %>% 
+   count(repClass) %>% 
+   mutate(perc= n/sum(n)) %>% 
+   arrange(desc(n)) %>% 
+  mutate(repClass = fct_rev(fct_inorder(repClass))) %>% 
+  mutate(text_y = cumsum(n) - n/2) %>% 
+  ggplot(., aes(x = "", y = n, fill = repClass)) +
+  geom_col(color = "black") +
+  coord_polar(theta = "y", start = 0)+
+   # geom_label(aes(label = repClass),
+   #          position = position_stack(vjust = .8)) +
+  # geom_label(aes(label=repClass, y=text_y))
+   geom_label_repel(aes(label = n),
+                     position = position_stack(vjust = .3),
+                     show.legend = FALSE,max.overlaps = 50) +
+  theme_void()+
+  ggtitle("NR-TE peak breakdown", subtitle=paste(TE_NR_count$n))+
+   scale_fill_TE()
+
+```
+
