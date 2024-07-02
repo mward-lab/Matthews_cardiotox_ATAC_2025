@@ -1423,9 +1423,9 @@ write_tsv(Collapsed_peaks,"data/n45_bedfiles/TSS_NG_data_collapsed_peaks.tsv")
 
 ```{r near-gene MRC peaks distibution}
 ##Assume file not loaded
-exp_neargene_table <- read_delim("data/n45_bedfiles/exp_neargene_table.tsv", 
-    delim = "\t", escape_double = FALSE, 
-    trim_ws = TRUE)
+# exp_neargene_table <- read_delim("data/n45_bedfiles/exp_neargene_table.tsv", 
+#     delim = "\t", escape_double = FALSE, 
+#     trim_ws = TRUE)
 
 TSS_NG_data <- read_delim("data/n45_bedfiles/TSS_NG_data.tsv", 
     delim = "\t", escape_double = FALSE, 
@@ -1499,7 +1499,7 @@ NR_TSS_peak_list <- TSS_NG_data %>%
 
 ```{r venn of peaks}
 
-ggVennDiagram::ggVennDiagram(list(EAR_peak_list$ENTREZID,ESR_peak_list$ENTREZID,LR_peak_list$ENTREZID, NR_peak_list$ENTREZID),
+ggVennDiagram::ggVennDiagram(list(EAR_df$geneId,ESR_df$geneId,LR_df$geneId, NR_df$geneId),
               category.names = c("EAR","ESR","LR","NR"), label = "count")+
   labs(title = "Distribution of NEAR genes by\n motif response regions")+
   theme(plot.title = element_text(size = rel(1.5), hjust = 0.5))+
@@ -1510,7 +1510,7 @@ ggVennDiagram::ggVennDiagram(list(EAR_TSS_peak_list$ENTREZID,ESR_TSS_peak_list$E
 
 
 
-ggVennDiagram::ggVennDiagram(list(EAR_peak_list$ENTREZID,EAR_RNA$ENTREZID),
+ggVennDiagram::ggVennDiagram(list(EAR_df$geneId,EAR_RNA$ENTREZID),
               category.names = c("EAR_ATAC","EAR_RNA"), label = "count")+
   labs(title = "EAR MRC-neargenes\n and expressed-RNA_MRC")+
   theme(plot.title = element_text(size = rel(1.5), hjust = 0.5))+
@@ -1519,7 +1519,7 @@ ggVennDiagram::ggVennDiagram(list(EAR_TSS_peak_list$ENTREZID,EAR_RNA$ENTREZID),
   labs(title = "EAR MRC-TSSneargenes\n and expressed-RNA_MRC")+
   theme(plot.title = element_text(size = rel(1.5), hjust = 0.5))
 
-ggVennDiagram::ggVennDiagram(list(ESR_peak_list$ENTREZID,ESR_RNA$ENTREZID),
+ggVennDiagram::ggVennDiagram(list(ESR_df$geneId,ESR_RNA$ENTREZID),
               category.names = c("ESR_ATAC","ESR_RNA"), label = "count")+
   labs(title = "ESR MRC-neargenes\n and expressed-RNA_MRC")+
   theme(plot.title = element_text(size = rel(1.5), hjust = 0.5))+
@@ -1528,7 +1528,7 @@ ggVennDiagram::ggVennDiagram(list(ESR_TSS_peak_list$ENTREZID,ESR_RNA$ENTREZID),
   labs(title = "ESR MRC-TSSneargenes\n and expressed-RNA_MRC")+
   theme(plot.title = element_text(size = rel(1.5), hjust = 0.5))
 
-ggVennDiagram::ggVennDiagram(list(LR_peak_list$ENTREZID,LR_RNA$ENTREZID),
+ggVennDiagram::ggVennDiagram(list(LR_df$geneId,LR_RNA$ENTREZID),
               category.names = c("LR_ATAC","LR_RNA"), label = "count")+
   labs(title = "LR MRC-neargenes\n and expressed-RNA_MRC")+
   theme(plot.title = element_text(size = rel(1.5), hjust = 0.5))+
@@ -1537,7 +1537,7 @@ ggVennDiagram::ggVennDiagram(list(LR_TSS_peak_list$ENTREZID,LR_RNA$ENTREZID),
   labs(title = "LR MRC-TSSneargenes\n and expressed-RNA_MRC")+
   theme(plot.title = element_text(size = rel(1.5), hjust = 0.5))
 
-ggVennDiagram::ggVennDiagram(list(NR_peak_list$ENTREZID,NR_RNA$ENTREZID),
+ggVennDiagram::ggVennDiagram(list(NR_df$geneId,NR_RNA$ENTREZID),
               category.names = c("NR_ATAC","NR_RNA"), label = "count")+
   labs(title = "NR MRC-neargenes\n and expressed-RNA_MRC")+
   theme(plot.title = element_text(size = rel(1.5), hjust = 0.5))+
@@ -1810,6 +1810,9 @@ CAD_SNP_table %>%
 ```
 ### group all peaks with SNPs together
 ```{r SNP peaks}
+library(readxl)
+library(smplot2)
+Reheat_data <- read_excel("data/other_papers/jah36123-sup-0002-tables2.xlsx")
 SNP_list <- CAD_SNP_table %>% 
   mutate(snp_cat="CAD") %>% 
   rbind(
@@ -1849,10 +1852,64 @@ SNP_peak_gene_list <- SNP_list %>%
   dplyr::filter(NG !="test") %>% 
   dplyr::filter(snp_cat !="CAD")
 
-SNP_peak_gene_list
+SNP_peak_gene_list %>% 
+  dplyr::filter(hgnc_symbol %in% Reheat_data$gene) %>% 
+  dplyr::filter(dist_to_NG <20000 & dist_to_NG>-20000) %>% 
+  left_join(., Reheat_data, by=c("hgnc_symbol"="gene")) %>% 
+ kable(., caption= "Peaks with SNPs and HF genes within 20kb of NG") %>% 
+    kable_paper("striped", full_width = TRUE) %>%
+  kable_styling(full_width = FALSE, font_size = 16) %>%
+  scroll_box(height = "800px")
 
+median_24_lfc <- readRDS("data/median_24_lfc.RDS") %>% ungroup()
+median_3_lfc <- readRDS("data/median_3_lfc.RDS") %>% ungroup()
+
+
+SNP_peak_gene_list %>% 
+  dplyr::filter(hgnc_symbol %in% Reheat_data$gene) %>% 
+  # dplyr::filter(dist_to_NG <20000 & dist_to_NG>-20000) %>% 
+  left_join(., Reheat_data, by=c("hgnc_symbol"="gene")) %>%
+  # dplyr::filter(fisher_pvalue < 10^-5) %>%
+    distinct(hgnc_symbol, .keep_all = TRUE) %>%
+  left_join(., median_24_lfc, by = c("id"="peak"))
+  
+  # kable(., caption= "Peaks with SNPs and HF genes any distance") %>% 
+  #   kable_paper("striped", full_width = TRUE) %>%
+  # kable_styling(full_width = FALSE, font_size = 16) %>%
+  # scroll_box(height = "800px")
+
+SNP_peak_gene_list %>% 
+  dplyr::filter(hgnc_symbol %in% Reheat_data$gene) %>% 
+  dplyr::filter(dist_to_NG <20000 & dist_to_NG>-20000) %>%
+  left_join(., Reheat_data, by=c("hgnc_symbol"="gene")) %>%
+  # dplyr::filter(fisher_pvalue < 10^-5) %>%
+    distinct(hgnc_symbol, .keep_all = TRUE) %>%
+  left_join(., median_24_lfc, by = c("id"="peak")) %>% 
+  ggplot(., aes(x=median, y =mean_lfc))+
+  geom_point()+
+  geom_text(aes(label = hgnc_symbol))+
+  geom_smooth(method="lm")+
+  sm_statCorr(corr_method = 'pearson')+
+  ggtitle("Correlation of mean lfc data and median 24 hour ATAC LFC")
+
+SNP_peak_gene_list %>% 
+  dplyr::filter(hgnc_symbol %in% Reheat_data$gene) %>% 
+  dplyr::filter(dist_to_NG <20000 & dist_to_NG>-20000) %>%
+  left_join(., Reheat_data, by=c("hgnc_symbol"="gene")) %>%
+  # dplyr::filter(fisher_pvalue < 10^-5) %>%
+    distinct(hgnc_symbol, .keep_all = TRUE) %>%
+  left_join(., median_3_lfc, by = c("id"="peak")) %>% 
+  ggplot(., aes(x=median, y =mean_lfc))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  sm_statCorr(corr_method = 'pearson')+
+  ggtitle("Correlation of mean lfc data and median 3 hour ATAC LFC")
+  
+  
+  
+  
 ```
-Boxblots of  above genes
+Boxplots of  above genes
 
 
 ```{r SNP gene list}
@@ -1895,118 +1952,4 @@ dplyr::filter(row.names(.)== goal) %>%
 
 ```
 
-
-### Exploring TEs
-```{r  TE overlaps}
-
-repeatmasker <- read.delim("data/other_papers/repeatmasker.tsv")
-TSS_data_gf <- TSS_NG_data %>% 
-  dplyr::filter(seqnames != "chrX") %>% 
-  dplyr::filter(seqnames != "chrY") %>%
-  GRanges()
-
-Col_TSS_data_gr <- Collapsed_peaks %>% 
-  dplyr::filter(seqnames != "chrX") %>% 
-  dplyr::filter(seqnames != "chrY") %>%
-  GRanges()
-
-reClass_list <- repeatmasker %>% 
-  distinct(repClass)
-
-Line_repeats <- repeatmasker %>% 
-  dplyr::filter(repClass == "LINE") %>% 
- makeGRangesFromDataFrame(., keep.extra.columns = TRUE, seqnames.field = "genoName", start.field = "genoStart", end.field = "genoEnd",starts.in.df.are.0based=TRUE)
-
-Sine_repeats <- repeatmasker %>% 
-  dplyr::filter(repClass == "SINE") %>% 
- makeGRangesFromDataFrame(., keep.extra.columns = TRUE, seqnames.field = "genoName", start.field = "genoStart", end.field = "genoEnd",starts.in.df.are.0based=TRUE)
-
-LTR_repeats <- repeatmasker %>% 
-  dplyr::filter(repClass == "LTR") %>% 
- makeGRangesFromDataFrame(., keep.extra.columns = TRUE, seqnames.field = "genoName", start.field = "genoStart", end.field = "genoEnd",starts.in.df.are.0based=TRUE)
-
-DNA_repeats <- repeatmasker %>% 
-  dplyr::filter(repClass == "DNA") %>% 
- makeGRangesFromDataFrame(., keep.extra.columns = TRUE, seqnames.field = "genoName", start.field = "genoStart", end.field = "genoEnd",starts.in.df.are.0based=TRUE)
-
-retroposon_repeats <- repeatmasker %>% 
-  dplyr::filter(repClass == "Retroposon") %>% 
- makeGRangesFromDataFrame(., keep.extra.columns = TRUE, seqnames.field = "genoName", start.field = "genoStart", end.field = "genoEnd",starts.in.df.are.0based=TRUE)
-
-
-all_TEs_gr <- repeatmasker %>% 
- makeGRangesFromDataFrame(., keep.extra.columns = TRUE, seqnames.field = "genoName", start.field = "genoStart", end.field = "genoEnd",starts.in.df.are.0based=TRUE)
-
-```
-
-
-
-```{r  data about TEs}
-length(retroposon_repeats)
-##5974
-length(Sine_repeats)
-##1910631
-length(Line_repeats)
-## 1614481
-length(LTR_repeats)
-## 770551
-length(DNA_repeats)
-## 512404
-intersect_ranges(TSS_data_gf,retroposon_repeats)
-intersect_ranges(TSS_data_gf,Line_repeats)
-intersect_ranges(TSS_data_gf,Sine_repeats)
-intersect_ranges(TSS_data_gf,LTR_repeats)
-intersect_ranges(TSS_data_gf,DNA_repeats)
-intersect_ranges(TSS_data_gf,all_TEs_gr)
-fullDF_overlap <- join_overlap_intersect(TSS_data_gf,all_TEs_gr)
-fullDF_overlap %>% 
-  as.data.frame() %>% 
-  group_by(repClass) %>%  
-  tally 
-
-hits <- findOverlaps(TSS_data_gf,all_TEs_gr)
-overlaps <- pintersect(TSS_data_gf[queryHits(hits)], all_TEs_gr[subjectHits(hits)])
-percentOverlap <- width(overlaps) / width(all_TEs_gr[subjectHits(hits)])
-hits <- hits[percentOverlap > 0.5]
-fullDF_overlap %>% as.data.frame
-
-
-# TEST$Deft <- NA
-# TEST$Deft[subjectHits(hits)] <- REF$Deft[queryHits(hits)]
-testingol <- TSS_data_gf[queryHits((hits))]
-testingol %>% as.data.frame() %>% 
-  left_join(., (fullDF_overlap %>% as.data.frame(.)), by =c("seqnames"="seqnames","start"="start","end"="end","peakid"="peakid", "NG_start"="NG_start", "end_position"="end_position", "entrezgene_id"="entrezgene_id", "ensembl_gene_id"="ensembl_gene_id","dist_to_NG"="dist_to_NG", "width"="width", "strand"="strand", "hgnc_symbol" = "hgnc_symbol")) %>% 
-  group_by(repClass) %>% 
-  tally
-
-######################################################
-Col_fullDF_overlap <- join_overlap_intersect(Col_TSS_data_gr,all_TEs_gr)
-Col_fullDF_overlap %>% 
-  as.data.frame() %>% 
-  group_by(repClass) %>%  
-  tally 
-
-hits_col <- findOverlaps(Col_TSS_data_gr,all_TEs_gr)
-
-overlaps_col <- pintersect(Col_TSS_data_gr[queryHits(hits_col)], all_TEs_gr[subjectHits(hits_col)])
-percentOverlap_col <- width(overlaps_col) / width(all_TEs_gr[subjectHits(hits_col)])
-hits_col2 <- hits[percentOverlap_col > 0.5]
-Col_fullDF_overlap %>% as.data.frame
-
-
-# TEST$Deft <- NA
-# TEST$Deft[subjectHits(hits)] <- REF$Deft[queryHits(hits)]
-testingol_col <- Col_TSS_data_gf[queryHits((hits_col2))]
-testingol_col %>% as.data.frame() %>% 
-  left_join(., (Col_fullDF_overlap %>% as.data.frame(.)), by =c("seqnames"="seqnames","start"="start","end"="end","peakid"="peakid", "NCBI_gene"="NCBI_gene", "ensembl_ID"="ensembl_ID","dist_to_NG"="dist_to_NG", "width"="width", "strand"="strand", "SYMBOL" = "SYMBOL")) %>% 
-  group_by(repClass)
-  
-testingol_col %>% 
-  as.data.frame() %>% 
-  group_by(peakid) %>% 
-  tally %>% 
-  summary()
-
-
-```
 
