@@ -56,7 +56,7 @@ library(BiocParallel)
 library(ggpubr)
 library(devtools)
 # install_github('davetang/bedr')
-library(bedr)
+# library(bedr)
 library(JASPAR2022)
 library(TFBSTools)
 library(MotifDb)
@@ -537,35 +537,9 @@ ggplot(., aes (y= reorder(motif_name,log10Evalue))) +
 ```{r enriched motifs EAR hyper}
 
 xstreme_EARU %>% 
-  left_join(., (sea_EARU %>% dplyr::select(ID:'FP%')), by= c("ALT_ID"="ALT_ID","CONSENSUS"="CONSENSUS", "ID"="ID"))# %>% 
-  dplyr::select(CLUSTER, SITES,SIM_MOTIF,ALT_ID, ID,EVALUE.x, TP:'FP%')%>% 
-  separate(SIM_MOTIF, into= c("SIM_MOTIF", "NAME"), sep= " ") #%>% 
-  arrange(.,EVALUE.x) %>%
- # dplyr::mutate_if(is.numeric, funs(as.character(signif(., 3))))#%>%
-  mutate(log10Evalue= log(EVALUE.x, base = 10)*(-1)) %>% 
-  mutate(motif_name= gsub("[()]","",NAME), mrc="EAR") %>% 
-  mutate(motif_name=if_else(is.na(motif_name),ID,motif_name)) %>% 
-# dplyr::filter(!is.na(motif_name)) %>% 
-  # group_by(mrc) %>% 
-   # dplyr::arrange(.,desc(log(EVALUE.y), base = 10)) %>% 
-ggplot(., aes (y= reorder(motif_name,log10Evalue))) +
-  geom_col(aes(x=log10Evalue),fill="pink2") +
-   geom_point(aes(x=`TP%`), size =5)+
-   geom_line(aes(x=`TP%`,y= motif_name, group=log10Evalue))+
-  scale_x_continuous(sec.axis = sec_axis(transform= ~./10,name="Percent of peaks with motif"))+
-  # geom_text(aes())
-  theme_classic()+
-  ylab("Enriched TF motif")+
-  ggtitle("Early-acute response peaks- hyper accessible")
- 
-```
-
-##### EAR hypo
-
-```{r enriched motifs EAR hypo}
-
-xstreme_EARD %>% 
-  left_join(., sea_EARD, by= c("ALT_ID"="ALT_ID","CONSENSUS"="CONSENSUS", "ID"="ID")) %>% 
+  dplyr::select(SOURCE:CONSENSUS,CLUSTER,SITES,SEA_PVALUE,EVALUE,SIM_MOTIF) %>%
+  mutate(CONSENSUS=gsub('[[:digit:]]+-', '', CONSENSUS)) %>% 
+  left_join(., (sea_EARU %>% dplyr::select(ID:ENR_RATIO,EVALUE)), by= c("ALT_ID"="ALT_ID","CONSENSUS"="CONSENSUS", "ID"="ID")) %>% 
   dplyr::select(CLUSTER, SITES,SIM_MOTIF,ALT_ID, ID,EVALUE.x, TP:'FP%')%>% 
   separate(SIM_MOTIF, into= c("SIM_MOTIF", "NAME"), sep= " ") %>% 
   arrange(.,EVALUE.x) %>%
@@ -578,10 +552,38 @@ xstreme_EARD %>%
    # dplyr::arrange(.,desc(log(EVALUE.y), base = 10)) %>% 
 ggplot(., aes (y= reorder(motif_name,log10Evalue))) +
   geom_col(aes(x=log10Evalue),fill="pink2") +
-   geom_point(aes(x=`TP%`), size =5)+
-   geom_line(aes(x=`TP%`,y= motif_name, group=log10Evalue))+
-  scale_x_continuous(sec.axis = dup_axis(name="Percent of peaks with motif"))+
+   geom_point(aes(x=`TP%`*5), size =5)+
+   # geom_line(aes(x=`TP%`,y= motif_name, group=log10Evalue))+
+  scale_x_continuous(name="-log(10) E Value",
+                     sec.axis = sec_axis( ~./5,name="Percent of peaks with motif"))+
   # geom_text(aes())
+  theme_classic()+
+  ylab("Enriched TF motif")+
+  ggtitle("Early-acute response peaks- hyper accessible")
+ 
+```
+
+##### EAR hypo
+
+```{r enriched motifs EAR hypo}
+
+xstreme_EARD %>% 
+  dplyr::select(SOURCE:CONSENSUS,CLUSTER,SITES,SEA_PVALUE,EVALUE,SIM_MOTIF) %>%
+  mutate(CONSENSUS=gsub('[[:digit:]]+-', '', CONSENSUS))%>% 
+  left_join(., (sea_EARD %>% dplyr::select(ID:ENR_RATIO,EVALUE)), by= c("ALT_ID"="ALT_ID","CONSENSUS"="CONSENSUS", "ID"="ID")) %>% 
+  dplyr::select(CLUSTER, SITES,SIM_MOTIF,ALT_ID, ID,EVALUE.x, TP:'FP%')%>% 
+  separate(SIM_MOTIF, into= c("SIM_MOTIF", "NAME"), sep= " ") %>% 
+  arrange(.,EVALUE.x) %>%
+ # dplyr::mutate_if(is.numeric, funs(as.character(signif(., 3))))#%>%
+  mutate(log10Evalue= log(EVALUE.x, base = 10)*(-1)) %>% 
+  mutate(motif_name= gsub("[()]","",NAME), mrc="EAR") %>% 
+  mutate(motif_name=if_else(is.na(motif_name),ID,motif_name)) %>% 
+ggplot(., aes (y= reorder(motif_name,log10Evalue))) +
+   geom_col(aes(x=log10Evalue),fill="pink2") +
+   geom_point(aes(x=`TP%`/1.25), size =5)+
+   # geom_line(aes(x=`TP%`,y= motif_name, group=log10Evalue))+
+  scale_x_continuous(name="-log(10) E value",
+                     sec.axis = sec_axis( ~.*1.25,name="Percent of peaks with motif"))+
   theme_classic()+
   ylab("Enriched TF motif")+
   ggtitle("Early-acute response peaks hypo accessible")
@@ -609,7 +611,8 @@ ggplot(., aes (y= reorder(motif_name,log10Evalue))) +
    geom_point(aes(x=`TP%`), size =5)+
    # geom_line(aes(x=`TP%`,y= motif_name, group=log10Evalue))+
   # geom_text(aes())
-  scale_x_continuous(sec.axis = dup_axis(name="Percent of peaks with motif"))+
+    scale_x_continuous(name="-log(10) E value",
+                     sec.axis = sec_axis( ~.*1.25,name="Percent of peaks with motif"))+
   theme_classic()+
   ylab("Enriched TF motif")+
   ggtitle("Early-sustained response peaks")
@@ -619,10 +622,12 @@ ggplot(., aes (y= reorder(motif_name,log10Evalue))) +
 
 
 ##### ESR hyper
-```{r enriched motifs ESR hyper}
+```{r enriched motifs ESR hyper, fig.height=8}
 xstreme_ESRU %>% 
-   left_join(., sea_ESRU, by= c("ALT_ID"="ALT_ID","ID"="ID"))%>% 
-  dplyr::select(CLUSTER, SITES,SIM_MOTIF,ALT_ID, ID,EVALUE.x, TP:'FP%')%>% 
+   dplyr::select(SOURCE:CONSENSUS,CLUSTER,SITES,SEA_PVALUE,EVALUE,SIM_MOTIF) %>%
+  mutate(CONSENSUS=gsub('[[:digit:]]+-', '', CONSENSUS))%>% 
+  left_join(., (sea_ESRU %>% dplyr::select(ID:ENR_RATIO,EVALUE)), by= c("ID"="ID","CONSENSUS"="CONSENSUS" )) %>% 
+  dplyr::select(CLUSTER, SITES,SIM_MOTIF,ID,EVALUE.x, TP:'FP%')%>% 
   separate(SIM_MOTIF, into= c("SIM_MOTIF", "NAME"), sep= " ") %>% 
   arrange(.,EVALUE.x) %>%
   mutate(log10Evalue= log(EVALUE.x, base = 10)*(-1)) %>% 
@@ -630,16 +635,18 @@ xstreme_ESRU %>%
   mutate(RowGroup=cumsum(NAME != 0)) %>% 
   # ungroup() %>% 
   mutate(motif_name= gsub("[()]","",NAME), mrc="EAR") %>% 
-  mutate(motif_name=if_else(is.na(motif_name),ID,motif_name)) %>% 
-  mutate(motif_name=if_else(is.na(motif_name),ID,if_else(motif_name=="ZSCAN4",paste(motif_name, RowGroup, sep="_"),motif_name)))%>%
+  mutate(motif_name=if_else(is.na(motif_name),ID,
+                            if_else(motif_name=="ZSCAN4",paste(motif_name, RowGroup, sep="_"),
+                                    if_else(motif_name=="KLF9",paste(motif_name, RowGroup, sep="_"),motif_name))))%>%
  # dplyr::filter(!is.na(motif_name)) %>% 
   # group_by(mrc) %>% 
 ggplot(., aes (y= reorder(motif_name,log10Evalue))) +
   geom_col(aes(x=log10Evalue),fill="lightgreen") +
-   geom_point(aes(x=`TP%`), size =4)+
+   geom_point(aes(x=`TP%`*9), size =4)+
    # geom_line(aes(x=`TP%`,y= motif_name, group=log10Evalue))+
   # geom_text(aes())
-  scale_x_continuous(sec.axis = dup_axis(name="Percent of peaks with motif"))+
+   scale_x_continuous(name="-log(10) E value",
+                     sec.axis = sec_axis( ~./9,name="Percent of peaks with motif"))+
   theme_classic()+
   ylab("Enriched TF motif")+
   ggtitle("Early-sustained response peaks hyper accessible")
@@ -649,10 +656,12 @@ ggplot(., aes (y= reorder(motif_name,log10Evalue))) +
 
 
 ##### ESR hypo
-```{r enriched motifs ESR hypo}
+```{r enriched motifs ESR hypo, fig.height=8}
 xstreme_ESRD %>% 
-   left_join(., sea_ESRD, by= c("ALT_ID"="ALT_ID", "ID"="ID"))%>% 
-  dplyr::select(CLUSTER, SITES,SIM_MOTIF,ALT_ID, ID,EVALUE.x, TP:'FP%')%>% 
+   dplyr::select(SOURCE:CONSENSUS,CLUSTER,SITES,SEA_PVALUE,EVALUE,SIM_MOTIF) %>%
+  mutate(CONSENSUS=gsub('[[:digit:]]+-', '', CONSENSUS))%>% 
+  left_join(., (sea_ESRD %>% dplyr::select(ID:ENR_RATIO,EVALUE)), by= c("ID"="ID","CONSENSUS"="CONSENSUS" )) %>% 
+  dplyr::select(CLUSTER, SITES,SIM_MOTIF,ID,EVALUE.x, TP:'FP%')%>% 
   separate(SIM_MOTIF, into= c("SIM_MOTIF", "NAME"), sep= " ") %>% 
   arrange(.,EVALUE.x) %>%
  # dplyr::mutate_if(is.numeric, funs(as.character(signif(., 3))))#%>%
@@ -670,7 +679,8 @@ ggplot(., aes (y= reorder(motif_name,log10Evalue))) +
    geom_point(aes(x=`TP%`), size =3)+
    # geom_line(aes(x=`TP%`,y= motif_name, group=log10Evalue))+
   # geom_text(aes())
-  scale_x_continuous(sec.axis = dup_axis(name="Percent of peaks with motif"))+
+   scale_x_continuous(name="-log(10) E value",
+                     sec.axis = sec_axis( ~.,name="Percent of peaks with motif"))+
   theme_classic()+
   ylab("Enriched TF motif")+
   ggtitle("Early-sustained response peaks hypo accessible")
@@ -686,8 +696,10 @@ ggplot(., aes (y= reorder(motif_name,log10Evalue))) +
 
 ```{r enriched motifs LR}
 xstreme_LR_v_NR %>% 
-    left_join(., sea_LR, by= c("ALT_ID"="ALT_ID", "ID"="ID")) %>% 
-  dplyr::select(CLUSTER, SITES,SIM_MOTIF,ALT_ID, ID,EVALUE.x, TP:'FP%')%>% 
+    dplyr::select(SOURCE:CONSENSUS,CLUSTER,SITES,SEA_PVALUE,EVALUE,SIM_MOTIF) %>%
+  mutate(CONSENSUS=gsub('[[:digit:]]+-', '', CONSENSUS))%>% 
+  left_join(., (sea_LRD %>% dplyr::select(ID:ENR_RATIO,EVALUE)), by= c("ALT_ID"="ALT_ID","ID"="ID","CONSENSUS"="CONSENSUS" )) %>% 
+  dplyr::select(CLUSTER, SITES,SIM_MOTIF,ID,EVALUE.x, TP:'FP%')%>% 
   separate(SIM_MOTIF, into= c("SIM_MOTIF", "NAME"), sep= " ") %>% 
   arrange(.,EVALUE.x) %>%
  # dplyr::mutate_if(is.numeric, funs(as.character(signif(., 3))))#%>%
@@ -706,7 +718,8 @@ ggplot(., aes (y= reorder(motif_name,log10Evalue))) +
     geom_point(aes(x=`TP%`), size =5)+
    # geom_line(aes(x=TP, group=mrc))+
   # geom_text(aes())
-  scale_x_continuous(sec.axis = dup_axis(name="Percent of peaks with motif"))+
+  scale_x_continuous(name="-log(10) E value",
+                     sec.axis = sec_axis( ~.,name="Percent of peaks with motif"))+
   theme_classic()+
   ylab("Enriched TF motif")+
   ggtitle("Late response peaks")
@@ -721,8 +734,10 @@ ggplot(., aes (y= reorder(motif_name,log10Evalue))) +
 
 ```{r enriched motifs LR hyper}
 xstreme_LRU %>% 
-    left_join(., sea_LRU, by= c("ALT_ID"="ALT_ID", "ID"="ID")) %>% 
-  dplyr::select(CLUSTER, SITES,SIM_MOTIF,ALT_ID, ID,EVALUE.x, TP:'FP%')%>% 
+    dplyr::select(SOURCE:CONSENSUS,CLUSTER,SITES,SEA_PVALUE,EVALUE,SIM_MOTIF) %>%
+  mutate(CONSENSUS=gsub('[[:digit:]]+-', '', CONSENSUS))%>% 
+   left_join(., (sea_LRU %>% dplyr::select(ID:ENR_RATIO,EVALUE)), by= c("ALT_ID"="ALT_ID","ID"="ID","CONSENSUS"="CONSENSUS" )) %>% 
+  dplyr::select(CLUSTER, SITES,SIM_MOTIF,ID,EVALUE.x, TP:'FP%')%>% 
   separate(SIM_MOTIF, into= c("SIM_MOTIF", "NAME"), sep= " ") %>% 
   arrange(.,EVALUE.x) %>%
  # dplyr::mutate_if(is.numeric, funs(as.character(signif(., 3))))#%>%
@@ -738,10 +753,11 @@ xstreme_LRU %>%
   # group_by(mrc) %>% 
 ggplot(., aes (y= reorder(motif_name,log10Evalue))) +
   geom_col(aes(x=log10Evalue),fill="cyan") +
-    geom_point(aes(x=`TP%`), size =5)+
+    geom_point(aes(x=`TP%`/1.5), size =5)+
    # geom_line(aes(x=TP, group=mrc))+
   # geom_text(aes())
-  scale_x_continuous(sec.axis = dup_axis(name="Percent of peaks with motif"))+
+   scale_x_continuous(name="-log(10) E value",
+                     sec.axis = sec_axis( ~.*1.5,name="Percent of peaks with motif"))+
   theme_classic()+
   ylab("Enriched TF motif")+
   ggtitle("Late response peaks hyper accessible")
@@ -757,8 +773,10 @@ ggplot(., aes (y= reorder(motif_name,log10Evalue))) +
 
 ```{r enriched motifs LR hypo}
 xstreme_LRD %>% 
-    left_join(., sea_LRD, by= c("ALT_ID"="ALT_ID", "ID"="ID")) %>% 
-  dplyr::select(CLUSTER, SITES,SIM_MOTIF,ALT_ID, ID,EVALUE.x, TP:'FP%')%>% 
+    dplyr::select(SOURCE:CONSENSUS,CLUSTER,SITES,SEA_PVALUE,EVALUE,SIM_MOTIF) %>%
+  mutate(CONSENSUS=gsub('[[:digit:]]+-', '', CONSENSUS))%>% 
+  left_join(., (sea_LRD %>% dplyr::select(ID:ENR_RATIO,EVALUE)), by= c("ALT_ID"="ALT_ID","ID"="ID","CONSENSUS"="CONSENSUS" )) %>% 
+  dplyr::select(CLUSTER, SITES,SIM_MOTIF,ID,EVALUE.x, TP:'FP%')%>% 
   separate(SIM_MOTIF, into= c("SIM_MOTIF", "NAME"), sep= " ") %>% 
   arrange(.,EVALUE.x) %>%
  # dplyr::mutate_if(is.numeric, funs(as.character(signif(., 3))))#%>%
@@ -774,10 +792,11 @@ xstreme_LRD %>%
   # group_by(mrc) %>% 
 ggplot(., aes (y= reorder(motif_name,log10Evalue))) +
   geom_col(aes(x=log10Evalue),fill="cyan") +
-    geom_point(aes(x=`TP%`), size =5)+
-   # geom_line(aes(x=TP, group=mrc))+
-  # geom_text(aes())
-  scale_x_continuous(sec.axis = dup_axis(name="Percent of peaks with motif"))+
+    geom_point(aes(x=`TP%`/1.5), size =5)+
+  geom_point(aes(x=`FP%`/1.5), size =4, col="gray")+
+   # geom_line(aes(x=`TP%`,y= motif_name, group=log10Evalue))+
+  scale_x_continuous(name="-log(10) E Value",
+                     sec.axis = sec_axis( ~.*1.5,name="Percent of peaks with motif"))+
   theme_classic()+
   ylab("Enriched TF motif")+
   ggtitle("Late response peaks hypo accessible")
