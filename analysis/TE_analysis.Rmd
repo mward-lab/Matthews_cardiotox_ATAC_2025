@@ -993,7 +993,7 @@ Col_fullDF_cug_overlap %>%
   as.data.frame() %>% 
   # group_by(repClass) %>%  
   tally %>% 
-  kable(., caption="Count of peaks with CUG islands ") %>% 
+  kable(., caption="Count of peaks with CG islands ") %>% 
   kable_paper("striped", full_width = TRUE) %>%
   kable_styling(full_width = FALSE, font_size = 14)
   
@@ -1007,7 +1007,7 @@ testingol_cug <- Col_TSS_data_gr[queryHits(hits_cug)]
 CUG_mrc_status_list <-    testingol_cug %>% as.data.frame() %>%
   left_join(., (Col_fullDF_cug_overlap %>% as.data.frame(.)), by =c("seqnames"="seqnames","start"="start","end"="end","peakid"="peakid", "NCBI_gene"="NCBI_gene", "ensembl_ID"="ensembl_ID","dist_to_NG"="dist_to_NG",  "SYMBOL" = "SYMBOL","width"="width")) %>% 
     dplyr::select(peakid, name,cpgNum:obsExp) %>% 
-  mutate(cugstatus=if_else(is.na(cpgNum),"not_CUG_peak","CUG_peak")) %>% 
+  mutate(cugstatus=if_else(is.na(cpgNum),"not_CGi_peak","CGi_peak")) %>% 
    mutate(mrc=if_else(peakid %in% EAR_df$id, "EAR",
                      if_else(peakid %in% ESR_df$id,"ESR",
                              if_else(peakid %in% LR_df$id,"LR",
@@ -1023,7 +1023,7 @@ CUG_mrc_status_list %>%
   ggplot(., aes(x = mrc,  fill = cugstatus)) +
   geom_bar(position="fill",color = "black")+
   theme_bw()+
-  ggtitle("CUG islands by mrc", subtitle=paste(length(CUG_mrc_status_list$peakid )))
+  ggtitle("CG islands by mrc", subtitle=paste(length(CUG_mrc_status_list$peakid )))
   
 
 
