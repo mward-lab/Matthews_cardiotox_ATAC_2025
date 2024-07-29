@@ -51,6 +51,7 @@ library(MotifDb)
 library(BSgenome.Hsapiens.UCSC.hg38)
 library(plyranges)
 library(genomation)
+library(gprofiler2)
 
 ```
 
@@ -513,6 +514,136 @@ EAR_cREs %>%
   xlim(-4,4)
 
 ```
+##### GO analysis of EAR peaks
+
+```{r peak lists for go}
+EAR_24h_peaks <- EAR_cREs %>%
+  as.data.frame() %>%
+  dplyr::filter(blockCount=="CTCF-only,CTCF-bound"|blockCount =="PLS"|blockCount =="PLS,CTCF-bound"|blockCount =="dELS"|blockCount =="dELS,CTCF-bound"|blockCount =="pELS"|blockCount =="pELS,CTCF-bound") %>% 
+  mutate(type=if_else(blockCount=="CTCF-only,CTCF-bound","CTCF-only",                      if_else(grepl("PLS",blockCount),"Promoter-like",                              if_else(grepl("pELS",blockCount),"Proximal enhancer-like", "Distal enhancer-like"),blockCount))) %>% 
+  left_join(., median_24_lfc, by =c("peakid"="peak")) %>% 
+  na.omit() %>% 
+  dplyr::select(median,peakid,type) %>%
+  distinct() %>% 
+  rbind(EAR_24h_peak_list) %>% 
+  rbind(not_EAR_24h_cREs) %>% 
+  mutate(direction=if_else(median>0,"open","closed")) %>% 
+  mutate(type=factor(type, levels = c("Promoter-like","Proximal enhancer-like","Distal enhancer-like","CTCF-only","not_cRE_peaks","all_EAR"))) %>%
+  mutate(direction=factor(direction, levels=c("open","closed"))) %>% 
+  left_join(., (col_ng_peak %>% dplyr::select(seqnames:peakid)), by=c("peakid"="peakid"))
+### contains all peaks, need to call out by type
+
+```
+resp
+```{r EAR-respgo 3 and 24}
+EAR_cRE_resp <- EAR_24h_peaks %>% filter(type!="not_cRE_peaks") %>% 
+  filter(type!="all_EAR") %>% 
+  dplyr::select(seqnames:end) %>% 
+  unite(., col="id",seqnames:end,remove=TRUE, sep = ":")
+
+background_peaks <- col_ng_peak %>% 
+  dplyr::select(seqnames:end) %>% 
+  unite(., col="id",seqnames:end,remove=TRUE, sep=":")
+# 
+# EAR_24h_cRE_resp <- gost(query = EAR_cRE_resp$id,
+#                     organism = "hsapiens",
+#                     significant = FALSE,
+#                     ordered_query = FALSE,
+#                     domain_scope = "custom",
+#                     measure_underrepresentation = FALSE,
+#                     evcodes = FALSE,
+#                     user_threshold = 0.05,
+#                     correction_method = c("fdr"),
+#                     custom_bg = background_peaks$id,
+#                     sources=c("GO:BP","KEGG"))
+# saveRDS(EAR_24h_cRE_resp,"data/GO_KEGG_analysis/EAR_24h_cRE_resp.RDS")
+EAR_24h_cRE_resp <- readRDS("data/GO_KEGG_analysis/EAR_24h_not_cRE_resp.RDS")
+
+EAR_cRE_table <- EAR_24h_cRE_resp$result %>% 
+  dplyr::select(c(source, term_id,
+                  term_name,intersection_size, 
+                   term_size, p_value))# %>% 
+
+EAR_cRE_table %>%
+   filter(source=="GO:BP") %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(.,caption = "GO:BP terms found in EAR peaks that are not cREs" ) %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
+EAR_cRE_table %>%
+  filter(source=="KEGG") %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(., caption = "KEGG terms found in EAR peaks that are not cREs" ) %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
+```
+
+
+```{r EAR-go 3 and 24}
+EAR_not_cRE_resp <- EAR_24h_peaks %>% filter(type=="not_cRE_peaks") %>% 
+  dplyr::select(seqnames:end) %>% 
+  unite(., col="id",seqnames:end,remove=TRUE, sep = ":")
+
+background_peaks <- col_ng_peak %>% 
+  dplyr::select(seqnames:end) %>% 
+  unite(., col="id",seqnames:end,remove=TRUE, sep=":")
+
+# EAR_24h_not_cRE_resp <- gost(query = EAR_not_cRE_resp$id,
+#                     organism = "hsapiens",
+#                     significant = FALSE,
+#                     ordered_query = FALSE,
+#                     domain_scope = "custom",
+#                     measure_underrepresentation = FALSE,
+#                     evcodes = FALSE,
+#                     user_threshold = 0.05,
+#                     correction_method = c("fdr"),
+#                     custom_bg = background_peaks$id,
+#                     sources=c("GO:BP","KEGG"))
+# saveRDS(EAR_24h_not_cRE_resp,"data/GO_KEGG_analysis/EAR_24h_not_cRE_resp.RDS")
+EAR_24h_not_cRE_resp <- readRDS("data/GO_KEGG_analysis/EAR_24h_not_cRE_resp.RDS")
+
+EAR_not_cRE_table <- EAR_24h_not_cRE_resp$result %>% 
+  dplyr::select(c(source, term_id,
+                  term_name,intersection_size, 
+                   term_size, p_value))# %>% 
+
+EAR_not_cRE_table %>%
+   filter(source=="GO:BP") %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(.,caption = "GO:BP terms found in EAR peaks that are not cREs" ) %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
+EAR_not_cRE_table %>%
+  filter(source=="KEGG") %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(., caption = "KEGG terms found in EAR peaks that are not cREs" ) %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
+```
 
 #### ESR
 
@@ -594,8 +725,136 @@ ESR_cREs %>%
   theme_bw()+
   xlim(-4,4)
 
+
+
+ESR_24h_peaks <- ESR_cREs %>%
+  as.data.frame() %>%
+  dplyr::filter(blockCount=="CTCF-only,CTCF-bound"|blockCount =="PLS"|blockCount =="PLS,CTCF-bound"|blockCount =="dELS"|blockCount =="dELS,CTCF-bound"|blockCount =="pELS"|blockCount =="pELS,CTCF-bound") %>% 
+  mutate(type=if_else(blockCount=="CTCF-only,CTCF-bound","CTCF-only",
+                      if_else(grepl("PLS",blockCount),"Promoter-like",
+                              if_else(grepl("pELS",blockCount),"Proximal enhancer-like", "Distal enhancer-like"),blockCount))) %>% 
+  left_join(., median_24_lfc, by =c("peakid"="peak")) %>% 
+  na.omit() %>% 
+  dplyr::select(median,peakid,type) %>%
+  distinct() %>% 
+  rbind(ESR_24h_peak_list) %>% 
+  rbind(not_ESR_24h_cREs) %>% 
+  mutate(direction=if_else(median>0,"open","closed")) %>% 
+  mutate(type=factor(type, levels = c("Promoter-like","Proximal enhancer-like","Distal enhancer-like","CTCF-only","not_cRE_peaks","all_ESR"))) %>%
+  mutate(direction=factor(direction, levels=c("open","closed"))) %>% 
+  left_join(., (col_ng_peak %>% dplyr::select(seqnames:peakid)), by=c("peakid"="peakid"))
+
 ```
+##### ESR GO analysis
+
+resp
+```{r ESR-respgo 3 and 24}
+ESR_cRE_resp <- ESR_24h_peaks %>% filter(type!="not_cRE_peaks") %>% 
+  filter(type!="all_ESR") %>% 
+  dplyr::select(seqnames:end) %>% 
+  unite(., col="id",seqnames:end,remove=TRUE, sep = ":")
+
+# 
+# ESR_24h_cRE_resp <- gost(query = ESR_cRE_resp$id,
+#                     organism = "hsapiens",
+#                     significant = FALSE,
+#                     ordered_query = FALSE,
+#                     domain_scope = "custom",
+#                     measure_underrepresentation = FALSE,
+#                     evcodes = FALSE,
+#                     user_threshold = 0.05,
+#                     correction_method = c("fdr"),
+#                     custom_bg = background_peaks$id,
+#                     sources=c("GO:BP","KEGG"))
+# saveRDS(ESR_24h_cRE_resp,"data/GO_KEGG_analysis/ESR_24h_cRE_resp.RDS")
+ESR_24h_cRE_resp <- readRDS("data/GO_KEGG_analysis/ESR_24h_not_cRE_resp.RDS")
+
+ESR_cRE_table <- ESR_24h_cRE_resp$result %>% 
+  dplyr::select(c(source, term_id,
+                  term_name,intersection_size, 
+                   term_size, p_value))# %>% 
+
+ESR_cRE_table %>%
+   filter(source=="GO:BP") %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(.,caption = "GO:BP terms found in ESR peaks that are cREs" ) %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
+ESR_cRE_table %>%
+  filter(source=="KEGG") %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(., caption = "KEGG terms found in ESR peaks that are cREs" ) %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
+```
+
+```{r ESR-go 3 and 24}
+ESR_not_cRE_resp <- ESR_24h_peaks %>% filter(type=="not_cRE_peaks") %>% 
+  dplyr::select(seqnames:end) %>% 
+  unite(., col="id",seqnames:end,remove=TRUE, sep = ":")
+# 
+# ESR_24h_not_cRE_resp <- gost(query = ESR_not_cRE_resp$id,
+#                     organism = "hsapiens",
+#                     significant = FALSE,
+#                     ordered_query = FALSE,
+#                     domain_scope = "custom",
+#                     measure_underrepresentation = FALSE,
+#                     evcodes = FALSE,
+#                     user_threshold = 0.05,
+#                     correction_method = c("fdr"),
+#                     custom_bg = background_peaks$id,
+#                     sources=c("GO:BP","KEGG"))
+# saveRDS(ESR_24h_not_cRE_resp,"data/GO_KEGG_analysis/ESR_24h_not_cRE_resp.RDS")
+ESR_24h_not_cRE_resp <- readRDS("data/GO_KEGG_analysis/ESR_24h_not_cRE_resp.RDS")
+
+ESR_not_cRE_table <- ESR_24h_not_cRE_resp$result %>% 
+  dplyr::select(c(source, term_id,
+                  term_name,intersection_size, 
+                   term_size, p_value))# %>% 
+
+ESR_not_cRE_table %>%
+   filter(source=="GO:BP") %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(.,caption = "GO:BP terms found in ESR peaks that are not cREs" ) %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
+ESR_not_cRE_table %>%
+  filter(source=="KEGG") %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(., caption = "KEGG terms found in ESR peaks that are not cREs" ) %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
+```
+
+
+
+
 #### LR
+
 ```{r  LR cRE 3 and 24 hours}
 LR_24h_peak_list <-  col_ng_peak %>% 
   distinct(peakid) %>% 
@@ -673,6 +932,133 @@ LR_cREs %>%
   # facet_wrap(~direction)+
   theme_bw()+
   xlim(-4,4)
+
+LR_24h_peaks <- LR_cREs %>%
+  as.data.frame() %>%
+  dplyr::filter(blockCount=="CTCF-only,CTCF-bound"|blockCount =="PLS"|blockCount =="PLS,CTCF-bound"|blockCount =="dELS"|blockCount =="dELS,CTCF-bound"|blockCount =="pELS"|blockCount =="pELS,CTCF-bound") %>% 
+  mutate(type=if_else(blockCount=="CTCF-only,CTCF-bound","CTCF-only",
+                      if_else(grepl("PLS",blockCount),"Promoter-like",
+                              if_else(grepl("pELS",blockCount),"Proximal enhancer-like", "Distal enhancer-like"),blockCount))) %>% 
+  left_join(., median_24_lfc, by =c("peakid"="peak")) %>% 
+  na.omit() %>% 
+  dplyr::select(median,peakid,type) %>%
+  distinct() %>% 
+  rbind(LR_24h_peak_list) %>% 
+  rbind(not_LR_24h_cREs) %>% 
+  mutate(direction=if_else(median>0,"open","closed")) %>% 
+  mutate(type=factor(type, levels = c("Promoter-like","Proximal enhancer-like","Distal enhancer-like","CTCF-only","not_cRE_peaks","all_LR"))) %>%
+  mutate(direction=factor(direction, levels=c("open","closed"))) %>% 
+   left_join(., (col_ng_peak %>% dplyr::select(seqnames:peakid)), by=c("peakid"="peakid"))
+
+
+
+```
+
+
+##### LR GO analysis
+resp
+```{r LR-respgo 3 and 24}
+LR_cRE_resp <- LR_24h_peaks %>% filter(type!="not_cRE_peaks") %>% 
+  filter(type!="all_LR") %>% 
+  dplyr::select(seqnames:end) %>% 
+  unite(., col="id",seqnames:end,remove=TRUE, sep = ":")
+
+
+# LR_24h_cRE_resp <- gost(query = LR_cRE_resp$id,
+#                     organism = "hsapiens",
+#                     significant = FALSE,
+#                     ordered_query = FALSE,
+#                     domain_scope = "custom",
+#                     measure_underrepresentation = FALSE,
+#                     evcodes = FALSE,
+#                     user_threshold = 0.05,
+#                     correction_method = c("fdr"),
+#                     custom_bg = background_peaks$id,
+#                     sources=c("GO:BP","KEGG"))
+# saveRDS(LR_24h_cRE_resp,"data/GO_KEGG_analysis/LR_24h_cRE_resp.RDS")
+LR_24h_cRE_resp <- readRDS("data/GO_KEGG_analysis/LR_24h_not_cRE_resp.RDS")
+
+LR_cRE_table <- LR_24h_cRE_resp$result %>% 
+  dplyr::select(c(source, term_id,
+                  term_name,intersection_size, 
+                   term_size, p_value))# %>% 
+
+LR_cRE_table %>%
+   filter(source=="GO:BP") %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(.,caption = "GO:BP terms found in LR peaks that are cREs" ) %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
+LR_cRE_table %>%
+  filter(source=="KEGG") %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(., caption = "KEGG terms found in LR peaks that are cREs" ) %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
+```
+
+
+```{r LRGO analysis}
+
+LR_not_cRE_resp <- LR_24h_peaks %>% filter(type=="not_cRE_peaks") %>% 
+  dplyr::select(seqnames:end) %>% 
+  unite(., col="id",seqnames:end,remove=TRUE, sep = ":")
+# 
+# LR_24h_not_cRE_resp <- gost(query = LR_not_cRE_resp$id,
+#                     organism = "hsapiens",
+#                     significant = FALSE,
+#                     ordered_query = FALSE,
+#                     domain_scope = "custom",
+#                     measure_underrepresentation = FALSE,
+#                     evcodes = FALSE,
+#                     user_threshold = 0.05,
+#                     correction_method = c("fdr"),
+#                     custom_bg = background_peaks$id,
+#                     sources=c("GO:BP","KEGG"))
+# saveRDS(LR_24h_not_cRE_resp,"data/GO_KEGG_analysis/LR_24h_not_cRE_resp.RDS")
+LR_24h_not_cRE_resp <- readRDS("data/GO_KEGG_analysis/LR_24h_not_cRE_resp.RDS")
+
+LR_not_cRE_table <- LR_24h_not_cRE_resp$result %>% 
+  dplyr::select(c(source, term_id,
+                  term_name,intersection_size, 
+                   term_size, p_value))# %>% 
+
+LR_not_cRE_table %>%
+   filter(source=="GO:BP") %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(.,caption = "GO:BP terms found in LR peaks that are not cREs" ) %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
+LR_not_cRE_table %>%
+  filter(source=="KEGG") %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(., caption = "KEGG terms found in LR peaks that are not cREs" ) %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
 
 ```
 
@@ -756,8 +1142,133 @@ NR_cREs %>%
   theme_bw()+
   xlim(-4,4)
 
+NR_24h_peaks <- NR_cREs %>%
+  as.data.frame() %>%
+  dplyr::filter(blockCount=="CTCF-only,CTCF-bound"|blockCount =="PLS"|blockCount =="PLS,CTCF-bound"|blockCount =="dELS"|blockCount =="dELS,CTCF-bound"|blockCount =="pELS"|blockCount =="pELS,CTCF-bound") %>% 
+  mutate(type=if_else(blockCount=="CTCF-only,CTCF-bound","CTCF-only",
+                      if_else(grepl("PLS",blockCount),"Promoter-like",
+                              if_else(grepl("pELS",blockCount),"Proximal enhancer-like", "Distal enhancer-like"),blockCount))) %>% 
+  left_join(., median_24_lfc, by =c("peakid"="peak")) %>% 
+  na.omit() %>% 
+  dplyr::select(median,peakid,type) %>%
+  distinct() %>% 
+  rbind(NR_24h_peak_list) %>% 
+  rbind(not_NR_24h_cREs) %>% 
+  mutate(direction=if_else(median>0,"open","closed")) %>% 
+  mutate(type=factor(type, levels = c("Promoter-like","Proximal enhancer-like","Distal enhancer-like","CTCF-only","not_cRE_peaks","all_NR"))) %>%
+  mutate(direction=factor(direction, levels=c("open","closed"))) %>%
+
+left_join(., (col_ng_peak %>% dplyr::select(seqnames:peakid)), by=c("peakid"="peakid"))
+
 ```
 
+
+##### NR GO analysis
+resp
+```{r NR-respgo 3 and 24}
+NR_cRE_resp <- NR_24h_peaks %>% filter(type!="not_cRE_peaks") %>% 
+  filter(type!="all_NR") %>% 
+  dplyr::select(seqnames:end) %>% 
+  unite(., col="id",seqnames:end,remove=TRUE, sep = ":")
+
+
+# NR_24h_cRE_resp <- gost(query = NR_cRE_resp$id,
+#                     organism = "hsapiens",
+#                     significant = FALSE,
+#                     ordered_query = FALSE,
+#                     domain_scope = "custom",
+#                     measure_underrepresentation = FALSE,
+#                     evcodes = FALSE,
+#                     user_threshold = 0.05,
+#                     correction_method = c("fdr"),
+#                     custom_bg = background_peaks$id,
+#                     sources=c("GO:BP","KEGG"))
+# saveRDS(NR_24h_cRE_resp,"data/GO_KEGG_analysis/NR_24h_cRE_resp.RDS")
+NR_24h_cRE_resp <- readRDS("data/GO_KEGG_analysis/NR_24h_not_cRE_resp.RDS")
+
+NR_cRE_table <- NR_24h_cRE_resp$result %>% 
+  dplyr::select(c(source, term_id,
+                  term_name,intersection_size, 
+                   term_size, p_value))# %>% 
+
+NR_cRE_table %>%
+   filter(source=="GO:BP") %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(.,caption = "GO:BP terms found in NR peaks that are cREs" ) %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
+NR_cRE_table %>%
+  filter(source=="KEGG") %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(., caption = "KEGG terms found in NR peaks that are cREs" ) %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
+```
+
+
+```{r NRGO anaNysis}
+
+NR_not_cRE_resp <- NR_24h_peaks %>% filter(type=="not_cRE_peaks") %>% 
+  dplyr::select(seqnames:end) %>% 
+  unite(., col="id",seqnames:end,remove=TRUE, sep = ":")
+# 
+# NR_24h_not_cRE_resp <- gost(query = NR_not_cRE_resp$id,
+#                     organism = "hsapiens",
+#                     significant = FALSE,
+#                     ordered_query = FALSE,
+#                     domain_scope = "custom",
+#                     measure_underrepresentation = FALSE,
+#                     evcodes = FALSE,
+#                     user_threshold = 0.05,
+#                     correction_method = c("fdr"),
+#                     custom_bg = background_peaks$id,
+#                     sources=c("GO:BP","KEGG"))
+# saveRDS(NR_24h_not_cRE_resp,"data/GO_KEGG_analysis/NR_24h_not_cRE_resp.RDS")
+NR_24h_not_cRE_resp <- readRDS("data/GO_KEGG_analysis/NR_24h_not_cRE_resp.RDS")
+
+NR_not_cRE_table <- NR_24h_not_cRE_resp$result %>% 
+  dplyr::select(c(source, term_id,
+                  term_name,intersection_size, 
+                   term_size, p_value))# %>% 
+
+NR_not_cRE_table %>%
+   filter(source=="GO:BP") %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(.,caption = "GO:BP terms found in NR peaks that are not cREs" ) %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
+NR_not_cRE_table %>%
+  filter(source=="KEGG") %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(., caption = "KEGG terms found in NR peaks that are not cREs" ) %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
+
+```
 
 | Cluster | eREs                                           | not cREs                                                                |
 |------------------------|------------------------|------------------------|
@@ -868,6 +1379,10 @@ peak_list_all_MRC %>%
   group_by(MRC) %>% 
   tally
 
+
+```
+
+```{r peaks not in CREs}
 
 ```
 
