@@ -106,12 +106,12 @@ retroposon_repeats <- repeatmasker %>%
 
 all_TEs_gr <- repeatmasker %>% 
  makeGRangesFromDataFrame(., keep.extra.columns = TRUE, seqnames.field = "genoName", start.field = "genoStart", end.field = "genoEnd",starts.in.df.are.0based=TRUE)
+all_TEs_gr$width=width(all_TEs_gr)
 
 peakAnnoList_n45_motif <- readRDS("data/peakAnnoList_n45_motif.RDS")
 
 EAR_df <- as.data.frame(peakAnnoList_n45_motif$EAR_n45_gr)
 # EAR_df_gr <-  as.GRanges(peakAnnoList_n45_motif$EAR_n45_gr)
-
 
 ESR_df <- as.data.frame(peakAnnoList_n45_motif$ESR_n45_gr)
 # ESR_df_gr <- as.GRanges(peakAnnoList_n45_motif$ESR_n45_gr)
@@ -146,6 +146,63 @@ This code below was my first attempt at finding how many peaks overlap more than
 # intersect_ranges(TSS_data_gf,LTR_repeats)
 # intersect_ranges(TSS_data_gf,DNA_repeats)
 # intersect_ranges(TSS_data_gf,all_TEs_gr)
+
+all_TEs_gr %>% 
+  as.data.frame() %>% 
+  mutate(repClass=factor(repClass)) %>% 
+  dplyr::filter(repClass=="LINE") %>% 
+  ggplot(., aes(x=width))+
+    geom_density(aes(fill=repClass, alpha = 0.5))+
+  theme_classic()+
+  ggtitle("density of widths of all LINEs across human genome",subtitle = " limited x axis")+
+  coord_cartesian(xlim= c(0,2500))
+
+all_TEs_gr %>% 
+  as.data.frame() %>% 
+  mutate(repClass=factor(repClass)) %>% 
+  dplyr::filter(repClass=="SINE") %>% 
+  ggplot(., aes(x=width))+
+    geom_density(aes(fill=repClass, alpha = 0.5))+
+  theme_classic()+
+  ggtitle("density of widths of all SINEs across human genome")
+
+all_TEs_gr %>% 
+  as.data.frame() %>% 
+  mutate(repClass=factor(repClass)) %>% 
+  dplyr::filter(repClass=="LTR") %>% 
+  ggplot(., aes(x=width))+
+    geom_density(aes(fill=repClass, alpha = 0.5))+
+  theme_classic()+
+  ggtitle("density of widths of all LTRs across human genome",subtitle = " limited x axis")+
+  coord_cartesian(xlim= c(0,2500))
+
+all_TEs_gr %>% 
+  as.data.frame() %>% 
+  mutate(repClass=factor(repClass)) %>% 
+  dplyr::filter(repClass=="DNA") %>% 
+  ggplot(., aes(x=width))+
+    geom_density(aes(fill=repClass, alpha = 0.5))+
+  theme_classic()+
+  ggtitle("density of widths of all DNA-TEs across human genome",subtitle = " limited x axis")+
+  coord_cartesian(xlim= c(0,2500))
+
+all_TEs_gr %>% 
+  as.data.frame() %>% 
+  mutate(repClass=factor(repClass)) %>% 
+  dplyr::filter(repClass=="Retroposon") %>% 
+  ggplot(., aes(x=width))+
+    geom_density(aes(fill=repClass, alpha = 0.5))+
+  theme_classic()+
+  ggtitle("density of widths of all Retroposons across human genome",subtitle = " limited x axis")+
+  coord_cartesian(xlim= c(0,2500))
+
+all_TEs_gr %>% 
+  as.data.frame() %>% 
+  dplyr::select(repClass, width) %>% 
+  # dplyr::filter(repClass=="LTR") %>%
+  group_by(repClass) %>% 
+  summarise(med.width=median(width),mean.width=mean(width))
+
 fullDF_overlap <- join_overlap_intersect(TSS_data_gf,all_TEs_gr)
 fullDF_overlap %>% 
   as.data.frame() %>% 
@@ -212,11 +269,12 @@ The data above shows the unique peak count of TE overlaps, followed by the table
 
 This next data is a breakdown of the number of TEs by response group.
 
-```{r}
+```{r TE in all peaks}
 
+testingol_col2$width=width(testingol_col2)
 TE_mrc_status_list <- testingol_col2 %>% as.data.frame() %>% 
   left_join(., (Col_fullDF_overlap %>% as.data.frame(.)), by =c("seqnames"="seqnames","start"="start","end"="end","peakid"="peakid", "NCBI_gene"="NCBI_gene", "ensembl_ID"="ensembl_ID","dist_to_NG"="dist_to_NG", "width"="width", "strand"="strand", "SYMBOL" = "SYMBOL")) %>% 
-    dplyr::select(peakid,repName,repClass,repFamily) %>% 
+    dplyr::select(peakid,repName,repClass,repFamily,width) %>% 
   mutate(TEstatus=if_else(is.na(repClass),"not_TE_peak","TE_peak")) %>% 
    mutate(mrc=if_else(peakid %in% EAR_df$id, "EAR",
                      if_else(peakid %in% ESR_df$id,"ESR",
@@ -258,6 +316,14 @@ TE_mrc_status_list %>%
   scale_fill_TE()
 
 
+TE_mrc_status_list %>% 
+  dplyr::filter(TEstatus=="TE_peak") %>% 
+  mutate(repClass=factor(repClass)) %>% 
+  ggplot(., aes(x=width))+
+    geom_density(aes(fill=repClass, alpha = 0.5))+
+  scale_fill_TE()+
+  theme_classic()+
+  ggtitle("Density of width of all TEs where a peak covers >50%")
 ```
 ### TE by response cluster
 
@@ -304,6 +370,40 @@ scale_fill_LTR_family <-  function(...){
     )
 }
 
+LTR_df <- LTR_repeats %>% 
+  as.data.frame() %>% 
+  mutate(repFamily=factor(repFamily))
+
+scale_fill_LTRs <-  function(...){
+    ggplot2:::manual_scale(
+        'fill', 
+        values = setNames(c( "#8DD3C7",
+                             "#FFFFB3",
+                             "#BEBADA" ,
+                             "#FB8072",
+                             "#80B1D3",
+                             "#FDB462",
+                             "#B3DE69",
+                             "#FCCDE5",
+                             "#D9D9D9",
+                             "#BC80BD",
+                             "#CCEBC5",
+                             "pink4",
+                             "cornflowerblue",
+                             "chocolate",
+                             "brown",
+                             "green",
+                             "yellow4",
+                             "purple",
+                             "darkorchid4",
+                             "coral4",
+                             "darkolivegreen4",
+                             "darkorange"), unique(LTR_df$repFamily)), 
+      ...
+    )
+}
+
+
 DNA_family <- TE_mrc_status_list %>% 
   dplyr::filter(repClass == "DNA") %>% 
    mutate(repFamily=factor(repFamily)) %>% 
@@ -317,10 +417,12 @@ scale_fill_DNA_family <-  function(...){
     )
 }
 
-
+LTR_EAR_count <- TE_mrc_status_list %>% 
+   dplyr::filter(repClass == "LTR"& mrc=="EAR") %>% 
+  count
 
 TE_mrc_status_list %>% 
-  dplyr::filter(repClass == "LTR") %>% 
+  dplyr::filter(repClass == "LTR"& mrc=="EAR") %>% 
    mutate(repFamily=factor(repFamily)) %>% 
      group_by(repFamily) %>% 
   count(repFamily) %>% 
@@ -338,7 +440,7 @@ TE_mrc_status_list %>%
                      position = position_stack(vjust = .3),
                      show.legend = FALSE,max.overlaps = 50) +
   theme_void()+
-  ggtitle("EAR-LTR peak breakdown",subtitle = paste(TE_EAR_count$n))+
+  ggtitle("EAR-LTR peak breakdown",subtitle = paste(LTR_EAR_count$n))+
   scale_fill_LTR_family()
 
 
@@ -373,6 +475,29 @@ TE_mrc_status_list %>%
   ggtitle("ESR-TE peak breakdown", subtitle = paste(TE_ESR_count$n))+
    scale_fill_TE()
 
+LTR_ESR_count <- TE_mrc_status_list %>% 
+   dplyr::filter(repClass == "LTR"& mrc=="ESR") %>% 
+  count
+TE_mrc_status_list %>% 
+ dplyr::filter(repClass == "LTR"& mrc=="ESR") %>% 
+   mutate(repFamily=factor(repFamily)) %>% 
+     group_by(repFamily) %>% 
+  count(repFamily) %>% 
+   mutate(perc= n/sum(n)) %>% 
+   arrange(desc(n)) %>% 
+  mutate(repFamily = fct_rev(fct_inorder(repFamily))) %>% 
+  mutate(text_y = cumsum(n) - n/2) %>% 
+  ggplot(., aes(x = "", y = n, fill = repFamily)) +
+  geom_col(color = "black") +
+  coord_polar(theta = "y", start = 0)+
+  geom_label_repel(aes(label = n),
+                     position = position_stack(vjust = .3),
+                     show.legend = FALSE,max.overlaps = 50) +
+  theme_void()+
+  ggtitle("ESR-LTR peak breakdown",subtitle = paste(LTR_ESR_count$n))+
+  scale_fill_LTR_family()
+
+
 
 ```
 
@@ -402,6 +527,29 @@ TE_mrc_status_list %>%
   theme_void()+
   ggtitle("LR-TE peak breakdown",subtitle=paste(TE_LR_count$n))+
    scale_fill_TE()
+
+LTR_LR_count <- TE_mrc_status_list %>% 
+   dplyr::filter(repClass == "LTR"& mrc=="LR") %>% 
+  count
+TE_mrc_status_list %>% 
+ dplyr::filter(repClass == "LTR"& mrc=="LR") %>% 
+   mutate(repFamily=factor(repFamily)) %>% 
+     group_by(repFamily) %>% 
+  count(repFamily) %>% 
+   mutate(perc= n/sum(n)) %>% 
+   arrange(desc(n)) %>% 
+  mutate(repFamily = fct_rev(fct_inorder(repFamily))) %>% 
+  mutate(text_y = cumsum(n) - n/2) %>% 
+  ggplot(., aes(x = "", y = n, fill = repFamily)) +
+  geom_col(color = "black") +
+  coord_polar(theta = "y", start = 0)+
+  geom_label_repel(aes(label = n),
+                     position = position_stack(vjust = .3),
+                     show.legend = FALSE,max.overlaps = 50) +
+  theme_void()+
+  ggtitle("LR-LTR peak breakdown",subtitle = paste(LTR_LR_count$n))+
+  scale_fill_LTR_family()
+
 
 ```
 
@@ -434,6 +582,54 @@ TE_mrc_status_list %>%
   ggtitle("NR-TE peak breakdown", subtitle=paste(TE_NR_count$n))+
    scale_fill_TE()
 
+
+LTR_NR_count <- TE_mrc_status_list %>% 
+   dplyr::filter(repClass == "LTR"& mrc=="NR") %>% 
+  count
+TE_mrc_status_list %>% 
+ dplyr::filter(repClass == "LTR"& mrc=="NR") %>% 
+   mutate(repFamily=factor(repFamily)) %>% 
+     group_by(repFamily) %>% 
+  count(repFamily) %>% 
+   mutate(perc= n/sum(n)) %>% 
+   arrange(desc(n)) %>% 
+  mutate(repFamily = fct_rev(fct_inorder(repFamily))) %>% 
+  mutate(text_y = cumsum(n) - n/2) %>% 
+  ggplot(., aes(x = "", y = n, fill = repFamily)) +
+  geom_col(color = "black") +
+  coord_polar(theta = "y", start = 0)+
+  geom_label_repel(aes(label = n),
+                     position = position_stack(vjust = .3),
+                     show.legend = FALSE,max.overlaps = 50) +
+  theme_void()+
+  ggtitle("NR-LTR peak breakdown",subtitle = paste(LTR_NR_count$n))+
+  scale_fill_LTR_family()
+
+TE_LTR_count <- TE_mrc_status_list %>% 
+  dplyr::filter(TEstatus =="TE_peak"&repClass=="LTR") %>% 
+  count
+
+# TE_mrc_status_list %>% 
+#   dplyr::filter(repClass == "LTR") %>% 
+#    mutate(repFamily=factor(repFamily)) %>% 
+#      group_by(repFamily) %>% 
+#   count(repFamily) %>% 
+#    mutate(perc= n/sum(n)) %>% 
+#    arrange(desc(n)) %>% 
+#   mutate(repFamily = fct_rev(fct_inorder(repFamily))) %>% 
+#   mutate(text_y = cumsum(n) - n/2) %>% 
+#   ggplot(., aes(x = "", y = n, fill = repFamily)) +
+#   geom_col(color = "black") +
+#   coord_polar(theta = "y", start = 0)+
+#    # geom_label(aes(label = repClass),
+#    #          position = position_stack(vjust = .8)) +
+#   # geom_label(aes(label=repClass, y=text_y))
+#    geom_label_repel(aes(label = n),
+#                      position = position_stack(vjust = .3),
+#                      show.legend = FALSE,max.overlaps = 50) +
+#   theme_void()+
+#   ggtitle("LTR breakdown of peaks",subtitle=paste(TE_LTR_count$n))+
+#   scale_fill_LTRs()
 ```
 
 
@@ -596,9 +792,98 @@ TE_mrc_status_list %>%
   ggtitle("LINE breakdown of peaks",subtitle=paste(TE_LINE_count$n))+
   scale_fill_lines()
 
+EAR_LINE_count <- TE_mrc_status_list %>% 
+  dplyr::filter(mrc =="EAR"&repClass=="LINE") %>% 
+  count
+ESR_LINE_count <- TE_mrc_status_list %>% 
+  dplyr::filter(mrc =="ESR"&repClass=="LINE") %>% 
+  count
+LR_LINE_count <- TE_mrc_status_list %>% 
+  dplyr::filter(mrc =="LR"&repClass=="LINE") %>% 
+  count
+NR_LINE_count <- TE_mrc_status_list %>% 
+  dplyr::filter(mrc =="NR"&repClass=="LINE") %>% 
+  count
+
+TE_mrc_status_list %>% 
+  dplyr::filter(mrc =="EAR"&repClass=="LINE") %>% 
+  mutate(repFamily=factor(repFamily)) %>% 
+  group_by(repFamily) %>% 
+  count(repFamily) %>% 
+  mutate(perc= n/sum(n)) %>% 
+  arrange(desc(n)) %>% 
+  mutate(repFamily = fct_rev(fct_inorder(repFamily))) %>% 
+  mutate(text_y = cumsum(n) - n/2) %>% 
+  ggplot(., aes(x = "", y = n, fill = repFamily)) +
+  geom_col(color = "black") +
+  coord_polar(theta = "y", start = 0)+
+  geom_label_repel(aes(label = n),
+                     position = position_stack(vjust = .3),
+                     show.legend = FALSE,max.overlaps = 50) +
+  theme_void()+
+  ggtitle("EAR LINE breakdown of peaks",subtitle=paste(EAR_LINE_count$n))+
+  scale_fill_lines()
+
+TE_mrc_status_list %>% 
+  dplyr::filter(mrc =="ESR"&repClass=="LINE") %>% 
+  mutate(repFamily=factor(repFamily)) %>% 
+  group_by(repFamily) %>% 
+  count(repFamily) %>% 
+  mutate(perc= n/sum(n)) %>% 
+  arrange(desc(n)) %>% 
+  mutate(repFamily = fct_rev(fct_inorder(repFamily))) %>% 
+  mutate(text_y = cumsum(n) - n/2) %>% 
+  ggplot(., aes(x = "", y = n, fill = repFamily)) +
+  geom_col(color = "black") +
+  coord_polar(theta = "y", start = 0)+
+  geom_label_repel(aes(label = n),
+                     position = position_stack(vjust = .3),
+                     show.legend = FALSE,max.overlaps = 50) +
+  theme_void()+
+  ggtitle("ESR LINE breakdown of peaks",subtitle=paste(ESR_LINE_count$n))+
+  scale_fill_lines()
+
+TE_mrc_status_list %>% 
+  dplyr::filter(mrc =="LR"&repClass=="LINE") %>% 
+  mutate(repFamily=factor(repFamily)) %>% 
+  group_by(repFamily) %>% 
+  count(repFamily) %>% 
+  mutate(perc= n/sum(n)) %>% 
+  arrange(desc(n)) %>% 
+  mutate(repFamily = fct_rev(fct_inorder(repFamily))) %>% 
+  mutate(text_y = cumsum(n) - n/2) %>% 
+  ggplot(., aes(x = "", y = n, fill = repFamily)) +
+  geom_col(color = "black") +
+  coord_polar(theta = "y", start = 0)+
+  geom_label_repel(aes(label = n),
+                     position = position_stack(vjust = .3),
+                     show.legend = FALSE,max.overlaps = 50) +
+  theme_void()+
+  ggtitle("LR LINE breakdown of peaks",subtitle=paste(LR_LINE_count$n))+
+  scale_fill_lines()
+
+TE_mrc_status_list %>% 
+  dplyr::filter(mrc =="NR"&repClass=="LINE") %>% 
+  mutate(repFamily=factor(repFamily)) %>% 
+  group_by(repFamily) %>% 
+  count(repFamily) %>% 
+  mutate(perc= n/sum(n)) %>% 
+  arrange(desc(n)) %>% 
+  mutate(repFamily = fct_rev(fct_inorder(repFamily))) %>% 
+  mutate(text_y = cumsum(n) - n/2) %>% 
+  ggplot(., aes(x = "", y = n, fill = repFamily)) +
+  geom_col(color = "black") +
+  coord_polar(theta = "y", start = 0)+
+  geom_label_repel(aes(label = n),
+                     position = position_stack(vjust = .3),
+                     show.legend = FALSE,max.overlaps = 50) +
+  theme_void()+
+  ggtitle("NR LINE breakdown of peaks",subtitle=paste(NR_LINE_count$n))+
+  scale_fill_lines()
+
 ```
 #### Sine repeats
-```{r Sineclass breakdown}
+```{r Sineclass breakdown, out.width="50%"}
 Sine_df <- Sine_repeats %>% 
   as.data.frame() %>% 
   mutate(repFamily=factor(repFamily))
@@ -689,6 +974,98 @@ TE_mrc_status_list %>%
   ggtitle("SINE breakdown of peaks",subtitle=paste(TE_SINE_count$n," total SINEs found"))+
   scale_fill_sines()
 
+
+
+EAR_SINE_count <- TE_mrc_status_list %>% 
+  dplyr::filter(mrc =="EAR"&repClass=="SINE") %>% 
+  count
+ESR_SINE_count <- TE_mrc_status_list %>% 
+  dplyr::filter(mrc =="ESR"&repClass=="SINE") %>% 
+  count
+LR_SINE_count <- TE_mrc_status_list %>% 
+  dplyr::filter(mrc =="LR"&repClass=="SINE") %>% 
+  count
+NR_SINE_count <- TE_mrc_status_list %>% 
+  dplyr::filter(mrc =="NR"&repClass=="SINE") %>% 
+  count
+
+TE_mrc_status_list %>% 
+  dplyr::filter(mrc =="EAR"&repClass=="SINE") %>% 
+  mutate(repFamily=factor(repFamily)) %>% 
+  group_by(repFamily) %>% 
+  count(repFamily) %>% 
+  mutate(perc= n/sum(n)) %>% 
+  arrange(desc(n)) %>% 
+  mutate(repFamily = fct_rev(fct_inorder(repFamily))) %>% 
+  mutate(text_y = cumsum(n) - n/2) %>% 
+  ggplot(., aes(x = "", y = n, fill = repFamily)) +
+  geom_col(color = "black") +
+  coord_polar(theta = "y", start = 0)+
+  geom_label_repel(aes(label = n),
+                     position = position_stack(vjust = .3),
+                     show.legend = FALSE,max.overlaps = 50) +
+  theme_void()+
+  ggtitle("EAR SINE breakdown of peaks",subtitle=paste(EAR_SINE_count$n))+
+  scale_fill_sines()
+
+TE_mrc_status_list %>% 
+  dplyr::filter(mrc =="ESR"&repClass=="SINE") %>% 
+  mutate(repFamily=factor(repFamily)) %>% 
+  group_by(repFamily) %>% 
+  count(repFamily) %>% 
+  mutate(perc= n/sum(n)) %>% 
+  arrange(desc(n)) %>% 
+  mutate(repFamily = fct_rev(fct_inorder(repFamily))) %>% 
+  mutate(text_y = cumsum(n) - n/2) %>% 
+  ggplot(., aes(x = "", y = n, fill = repFamily)) +
+  geom_col(color = "black") +
+  coord_polar(theta = "y", start = 0)+
+  geom_label_repel(aes(label = n),
+                     position = position_stack(vjust = .3),
+                     show.legend = FALSE,max.overlaps = 50) +
+  theme_void()+
+  ggtitle("ESR SINE breakdown of peaks",subtitle=paste(ESR_SINE_count$n))+
+  scale_fill_sines()
+
+TE_mrc_status_list %>% 
+  dplyr::filter(mrc =="LR"&repClass=="SINE") %>% 
+  mutate(repFamily=factor(repFamily)) %>% 
+  group_by(repFamily) %>% 
+  count(repFamily) %>% 
+  mutate(perc= n/sum(n)) %>% 
+  arrange(desc(n)) %>% 
+  mutate(repFamily = fct_rev(fct_inorder(repFamily))) %>% 
+  mutate(text_y = cumsum(n) - n/2) %>% 
+  ggplot(., aes(x = "", y = n, fill = repFamily)) +
+  geom_col(color = "black") +
+  coord_polar(theta = "y", start = 0)+
+  geom_label_repel(aes(label = n),
+                     position = position_stack(vjust = .3),
+                     show.legend = FALSE,max.overlaps = 50) +
+  theme_void()+
+  ggtitle("LR SINE breakdown of peaks",subtitle=paste(LR_SINE_count$n))+
+  scale_fill_sines()
+
+TE_mrc_status_list %>% 
+  dplyr::filter(mrc =="NR"&repClass=="SINE") %>% 
+  mutate(repFamily=factor(repFamily)) %>% 
+  group_by(repFamily) %>% 
+  count(repFamily) %>% 
+  mutate(perc= n/sum(n)) %>% 
+  arrange(desc(n)) %>% 
+  mutate(repFamily = fct_rev(fct_inorder(repFamily))) %>% 
+  mutate(text_y = cumsum(n) - n/2) %>% 
+  ggplot(., aes(x = "", y = n, fill = repFamily)) +
+  geom_col(color = "black") +
+  coord_polar(theta = "y", start = 0)+
+  geom_label_repel(aes(label = n),
+                     position = position_stack(vjust = .3),
+                     show.legend = FALSE,max.overlaps = 50) +
+  theme_void()+
+  ggtitle("NR SINE breakdown of peaks",subtitle=paste(NR_SINE_count$n))+
+  scale_fill_sines()
+
+
 ```
 #### LTR repeats
 ```{r LTR breakdown}
@@ -757,31 +1134,98 @@ count(repFamily) %>%
   scale_fill_LTRs()
 
 
-TE_LTR_count <- TE_mrc_status_list %>% 
-  dplyr::filter(TEstatus =="TE_peak"&repClass=="LTR") %>% 
+EAR_LTR_count <- TE_mrc_status_list %>% 
+  dplyr::filter(mrc =="EAR"&repClass=="LTR") %>% 
+  count
+ESR_LTR_count <- TE_mrc_status_list %>% 
+  dplyr::filter(mrc =="ESR"&repClass=="LTR") %>% 
+  count
+LR_LTR_count <- TE_mrc_status_list %>% 
+  dplyr::filter(mrc =="LR"&repClass=="LTR") %>% 
+  count
+NR_LTR_count <- TE_mrc_status_list %>% 
+  dplyr::filter(mrc =="NR"&repClass=="LTR") %>% 
   count
 
 TE_mrc_status_list %>% 
-  dplyr::filter(repClass == "LTR") %>% 
-   mutate(repFamily=factor(repFamily)) %>% 
-     group_by(repFamily) %>% 
+  dplyr::filter(mrc =="EAR"&repClass=="LTR") %>% 
+  mutate(repFamily=factor(repFamily)) %>% 
+  group_by(repFamily) %>% 
   count(repFamily) %>% 
-   mutate(perc= n/sum(n)) %>% 
-   arrange(desc(n)) %>% 
+  mutate(perc= n/sum(n)) %>% 
+  arrange(desc(n)) %>% 
   mutate(repFamily = fct_rev(fct_inorder(repFamily))) %>% 
   mutate(text_y = cumsum(n) - n/2) %>% 
   ggplot(., aes(x = "", y = n, fill = repFamily)) +
   geom_col(color = "black") +
   coord_polar(theta = "y", start = 0)+
-   # geom_label(aes(label = repClass),
-   #          position = position_stack(vjust = .8)) +
-  # geom_label(aes(label=repClass, y=text_y))
-   geom_label_repel(aes(label = n),
+  geom_label_repel(aes(label = n),
                      position = position_stack(vjust = .3),
                      show.legend = FALSE,max.overlaps = 50) +
   theme_void()+
-  ggtitle("LTR breakdown of peaks",subtitle=paste(TE_LTR_count$n))+
+  ggtitle("EAR LTR breakdown of peaks",subtitle=paste(EAR_LTR_count$n))+
   scale_fill_LTRs()
+
+TE_mrc_status_list %>% 
+  dplyr::filter(mrc =="ESR"&repClass=="LTR") %>% 
+  mutate(repFamily=factor(repFamily)) %>% 
+  group_by(repFamily) %>% 
+  count(repFamily) %>% 
+  mutate(perc= n/sum(n)) %>% 
+  arrange(desc(n)) %>% 
+  mutate(repFamily = fct_rev(fct_inorder(repFamily))) %>% 
+  mutate(text_y = cumsum(n) - n/2) %>% 
+  ggplot(., aes(x = "", y = n, fill = repFamily)) +
+  geom_col(color = "black") +
+  coord_polar(theta = "y", start = 0)+
+  geom_label_repel(aes(label = n),
+                     position = position_stack(vjust = .3),
+                     show.legend = FALSE,max.overlaps = 50) +
+  theme_void()+
+  ggtitle("ESR LTR breakdown of peaks",subtitle=paste(ESR_LTR_count$n))+
+  scale_fill_LTRs()
+
+TE_mrc_status_list %>% 
+  dplyr::filter(mrc =="LR"&repClass=="LTR") %>% 
+  mutate(repFamily=factor(repFamily)) %>% 
+  group_by(repFamily) %>% 
+  count(repFamily) %>% 
+  mutate(perc= n/sum(n)) %>% 
+  arrange(desc(n)) %>% 
+  mutate(repFamily = fct_rev(fct_inorder(repFamily))) %>% 
+  mutate(text_y = cumsum(n) - n/2) %>% 
+  ggplot(., aes(x = "", y = n, fill = repFamily)) +
+  geom_col(color = "black") +
+  coord_polar(theta = "y", start = 0)+
+  geom_label_repel(aes(label = n),
+                     position = position_stack(vjust = .3),
+                     show.legend = FALSE,max.overlaps = 50) +
+  theme_void()+
+  ggtitle("LR LTR breakdown of peaks",subtitle=paste(LR_LTR_count$n))+
+  scale_fill_LTRs()
+
+TE_mrc_status_list %>% 
+  dplyr::filter(mrc =="NR"&repClass=="LTR") %>% 
+  mutate(repFamily=factor(repFamily)) %>% 
+  group_by(repFamily) %>% 
+  count(repFamily) %>% 
+  mutate(perc= n/sum(n)) %>% 
+  arrange(desc(n)) %>% 
+  mutate(repFamily = fct_rev(fct_inorder(repFamily))) %>% 
+  mutate(text_y = cumsum(n) - n/2) %>% 
+  ggplot(., aes(x = "", y = n, fill = repFamily)) +
+  geom_col(color = "black") +
+  coord_polar(theta = "y", start = 0)+
+  geom_label_repel(aes(label = n),
+                     position = position_stack(vjust = .3),
+                     show.legend = FALSE,max.overlaps = 50) +
+  theme_void()+
+  ggtitle("NR LTR breakdown of peaks",subtitle=paste(NR_LTR_count$n))+
+  scale_fill_LTRs()
+
+
+
+
 ```
 #### DNA TEs
 
@@ -881,6 +1325,96 @@ TE_mrc_status_list %>%
   ggtitle("DNA breakdown of peaks",subtitle=paste(TE_DNA_count$n))+
   scale_fill_DNAs()
 
+
+EAR_DNA_count <- TE_mrc_status_list %>% 
+  dplyr::filter(mrc =="EAR"&repClass=="DNA") %>% 
+  count
+ESR_DNA_count <- TE_mrc_status_list %>% 
+  dplyr::filter(mrc =="ESR"&repClass=="DNA") %>% 
+  count
+LR_DNA_count <- TE_mrc_status_list %>% 
+  dplyr::filter(mrc =="LR"&repClass=="DNA") %>% 
+  count
+NR_DNA_count <- TE_mrc_status_list %>% 
+  dplyr::filter(mrc =="NR"&repClass=="DNA") %>% 
+  count
+
+TE_mrc_status_list %>% 
+  dplyr::filter(mrc =="EAR"&repClass=="DNA") %>% 
+  mutate(repFamily=factor(repFamily)) %>% 
+  group_by(repFamily) %>% 
+  count(repFamily) %>% 
+  mutate(perc= n/sum(n)) %>% 
+  arrange(desc(n)) %>% 
+  mutate(repFamily = fct_rev(fct_inorder(repFamily))) %>% 
+  mutate(text_y = cumsum(n) - n/2) %>% 
+  ggplot(., aes(x = "", y = n, fill = repFamily)) +
+  geom_col(color = "black") +
+  coord_polar(theta = "y", start = 0)+
+  geom_label_repel(aes(label = n),
+                     position = position_stack(vjust = .3),
+                     show.legend = FALSE,max.overlaps = 50) +
+  theme_void()+
+  ggtitle("EAR DNA breakdown of peaks",subtitle=paste(EAR_DNA_count$n))+
+  scale_fill_DNAs()
+
+TE_mrc_status_list %>% 
+  dplyr::filter(mrc =="ESR"&repClass=="DNA") %>% 
+  mutate(repFamily=factor(repFamily)) %>% 
+  group_by(repFamily) %>% 
+  count(repFamily) %>% 
+  mutate(perc= n/sum(n)) %>% 
+  arrange(desc(n)) %>% 
+  mutate(repFamily = fct_rev(fct_inorder(repFamily))) %>% 
+  mutate(text_y = cumsum(n) - n/2) %>% 
+  ggplot(., aes(x = "", y = n, fill = repFamily)) +
+  geom_col(color = "black") +
+  coord_polar(theta = "y", start = 0)+
+  geom_label_repel(aes(label = n),
+                     position = position_stack(vjust = .3),
+                     show.legend = FALSE,max.overlaps = 50) +
+  theme_void()+
+  ggtitle("ESR DNA breakdown of peaks",subtitle=paste(ESR_DNA_count$n))+
+  scale_fill_DNAs()
+
+TE_mrc_status_list %>% 
+  dplyr::filter(mrc =="LR"&repClass=="DNA") %>% 
+  mutate(repFamily=factor(repFamily)) %>% 
+  group_by(repFamily) %>% 
+  count(repFamily) %>% 
+  mutate(perc= n/sum(n)) %>% 
+  arrange(desc(n)) %>% 
+  mutate(repFamily = fct_rev(fct_inorder(repFamily))) %>% 
+  mutate(text_y = cumsum(n) - n/2) %>% 
+  ggplot(., aes(x = "", y = n, fill = repFamily)) +
+  geom_col(color = "black") +
+  coord_polar(theta = "y", start = 0)+
+  geom_label_repel(aes(label = n),
+                     position = position_stack(vjust = .3),
+                     show.legend = FALSE,max.overlaps = 50) +
+  theme_void()+
+  ggtitle("LR DNA breakdown of peaks",subtitle=paste(LR_DNA_count$n))+
+  scale_fill_DNAs()
+
+TE_mrc_status_list %>% 
+  dplyr::filter(mrc =="NR"&repClass=="DNA") %>% 
+  mutate(repFamily=factor(repFamily)) %>% 
+  group_by(repFamily) %>% 
+  count(repFamily) %>% 
+  mutate(perc= n/sum(n)) %>% 
+  arrange(desc(n)) %>% 
+  mutate(repFamily = fct_rev(fct_inorder(repFamily))) %>% 
+  mutate(text_y = cumsum(n) - n/2) %>% 
+  ggplot(., aes(x = "", y = n, fill = repFamily)) +
+  geom_col(color = "black") +
+  coord_polar(theta = "y", start = 0)+
+  geom_label_repel(aes(label = n),
+                     position = position_stack(vjust = .3),
+                     show.legend = FALSE,max.overlaps = 50) +
+  theme_void()+
+  ggtitle("NR DNA breakdown of peaks",subtitle=paste(NR_DNA_count$n))+
+  scale_fill_DNAs()
+
 ```
 
 #### retroposon
@@ -977,11 +1511,100 @@ TE_mrc_status_list %>%
   ggtitle("retroposon breakdown of peaks",subtitle=paste(TE_retroposon_count$n))+
   scale_fill_retroposons()
 
+EAR_Retroposon_count <- TE_mrc_status_list %>% 
+  dplyr::filter(mrc =="EAR"&repClass=="Retroposon") %>% 
+  count
+ESR_Retroposon_count <- TE_mrc_status_list %>% 
+  dplyr::filter(mrc =="ESR"&repClass=="Retroposon") %>% 
+  count
+LR_Retroposon_count <- TE_mrc_status_list %>% 
+  dplyr::filter(mrc =="LR"&repClass=="Retroposon") %>% 
+  count
+NR_Retroposon_count <- TE_mrc_status_list %>% 
+  dplyr::filter(mrc =="NR"&repClass=="Retroposon") %>% 
+  count
+
+# TE_mrc_status_list %>% 
+#   dplyr::filter(mrc =="EAR"&repClass=="Retroposon") %>% 
+#   mutate(repName=factor(repName)) %>% 
+#   group_by(repName) %>% 
+#   count(repName) %>% 
+#   mutate(perc= n/sum(n)) %>% 
+#   arrange(desc(n)) %>% 
+#    mutate(repName = fct_rev(fct_inorder(repName))) %>% 
+#   mutate(text_y = cumsum(n) - n/2) %>% 
+#   ggplot(., aes(x = "", y = n, fill = repFamily)) +
+#   geom_col(color = "black") +
+#   coord_polar(theta = "y", start = 0)+
+#   geom_label_repel(aes(label = n),
+#                      position = position_stack(vjust = .3),
+#                      show.legend = FALSE,max.overlaps = 50) +
+#   theme_void()+
+#   ggtitle("EAR Retroposon breakdown of peaks",subtitle=paste(EAR_Retroposon_count$n))+
+#   scale_fill_retroposons()
+
+TE_mrc_status_list %>% 
+  dplyr::filter(mrc =="ESR"&repClass=="Retroposon") %>% 
+  mutate(repName=factor(repName)) %>% 
+  group_by(repName) %>% 
+  count(repName) %>% 
+  mutate(perc= n/sum(n)) %>% 
+  arrange(desc(n)) %>% 
+   mutate(repName = fct_rev(fct_inorder(repName))) %>% 
+  mutate(text_y = cumsum(n) - n/2) %>% 
+  ggplot(., aes(x = "", y = n, fill = repName)) +
+  geom_col(color = "black") +
+  coord_polar(theta = "y", start = 0)+
+  geom_label_repel(aes(label = n),
+                     position = position_stack(vjust = .3),
+                     show.legend = FALSE,max.overlaps = 50) +
+  theme_void()+
+  ggtitle("ESR Retroposon breakdown of peaks",subtitle=paste(ESR_Retroposon_count$n))+
+  scale_fill_retroposons()
+
+TE_mrc_status_list %>% 
+  dplyr::filter(mrc =="LR"&repClass=="Retroposon") %>% 
+  mutate(repName=factor(repName)) %>% 
+  group_by(repName) %>% 
+  count(repName) %>% 
+  mutate(perc= n/sum(n)) %>% 
+  arrange(desc(n)) %>% 
+   mutate(repName = fct_rev(fct_inorder(repName))) %>% 
+  mutate(text_y = cumsum(n) - n/2) %>% 
+  ggplot(., aes(x = "", y = n, fill = repName)) +
+  geom_col(color = "black") +
+  coord_polar(theta = "y", start = 0)+
+  geom_label_repel(aes(label = n),
+                     position = position_stack(vjust = .3),
+                     show.legend = FALSE,max.overlaps = 50) +
+  theme_void()+
+  ggtitle("LR Retroposon breakdown of peaks",subtitle=paste(LR_Retroposon_count$n))+
+  scale_fill_retroposons()
+
+TE_mrc_status_list %>% 
+  dplyr::filter(mrc =="NR"&repClass=="Retroposon") %>% 
+  mutate(repName=factor(repName)) %>% 
+  group_by(repName) %>% 
+  count(repName) %>% 
+  mutate(perc= n/sum(n)) %>% 
+  arrange(desc(n)) %>% 
+   mutate(repName = fct_rev(fct_inorder(repName))) %>% 
+  mutate(text_y = cumsum(n) - n/2) %>% 
+  ggplot(., aes(x = "", y = n, fill = repName)) +
+  geom_col(color = "black") +
+  coord_polar(theta = "y", start = 0)+
+  geom_label_repel(aes(label = n),
+                     position = position_stack(vjust = .3),
+                     show.legend = FALSE,max.overlaps = 50) +
+  theme_void()+
+  ggtitle("NR Retroposon breakdown of peaks",subtitle=paste(NR_Retroposon_count$n))+
+  scale_fill_retroposons()
+
 
 ```
 
-### CPG islands! 
-```{r cpgisland load}
+### CG islands! 
+```{r cgisland load}
 
 cpgislands_df <- read.delim("data/other_papers/cpg_islands.tsv")
 
@@ -993,18 +1616,18 @@ Col_fullDF_cug_overlap %>%
   as.data.frame() %>% 
   # group_by(repClass) %>%  
   tally %>% 
-  kable(., caption="Count of peaks with CG islands ") %>% 
+  kable(., caption="Count of peaks with CG islands") %>% 
   kable_paper("striped", full_width = TRUE) %>%
   kable_styling(full_width = FALSE, font_size = 14)
   
-hits_cug <- findOverlaps(Col_TSS_data_gr,cpg_island_gr)
-overlaps_cug <- pintersect(Col_TSS_data_gr[queryHits(hits_cug)], cpg_island_gr[subjectHits(hits_cug)])
-percentOverlap_cug <- width(overlaps_cug) / width(cpg_island_gr[subjectHits(hits_cug)])
-hits_cug <- hits_cug[percentOverlap_cug > 0.5]
+hits_cpg <- findOverlaps(Col_TSS_data_gr,cpg_island_gr)
+overlaps_cpg <- pintersect(Col_TSS_data_gr[queryHits(hits_cpg)], cpg_island_gr[subjectHits(hits_cpg)])
+percentOverlap_cpg <- width(overlaps_cpg) / width(cpg_island_gr[subjectHits(hits_cpg)])
+hits_cpg <- hits_cpg[percentOverlap_cpg > 0.5]
 
-testingol_cug <- Col_TSS_data_gr[queryHits(hits_cug)]
+testingol_cpg <- Col_TSS_data_gr[queryHits(hits_cpg)]
 
-CUG_mrc_status_list <-    testingol_cug %>% as.data.frame() %>%
+CUG_mrc_status_list <-    testingol_cpg %>% as.data.frame() %>%
   left_join(., (Col_fullDF_cug_overlap %>% as.data.frame(.)), by =c("seqnames"="seqnames","start"="start","end"="end","peakid"="peakid", "NCBI_gene"="NCBI_gene", "ensembl_ID"="ensembl_ID","dist_to_NG"="dist_to_NG",  "SYMBOL" = "SYMBOL","width"="width")) %>% 
     dplyr::select(peakid, name,cpgNum:obsExp) %>% 
   mutate(cugstatus=if_else(is.na(cpgNum),"not_CGi_peak","CGi_peak")) %>% 
@@ -1026,6 +1649,49 @@ CUG_mrc_status_list %>%
   ggtitle("CG islands by mrc", subtitle=paste(length(CUG_mrc_status_list$peakid )))
   
 
+CUG_mrc_status_list %>% 
+   mutate(mrc=factor(mrc, levels=c("EAR","ESR","LR","NR","not-mrc"))) %>% 
+ group_by(peakid) %>% 
+  distinct( peakid,cugstatus,mrc) %>% 
+ 
+  ungroup %>%
+  summarise(pval = chisq.test(mrc, cugstatus)$p.value)
+                               
+```
 
+##### This code is for making peak lists for GO and MEME analysis:
+```{r peak lists}
+# CUG_mrc_status_list
+
+notTE_NR <- TE_mrc_status_list %>% 
+  separate_wider_delim(col="peakid",".", 
+                       names= c("seqnames","start","end"), 
+                       cols_remove = FALSE) %>%
+  dplyr::filter(mrc !="not_mrc") %>% 
+  dplyr::filter(TEstatus=="not_TE_peak" & mrc =="NR")
+
+notTE_EAR <- TE_mrc_status_list %>% 
+  separate_wider_delim(col="peakid",".", 
+                       names= c("seqnames","start","end"), 
+                       cols_remove = FALSE) %>%
+  dplyr::filter(mrc !="not_mrc") %>% 
+  dplyr::filter(TEstatus=="not_TE_peak" & mrc =="EAR")
+
+notTE_ESR <- TE_mrc_status_list %>% 
+  separate_wider_delim(col="peakid",".", 
+                       names= c("seqnames","start","end"), 
+                       cols_remove = FALSE) %>%
+  dplyr::filter(mrc !="not_mrc") %>% 
+  dplyr::filter(TEstatus=="not_TE_peak" & mrc =="ESR")
+
+notTE_LR <- TE_mrc_status_list %>% 
+  separate_wider_delim(col="peakid",".", 
+                       names= c("seqnames","start","end"), 
+                       cols_remove = FALSE) %>%
+  dplyr::filter(mrc !="not_mrc") %>% 
+  dplyr::filter(TEstatus=="not_TE_peak" & mrc =="LR")
+
+notTE_NR %>% 
+  
 ```
 
