@@ -659,7 +659,7 @@ ggplot(., aes (y= reorder(motif_name,log10Evalue))) +
 ```{r enriched motifs ESR hypo, fig.height=8}
 xstreme_ESRD %>% 
    dplyr::select(SOURCE:CONSENSUS,CLUSTER,SITES,SEA_PVALUE,EVALUE,SIM_MOTIF) %>%
-  mutate(CONSENSUS=gsub('[[:digit:]]+-', '', CONSENSUS))%>% 
+  mutate(CONSENSUS=gsub('[[:digit:]]+-', '', CONSENSUS))%>%
   left_join(., (sea_ESRD %>% dplyr::select(ID:ENR_RATIO,EVALUE)), by= c("ID"="ID","CONSENSUS"="CONSENSUS" )) %>% 
   dplyr::select(CLUSTER, SITES,SIM_MOTIF,ID,EVALUE.x, TP:'FP%')%>% 
   separate(SIM_MOTIF, into= c("SIM_MOTIF", "NAME"), sep= " ") %>% 
@@ -669,7 +669,7 @@ xstreme_ESRD %>%
    group_by(NAME) %>% 
   mutate(RowGroup=cumsum(NAME != 0)) %>% 
   ungroup() %>% 
-  mutate(motif_name= gsub("[()]","",NAME), mrc="EAR") %>% 
+  mutate(motif_name= gsub("[()]","",NAME), mrc="EAR")# %>% 
   mutate(motif_name=if_else(is.na(motif_name),ID,motif_name)) %>% 
   mutate(motif_name=if_else(is.na(motif_name),ID,if_else(motif_name=="ZNF449",paste(motif_name, RowGroup, sep="_"),motif_name)))%>%
 # dplyr::filter(!is.na(motif_name)) %>% 
@@ -816,7 +816,7 @@ Basic first attempt is using DOX24 hour DAR logFC to split each response cluster
 ### need to load Top list of all aTAC data.
 
 toplist_full_ATAC <- readRDS("data/DEG_toplist_sep_n45.RDS")
-DOX_24 <- toplist_full_ATAC$DOX_24
+# DOX_24 <- toplist_full_ATAC$DOX_24
 median_24_lfc <- readRDS("data/median_24_lfc.RDS") %>% ungroup()
 median_3_lfc <- readRDS("data/median_3_lfc.RDS") %>% ungroup()
 
@@ -841,38 +841,113 @@ median_3_lfc <- readRDS("data/median_3_lfc.RDS") %>% ungroup()
 #   dplyr::filter(logFC>0) 
 
 
-tot_hypo <- DOX_24 %>% dplyr::filter(logFC<0)
+# tot_hypo <- DOX_24 %>% dplyr::filter(logFC<0)
 
-EARU <-  DOX_24 %>%
+EARU_3h <-  median_3_lfc %>%
   dplyr::filter(peak %in% EAR_df$id) %>% 
-    dplyr::filter(logFC>0) 
+    dplyr::filter(median>0) 
 
+EARU_3h_gr <- EARU_3h%>% 
+  separate(.,col=peak, into=c("seqnames","start","stop"),  remove= FALSE) %>% GRanges()
 
-EARD <-  DOX_24 %>%
+EARU_24h <-  median_24_lfc %>%
   dplyr::filter(peak %in% EAR_df$id) %>% 
-    dplyr::filter(logFC<0)
+    dplyr::filter(median>0) 
+EARU_24h_gr <- EARU_24h%>% 
+  separate(.,col=peak, into=c("seqnames","start","stop"),  remove= FALSE) %>% GRanges()
 
-ESRU <-  DOX_24 %>%
+EARD_3h <-  median_3_lfc %>%
+  dplyr::filter(peak %in% EAR_df$id) %>% 
+    dplyr::filter(median<0) 
+EARD_3h_gr <- EARD_3h%>% 
+  separate(.,col=peak, into=c("seqnames","start","stop"),  remove= FALSE) %>% GRanges()
+
+EARD_24h <-  median_24_lfc %>%
+  dplyr::filter(peak %in% EAR_df$id) %>% 
+    dplyr::filter(median<0) 
+
+EARD_24h_gr <- EARD_24h%>% 
+  separate(.,col=peak, into=c("seqnames","start","stop"),  remove= FALSE) %>% GRanges()
+
+ESRU_3h <-  median_3_lfc %>%
   dplyr::filter(peak %in% ESR_df$id) %>% 
-    dplyr::filter(logFC>0)
+    dplyr::filter(median>0) 
 
-ESRD <-  DOX_24 %>%
+ESRU_3h_gr <- ESRU_3h%>% 
+  separate(.,col=peak, into=c("seqnames","start","stop"),  remove= FALSE) %>% GRanges()
+
+ESRU_24h <-  median_24_lfc %>%
   dplyr::filter(peak %in% ESR_df$id) %>% 
-    dplyr::filter(logFC<0)
-LRU <-  DOX_24 %>%
-  dplyr::filter(peak %in% LR_df$id) %>% 
-    dplyr::filter(logFC>0)
+    dplyr::filter(median>0) 
+ESRU_24h_gr <- ESRU_24h%>% 
+  separate(.,col=peak, into=c("seqnames","start","stop"),  remove= FALSE) %>% GRanges()
 
-LRD <-  DOX_24 %>%
-  dplyr::filter(peak %in% LR_df$id) %>% 
-    dplyr::filter(logFC<0)
-NRU <-  DOX_24 %>%
-  dplyr::filter(peak %in% NR_df$id) %>% 
-    dplyr::filter(logFC>0)
+ESRD_3h <-  median_3_lfc %>%
+  dplyr::filter(peak %in% ESR_df$id) %>% 
+    dplyr::filter(median<0) 
+ESRD_3h_gr <- ESRD_3h%>% 
+  separate(.,col=peak, into=c("seqnames","start","stop"),  remove= FALSE) %>% GRanges()
 
-NRD <-  DOX_24 %>%
+ESRD_24h <-  median_24_lfc %>%
+  dplyr::filter(peak %in% ESR_df$id) %>% 
+    dplyr::filter(median<0) 
+
+ESRD_24h_gr <- ESRD_24h%>% 
+  separate(.,col=peak, into=c("seqnames","start","stop"),  remove= FALSE) %>% GRanges()
+
+
+LRU_3h <-  median_3_lfc %>%
+  dplyr::filter(peak %in% LR_df$id) %>% 
+    dplyr::filter(median>0) 
+
+LRU_3h_gr <- LRU_3h%>% 
+  separate(.,col=peak, into=c("seqnames","start","stop"),  remove= FALSE) %>% GRanges()
+
+LRU_24h <-  median_24_lfc %>%
+  dplyr::filter(peak %in% LR_df$id) %>% 
+    dplyr::filter(median>0) 
+LRU_24h_gr <- LRU_24h%>% 
+  separate(.,col=peak, into=c("seqnames","start","stop"),  remove= FALSE) %>% GRanges()
+
+LRD_3h <-  median_3_lfc %>%
+  dplyr::filter(peak %in% LR_df$id) %>% 
+    dplyr::filter(median<0) 
+LRD_3h_gr <- LRD_3h%>% 
+  separate(.,col=peak, into=c("seqnames","start","stop"),  remove= FALSE) %>% GRanges()
+
+LRD_24h <-  median_24_lfc %>%
+  dplyr::filter(peak %in% LR_df$id) %>% 
+    dplyr::filter(median<0) 
+
+LRD_24h_gr <- LRD_24h%>% 
+  separate(.,col=peak, into=c("seqnames","start","stop"),  remove= FALSE) %>% GRanges()
+
+
+NRU_3h <-  median_3_lfc %>%
   dplyr::filter(peak %in% NR_df$id) %>% 
-    dplyr::filter(logFC<0)
+    dplyr::filter(median>0) 
+
+NRU_3h_gr <- NRU_3h%>% 
+  separate(.,col=peak, into=c("seqnames","start","stop"),  remove= FALSE) %>% GRanges()
+
+NRU_24h <-  median_24_lfc %>%
+  dplyr::filter(peak %in% NR_df$id) %>% 
+    dplyr::filter(median>0) 
+NRU_24h_gr <- NRU_24h%>% 
+  separate(.,col=peak, into=c("seqnames","start","stop"),  remove= FALSE) %>% GRanges()
+
+NRD_3h <-  median_3_lfc %>%
+  dplyr::filter(peak %in% NR_df$id) %>% 
+    dplyr::filter(median<0) 
+NRD_3h_gr <- NRD_3h%>% 
+  separate(.,col=peak, into=c("seqnames","start","stop"),  remove= FALSE) %>% GRanges()
+
+NRD_24h <-  median_24_lfc %>%
+  dplyr::filter(peak %in% NR_df$id) %>% 
+    dplyr::filter(median<0) 
+
+NRD_24h_gr <- NRD_24h%>% 
+  separate(.,col=peak, into=c("seqnames","start","stop"),  remove= FALSE) %>% GRanges()
 
 
 
@@ -915,65 +990,76 @@ median_24_lfc  %>%
 ## motif and peak section (incomplete)
 
 
-```{r loading essential files for peak tests}
+```{r resizing peaks}
 
-# ESR_peaks_resized = resize(ESR_df_gr, width = 2000, fix='center')
-# EAR_peaks_resized = resize(EAR_df_gr, width = 2000, fix='center')
-# LR_peaks_resized = resize(LR_df_gr, width = 2000, fix='center')
-# NR_peaks_resized = resize(NR_df_gr, width = 2000, fix='center')
+EARU3h_resized <- resize(EARU_3h_gr, width = 1000,fix='center')
+ESRU3h_resized <- resize(ESRU_3h_gr, width = 1000,fix='center')
+LRU3h_resized <- resize(LRU_3h_gr, width = 1000,fix='center')
+NRU3h_resized <- resize(NRU_3h_gr, width = 1000,fix='center')
 
-ESR_peaks_resized_250 = resize(ESR_df_gr, width = 500, fix='center')
-EAR_peaks_resized_250 = resize(EAR_df_gr, width = 500, fix='center')
-LR_peaks_resized_250 = resize(LR_df_gr, width = 500, fix='center')
-NR_peaks_resized_250 = resize(NR_df_gr, width =500, fix='center')
+EARD3h_resized <- resize(EARD_3h_gr, width = 1000,fix='center')
+ESRD3h_resized <- resize(ESRD_3h_gr, width = 1000,fix='center')
+LRD3h_resized <- resize(LRD_3h_gr, width = 1000,fix='center')
+NRD3h_resized <- resize(NRD_3h_gr, width = 1000,fix='center')
 
-seq_ESR_250 = getSeq(BSgenome.Hsapiens.UCSC.hg38, ESR_peaks_resized_250)
-seq_EAR_250 = getSeq(BSgenome.Hsapiens.UCSC.hg38, EAR_peaks_resized_250)
-seq_LR_250 = getSeq(BSgenome.Hsapiens.UCSC.hg38, LR_peaks_resized_250)
-seq_NR_250 = getSeq(BSgenome.Hsapiens.UCSC.hg38, NR_peaks_resized_250)
+EARU24h_resized <- resize(EARU_24h_gr, width = 1000,fix='center')
+ESRU24h_resized <- resize(ESRU_24h_gr, width = 1000,fix='center')
+LRU24h_resized <- resize(LRU_24h_gr, width = 1000,fix='center')
+NRU24h_resized <- resize(NRU_24h_gr, width = 1000,fix='center')
 
-# 
-# ESR_peaks_resized_500 = resize(ESR_df_gr, width = 1000, fix='center')
-# EAR_peaks_resized_500 = resize(EAR_df_gr, width = 1000, fix='center')
-# LR_peaks_resized_500 = resize(LR_df_gr, width = 1000, fix='center')
-# NR_peaks_resized_500 = resize(NR_df_gr, width = 1000, fix='center')
-# ESR_peaks_resized_site = resize(ESR_df_gr,  fix='center')
+EARD24h_resized <- resize(EARD_24h_gr, width = 1000,fix='center')
+ESRD24h_resized <- resize(ESRD_24h_gr, width = 1000,fix='center')
+LRD24h_resized <- resize(LRD_24h_gr, width = 1000,fix='center')
+NRD24h_resized <- resize(NRD_24h_gr, width = 1000,fix='center')
 
-# seq_ESR = getSeq(BSgenome.Hsapiens.UCSC.hg38, ESR_peaks_resized)
-# seq_EAR = getSeq(BSgenome.Hsapiens.UCSC.hg38, EAR_peaks_resized)
-# seq_LR = getSeq(BSgenome.Hsapiens.UCSC.hg38, LR_peaks_resized)
-# seq_NR = getSeq(BSgenome.Hsapiens.UCSC.hg38, NR_peaks_resized)
-# 
-# seq_ESR_500 = getSeq(BSgenome.Hsapiens.UCSC.hg38, ESR_peaks_resized_500)
-# seq_EAR_500 = getSeq(BSgenome.Hsapiens.UCSC.hg38, EAR_peaks_resized_500)
-# seq_LR_500 = getSeq(BSgenome.Hsapiens.UCSC.hg38, LR_peaks_resized_500)
-# seq_NR_500 = getSeq(BSgenome.Hsapiens.UCSC.hg38, NR_peaks_resized_500)
-# 
-# seq_ESR_norm = getSeq(BSgenome.Hsapiens.UCSC.hg38, ESR_df_gr)
-# seq_EAR_norm = getSeq(BSgenome.Hsapiens.UCSC.hg38, EAR_df_gr)
-# seq_LR_norm = getSeq(BSgenome.Hsapiens.UCSC.hg38, LR_df_gr)
-# seq_NR_norm = getSeq(BSgenome.Hsapiens.UCSC.hg38, NR_df_gr)
+BiocManager::install('PWMEnrich')
+
+nEAR_list <- list(EARU3h_resized=EARU3h_resized,EARD3h_resized=EARD3h_resized,EARU24h_resized=EARU24h_resized,EARD24h_resized=EARD24h_resized)
+
+ESR_list <- list(ESRU3h_resized=ESRU3h_resized,ESRD3h_resized=ESRD3h_resized,ESRU24h_resized=ESRU24h_resized,ESRD24h_resized=ESRD24h_resized)
+
+LR_list <- list(LRU3h_resized=LRU3h_resized,LRD3h_resized=LRD3h_resized,LRU24h_resized=LRU24h_resized,LRD24h_resized=LRD24h_resized)
+
+NR_list <- list(NRU3h_resized=NRU3h_resized,NRD3h_resized=NRD3h_resized,NRU24h_resized=NRU24h_resized,NRD24h_resized=NRD24h_resized)
+
+seq_EAR <- lapply(EAR_list, getSeq, x=BSgenome.Hsapiens.UCSC.hg38)
+
+seq_ESR <- lapply(ESR_list, getSeq, x=BSgenome.Hsapiens.UCSC.hg38)
 
 
+seq_LR <- lapply(LR_list, getSeq, x=BSgenome.Hsapiens.UCSC.hg38)
+seq_NR <- lapply(NR_list, getSeq, x=BSgenome.Hsapiens.UCSC.hg38)
 ```
 
 #### BACH2
 
 
 ```{r BACH2 motif, eval=FALSE, include=FALSE}
-# motifs_BACH2 = query(query(MotifDb, 'Hsapiens'), 'BACH2')
-# BACH2_motif <- motifs_BACH2$`Hsapiens-jaspar2022-BACH2-MA1101.2`
-# # 
-# # 
-# BACH2_pwm = PWMatrix(
-#     ID = 'BACH2',
-#     profileMatrix = BACH2_motif)
+motifs_BACH2 = query(query(MotifDb, 'Hsapiens'),'BACH2')
+BACH2_motif <- motifs_BACH2$`Hsapiens-jaspar2022-BACH2-MA1101.2`
+ 
+BACH2_pwm = PWMatrix(
+    ID = 'BACH2',
+    profileMatrix = BACH2_motif)
+
 # 
-# 
-# hits_ESR_250 = searchSeq(BACH2_pwm, seq_ESR_250, min.score="80%", strand="*")
-# hits_df_ESR_250 <- as(hits_ESR_250,"data.frame")
-# hits_ESR_250 <- as.data.frame(hits_ESR_250)
-# saveRDS(hits_ESR_250,"data/hits_files/BACH2_hits_ESR_250.RDS")
+# pwmList <- PWMatrixList(MA1101.2=toPWM(MA1101.2), MA0004.1=toPWM(MA0004.1),
+#                         use.names=TRUE)
+list_test = lapply(unlist(seq_ESR) , FUN=searchSeq, x=BACH2_pwm, min.score="80%", strand="*")
+
+storage <- lapply(list_test, relScore)
+str(storage)
+storage %>% 
+  map(as_tibble) %>% 
+  reduce(bind_rows)
+testedstorage <- map_dfr(list_test, ~as.data.frame(.x), .id="id")
+
+
+head(writeGFF3(list_test[[1]]))
+nolist_test <- searchSeq()
+hits_df_ESR_250 <- as(hits_ESR_250,"data.frame")
+hits_ESR_250 <- as.data.frame(hits_ESR_250)
+saveRDS(hits_ESR_250,"data/hits_files/BACH2_hits_ESR_250.RDS")
 hits_ESR_BACH2_250 <- readRDS("data/hits_files/BACH2_hits_ESR_250.RDS")
 
 # 
@@ -1018,7 +1104,11 @@ hits_NR_BACH2_250 %>%
     axis.text = element_text(size=10, face='bold'),
     axis.title = element_text(size=14,face="bold"),
     plot.title = element_text(hjust = 0.5))
-
+testedstorage %>% 
+  mutate(position=start-500) %>% 
+  ggplot(.,aes(position, color = id))+
+  geom_density(size=1.5) +
+  theme_bw() 
 ```
 #### ZNF384
 enriched in EAR, ESR, LR
