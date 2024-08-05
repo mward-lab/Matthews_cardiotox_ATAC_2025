@@ -1,6 +1,6 @@
 # ATAC_learning
 
-This is the link to my inital files of analysis.
+This is the link to my initial files of analysis.
 
 https://reneeisnowhere.github.io/ATAC_learning/index.html
 
