@@ -29,12 +29,9 @@ library(tidyverse)
 library(kableExtra)
 library(broom)
 library(RColorBrewer)
-# library(gprofiler2)
-# library(qvalue)
 library(ChIPseeker)
 library("TxDb.Hsapiens.UCSC.hg38.knownGene")
 library("org.Hs.eg.db")
-# library(ATACseqQC)
 library(rtracklayer)
 library(edgeR)
 library(ggfortify)
@@ -44,13 +41,9 @@ library(BiocGenerics)
 library(gridExtra)
 library(VennDiagram)
 library(scales)
-# library(ggVennDiagram)
-library(Cormotif)
 library(BiocParallel)
 library(ggpubr)
 library(devtools)
-# install_github('davetang/bedr')
-# library(bedr)
 library(biomaRt)
 library(eulerr)
 library(smplot2)
@@ -58,8 +51,12 @@ library(genomation)
 library(ggsignif)
 library(plyranges)
 library(ggrepel)
+library(readr)
 ```
 ##### loading data
+
+This is where I pull in the repeatmasker file taken from UCSC genomebrowser, the peaks assigned with the closest expressed genes as 'neargenes' by TSS,  the same peaks list, only condensing to unique peaks (some are assigned to two neargene), I call the collapsed_peaks and the peaks assigned to each MRC (EAR, etc...).  
+With the TSS data and the collapsed data, I make granges files.  I also separate out the LINEs, SINEs, LTRs, DNAs, and Retroposons from the repeatmasker to make granges from those sets.  
 ```{r first data sets}
 repeatmasker <- read.delim("data/other_papers/repeatmasker.tsv")
 
@@ -70,7 +67,7 @@ Collapsed_peaks <- read_delim("data/n45_bedfiles/TSS_NG_data_collapsed_peaks.tsv
                               delim = "\t", 
                               escape_double = FALSE, 
                               trim_ws = TRUE)
-TSS_data_gf <- TSS_NG_data %>% 
+TSS_data_gr <- TSS_NG_data %>% 
   dplyr::filter(seqnames != "chrX") %>% 
   dplyr::filter(seqnames != "chrY") %>%
   GRanges()
@@ -106,7 +103,7 @@ retroposon_repeats <- repeatmasker %>%
 
 all_TEs_gr <- repeatmasker %>% 
  makeGRangesFromDataFrame(., keep.extra.columns = TRUE, seqnames.field = "genoName", start.field = "genoStart", end.field = "genoEnd",starts.in.df.are.0based=TRUE)
-all_TEs_gr$width=width(all_TEs_gr)
+
 
 peakAnnoList_n45_motif <- readRDS("data/peakAnnoList_n45_motif.RDS")
 
@@ -127,7 +124,7 @@ NR_df <- as.data.frame(peakAnnoList_n45_motif$NR_n45_gr)
 
 ##  TE distrubution:
 
-This code below was my first attempt at finding how many peaks overlap more than 50% of TEs from the repeatmasker list.  The first output
+The code below uses the TE data sets to create dataframes that contain all peaks that overlap a TE. Additionally, I wanted to know size distribution of the overlaps(width) between TEs and my peaks, the size of the TEs and their size distribution, and the size distribution of my peaks.  This was to determine a cutoff across TEs to minimize size bais. My first attempt was a threshold of >50% of TE needed to be covered by a peak to infer the peak contained the TE. In the plots, the median of each density distribution is shown by the dotted line.
 
 ```{r  data about TEs}
 # length(retroposon_repeats)
@@ -140,12 +137,27 @@ This code below was my first attempt at finding how many peaks overlap more than
 # ## 770551
 # length(DNA_repeats)
 # ## 512404
-# intersect_ranges(TSS_data_gf,retroposon_repeats)
-# intersect_ranges(TSS_data_gf,Line_repeats)
-# intersect_ranges(TSS_data_gf,Sine_repeats)
-# intersect_ranges(TSS_data_gf,LTR_repeats)
-# intersect_ranges(TSS_data_gf,DNA_repeats)
-# intersect_ranges(TSS_data_gf,all_TEs_gr)
+# length(intersect_ranges(TSS_data_gr,retroposon_repeats))
+
+# 
+# length(intersect_ranges(TSS_data_gr,Line_repeats))
+# length(intersect_ranges(TSS_data_gr,Sine_repeats))
+# 
+# length(intersect_ranges(TSS_data_gr,LTR_repeats))
+# length(intersect_ranges(TSS_data_gr,DNA_repeats))
+# length(intersect_ranges(TSS_data_gr,all_TEs_gr))
+
+
+Col_TSS_data_gr %>% 
+  as.data.frame %>% 
+   ggplot(., aes(x=width))+
+    geom_density(color="darkblue",fill="lightblue",aes(alpha = 0.5))+
+  geom_vline(data=Col_TSS_data_gr$width., aes(xintercept = median(width)), linetype = 2)+
+  theme_classic()+
+  ggtitle("Distribution of peak length across all peaks",subtitle = " limited x axis")+
+  coord_cartesian(xlim= c(0,2500))
+
+
 
 all_TEs_gr %>% 
   as.data.frame() %>% 
@@ -153,8 +165,9 @@ all_TEs_gr %>%
   dplyr::filter(repClass=="LINE") %>% 
   ggplot(., aes(x=width))+
     geom_density(aes(fill=repClass, alpha = 0.5))+
+  geom_vline(aes(xintercept = median(width)), linetype = 2)+
   theme_classic()+
-  ggtitle("density of widths of all LINEs across human genome",subtitle = " limited x axis")+
+  ggtitle("Distribution of widths of all LINEs across human genome",subtitle = " limited x axis")+
   coord_cartesian(xlim= c(0,2500))
 
 all_TEs_gr %>% 
@@ -163,8 +176,9 @@ all_TEs_gr %>%
   dplyr::filter(repClass=="SINE") %>% 
   ggplot(., aes(x=width))+
     geom_density(aes(fill=repClass, alpha = 0.5))+
+   geom_vline(aes(xintercept = median(width)), linetype = 2)+
   theme_classic()+
-  ggtitle("density of widths of all SINEs across human genome")
+  ggtitle("Distribution of widths of all SINEs across human genome")
 
 all_TEs_gr %>% 
   as.data.frame() %>% 
@@ -172,8 +186,9 @@ all_TEs_gr %>%
   dplyr::filter(repClass=="LTR") %>% 
   ggplot(., aes(x=width))+
     geom_density(aes(fill=repClass, alpha = 0.5))+
+   geom_vline(aes(xintercept = median(width)), linetype = 2)+
   theme_classic()+
-  ggtitle("density of widths of all LTRs across human genome",subtitle = " limited x axis")+
+  ggtitle("Distribution of widths of all LTRs across human genome",subtitle = " limited x axis")+
   coord_cartesian(xlim= c(0,2500))
 
 all_TEs_gr %>% 
@@ -182,8 +197,9 @@ all_TEs_gr %>%
   dplyr::filter(repClass=="DNA") %>% 
   ggplot(., aes(x=width))+
     geom_density(aes(fill=repClass, alpha = 0.5))+
+   geom_vline(aes(xintercept = median(width)), linetype = 2)+
   theme_classic()+
-  ggtitle("density of widths of all DNA-TEs across human genome",subtitle = " limited x axis")+
+  ggtitle("Distribution of widths of all DNA-TEs across human genome",subtitle = " limited x axis")+
   coord_cartesian(xlim= c(0,2500))
 
 all_TEs_gr %>% 
@@ -191,10 +207,11 @@ all_TEs_gr %>%
   mutate(repClass=factor(repClass)) %>% 
   dplyr::filter(repClass=="Retroposon") %>% 
   ggplot(., aes(x=width))+
-    geom_density(aes(fill=repClass, alpha = 0.5))+
+    geom_density(aes(alpha = 0.5))+
+   geom_vline(aes(xintercept = median(width)), linetype = 2)+
   theme_classic()+
-  ggtitle("density of widths of all Retroposons across human genome",subtitle = " limited x axis")+
-  coord_cartesian(xlim= c(0,2500))
+  ggtitle("Distribution of widths of all Retroposons across human genome",subtitle = " limited x axis")+
+   coord_cartesian(xlim= c(0,2500))
 
 all_TEs_gr %>% 
   as.data.frame() %>% 
@@ -203,7 +220,7 @@ all_TEs_gr %>%
   group_by(repClass) %>% 
   summarise(med.width=median(width),mean.width=mean(width))
 
-fullDF_overlap <- join_overlap_intersect(TSS_data_gf,all_TEs_gr)
+fullDF_overlap <- join_overlap_intersect(TSS_data_gr,all_TEs_gr)
 fullDF_overlap %>% 
   as.data.frame() %>% 
   group_by(repClass) %>%  
@@ -212,14 +229,21 @@ fullDF_overlap %>%
   kable_paper("striped", full_width = TRUE) %>%
   kable_styling(full_width = FALSE, font_size = 14)
 
+subsetByOverlaps(TSS_data_gr,all_TEs_gr) %>% as.data.frame %>% 
+   ggplot(., aes(x=width))+
+    geom_density(color="darkblue",fill="lightblue",aes(alpha = 0.5))+
+   geom_vline(aes(xintercept = median(width)), linetype = 2)+
+  theme_classic()+
+  ggtitle("Distribution of overlaps between all TEs and all my peaks",subtitle = " limited x axis")+
+  coord_cartesian(xlim= c(0,2500))
 
 ### This is how I subset only those peaks who cover >50% of TEs
-hits <- findOverlaps(TSS_data_gf,all_TEs_gr)
-overlaps <- pintersect(TSS_data_gf[queryHits(hits)], all_TEs_gr[subjectHits(hits)])
+hits <- findOverlaps(TSS_data_gr,all_TEs_gr)
+overlaps <- pintersect(TSS_data_gr[queryHits(hits)], all_TEs_gr[subjectHits(hits)])
 percentOverlap <- width(overlaps) / width(all_TEs_gr[subjectHits(hits)])
 hits <- hits[percentOverlap > 0.5]
 
-testingol <- TSS_data_gf[queryHits(hits)]
+testingol <- TSS_data_gr[queryHits(hits)]
 testingol %>% as.data.frame() %>% 
   left_join(., (fullDF_overlap %>% as.data.frame(.)), by =c("seqnames"="seqnames","start"="start","end"="end","peakid"="peakid", "NG_start"="NG_start", "end_position"="end_position", "entrezgene_id"="entrezgene_id", "ensembl_gene_id"="ensembl_gene_id","dist_to_NG"="dist_to_NG", "width"="width", "strand"="strand", "hgnc_symbol" = "hgnc_symbol")) %>% 
   group_by(repClass) %>% 
@@ -228,9 +252,11 @@ testingol %>% as.data.frame() %>%
   kable_paper("striped", full_width = TRUE) %>%
   kable_styling(full_width = FALSE, font_size = 14)
 ```
-  After the above data frames were run, I realized I ran the data using a dataframe where a peak is listed more than once because it was assigned more than one neargene ( one-to-many relationships).   I changed the code to use the 'collapsed' data frame.  This means the data frame was simplified to only include peaks one time, but those peaks that were assigned to more than one neargene had the assigned neargenes condensed and separated by a comma into the same column to create a one-to-one relationship dataframe.  (yes, wordy I know)
+  The first dataframe to subset peaks that overlap >50% of a TE, was using the full neargene dataframe, where a peak is listed more than once because it was assigned more than one neargene ( one-to-many relationships).   I changed the code to use the 'collapsed' data frame.  This means the data frame was simplified to only include peaks one time, but those peaks that were assigned to more than one neargene had the assigned neargenes condensed and separated by a comma into the same column to create a one-to-one relationship dataframe.  (yes, wordy I know)
 ```{r run again}
 ######################################################
+all_TEs_gr$TE_width <- width(all_TEs_gr)
+Col_TSS_data_gr$peak_width <- width(Col_TSS_data_gr)
 Col_fullDF_overlap <- join_overlap_intersect(Col_TSS_data_gr,all_TEs_gr)
 Col_fullDF_overlap %>% 
   as.data.frame() %>% 
@@ -240,28 +266,130 @@ Col_fullDF_overlap %>%
   kable_paper("striped", full_width = TRUE) %>%
   kable_styling(full_width = FALSE, font_size = 14)
 
+Col_fullDF_overlap %>% 
+   as.data.frame %>% 
+  mutate(per_ol= width/TE_width) %>% 
+  dplyr::filter(per_ol>0.5) %>% 
+  group_by(repClass) %>% 
+  tally() %>% 
+  kable(., caption="Count of peaks by TE class; overlap of >50% of TE; newway ") %>% 
+  kable_paper("striped", full_width = TRUE) %>%
+  kable_styling(full_width = FALSE, font_size = 14)
+ 
+
+
 hits_col <- findOverlaps(Col_TSS_data_gr,all_TEs_gr)
 
 overlaps_col <- pintersect(Col_TSS_data_gr[queryHits(hits_col)], all_TEs_gr[subjectHits(hits_col)])
 percentOverlap_col <- width(overlaps_col) / width(all_TEs_gr[subjectHits(hits_col)])
 hits_col2 <- hits_col[percentOverlap_col > 0.5]
 
-testingol_col2 <- Col_TSS_data_gr[queryHits(hits_col2)]
-testingol_col2 %>% as.data.frame() %>% 
-  left_join(., (Col_fullDF_overlap %>% as.data.frame(.)), by =c("seqnames"="seqnames","start"="start","end"="end","peakid"="peakid", "NCBI_gene"="NCBI_gene", "ensembl_ID"="ensembl_ID","dist_to_NG"="dist_to_NG", "width"="width", "strand"="strand", "SYMBOL" = "SYMBOL")) %>% 
+testingol_col2 <- Col_TSS_data_gr[queryHits(hits_col2)] 
+just_TEdata <- all_TEs_gr[subjectHits(hits_col2)]
+
+# testingol_col2 %>% as.data.frame() %>% 
+#   left_join(., (Col_fullDF_overlap %>% as.data.frame(.)), by =c("seqnames"="seqnames","start"="start","end"="end","peakid"="peakid", "NCBI_gene"="NCBI_gene", "ensembl_ID"="ensembl_ID","dist_to_NG"="dist_to_NG", "width"="width", "strand"="strand", "SYMBOL" = "SYMBOL")) %>% 
+#   distinct(.,.keep_all = TRUE) %>% 
+#   group_by(repClass) %>% 
+#   tally %>% 
+#   kable(., caption="Count of peaks by TE class; overlap> 50%; using one:one df") %>% 
+#   kable_paper("striped", full_width = TRUE) %>%
+#   kable_styling(full_width = FALSE, font_size = 14)
+#   
+just_TEdata %>% 
+  as.data.frame %>% 
+  distinct(., .keep_all = TRUE) %>% 
   group_by(repClass) %>% 
   tally %>% 
-  kable(., caption="Count of peaks by TE class; overlap> 50%; using one:one df") %>% 
+  kable(., caption="Count of peaks by TE class Just TE list; overlap> 50%; using one:one df") %>% 
   kable_paper("striped", full_width = TRUE) %>%
   kable_styling(full_width = FALSE, font_size = 14)
   
+
+
 testingol_col2 %>% 
   as.data.frame() %>% 
   group_by(peakid) %>% 
   tally %>% 
   summary()
+Unique_peak_overlap <- Col_fullDF_overlap %>% 
+  as.data.frame() %>% 
+  distinct(peakid)
+
+peak_overlap_50unique <- testingol_col2 %>% 
+  as.data.frame() %>% 
+  distinct(peakid)
 
 
+```
+Note that the counts of peaks total to more than the total number of peaks that overlap a TE because many peaks overlap multiple elements (generally the very small ones)
+
+A summary of numbers of peaks is below:
+* Total number of peaks = `r length(Collapsed_peaks$peakid)`
+* Total number of peaks overlapping at least 1 TE = `r length(Unique_peak_overlap$peakid)`
+* Total number of peaks overlapping by >50% TE length = `r length(peak_overlap_50unique$peakid)`
+
+Because I subset the data in a weird way,  I noticed a sub-setting error when tallying up the TEs by Class.  I was using the query hits and later joining the Peaks back to a dataframe, forgetting there were peaks that hit more than one dataframe.  The 2nd data frame above was the "new" way of sub-setting (keeping all metadata organized vs the sub-setting code I found on the internet).  Just to verify the numbers were the same, I ran the data using the old method and compared the numbers.  They are identical (3rd dataframe above) to each other.  Success!
+
+```{r another set of plots}
+scale_fill_repeat <-  function(...){
+    ggplot2:::manual_scale(
+        'fill', 
+        values = setNames(c( "#8DD3C7",
+                             "#FFFFB3",
+                             "#BEBADA" ,
+                             "#FB8072",
+                             "#80B1D3",
+                             "#FDB462",
+                             "#B3DE69",
+                             "#FCCDE5",
+                             "#D9D9D9",
+                             "#BC80BD",
+                             "#CCEBC5",
+                             "pink4",
+                             "cornflowerblue",
+                             "chocolate",
+                             "brown",
+                             "green",
+                             "yellow4",
+                             "purple",
+                             "darkorchid4",
+                             "coral4",
+                             "darkolivegreen4",
+                             "darkorange"), unique(repeatmasker$repClass)), 
+      ...
+    )
+}
+Col_fullDF_overlap %>%  
+  as.data.frame %>% 
+  ggplot(., aes(x=width, fill=repClass))+
+    geom_density(color="darkblue",aes(alpha = 0.5))+
+  theme_classic()+
+  ggtitle("density of width of all overlapping peaks in my data",subtitle = " limited x axis")+
+  coord_cartesian(xlim= c(0,750))+
+  scale_fill_repeat()
+  
+Col_fullDF_overlap %>%  
+  as.data.frame %>% 
+  dplyr::filter(repClass=="LINE"|repClass=="SINE"|repClass =="LTR"|repClass=="DNA"|repClass =="Retroposon") %>% 
+  ggplot(., aes(x=width, fill=repClass))+
+    geom_density(color="darkblue",aes(alpha = 0.5))+
+  theme_classic()+
+  ggtitle("density of width of all peak-TE overlaps",subtitle = " limited x axis")+
+  coord_cartesian(xlim= c(0,1550))+
+  scale_fill_repeat()
+
+
+Peak_TE_overlapbreakdown <- Col_TSS_data_gr %>% as.data.frame %>% 
+  dplyr::select(peakid) %>% 
+  left_join(.,(Col_fullDF_overlap %>% as.data.frame)) %>% 
+   mutate(TEstatus=if_else(is.na(repClass),"not_TE_peak","TE_peak")) %>% 
+   mutate(mrc=if_else(peakid %in% EAR_df$id, "EAR",
+                     if_else(peakid %in% ESR_df$id,"ESR",
+                             if_else(peakid %in% LR_df$id,"LR",
+                                     if_else(peakid %in% NR_df$id,"NR","not_mrc")))))
+  
+ 
 ```
 
 The data above shows the unique peak count of TE overlaps, followed by the table that includes only those TEs that overlap a peak by more than 50%.  The third summary shows how many peaks overlap more than one TE.  Most peaks only overlap 1  TE, but several peaks overlap 2 or more TEs.  
@@ -271,15 +399,17 @@ This next data is a breakdown of the number of TEs by response group.
 
 ```{r TE in all peaks}
 
-testingol_col2$width=width(testingol_col2)
+# testingol_col2$width_ol=width(testingol_col2)
+
 TE_mrc_status_list <- testingol_col2 %>% as.data.frame() %>% 
-  left_join(., (Col_fullDF_overlap %>% as.data.frame(.)), by =c("seqnames"="seqnames","start"="start","end"="end","peakid"="peakid", "NCBI_gene"="NCBI_gene", "ensembl_ID"="ensembl_ID","dist_to_NG"="dist_to_NG", "width"="width", "strand"="strand", "SYMBOL" = "SYMBOL")) %>% 
+  left_join(., (Col_fullDF_overlap %>% as.data.frame(.)), by =c("seqnames"="seqnames","start"="start","end"="end","peakid"="peakid", "NCBI_gene"="NCBI_gene", "ensembl_ID"="ensembl_ID","dist_to_NG"="dist_to_NG",  "strand"="strand", "SYMBOL" = "SYMBOL")) #%>% 
     dplyr::select(peakid,repName,repClass,repFamily,width) %>% 
-  mutate(TEstatus=if_else(is.na(repClass),"not_TE_peak","TE_peak")) %>% 
+  mutate(TEstatus=if_else(is.na(repClass),"not_TE_peak","TE_peak"))#%>% 
    mutate(mrc=if_else(peakid %in% EAR_df$id, "EAR",
                      if_else(peakid %in% ESR_df$id,"ESR",
                              if_else(peakid %in% LR_df$id,"LR",
-                                     if_else(peakid %in% NR_df$id,"NR","not_mrc"))))) 
+                                     if_else(peakid %in% NR_df$id,"NR","not_mrc")))))
+
 
 scale_fill_TE <-  function(...){
     ggplot2:::manual_scale(
@@ -290,10 +420,11 @@ scale_fill_TE <-  function(...){
 }
 
 # saveRDS(TE_mrc_status_list,"data/TE_info/TE_mrc_status_list.RDS")
-TE_ALL_count <- TE_mrc_status_list %>% 
+TE_ALL_count <- Peak_TE_overlapbreakdown %>% 
   dplyr::filter(TEstatus =="TE_peak") %>% 
   dplyr::filter(mrc!="not_mrc") %>% 
-  count
+  distinct(peakid) %>% 
+    count
 TE_mrc_status_list %>% 
    mutate(repClass=factor(repClass)) %>% 
   group_by(repClass) %>% 
@@ -324,6 +455,20 @@ TE_mrc_status_list %>%
   scale_fill_TE()+
   theme_classic()+
   ggtitle("Density of width of all TEs where a peak covers >50%")
+
+
+Peak_TE_overlapbreakdown%>% 
+  dplyr::filter(TEstatus=="TE_peak") %>% 
+  mutate(repClass=factor(repClass)) %>% 
+  ggplot(., aes(x=width))+
+    geom_density(aes(fill=repClass, alpha = 0.5))+
+  scale_fill_TE()+
+  theme_classic()+
+   # coord_cartesian(xlim= c(0,500))+
+  ggtitle("Distribution of all overlaps between TEs and my peaks")+
+  scale_fill_repeat()
+  
+
 ```
 ### TE by response cluster
 
@@ -1603,6 +1748,113 @@ TE_mrc_status_list %>%
 
 ```
 
+
+
+
+```{r breakdown by cluster}
+ 
+ggline_df <- Line_repeats %>% 
+  as.data.frame() %>% 
+ unite(peakid,seqnames:end, sep= ".") %>% 
+  dplyr::select(peakid,repName,repClass, repFamily,width) %>% 
+  mutate(TEstatus ="TE_peak", mrc="h.genome") %>% 
+    rbind(TE_mrc_status_list %>% dplyr::filter(repClass=="LINE") %>% mutate(mrc="all_peaks"))
+ 
+  
+
+ggsine_df <-
+  Sine_repeats %>% 
+  as.data.frame() %>% 
+ unite(peakid,seqnames:end, sep= ".") %>% 
+  dplyr::select(peakid,repName,repClass, repFamily,width) %>% 
+  mutate(TEstatus ="TE_peak", mrc="h.genome") %>% 
+    rbind(TE_mrc_status_list %>% dplyr::filter(repClass=="SINE") %>% mutate(mrc="all_peaks"))
+
+ggLTR_df <-LTR_repeats %>% 
+  as.data.frame() %>% 
+ unite(peakid,seqnames:end, sep= ".") %>% 
+  dplyr::select(peakid,repName,repClass, repFamily,width) %>% 
+  mutate(TEstatus ="TE_peak", mrc="h.genome")%>% 
+    rbind(TE_mrc_status_list %>% dplyr::filter(repClass=="LTR") %>% mutate(mrc="all_peaks"))
+
+
+ggDNA_df <-DNA_repeats %>% 
+  as.data.frame() %>% 
+ unite(peakid,seqnames:end, sep= ".") %>% 
+  dplyr::select(peakid,repName,repClass, repFamily,width) %>% 
+  mutate(TEstatus ="TE_peak", mrc="h.genome")%>% 
+    rbind(TE_mrc_status_list %>% dplyr::filter(repClass=="DNA") %>% mutate(mrc="all_peaks"))
+
+
+ggretroposon_df <-retroposon_repeats %>% 
+  as.data.frame() %>% 
+ unite(peakid,seqnames:end, sep= ".") %>% 
+  dplyr::select(peakid,repName,repClass, repFamily,width) %>% 
+  mutate(TEstatus ="TE_peak", mrc="h.genome")%>% 
+    rbind(TE_mrc_status_list %>% dplyr::filter(repClass=="Retroposon") %>% mutate(mrc="all_peaks"))
+
+
+TE_mrc_status_list %>% 
+  dplyr::filter(repClass=="LINE") %>% 
+  dplyr::filter(mrc != "not_mrc") %>% 
+  rbind(., ggline_df) %>% 
+  mutate(repFamily=factor(repFamily)) %>% 
+  mutate(mrc=factor(mrc, levels = c("EAR","ESR", "LR", "NR","all_peaks","h.genome"))) %>% 
+  ggplot(., aes(x=mrc, fill= repFamily))+
+  geom_bar(position="fill", col="black")+
+  theme_bw()+
+  ggtitle("LINE breakdown by MRC and Family")+
+  scale_fill_lines()
+TE_mrc_status_list %>% 
+  dplyr::filter(repClass=="SINE") %>% 
+  dplyr::filter(mrc != "not_mrc") %>% 
+   rbind(., ggsine_df) %>% 
+  mutate(repFamily=factor(repFamily)) %>% 
+  mutate(mrc=factor(mrc, levels = c("EAR","ESR", "LR", "NR","all_peaks","h.genome"))) %>% 
+  ggplot(., aes(x=mrc, fill= repFamily))+
+  geom_bar(position="fill", col="black")+
+  theme_bw()+
+  ggtitle("SINE breakdown by MRC and Family")+
+  scale_fill_sines()
+
+TE_mrc_status_list %>% 
+  dplyr::filter(repClass=="LTR") %>% 
+  dplyr::filter(mrc != "not_mrc") %>% 
+   rbind(., ggLTR_df) %>% 
+  mutate(repFamily=factor(repFamily)) %>% 
+  mutate(mrc=factor(mrc, levels = c("EAR","ESR", "LR", "NR","all_peaks","h.genome"))) %>% 
+  ggplot(., aes(x=mrc, fill= repFamily))+
+  geom_bar(position="fill", col="black")+
+  theme_bw()+
+  ggtitle("LTR breakdown by MRC and Family")+
+  scale_fill_LTRs()
+
+TE_mrc_status_list %>% 
+  dplyr::filter(repClass=="DNA") %>% 
+  dplyr::filter(mrc != "not_mrc") %>% 
+   rbind(., ggDNA_df) %>% 
+  mutate(repFamily=factor(repFamily)) %>% 
+  mutate(mrc=factor(mrc, levels = c("EAR","ESR", "LR", "NR","all_peaks","h.genome"))) %>% 
+  ggplot(., aes(x=mrc, fill= repFamily))+
+  geom_bar(position="fill", col="black")+
+  theme_classic()+
+  ggtitle("DNA breakdown by MRC and Family")+
+  scale_fill_DNAs()
+
+TE_mrc_status_list %>% 
+  dplyr::filter(repClass=="Retroposon") %>% 
+  dplyr::filter(mrc != "not_mrc") %>% 
+   rbind(., ggretroposon_df) %>% 
+  mutate(repName=factor(repName)) %>% 
+  mutate(mrc=factor(mrc, levels = c("EAR","ESR", "LR", "NR","all_peaks","h.genome"))) %>% 
+  ggplot(., aes(x=mrc, fill= repName))+
+  geom_bar(position="fill", col="black")+
+  theme_classic()+
+  ggtitle("Retroposon breakdown by MRC and Family")+
+  scale_fill_retroposons()
+    
+```
+
 ### CG islands! 
 ```{r cgisland load}
 
@@ -1648,15 +1900,40 @@ CUG_mrc_status_list %>%
   theme_bw()+
   ggtitle("CG islands by mrc", subtitle=paste(length(CUG_mrc_status_list$peakid )))
   
+CUG_mrc_status_list %>% 
+  mutate(mrc="full_list") %>% 
+  rbind(., CUG_mrc_status_list) %>% 
+   mutate(mrc=factor(mrc, levels=c("EAR","ESR","LR","NR","not-mrc","full_list"))) %>% 
+  dplyr::filter(mrc !="not_mrc") %>% 
+  group_by(cugstatus, mrc) %>% 
+  ggplot(., aes(x = mrc,  fill = cugstatus)) +
+  geom_bar(position="fill",color = "black")+
+  theme_bw()+
+  ggtitle("CG islands by mrc", subtitle=paste(length(CUG_mrc_status_list$peakid )))
+  
 
 CUG_mrc_status_list %>% 
    mutate(mrc=factor(mrc, levels=c("EAR","ESR","LR","NR","not-mrc"))) %>% 
  group_by(peakid) %>% 
   distinct( peakid,cugstatus,mrc) %>% 
- 
-  ungroup %>%
+   ungroup %>%
   summarise(pval = chisq.test(mrc, cugstatus)$p.value)
-                               
+      
+Col_fullDF_cug_overlap %>% 
+        as.data.frame %>% 
+        ggplot(., aes (x = width))+
+        geom_density(color="darkblue",fill="lightblue",aes(alpha = 0.5))+
+  theme_classic()+
+  ggtitle("density widths of CGisland overlap",subtitle = " limited x axis")+
+  coord_cartesian(xlim= c(0,2500))
+cpg_island_gr %>% 
+  as.data.frame() %>% 
+  ggplot(., aes (x = width))+
+        geom_density(aes(alpha = 0.5))+
+  theme_classic()+
+  ggtitle("density widths of CGislands ",subtitle = " limited x axis")#+
+  coord_cartesian(xlim= c(0,2500))
+  
 ```
 
 ##### This code is for making peak lists for GO and MEME analysis:
@@ -1691,7 +1968,91 @@ notTE_LR <- TE_mrc_status_list %>%
   dplyr::filter(mrc !="not_mrc") %>% 
   dplyr::filter(TEstatus=="not_TE_peak" & mrc =="LR")
 
-notTE_NR %>% 
+
   
+```
+### SNP
+```{r SNPnPeaknTE}
+
+gwas_ACtox <- readRDS("data/gwas_1_dataframe.RDS")  
+gwas_ARR <- readRDS("data/gwas_2_dataframe.RDS")
+gwas_ACresp <- readRDS("data/gwas_3_dataframe.RDS")
+gwas_HD <- readRDS("data/gwas_4_dataframe.RDS")
+gwas_HF <- readRDS("data/gwas_5_dataframe.RDS")
+gwas_CAD <- readRDS( "data/CAD_gwas_dataframe.RDS")
+gwas_MI <- readRDS("data/MI_gwas.RDS")
+
+gwas_snp_list <- gwas_ACtox %>%
+  distinct(SNPS,.keep_all = TRUE) %>% 
+  dplyr::select(CHR_ID, CHR_POS,SNPS) %>% 
+  mutate(gwas="ACtox") %>% 
+  rbind(gwas_ARR %>% 
+          distinct(SNPS,.keep_all = TRUE) %>%
+          dplyr::select(CHR_ID, CHR_POS,SNPS) %>% 
+          mutate(gwas="ARR")) %>% 
+  rbind(gwas_ACresp %>% 
+          distinct(SNPS,.keep_all = TRUE) %>%
+          dplyr::select(CHR_ID, CHR_POS,SNPS) %>% 
+          mutate(gwas="ACresp")) %>% 
+  rbind(gwas_HD %>% 
+          distinct(SNPS,.keep_all = TRUE) %>%
+          dplyr::select(CHR_ID, CHR_POS,SNPS) %>% 
+          mutate(gwas="HD")) %>% 
+  rbind(gwas_HF %>% 
+          distinct(SNPS,.keep_all = TRUE) %>%
+          dplyr::select(CHR_ID, CHR_POS,SNPS) %>% 
+          mutate(gwas="HF")) %>% 
+  rbind(gwas_CAD %>% 
+          distinct(SNPS,.keep_all = TRUE) %>%
+          dplyr::select(CHR_ID, CHR_POS,SNPS) %>% 
+          mutate(gwas="CAD")) %>% 
+  rbind(gwas_MI %>% 
+          distinct(SNPS,.keep_all = TRUE) %>%
+          dplyr::select(CHR_ID, CHR_POS,SNPS) %>% 
+          mutate(gwas="MI"))
+
+gwas_snp_gr <- gwas_snp_list %>% 
+   mutate(CHR_ID=as.numeric(CHR_ID), CHR_POS=as.numeric(CHR_POS)) %>% 
+  na.omit() %>% 
+   mutate(start=CHR_POS, end=CHR_POS, chr=paste0("chr",CHR_ID)) %>% 
+  GRanges()
+
+findOverlaps(gwas_snp_gr, all_TEs_gr)
+test <- join_overlap_intersect(gwas_snp_gr, all_TEs_gr) %>% GRanges
+##3413
+
+test_new <-  test %>% 
+   as.data.frame %>% 
+   dplyr::select (seqnames:gwas,repName:repFamily) %>% 
+   GRanges()
+peaks <-
+  Collapsed_peaks %>% 
+    dplyr::select(seqnames:peakid) %>% 
+    GRanges()
+peak_test <- join_overlap_intersect(test_new, peaks)
+
+peak_test
+
+Col_fullDF_overlap %>% 
+  as.data.frame %>% 
+  dplyr::select(seqnames:peakid,repName:repFamily) %>% 
+  GRanges() %>% 
+  join_overlap_intersect(.,gwas_snp_gr)
+
+test2 <- join_overlap_intersect(peaks, gwas_snp_gr) 
+  
+test2 %>% 
+   join_overlap_intersect(., all_TEs_gr) %>% 
+  as.data.frame %>% 
+  dplyr::select(seqnames:gwas,repName:repFamily) %>% 
+  mutate(mrc=if_else(peakid %in% EAR_df$id, "EAR",
+                     if_else(peakid %in% ESR_df$id,"ESR",
+                             if_else(peakid %in% LR_df$id,"LR",
+                                     if_else(peakid %in% NR_df$id,"NR","not_mrc"))))) %>% 
+  # distinct(peakid, .keep_all = TRUE) %>% 
+  group_by(gwas,mrc) %>% 
+  tally
+
+
 ```
 
