@@ -514,6 +514,54 @@ EAR_cREs %>%
   xlim(-4,4)
 
 ```
+##### Combined dataframes
+
+```{r EAR_combo}
+EAR_combo <- EAR_cREs %>%
+  as.data.frame() %>%
+  dplyr::filter(blockCount=="CTCF-only,CTCF-bound"|blockCount =="PLS"|blockCount =="PLS,CTCF-bound"|blockCount =="dELS"|blockCount =="dELS,CTCF-bound"|blockCount =="pELS"|blockCount =="pELS,CTCF-bound") %>% 
+  mutate(type=if_else(blockCount=="CTCF-only,CTCF-bound","CTCF-only",
+                      if_else(grepl("PLS",blockCount),"Promoter-like",
+                              if_else(grepl("pELS",blockCount),"Proximal enhancer-like", "Distal enhancer-like"),blockCount))) %>% 
+  left_join(., median_24_lfc, by =c("peakid"="peak")) %>% 
+  na.omit() %>% 
+  dplyr::select(median,peakid,type) %>%
+  distinct() %>% 
+  rbind(EAR_24h_peak_list) %>% 
+  rbind(not_EAR_24h_cREs) %>% 
+  mutate(direction=if_else(median>0,"open","closed")) %>% 
+  #
+  mutate(direction=factor(direction, levels=c("open","closed"))) %>% 
+  group_by(type) %>% 
+  summarize(mead=median(median),min_val=min(median),max_val=max(median)) %>% 
+  mutate(type=if_else(type=="all_EAR","all",type)) %>% 
+  mutate(mrc_color="EAR") %>% 
+  mutate(time="24_hrs") %>% 
+  rbind(EAR_cREs %>%
+  as.data.frame() %>%
+  dplyr::filter(blockCount=="CTCF-only,CTCF-bound"|blockCount =="PLS"|blockCount =="PLS,CTCF-bound"|blockCount =="dELS"|blockCount =="dELS,CTCF-bound"|blockCount =="pELS"|blockCount =="pELS,CTCF-bound") %>% 
+  mutate(type=if_else(blockCount=="CTCF-only,CTCF-bound","CTCF-only",
+                      if_else(grepl("PLS",blockCount),"Promoter-like",
+                              if_else(grepl("pELS",blockCount),"Proximal enhancer-like", "Distal enhancer-like"),blockCount))) %>% 
+  left_join(., median_3_lfc, by =c("peakid"="peak")) %>% 
+  na.omit() %>% 
+  dplyr::select(median,peakid,type) %>%
+  distinct() %>% 
+  rbind(EAR_3h_peak_list) %>% 
+  rbind(not_EAR_3h_cREs) %>% 
+  mutate(direction=if_else(median>0,"open","closed")) %>% 
+  #
+  mutate(direction=factor(direction, levels=c("open","closed"))) %>% 
+  group_by(type) %>% 
+  summarize(mead=median(median),min_val=min(median),max_val=max(median)) %>% 
+  mutate(type=if_else(type=="all_EAR","all",type)) %>% 
+  mutate(mrc_color="EAR") %>% 
+  mutate(time="3_hrs"))
+ 
+```
+
+
+
 ##### GO analysis of EAR peaks
 
 ```{r peak lists for go}
@@ -745,6 +793,52 @@ ESR_24h_peaks <- ESR_cREs %>%
   left_join(., (col_ng_peak %>% dplyr::select(seqnames:peakid)), by=c("peakid"="peakid"))
 
 ```
+Combined dataframes
+
+```{r ESR_combo}
+ESR_combo <- ESR_cREs %>%
+  as.data.frame() %>%
+  dplyr::filter(blockCount=="CTCF-only,CTCF-bound"|blockCount =="PLS"|blockCount =="PLS,CTCF-bound"|blockCount =="dELS"|blockCount =="dELS,CTCF-bound"|blockCount =="pELS"|blockCount =="pELS,CTCF-bound") %>% 
+  mutate(type=if_else(blockCount=="CTCF-only,CTCF-bound","CTCF-only",
+                      if_else(grepl("PLS",blockCount),"Promoter-like",
+                              if_else(grepl("pELS",blockCount),"Proximal enhancer-like", "Distal enhancer-like"),blockCount))) %>% 
+  left_join(., median_24_lfc, by =c("peakid"="peak")) %>% 
+  na.omit() %>% 
+  dplyr::select(median,peakid,type) %>%
+  distinct() %>% 
+  rbind(ESR_24h_peak_list) %>% 
+  rbind(not_ESR_24h_cREs) %>% 
+  mutate(direction=if_else(median>0,"open","closed")) %>% 
+  #
+  mutate(direction=factor(direction, levels=c("open","closed"))) %>% 
+  group_by(type) %>% 
+  summarize(mead=median(median),min_val=min(median),max_val=max(median)) %>% 
+  mutate(type=if_else(type=="all_ESR","all",type)) %>% 
+  mutate(mrc_color="ESR") %>% 
+  mutate(time="24_hrs") %>% 
+  rbind(ESR_cREs %>%
+  as.data.frame() %>%
+  dplyr::filter(blockCount=="CTCF-only,CTCF-bound"|blockCount =="PLS"|blockCount =="PLS,CTCF-bound"|blockCount =="dELS"|blockCount =="dELS,CTCF-bound"|blockCount =="pELS"|blockCount =="pELS,CTCF-bound") %>% 
+  mutate(type=if_else(blockCount=="CTCF-only,CTCF-bound","CTCF-only",
+                      if_else(grepl("PLS",blockCount),"Promoter-like",
+                              if_else(grepl("pELS",blockCount),"Proximal enhancer-like", "Distal enhancer-like"),blockCount))) %>% 
+  left_join(., median_3_lfc, by =c("peakid"="peak")) %>% 
+  na.omit() %>% 
+  dplyr::select(median,peakid,type) %>%
+  distinct() %>% 
+  rbind(ESR_3h_peak_list) %>% 
+  rbind(not_ESR_3h_cREs) %>% 
+  mutate(direction=if_else(median>0,"open","closed")) %>% 
+  #
+  mutate(direction=factor(direction, levels=c("open","closed"))) %>% 
+  group_by(type) %>% 
+  summarize(mead=median(median),min_val=min(median),max_val=max(median)) %>% 
+  mutate(type=if_else(type=="all_ESR","all",type)) %>% 
+  mutate(mrc_color="ESR") %>% 
+  mutate(time="3_hrs"))
+
+```
+
 ##### ESR GO analysis
 
 resp
@@ -953,6 +1047,50 @@ LR_24h_peaks <- LR_cREs %>%
 
 
 ```
+##### Combined dataframes
+```{r LR_combo}
+LR_combo <- LR_cREs %>%
+  as.data.frame() %>%
+  dplyr::filter(blockCount=="CTCF-only,CTCF-bound"|blockCount =="PLS"|blockCount =="PLS,CTCF-bound"|blockCount =="dELS"|blockCount =="dELS,CTCF-bound"|blockCount =="pELS"|blockCount =="pELS,CTCF-bound") %>% 
+  mutate(type=if_else(blockCount=="CTCF-only,CTCF-bound","CTCF-only",
+                      if_else(grepl("PLS",blockCount),"Promoter-like",
+                              if_else(grepl("pELS",blockCount),"Proximal enhancer-like", "Distal enhancer-like"),blockCount))) %>% 
+  left_join(., median_24_lfc, by =c("peakid"="peak")) %>% 
+  na.omit() %>% 
+  dplyr::select(median,peakid,type) %>%
+  distinct() %>% 
+  rbind(LR_24h_peak_list) %>% 
+  rbind(not_LR_24h_cREs) %>% 
+  mutate(direction=if_else(median>0,"open","closed")) %>% 
+  #
+  mutate(direction=factor(direction, levels=c("open","closed"))) %>% 
+  group_by(type) %>% 
+  summarize(mead=median(median),min_val=min(median),max_val=max(median)) %>% 
+  mutate(type=if_else(type=="all_LR","all",type)) %>% 
+  mutate(mrc_color="LR") %>% 
+  mutate(time="24_hrs") %>% 
+  rbind(LR_cREs %>%
+  as.data.frame() %>%
+  dplyr::filter(blockCount=="CTCF-only,CTCF-bound"|blockCount =="PLS"|blockCount =="PLS,CTCF-bound"|blockCount =="dELS"|blockCount =="dELS,CTCF-bound"|blockCount =="pELS"|blockCount =="pELS,CTCF-bound") %>% 
+  mutate(type=if_else(blockCount=="CTCF-only,CTCF-bound","CTCF-only",
+                      if_else(grepl("PLS",blockCount),"Promoter-like",
+                              if_else(grepl("pELS",blockCount),"Proximal enhancer-like", "Distal enhancer-like"),blockCount))) %>% 
+  left_join(., median_3_lfc, by =c("peakid"="peak")) %>% 
+  na.omit() %>% 
+  dplyr::select(median,peakid,type) %>%
+  distinct() %>% 
+  rbind(LR_3h_peak_list) %>% 
+  rbind(not_LR_3h_cREs) %>% 
+  mutate(direction=if_else(median>0,"open","closed")) %>% 
+  #
+  mutate(direction=factor(direction, levels=c("open","closed"))) %>% 
+  group_by(type) %>% 
+  summarize(mead=median(median),min_val=min(median),max_val=max(median)) %>% 
+  mutate(type=if_else(type=="all_LR","all",type)) %>% 
+  mutate(mrc_color="LR") %>% 
+  mutate(time="3_hrs"))
+ 
+```
 
 
 ##### LR GO analysis
@@ -1068,9 +1206,11 @@ LR_not_cRE_table %>%
 NR_24h_peak_list <-  col_ng_peak %>% 
   distinct(peakid) %>% 
   dplyr::filter(peakid %in% NR_df$id) %>% 
-  mutate(type="all_NR") %>% 
+  mutate(type = "all_NR") %>% 
   left_join(.,(median_24_lfc %>% 
-                 dplyr::select(peak,median)),by = c("peakid"="peak"))
+                 dplyr::select(peak,median)),by = c("peakid"="peak")) %>% 
+  na.omit() 
+
 NR_cRE_peak_list <- NR_cREs %>%
   as.data.frame() %>%
   distinct(peakid)
@@ -1087,7 +1227,8 @@ NR_3h_peak_list <-  col_ng_peak %>%
   dplyr::filter(peakid %in% NR_df$id) %>% 
   mutate(type="all_NR") %>% 
   left_join(.,(median_3_lfc %>% 
-                 dplyr::select(peak,median)),by = c("peakid"="peak"))
+                 dplyr::select(peak,median)),by = c("peakid"="peak"))%>% 
+  na.omit() 
 
 not_NR_3h_cREs <-   median_3_lfc %>%  
   dplyr::filter(peak %in% NR_df$id) %>% 
@@ -1161,6 +1302,47 @@ NR_24h_peaks <- NR_cREs %>%
 left_join(., (col_ng_peak %>% dplyr::select(seqnames:peakid)), by=c("peakid"="peakid"))
 
 ```
+##### Combined dataframes
+
+
+```{r NR_combo}
+NR_combo <- NR_cREs %>%
+  as.data.frame() %>%
+  dplyr::filter(blockCount=="CTCF-only,CTCF-bound"|blockCount =="PLS"|blockCount =="PLS,CTCF-bound"|blockCount =="dELS"|blockCount =="dELS,CTCF-bound"|blockCount =="pELS"|blockCount =="pELS,CTCF-bound") %>% 
+  mutate(type=if_else(blockCount=="CTCF-only,CTCF-bound","CTCF-only",
+                      if_else(grepl("PLS",blockCount),"Promoter-like",
+                              if_else(grepl("pELS",blockCount),"Proximal enhancer-like", "Distal enhancer-like"),blockCount))) %>% 
+  left_join(., median_24_lfc, by =c("peakid"="peak")) %>% 
+  na.omit() %>% 
+  dplyr::select(median,peakid,type) %>%
+  distinct() %>% 
+   rbind(NR_24h_peak_list) %>% 
+  rbind(not_NR_24h_cREs) %>% 
+  group_by(type) %>%  mutate(type=if_else(type=="all_NR","all",type)) %>% 
+  summarize(mead=median(median),min_val=min(median),max_val=max(median)) %>% 
+ 
+  mutate(mrc_color="NR") %>% 
+  mutate(time="24_hrs") %>% 
+  rbind(NR_cREs %>%
+  as.data.frame() %>%
+  dplyr::filter(blockCount=="CTCF-only,CTCF-bound"|blockCount =="PLS"|blockCount =="PLS,CTCF-bound"|blockCount =="dELS"|blockCount =="dELS,CTCF-bound"|blockCount =="pELS"|blockCount =="pELS,CTCF-bound") %>% 
+  mutate(type=if_else(blockCount=="CTCF-only,CTCF-bound","CTCF-only",
+                      if_else(grepl("PLS",blockCount),"Promoter-like",
+                              if_else(grepl("pELS",blockCount),"Proximal enhancer-like", "Distal enhancer-like"),blockCount))) %>% 
+  left_join(., median_3_lfc, by =c("peakid"="peak")) %>% 
+  na.omit() %>% 
+  dplyr::select(median,peakid,type) %>%
+  distinct() %>% 
+  rbind(NR_3h_peak_list) %>% 
+  rbind(not_NR_3h_cREs) %>% 
+  group_by(type) %>% 
+  summarize(mead=median(median),min_val=min(median),max_val=max(median)) %>% 
+  mutate(type=if_else(type=="all_NR","all",type)) %>% 
+  mutate(mrc_color="NR") %>% 
+  mutate(time="3_hrs"))
+ 
+```
+
 
 
 ##### NR GO analysis
@@ -1278,50 +1460,33 @@ NR_not_cRE_table %>%
 | EAR     | `r length(unique(EAR_cREs$peakid))` | `r length(unique(EAR_df$id))-length(unique(EAR_cREs$peakid))` |
 
 
+### summarizing plots:
 
-```{r making enhancer NG sets}
-# EAR_20k_peaks_gr <- GRanges(EAR_peak_list_20k)
-# ESR_20k_peaks_gr <- GRanges(ESR_peak_list_20k)
-# LR_20k_peaks_gr <- GRanges(LR_peak_list_20k)
-# NR_20k_peaks_gr <- GRanges(NR_peak_list_20k)
-# 
-# EAR_enh_peaks_20k <- as.data.frame(subsetByOverlaps(EAR_20k_peaks_gr,enhancers_HLV_46F))
-# ESR_enh_peaks_20k <- as.data.frame(subsetByOverlaps(ESR_20k_peaks_gr,enhancers_HLV_46F))
-# LR_enh_peaks_20k <- as.data.frame(subsetByOverlaps(LR_20k_peaks_gr,enhancers_HLV_46F))
-# NR_enh_peaks_20k <- as.data.frame(subsetByOverlaps(NR_20k_peaks_gr,enhancers_HLV_46F))
-# saveRDS(EAR_enh_peaks_20k,"data/enhancerdata/EAR_enh_peaks_20k.RDS")
-# saveRDS(ESR_enh_peaks_20k,"data/enhancerdata/ESR_enh_peaks_20k.RDS")
-# saveRDS(LR_enh_peaks_20k,"data/enhancerdata/LR_enh_peaks_20k.RDS")
-# saveRDS(NR_enh_peaks_20k,"data/enhancerdata/NR_enh_peaks_20k.RDS")
-### making a set that is with all peaks in motif
-# EAR_enh_peaks_20k <- subsetByOverlaps(NR_df_gr,enhancers_HLV_46F)
+```{r comboplots, fig.width=12, fig.height=8}
+ggplot_combo_df <- rbind(EAR_combo,ESR_combo,LR_combo, NR_combo)
+
+ggplot_combo_df %>% 
+  mutate(time=factor(time, levels= c("3_hrs", "24_hrs"), labels=c("3 hours","24 hours)"))) %>% 
+  mutate(type=factor(type, levels = c("Promoter-like","Proximal enhancer-like","Distal enhancer-like","CTCF-only","not_cRE_peaks","all"))) %>% 
+  ggplot(., aes(y=type, x=mead, color=mrc_color))+
+  geom_pointrange(aes(xmin=min_val, xmax=max_val),position=position_dodge(width =.7),  width=.3,size=0.5,shape=15, fatten=8)+
+  geom_vline(xintercept = 0, linetype=2)+
+  facet_wrap(~time) + 
+  theme_classic()
 
 ```
 
 
-###### noodling around
-```{r crazy enhancergwas, eval=FALSE, include=FALSE}
 
-fullOL_medtable_3h <- fullOL %>% 
-as.data.frame() %>%
-  dplyr::filter(blockCount=="CTCF-only,CTCF-bound"|blockCount =="PLS"|blockCount =="PLS,CTCF-bound"|blockCount =="dELS"|blockCount =="dELS,CTCF-bound"|blockCount =="pELS"|blockCount =="pELS,CTCF-bound") %>% 
-  mutate(type=if_else(blockCount=="CTCF-only,CTCF-bound","CTCF-only",
-                      if_else(grepl("PLS",blockCount),"Promoter-like",
-                              if_else(grepl("pELS",blockCount),"Proximal enhancer-like", "Distal enhancer-like"),blockCount))) %>% 
-left_join(., median_3_lfc, by =c("id"="peak")) %>% 
-  dplyr::select(id, annotation, type, median) %>% 
-  mutate(status=if_else(median>=0,"open","closed")) 
 
-fullOL_medtable_3h %>% 
- mutate(status=factor(status, levels=c("open","closed"))) %>% 
-  ggplot(., aes(y=type, x=median))+
-  geom_boxplot(aes(fill=status)) +
-  scale_fill_discrete()+
-  ggtitle("All peaks and median logFC")+
-  # facet_wrap(~direction)+
-  theme_bw()
 
-```
+
+
+
+
+
+
+
 
 ### Top2b
 

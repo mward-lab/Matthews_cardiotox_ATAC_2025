@@ -48,6 +48,48 @@ library(ggpubr)
 library(biomaRt)
 
 ```
+
+
+```{r table function}
+GO_KEGG_analysis <- function(df,type, setp_value=1){
+a <- deparse(substitute(df))
+  df_nomtable <-  df$result %>% 
+  dplyr::select(c(source, term_id,
+                  term_name,intersection_size, 
+                   term_size, p_value))
+table <- df_nomtable %>%
+  dplyr::filter(source==type) %>% 
+  dplyr::filter(p_value < setp_value) %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(.,caption = paste0("Significant (p < ",setp_value," ) ",type," terms found in ",a," neargenes")) %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
+plot <- df_nomtable %>%
+  filter(source==type) %>% 
+  slice_head(n=10) %>% 
+  mutate(log10_p=(-log(p_value, base=10))) %>% 
+  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
+    geom_col()+
+  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
+  theme_bw()+
+  ylab("")+
+  xlab(paste0("-log10 p-value"))+
+  guides(fill="none")+
+  theme(axis.text.y = element_text(color="black"))+
+  ggtitle(paste0("(p < ",setp_value," ) ",type," terms found in\n ",a," neargenes"))
+
+
+print(table)
+print(plot)
+}
+```
+
 ##### data loading
 ```{r loading data}
 peakAnnoList_n45_motif <- readRDS("data/peakAnnoList_n45_motif.RDS")
@@ -60,22 +102,6 @@ LR_df <- as.data.frame(peakAnnoList_n45_motif$LR_n45_gr)
 NR_df <- as.data.frame(peakAnnoList_n45_motif$NR_n45_gr)
 
 toplist_ATAC <- readRDS("data/toplist_n45.RDS")
-
-# DOX24h_peaks_hypo_list  <- toplist_ATAC %>% 
-#   dplyr::filter(trt=="DOX" & time=="24 hours" & logFC<0) %>% 
-#   dplyr::select(trt:logFC)
-# 
-# DOX24h_peaks_hyper_list <- toplist_ATAC %>% 
-#   dplyr::filter(trt=="DOX" & time=="24 hours" & logFC>0) %>% 
-#   dplyr::select(trt:logFC)
-# 
-# DOX3h_peaks_hypo_list  <- toplist_ATAC %>% 
-#   dplyr::filter(trt=="DOX" & time=="3 hours" & logFC<0) %>% 
-#   dplyr::select(trt:logFC)
-# 
-# DOX3h_peaks_hyper_list <- toplist_ATAC %>% 
-#   dplyr::filter(trt=="DOX" & time=="3 hours" & logFC>0) %>% 
-#   dplyr::select(trt:logFC)
 
 median_24_lfc <- readRDS("data/median_24_lfc.RDS") %>% ungroup()
 median_3_lfc <- readRDS("data/median_3_lfc.RDS") %>% ungroup()
@@ -93,9 +119,27 @@ hyper_24med <- median_24_lfc %>%
 hypo_24med <- median_24_lfc %>% 
   dplyr::filter(median < 0)
 
-# exp_neargene_table <- read_delim("data/n45_bedfiles/exp_neargene_table.tsv", 
-#     delim = "\t", escape_double = FALSE, 
-#     trim_ws = TRUE)
+medA <- median_3_lfc %>% 
+  left_join(median_24_lfc, by=c("peak"="peak")) %>% 
+  dplyr::rename("3_hours"="median.x", "24_hours"="median.y") %>% 
+  dplyr::filter(`3_hours`>0 & `24_hours`>0)
+
+medB <- median_3_lfc %>% 
+  left_join(median_24_lfc, by=c("peak"="peak")) %>% 
+  dplyr::rename("3_hours"="median.x", "24_hours"="median.y") %>% 
+  dplyr::filter(`3_hours`<0 & `24_hours`<0)
+
+medC <- median_3_lfc %>% 
+  left_join(median_24_lfc, by=c("peak"="peak")) %>% 
+  dplyr::rename("3_hours"="median.x", "24_hours"="median.y") %>% 
+  dplyr::filter(`3_hours`>0 & `24_hours`<0)
+
+medD <- median_3_lfc %>% 
+  left_join(median_24_lfc, by=c("peak"="peak")) %>% 
+  dplyr::rename("3_hours"="median.x", "24_hours"="median.y") %>% 
+  dplyr::filter(`3_hours`<0 & `24_hours`>0)
+
+
 background_genes <- read.csv("data/other_papers/backgroundRNAlist.csv", row.names = 1)
 
 
@@ -117,6 +161,34 @@ EAR_NG_3hhyper <- TSS_NG_data %>%
 ESR_NG_3hhyper <- TSS_NG_data %>% 
     dplyr::filter(peakid %in% ESR_df$id) %>%
    dplyr::filter(peakid %in% hyper_3med$peak) %>% 
+ dplyr::filter(dist_to_NG<20000 & dist_to_NG>-20000) %>% 
+ dplyr::select(entrezgene_id) %>% 
+  distinct()
+
+ESR_NG_A<- TSS_NG_data %>% 
+    dplyr::filter(peakid %in% ESR_df$id) %>%
+   dplyr::filter(peakid %in% medA$peak) %>% 
+ dplyr::filter(dist_to_NG<20000 & dist_to_NG>-20000) %>% 
+ dplyr::select(entrezgene_id) %>% 
+  distinct()
+
+ESR_NG_B<- TSS_NG_data %>% 
+    dplyr::filter(peakid %in% ESR_df$id) %>%
+   dplyr::filter(peakid %in% medB$peak) %>% 
+ dplyr::filter(dist_to_NG<20000 & dist_to_NG>-20000) %>% 
+ dplyr::select(entrezgene_id) %>% 
+  distinct()
+
+ESR_NG_C<- TSS_NG_data %>% 
+    dplyr::filter(peakid %in% ESR_df$id) %>%
+   dplyr::filter(peakid %in% medC$peak) %>% 
+ dplyr::filter(dist_to_NG<20000 & dist_to_NG>-20000) %>% 
+ dplyr::select(entrezgene_id) %>% 
+  distinct()
+
+ESR_NG_D<- TSS_NG_data %>% 
+    dplyr::filter(peakid %in% ESR_df$id) %>%
+   dplyr::filter(peakid %in% medD$peak) %>% 
  dplyr::filter(dist_to_NG<20000 & dist_to_NG>-20000) %>% 
  dplyr::select(entrezgene_id) %>% 
   distinct()
@@ -261,6 +333,34 @@ ESR_NG_24hhyper_2k <- TSS_NG_data %>%
  dplyr::select(entrezgene_id) %>% 
   distinct()
 
+ESR_NG_A_2k<- TSS_NG_data %>% 
+    dplyr::filter(peakid %in% ESR_df$id) %>%
+   dplyr::filter(peakid %in% medA$peak) %>% 
+ dplyr::filter(dist_to_NG<2000 & dist_to_NG>-2000) %>% 
+ dplyr::select(entrezgene_id) %>% 
+  distinct()
+
+ESR_NG_B_2k<- TSS_NG_data %>% 
+    dplyr::filter(peakid %in% ESR_df$id) %>%
+   dplyr::filter(peakid %in% medB$peak) %>% 
+ dplyr::filter(dist_to_NG<2000 & dist_to_NG>-2000) %>% 
+ dplyr::select(entrezgene_id) %>% 
+  distinct()
+
+ESR_NG_C_2k<- TSS_NG_data %>% 
+    dplyr::filter(peakid %in% ESR_df$id) %>%
+   dplyr::filter(peakid %in% medC$peak) %>% 
+ dplyr::filter(dist_to_NG<2000 & dist_to_NG>-2000) %>% 
+ dplyr::select(entrezgene_id) %>% 
+  distinct()
+
+ESR_NG_D_2k<- TSS_NG_data %>% 
+    dplyr::filter(peakid %in% ESR_df$id) %>%
+   dplyr::filter(peakid %in% medD$peak) %>% 
+ dplyr::filter(dist_to_NG<2000 & dist_to_NG>-2000) %>% 
+ dplyr::select(entrezgene_id) %>% 
+  distinct()
+
 LR_NG_24hhyper_2k <- TSS_NG_data %>% 
     dplyr::filter(peakid %in% LR_df$id) %>%
   dplyr::filter(peakid %in% hyper_24med$peak) %>%
@@ -345,78 +445,31 @@ This is an updated page of GO/KEGG analysis based on previous analysis (link pen
 
 ```{r GO_EAR 3hr}
 
-EAR3h_hyper_nomtable <- readRDS("data/GO_KEGG_analysis/final_analysis/EAR_3h_hyper_resgenes.RDS")
-EAR3h_hypo_nomtable <- readRDS("data/GO_KEGG_analysis/final_analysis/EAR_3h_hypo_resgenes.RDS")
+EAR3h_hyper <- readRDS("data/GO_KEGG_analysis/final_analysis/EAR_3h_hyper_resgenes.RDS")
+EAR3h_hypo <- readRDS("data/GO_KEGG_analysis/final_analysis/EAR_3h_hypo_resgenes.RDS")
 
-# EAR_3h_hyper_resgenes <- gost(query = EAR_NG_3hhyper$entrezgene_id,
-#                     organism = "hsapiens",
-#                     significant = FALSE,
-#                     ordered_query = FALSE,
-#                     domain_scope = "custom",
-#                     measure_underrepresentation = FALSE,
-#                     evcodes = FALSE,
-#                     user_threshold = 0.05,
-#                     correction_method = c("fdr"),
-#                     custom_bg = background_genes$ENTREZID,
-#                     sources=c("GO:BP","KEGG"))
-# saveRDS(EAR_3h_hyper_resgenes,"data/GO_KEGG_analysis/final_analysis/EAR_3h_hyper_resgenes.RDS")
 
-EAR3h_hyper_nomtable <-  EAR3h_hyper_nomtable$result %>% 
-  dplyr::select(c(source, term_id,
-                  term_name,intersection_size, 
-                   term_size, p_value))# %>% 
-EAR3h_hypo_nomtable <-  EAR3h_hypo_nomtable$result %>% 
-  dplyr::select(c(source, term_id,
-                  term_name,intersection_size, 
-                   term_size, p_value))
+GO_KEGG_analysis(EAR3h_hyper,"GO:BP")+
+  geom_col(fill="#F8766D")
+GO_KEGG_analysis(EAR3h_hypo,"GO:BP")+
+  geom_col(fill="#F8766D")
+GO_KEGG_analysis(EAR3h_hyper,"KEGG")+
+  geom_col(fill="#F8766D")
+GO_KEGG_analysis(EAR3h_hypo,"KEGG")+
+  geom_col(fill="#F8766D")
+ESR_3h_D_resgenes <- gost(query = ESR_NG_D$entrezgene_id,
+                    organism = "hsapiens",
+                    significant = FALSE,
+                    ordered_query = FALSE,
+                    domain_scope = "custom",
+                    measure_underrepresentation = FALSE,
+                    evcodes = FALSE,
+                    user_threshold = 0.05,
+                    correction_method = c("fdr"),
+                    custom_bg = background_genes$ENTREZID,
+                    sources=c("GO:BP","KEGG"))
+saveRDS(ESR_3h_D_resgenes,"data/GO_KEGG_analysis/final_analysis/ESR_3h_D_resgenes.RDS")
 
-EAR3h_hyper_nomtable %>%
-  filter(source=="GO:BP", p_value < 0.05) %>% 
-  mutate_at(.vars = 6, .funs = scientific_format()) %>%
-  kable(.,caption = " Significant (p<0.05) GO:BP terms found in EAR-hyper accesible neargenes" ) %>%
-  kable_paper("striped", full_width = FALSE) %>%
-  kable_styling(
-    full_width = FALSE,
-    position = "left",
-    bootstrap_options = c("striped", "hover")
-  ) %>%
-  scroll_box(width = "100%", height = "400px")
-
-EAR3h_hyper_nomtable %>%
-  filter(source=="KEGG", p_value < 0.05) %>%
-  mutate_at(.vars = 6, .funs = scientific_format()) %>%
-  kable(., caption = "Significant (p<0.05) KEGG terms found in EAR-hyper accesible neargenes") %>%
-  kable_paper("striped", full_width = FALSE) %>%
-  kable_styling(
-    full_width = FALSE,
-    position = "left",
-    bootstrap_options = c("striped", "hover")
-  ) %>%
-  scroll_box(width = "100%", height = "400px")
-
-EAR3h_hypo_nomtable %>%
-   filter(source=="GO:BP", p_value < 0.05) %>% 
-  mutate_at(.vars = 6, .funs = scientific_format()) %>%
-  kable(.,caption = " Significant (p<0.05) GO:BP terms found in EAR-hypo accesible neargenes" ) %>%
-  kable_paper("striped", full_width = FALSE) %>%
-  kable_styling(
-    full_width = FALSE,
-    position = "left",
-    bootstrap_options = c("striped", "hover")
-  ) %>%
-  scroll_box(width = "100%", height = "400px")
-
-EAR3h_hypo_nomtable %>%
-  filter(source=="KEGG", p_value < 0.05) %>%
-  mutate_at(.vars = 6, .funs = scientific_format()) %>%
-  kable(., caption = "Significant (p<0.05) KEGG terms found in EAR-hypo accesible neargenes") %>%
-  kable_paper("striped", full_width = FALSE) %>%
-  kable_styling(
-    full_width = FALSE,
-    position = "left",
-    bootstrap_options = c("striped", "hover")
-  ) %>%
-  scroll_box(width = "100%", height = "400px")
 
 
 ```
@@ -426,67 +479,16 @@ EAR3h_hypo_nomtable %>%
 
 ```{r GO_EAR 3hr_2k}
 
-EAR3h_hyper_nomtable_2k <- readRDS("data/GO_KEGG_analysis/final_analysis/EAR_3h_hyper_resgenes_2k.RDS")
-EAR3h_hypo_nomtable_2k <- readRDS("data/GO_KEGG_analysis/final_analysis/EAR_3h_hypo_resgenes_2k.RDS")
-
-
-EAR3h_hyper_nomtable_2k <-  EAR3h_hyper_nomtable_2k$result %>% 
-  dplyr::select(c(source, term_id,
-                  term_name,intersection_size, 
-                   term_size, p_value))# %>% 
-EAR3h_hypo_nomtable_2k <-  EAR3h_hypo_nomtable_2k$result %>% 
-  dplyr::select(c(source, term_id,
-                  term_name,intersection_size, 
-                   term_size, p_value))
-
-EAR3h_hyper_nomtable_2k %>%
-  filter(source=="GO:BP", p_value < 0.05) %>% 
-  mutate_at(.vars = 6, .funs = scientific_format()) %>%
-  kable(.,caption = " Significant (p<0.05) GO:BP terms found in EAR-hyper accesible neargenes 2kb" ) %>%
-  kable_paper("striped", full_width = FALSE) %>%
-  kable_styling(
-    full_width = FALSE,
-    position = "left",
-    bootstrap_options = c("striped", "hover")
-  ) %>%
-  scroll_box(width = "100%", height = "400px")
-
-EAR3h_hyper_nomtable_2k %>%
-  filter(source=="KEGG", p_value < 0.05) %>%
-  mutate_at(.vars = 6, .funs = scientific_format()) %>%
-  kable(., caption = "Significant (p<0.05) KEGG terms found in EAR-hyper accesible neargenes 2kb") %>%
-  kable_paper("striped", full_width = FALSE) %>%
-  kable_styling(
-    full_width = FALSE,
-    position = "left",
-    bootstrap_options = c("striped", "hover")
-  ) %>%
-  scroll_box(width = "100%", height = "400px")
-
-EAR3h_hypo_nomtable_2k %>%
-   filter(source=="GO:BP", p_value < 0.05) %>% 
-  mutate_at(.vars = 6, .funs = scientific_format()) %>%
-  kable(.,caption = " Significant (p<0.05) GO:BP terms found in EAR-hypo accesible neargenes 2kb" ) %>%
-  kable_paper("striped", full_width = FALSE) %>%
-  kable_styling(
-    full_width = FALSE,
-    position = "left",
-    bootstrap_options = c("striped", "hover")
-  ) %>%
-  scroll_box(width = "100%", height = "400px")
-
-EAR3h_hypo_nomtable_2k %>%
-  filter(source=="KEGG", p_value < 0.05) %>%
-  mutate_at(.vars = 6, .funs = scientific_format()) %>%
-  kable(., caption = "Significant (p<0.05) KEGG terms found in EAR-hypo accesible neargenes 2kb") %>%
-  kable_paper("striped", full_width = FALSE) %>%
-  kable_styling(
-    full_width = FALSE,
-    position = "left",
-    bootstrap_options = c("striped", "hover")
-  ) %>%
-  scroll_box(width = "100%", height = "400px")
-
+EAR3h_hyper_2k <- readRDS("data/GO_KEGG_analysis/final_analysis/EAR_3h_hyper_resgenes_2k.RDS")
+EAR3h_hypo_2k <- readRDS("data/GO_KEGG_analysis/final_analysis/EAR_3h_hypo_resgenes_2k.RDS")
+GO_KEGG_analysis(EAR3h_hyper_2k,"GO:BP")+
+  geom_col(fill="#F8766D")
+GO_KEGG_analysis(EAR3h_hypo_2k,"GO:BP")+
+  geom_col(fill="#F8766D")
+GO_KEGG_analysis(EAR3h_hyper_2k,"KEGG")+
+  geom_col(fill="#F8766D")
+GO_KEGG_analysis(EAR3h_hypo_2k,"KEGG")+
+  geom_col(fill="#F8766D")
 
 ```
 
@@ -496,65 +498,18 @@ EAR3h_hypo_nomtable_2k %>%
 
 ```{r GO_EAR 24hr}
 
-EAR24h_hyper_nomtable <- readRDS("data/GO_KEGG_analysis/final_analysis/EAR_24h_hyper_resgenes.RDS")
-EAR24h_hypo_nomtable <- readRDS("data/GO_KEGG_analysis/final_analysis/EAR_24h_hypo_resgenes.RDS")
+EAR24h_hyper <- readRDS("data/GO_KEGG_analysis/final_analysis/EAR_24h_hyper_resgenes.RDS")
+EAR24h_hypo<- readRDS("data/GO_KEGG_analysis/final_analysis/EAR_24h_hypo_resgenes.RDS")
 
-EAR24h_hyper_nomtable <-  EAR24h_hyper_nomtable$result %>% 
-  dplyr::select(c(source, term_id,
-                  term_name,intersection_size, 
-                   term_size, p_value))# %>% 
-EAR24h_hypo_nomtable <-  EAR24h_hypo_nomtable$result %>% 
-  dplyr::select(c(source, term_id,
-                  term_name,intersection_size, 
-                   term_size, p_value))
+GO_KEGG_analysis(EAR24h_hyper_2k,"GO:BP")+
+  geom_col(fill="#F8766D")
+GO_KEGG_analysis(EAR24h_hypo_2k,"GO:BP")+
+  geom_col(fill="#F8766D")
+GO_KEGG_analysis(EAR24h_hyper_2k,"KEGG")+
+  geom_col(fill="#F8766D")
+GO_KEGG_analysis(EAR24h_hypo_2k,"KEGG")+
+  geom_col(fill="#F8766D")
 
-EAR24h_hyper_nomtable %>%
-  filter(source=="GO:BP", p_value < 0.05) %>% 
-  mutate_at(.vars = 6, .funs = scientific_format()) %>%
-  kable(.,caption = " Significant (p<0.05) GO:BP terms found in 24 hr EAR-hyper accesible neargenes" ) %>%
-  kable_paper("striped", full_width = FALSE) %>%
-  kable_styling(
-    full_width = FALSE,
-    position = "left",
-    bootstrap_options = c("striped", "hover")
-  ) %>%
-  scroll_box(width = "100%", height = "400px")
-
-EAR24h_hyper_nomtable %>%
-  filter(source=="KEGG", p_value < 0.05) %>%
-  mutate_at(.vars = 6, .funs = scientific_format()) %>%
-  kable(., caption = "Significant (p<0.05) KEGG terms found in 24 hr EAR-hyper accesible neargenes") %>%
-  kable_paper("striped", full_width = FALSE) %>%
-  kable_styling(
-    full_width = FALSE,
-    position = "left",
-    bootstrap_options = c("striped", "hover")
-  ) %>%
-  scroll_box(width = "100%", height = "400px")
-
-EAR24h_hypo_nomtable %>%
-   filter(source=="GO:BP", p_value < 0.05) %>% 
-  mutate_at(.vars = 6, .funs = scientific_format()) %>%
-  kable(.,caption = " Significant (p<0.05) GO:BP terms found in 24 hr EAR-hypo accesible neargenes" ) %>%
-  kable_paper("striped", full_width = FALSE) %>%
-  kable_styling(
-    full_width = FALSE,
-    position = "left",
-    bootstrap_options = c("striped", "hover")
-  ) %>%
-  scroll_box(width = "100%", height = "400px")
-
-EAR24h_hypo_nomtable %>%
-  filter(source=="KEGG", p_value < 0.05) %>%
-  mutate_at(.vars = 6, .funs = scientific_format()) %>%
-  kable(., caption = "Significant (p<0.05) KEGG terms found in 24 hr EAR-hypo accesible neargenes") %>%
-  kable_paper("striped", full_width = FALSE) %>%
-  kable_styling(
-    full_width = FALSE,
-    position = "left",
-    bootstrap_options = c("striped", "hover")
-  ) %>%
-  scroll_box(width = "100%", height = "400px")
 
 
 ```
@@ -563,67 +518,17 @@ EAR24h_hypo_nomtable %>%
 
 ```{r GO_EAR 24hr_2k}
 
-EAR24h_hyper_nomtable_2k <- readRDS("data/GO_KEGG_analysis/final_analysis/EAR_24h_hyper_resgenes_2k.RDS")
-EAR24h_hypo_nomtable_2k <- readRDS("data/GO_KEGG_analysis/final_analysis/EAR_24h_hypo_resgenes_2k.RDS")
+EAR24h_hyper_2k <- readRDS("data/GO_KEGG_analysis/final_analysis/EAR_24h_hyper_resgenes_2k.RDS")
+EAR24h_hypo_2k <- readRDS("data/GO_KEGG_analysis/final_analysis/EAR_24h_hypo_resgenes_2k.RDS")
 
-
-EAR24h_hyper_nomtable_2k <-  EAR24h_hyper_nomtable_2k$result %>% 
-  dplyr::select(c(source, term_id,
-                  term_name,intersection_size, 
-                   term_size, p_value))# %>% 
-EAR24h_hypo_nomtable_2k <-  EAR24h_hypo_nomtable_2k$result %>% 
-  dplyr::select(c(source, term_id,
-                  term_name,intersection_size, 
-                   term_size, p_value))
-
-EAR24h_hyper_nomtable_2k %>%
-  filter(source=="GO:BP", p_value < 0.05) %>% 
-  mutate_at(.vars = 6, .funs = scientific_format()) %>%
-  kable(.,caption = " Significant (p<0.05) GO:BP terms found in EAR-hyper accesible neargenes 2kb" ) %>%
-  kable_paper("striped", full_width = FALSE) %>%
-  kable_styling(
-    full_width = FALSE,
-    position = "left",
-    bootstrap_options = c("striped", "hover")
-  ) %>%
-  scroll_box(width = "100%", height = "400px")
-
-EAR24h_hyper_nomtable_2k %>%
-  filter(source=="KEGG", p_value < 0.05) %>%
-  mutate_at(.vars = 6, .funs = scientific_format()) %>%
-  kable(., caption = "Significant (p<0.05) KEGG terms found in EAR-hyper accesible neargenes 2kb") %>%
-  kable_paper("striped", full_width = FALSE) %>%
-  kable_styling(
-    full_width = FALSE,
-    position = "left",
-    bootstrap_options = c("striped", "hover")
-  ) %>%
-  scroll_box(width = "100%", height = "400px")
-
-EAR24h_hypo_nomtable_2k %>%
-   filter(source=="GO:BP", p_value < 0.05) %>% 
-  mutate_at(.vars = 6, .funs = scientific_format()) %>%
-  kable(.,caption = " Significant (p<0.05) GO:BP terms found in EAR-hypo accesible neargenes 2kb" ) %>%
-  kable_paper("striped", full_width = FALSE) %>%
-  kable_styling(
-    full_width = FALSE,
-    position = "left",
-    bootstrap_options = c("striped", "hover")
-  ) %>%
-  scroll_box(width = "100%", height = "400px")
-
-EAR24h_hypo_nomtable_2k %>%
-  filter(source=="KEGG", p_value < 0.05) %>%
-  mutate_at(.vars = 6, .funs = scientific_format()) %>%
-  kable(., caption = "Significant (p<0.05) KEGG terms found in EAR-hypo accesible neargenes 2kb") %>%
-  kable_paper("striped", full_width = FALSE) %>%
-  kable_styling(
-    full_width = FALSE,
-    position = "left",
-    bootstrap_options = c("striped", "hover")
-  ) %>%
-  scroll_box(width = "100%", height = "400px")
-
+GO_KEGG_analysis(EAR24h_hyper_2k,"GO:BP")+
+  geom_col(fill="#F8766D")
+GO_KEGG_analysis(EAR24h_hypo_2k,"GO:BP")+
+  geom_col(fill="#F8766D")
+GO_KEGG_analysis(EAR24h_hyper_2k,"KEGG")+
+  geom_col(fill="#F8766D")
+GO_KEGG_analysis(EAR24h_hypo_2k,"KEGG")+
+  geom_col(fill="#F8766D")
 
 ```
 
@@ -634,65 +539,17 @@ EAR24h_hypo_nomtable_2k %>%
 
 ```{r GO_ESR 3hr}
 
-ESR3h_hyper_nomtable <- readRDS("data/GO_KEGG_analysis/final_analysis/ESR_3h_hyper_resgenes.RDS")
-ESR3h_hypo_nomtable <- readRDS("data/GO_KEGG_analysis/final_analysis/ESR_3h_hypo_resgenes.RDS")
+ESR3h_hyper<- readRDS("data/GO_KEGG_analysis/final_analysis/ESR_3h_hyper_resgenes.RDS")
+ESR3h_hypo <- readRDS("data/GO_KEGG_analysis/final_analysis/ESR_3h_hypo_resgenes.RDS")
 
-ESR3h_hyper_nomtable <-  ESR3h_hyper_nomtable$result %>% 
-  dplyr::select(c(source, term_id,
-                  term_name,intersection_size, 
-                   term_size, p_value))# %>% 
-ESR3h_hypo_nomtable <-  ESR3h_hypo_nomtable$result %>% 
-  dplyr::select(c(source, term_id,
-                  term_name,intersection_size, 
-                   term_size, p_value))
-
-ESR3h_hyper_nomtable %>%
-  filter(source=="GO:BP", p_value < 0.05) %>% 
-  mutate_at(.vars = 6, .funs = scientific_format()) %>%
-  kable(.,caption = " Significant (p<0.05) GO:BP terms found in ESR-hyper accesible neargenes" ) %>%
-  kable_paper("striped", full_width = FALSE) %>%
-  kable_styling(
-    full_width = FALSE,
-    position = "left",
-    bootstrap_options = c("striped", "hover")
-  ) %>%
-  scroll_box(width = "100%", height = "400px")
-
-ESR3h_hyper_nomtable %>%
-  filter(source=="KEGG", p_value < 0.05) %>%
-  mutate_at(.vars = 6, .funs = scientific_format()) %>%
-  kable(., caption = "Significant (p<0.05) KEGG terms found in ESR-hyper accesible neargenes") %>%
-  kable_paper("striped", full_width = FALSE) %>%
-  kable_styling(
-    full_width = FALSE,
-    position = "left",
-    bootstrap_options = c("striped", "hover")
-  ) %>%
-  scroll_box(width = "100%", height = "400px")
-
-ESR3h_hypo_nomtable %>%
-   filter(source=="GO:BP", p_value < 0.05) %>% 
-  mutate_at(.vars = 6, .funs = scientific_format()) %>%
-  kable(.,caption = " Significant (p<0.05) GO:BP terms found in ESR-hypo accesible neargenes" ) %>%
-  kable_paper("striped", full_width = FALSE) %>%
-  kable_styling(
-    full_width = FALSE,
-    position = "left",
-    bootstrap_options = c("striped", "hover")
-  ) %>%
-  scroll_box(width = "100%", height = "400px")
-
-ESR3h_hypo_nomtable %>%
-  filter(source=="KEGG", p_value < 0.05) %>%
-  mutate_at(.vars = 6, .funs = scientific_format()) %>%
-  kable(., caption = "Significant (p<0.05) KEGG terms found in ESR-hypo accesible neargenes") %>%
-  kable_paper("striped", full_width = FALSE) %>%
-  kable_styling(
-    full_width = FALSE,
-    position = "left",
-    bootstrap_options = c("striped", "hover")
-  ) %>%
-  scroll_box(width = "100%", height = "400px")
+GO_KEGG_analysis(ESR3h_hyper,"GO:BP")+
+       geom_col(fill=fills[3])
+GO_KEGG_analysis(ESR3h_hypo,"GO:BP")+
+       geom_col(fill=fills[3])
+GO_KEGG_analysis(ESR3h_hyper,"KEGG")+
+       geom_col(fill=fills[3])
+GO_KEGG_analysis(ESR3h_hypo,"KEGG")+
+       geom_col(fill=fills[3])
 
 
 ```
@@ -701,67 +558,17 @@ ESR3h_hypo_nomtable %>%
 
 ```{r GO_ESR 3hr_2k}
 
-ESR3h_hyper_nomtable_2k <- readRDS("data/GO_KEGG_analysis/final_analysis/ESR_3h_hyper_resgenes_2k.RDS")
-ESR3h_hypo_nomtable_2k <- readRDS("data/GO_KEGG_analysis/final_analysis/ESR_3h_hypo_resgenes_2k.RDS")
+ESR3h_hyper_2k <- readRDS("data/GO_KEGG_analysis/final_analysis/ESR_3h_hyper_resgenes_2k.RDS")
+ESR3h_hypo_2k <- readRDS("data/GO_KEGG_analysis/final_analysis/ESR_3h_hypo_resgenes_2k.RDS")
 
-
-ESR3h_hyper_nomtable_2k <-  ESR3h_hyper_nomtable_2k$result %>% 
-  dplyr::select(c(source, term_id,
-                  term_name,intersection_size, 
-                   term_size, p_value))# %>% 
-ESR3h_hypo_nomtable_2k <-  ESR3h_hypo_nomtable_2k$result %>% 
-  dplyr::select(c(source, term_id,
-                  term_name,intersection_size, 
-                   term_size, p_value))
-
-ESR3h_hyper_nomtable_2k %>%
-  filter(source=="GO:BP", p_value < 0.05) %>% 
-  mutate_at(.vars = 6, .funs = scientific_format()) %>%
-  kable(.,caption = " Significant (p<0.05) GO:BP terms found in ESR-hyper accesible neargenes 2kb" ) %>%
-  kable_paper("striped", full_width = FALSE) %>%
-  kable_styling(
-    full_width = FALSE,
-    position = "left",
-    bootstrap_options = c("striped", "hover")
-  ) %>%
-  scroll_box(width = "100%", height = "400px")
-
-ESR3h_hyper_nomtable_2k %>%
-  filter(source=="KEGG", p_value < 0.05) %>%
-  mutate_at(.vars = 6, .funs = scientific_format()) %>%
-  kable(., caption = "Significant (p<0.05) KEGG terms found in ESR-hyper accesible neargenes 2kb") %>%
-  kable_paper("striped", full_width = FALSE) %>%
-  kable_styling(
-    full_width = FALSE,
-    position = "left",
-    bootstrap_options = c("striped", "hover")
-  ) %>%
-  scroll_box(width = "100%", height = "400px")
-
-ESR3h_hypo_nomtable_2k %>%
-   filter(source=="GO:BP", p_value < 0.05) %>% 
-  mutate_at(.vars = 6, .funs = scientific_format()) %>%
-  kable(.,caption = " Significant (p<0.05) GO:BP terms found in ESR-hypo accesible neargenes 2kb" ) %>%
-  kable_paper("striped", full_width = FALSE) %>%
-  kable_styling(
-    full_width = FALSE,
-    position = "left",
-    bootstrap_options = c("striped", "hover")
-  ) %>%
-  scroll_box(width = "100%", height = "400px")
-
-ESR3h_hypo_nomtable_2k %>%
-  filter(source=="KEGG", p_value < 0.05) %>%
-  mutate_at(.vars = 6, .funs = scientific_format()) %>%
-  kable(., caption = "Significant (p<0.05) KEGG terms found in ESR-hypo accesible neargenes 2kb") %>%
-  kable_paper("striped", full_width = FALSE) %>%
-  kable_styling(
-    full_width = FALSE,
-    position = "left",
-    bootstrap_options = c("striped", "hover")
-  ) %>%
-  scroll_box(width = "100%", height = "400px")
-
+GO_KEGG_analysis(ESR3h_hyper_2k,"GO:BP")+
+       geom_col(fill=fills[3])
+GO_KEGG_analysis(ESR3h_hypo_2k,"GO:BP")+
+       geom_col(fill=fills[3])
+GO_KEGG_analysis(ESR3h_hyper_2k,"KEGG")+
+       geom_col(fill=fills[3])
+GO_KEGG_analysis(ESR3h_hypo_2k,"KEGG")+
+       geom_col(fill=fills[3])
 
 ```
 
@@ -773,62 +580,14 @@ ESR3h_hypo_nomtable_2k %>%
 ESR24h_hyper_nomtable <- readRDS("data/GO_KEGG_analysis/final_analysis/ESR_24h_hyper_resgenes.RDS")
 ESR24h_hypo_nomtable <- readRDS("data/GO_KEGG_analysis/final_analysis/ESR_24h_hypo_resgenes.RDS")
 
-ESR24h_hyper_nomtable <-  ESR24h_hyper_nomtable$result %>% 
-  dplyr::select(c(source, term_id,
-                  term_name,intersection_size, 
-                   term_size, p_value))# %>% 
-ESR24h_hypo_nomtable <-  ESR24h_hypo_nomtable$result %>% 
-  dplyr::select(c(source, term_id,
-                  term_name,intersection_size, 
-                   term_size, p_value))
-
-ESR24h_hyper_nomtable %>%
-  filter(source=="GO:BP", p_value < 0.05) %>% 
-  mutate_at(.vars = 6, .funs = scientific_format()) %>%
-  kable(.,caption = " Significant (p<0.05) GO:BP terms found in 24 hr ESR-hyper accesible neargenes" ) %>%
-  kable_paper("striped", full_width = FALSE) %>%
-  kable_styling(
-    full_width = FALSE,
-    position = "left",
-    bootstrap_options = c("striped", "hover")
-  ) %>%
-  scroll_box(width = "100%", height = "400px")
-
-ESR24h_hyper_nomtable %>%
-  filter(source=="KEGG", p_value < 0.05) %>%
-  mutate_at(.vars = 6, .funs = scientific_format()) %>%
-  kable(., caption = "Significant (p<0.05) KEGG terms found in 24 hr ESR-hyper accesible neargenes") %>%
-  kable_paper("striped", full_width = FALSE) %>%
-  kable_styling(
-    full_width = FALSE,
-    position = "left",
-    bootstrap_options = c("striped", "hover")
-  ) %>%
-  scroll_box(width = "100%", height = "400px")
-
-ESR24h_hypo_nomtable %>%
-   filter(source=="GO:BP", p_value < 0.05) %>% 
-  mutate_at(.vars = 6, .funs = scientific_format()) %>%
-  kable(.,caption = " Significant (p<0.05) GO:BP terms found in 24 hr ESR-hypo accesible neargenes" ) %>%
-  kable_paper("striped", full_width = FALSE) %>%
-  kable_styling(
-    full_width = FALSE,
-    position = "left",
-    bootstrap_options = c("striped", "hover")
-  ) %>%
-  scroll_box(width = "100%", height = "400px")
-
-ESR24h_hypo_nomtable %>%
-  filter(source=="KEGG", p_value < 0.05) %>%
-  mutate_at(.vars = 6, .funs = scientific_format()) %>%
-  kable(., caption = "Significant (p<0.05) KEGG terms found in 24 hr ESR-hypo accesible neargenes") %>%
-  kable_paper("striped", full_width = FALSE) %>%
-  kable_styling(
-    full_width = FALSE,
-    position = "left",
-    bootstrap_options = c("striped", "hover")
-  ) %>%
-  scroll_box(width = "100%", height = "400px")
+GO_KEGG_analysis(EAR3h_hyper_2k,"GO:BP")+
+       geom_col(fill=fills[3])
+GO_KEGG_analysis(EAR3h_hypo_2k,"GO:BP")+
+       geom_col(fill=fills[3])
+GO_KEGG_analysis(EAR3h_hyper_2k,"KEGG")+
+       geom_col(fill=fills[3])
+GO_KEGG_analysis(EAR3h_hypo_2k,"KEGG")+
+       geom_col(fill=fills[3])
 
 
 ```
@@ -841,63 +600,14 @@ ESR24h_hyper_nomtable_2k <- readRDS("data/GO_KEGG_analysis/final_analysis/ESR_24
 ESR24h_hypo_nomtable_2k <- readRDS("data/GO_KEGG_analysis/final_analysis/ESR_24h_hypo_resgenes_2k.RDS")
 
 
-ESR24h_hyper_nomtable_2k <-  ESR24h_hyper_nomtable_2k$result %>% 
-  dplyr::select(c(source, term_id,
-                  term_name,intersection_size, 
-                   term_size, p_value))# %>% 
-ESR24h_hypo_nomtable_2k <-  ESR24h_hypo_nomtable_2k$result %>% 
-  dplyr::select(c(source, term_id,
-                  term_name,intersection_size, 
-                   term_size, p_value))
-
-ESR24h_hyper_nomtable_2k %>%
-  filter(source=="GO:BP", p_value < 0.05) %>% 
-  mutate_at(.vars = 6, .funs = scientific_format()) %>%
-  kable(.,caption = " Significant (p<0.05) GO:BP terms found in ESR-hyper accesible neargenes 2kb" ) %>%
-  kable_paper("striped", full_width = FALSE) %>%
-  kable_styling(
-    full_width = FALSE,
-    position = "left",
-    bootstrap_options = c("striped", "hover")
-  ) %>%
-  scroll_box(width = "100%", height = "400px")
-
-ESR24h_hyper_nomtable_2k %>%
-  filter(source=="KEGG", p_value < 0.05) %>%
-  mutate_at(.vars = 6, .funs = scientific_format()) %>%
-  kable(., caption = "Significant (p<0.05) KEGG terms found in ESR-hyper accesible neargenes 2kb") %>%
-  kable_paper("striped", full_width = FALSE) %>%
-  kable_styling(
-    full_width = FALSE,
-    position = "left",
-    bootstrap_options = c("striped", "hover")
-  ) %>%
-  scroll_box(width = "100%", height = "400px")
-
-ESR24h_hypo_nomtable_2k %>%
-   filter(source=="GO:BP", p_value < 0.05) %>% 
-  mutate_at(.vars = 6, .funs = scientific_format()) %>%
-  kable(.,caption = " Significant (p<0.05) GO:BP terms found in ESR-hypo accesible neargenes 2kb" ) %>%
-  kable_paper("striped", full_width = FALSE) %>%
-  kable_styling(
-    full_width = FALSE,
-    position = "left",
-    bootstrap_options = c("striped", "hover")
-  ) %>%
-  scroll_box(width = "100%", height = "400px")
-
-ESR24h_hypo_nomtable_2k %>%
-  filter(source=="KEGG", p_value < 0.05) %>%
-  mutate_at(.vars = 6, .funs = scientific_format()) %>%
-  kable(., caption = "Significant (p<0.05) KEGG terms found in ESR-hypo accesible neargenes 2kb") %>%
-  kable_paper("striped", full_width = FALSE) %>%
-  kable_styling(
-    full_width = FALSE,
-    position = "left",
-    bootstrap_options = c("striped", "hover")
-  ) %>%
-  scroll_box(width = "100%", height = "400px")
-
+GO_KEGG_analysis(EAR3h_hyper_2k,"GO:BP")+
+       geom_col(fill=fills[3])
+GO_KEGG_analysis(EAR3h_hypo_2k,"GO:BP")+
+       geom_col(fill=fills[3])
+GO_KEGG_analysis(EAR3h_hyper_2k,"KEGG")+
+       geom_col(fill=fills[3])
+GO_KEGG_analysis(EAR3h_hypo_2k,"KEGG")+
+       geom_col(fill=fills[3])
 
 ```
 
@@ -910,62 +620,15 @@ ESR24h_hypo_nomtable_2k %>%
 LR3h_hyper_nomtable <- readRDS("data/GO_KEGG_analysis/final_analysis/LR_3h_hyper_resgenes.RDS")
 LR3h_hypo_nomtable <- readRDS("data/GO_KEGG_analysis/final_analysis/LR_3h_hypo_resgenes.RDS")
 
-LR3h_hyper_nomtable <-  LR3h_hyper_nomtable$result %>% 
-  dplyr::select(c(source, term_id,
-                  term_name,intersection_size, 
-                   term_size, p_value))# %>% 
-LR3h_hypo_nomtable <-  LR3h_hypo_nomtable$result %>% 
-  dplyr::select(c(source, term_id,
-                  term_name,intersection_size, 
-                   term_size, p_value))
+GO_KEGG_analysis(EAR3h_hyper_2k,"GO:BP")+
+       geom_col(fill=fills[4])
+GO_KEGG_analysis(EAR3h_hypo_2k,"GO:BP")+
+       geom_col(fill=fills[4])
+GO_KEGG_analysis(EAR3h_hyper_2k,"KEGG")+
+       geom_col(fill=fills[4])
+GO_KEGG_analysis(EAR3h_hypo_2k,"KEGG")+
+       geom_col(fill=fills[4])
 
-LR3h_hyper_nomtable %>%
-  filter(source=="GO:BP", p_value < 0.05) %>% 
-  mutate_at(.vars = 6, .funs = scientific_format()) %>%
-  kable(.,caption = " Significant (p<0.05) GO:BP terms found in LR-hyper accesible neargenes" ) %>%
-  kable_paper("striped", full_width = FALSE) %>%
-  kable_styling(
-    full_width = FALSE,
-    position = "left",
-    bootstrap_options = c("striped", "hover")
-  ) %>%
-  scroll_box(width = "100%", height = "400px")
-
-LR3h_hyper_nomtable %>%
-  filter(source=="KEGG", p_value < 0.05) %>%
-  mutate_at(.vars = 6, .funs = scientific_format()) %>%
-  kable(., caption = "Significant (p<0.05) KEGG terms found in LR-hyper accesible neargenes") %>%
-  kable_paper("striped", full_width = FALSE) %>%
-  kable_styling(
-    full_width = FALSE,
-    position = "left",
-    bootstrap_options = c("striped", "hover")
-  ) %>%
-  scroll_box(width = "100%", height = "400px")
-
-LR3h_hypo_nomtable %>%
-   filter(source=="GO:BP", p_value < 0.05) %>% 
-  mutate_at(.vars = 6, .funs = scientific_format()) %>%
-  kable(.,caption = " Significant (p<0.05) GO:BP terms found in LR-hypo accesible neargenes" ) %>%
-  kable_paper("striped", full_width = FALSE) %>%
-  kable_styling(
-    full_width = FALSE,
-    position = "left",
-    bootstrap_options = c("striped", "hover")
-  ) %>%
-  scroll_box(width = "100%", height = "400px")
-
-LR3h_hypo_nomtable %>%
-  filter(source=="KEGG", p_value < 0.05) %>%
-  mutate_at(.vars = 6, .funs = scientific_format()) %>%
-  kable(., caption = "Significant (p<0.05) KEGG terms found in LR-hypo accesible neargenes") %>%
-  kable_paper("striped", full_width = FALSE) %>%
-  kable_styling(
-    full_width = FALSE,
-    position = "left",
-    bootstrap_options = c("striped", "hover")
-  ) %>%
-  scroll_box(width = "100%", height = "400px")
 
 
 ```
@@ -978,63 +641,14 @@ LR3h_hyper_nomtable_2k <- readRDS("data/GO_KEGG_analysis/final_analysis/LR_3h_hy
 LR3h_hypo_nomtable_2k <- readRDS("data/GO_KEGG_analysis/final_analysis/LR_3h_hypo_resgenes_2k.RDS")
 
 
-LR3h_hyper_nomtable_2k <-  LR3h_hyper_nomtable_2k$result %>% 
-  dplyr::select(c(source, term_id,
-                  term_name,intersection_size, 
-                   term_size, p_value))# %>% 
-LR3h_hypo_nomtable_2k <-  LR3h_hypo_nomtable_2k$result %>% 
-  dplyr::select(c(source, term_id,
-                  term_name,intersection_size, 
-                   term_size, p_value))
-
-LR3h_hyper_nomtable_2k %>%
-  filter(source=="GO:BP", p_value < 0.05) %>% 
-  mutate_at(.vars = 6, .funs = scientific_format()) %>%
-  kable(.,caption = " Significant (p<0.05) GO:BP terms found in LR-hyper accesible neargenes 2kb" ) %>%
-  kable_paper("striped", full_width = FALSE) %>%
-  kable_styling(
-    full_width = FALSE,
-    position = "left",
-    bootstrap_options = c("striped", "hover")
-  ) %>%
-  scroll_box(width = "100%", height = "400px")
-
-LR3h_hyper_nomtable_2k %>%
-  filter(source=="KEGG", p_value < 0.05) %>%
-  mutate_at(.vars = 6, .funs = scientific_format()) %>%
-  kable(., caption = "Significant (p<0.05) KEGG terms found in LR-hyper accesible neargenes 2kb") %>%
-  kable_paper("striped", full_width = FALSE) %>%
-  kable_styling(
-    full_width = FALSE,
-    position = "left",
-    bootstrap_options = c("striped", "hover")
-  ) %>%
-  scroll_box(width = "100%", height = "400px")
-
-LR3h_hypo_nomtable_2k %>%
-   filter(source=="GO:BP", p_value < 0.05) %>% 
-  mutate_at(.vars = 6, .funs = scientific_format()) %>%
-  kable(.,caption = " Significant (p<0.05) GO:BP terms found in LR-hypo accesible neargenes 2kb" ) %>%
-  kable_paper("striped", full_width = FALSE) %>%
-  kable_styling(
-    full_width = FALSE,
-    position = "left",
-    bootstrap_options = c("striped", "hover")
-  ) %>%
-  scroll_box(width = "100%", height = "400px")
-
-LR3h_hypo_nomtable_2k %>%
-  filter(source=="KEGG", p_value < 0.05) %>%
-  mutate_at(.vars = 6, .funs = scientific_format()) %>%
-  kable(., caption = "Significant (p<0.05) KEGG terms found in LR-hypo accesible neargenes 2kb") %>%
-  kable_paper("striped", full_width = FALSE) %>%
-  kable_styling(
-    full_width = FALSE,
-    position = "left",
-    bootstrap_options = c("striped", "hover")
-  ) %>%
-  scroll_box(width = "100%", height = "400px")
-
+GO_KEGG_analysis(EAR3h_hyper_2k,"GO:BP")+
+       geom_col(fill=fills[4])
+GO_KEGG_analysis(EAR3h_hypo_2k,"GO:BP")+
+       geom_col(fill=fills[4])
+GO_KEGG_analysis(EAR3h_hyper_2k,"KEGG")+
+       geom_col(fill=fills[4])
+GO_KEGG_analysis(EAR3h_hypo_2k,"KEGG")+
+       geom_col(fill=fills[4])
 
 ```
 
@@ -1045,62 +659,14 @@ LR3h_hypo_nomtable_2k %>%
 LR24h_hyper_nomtable <- readRDS("data/GO_KEGG_analysis/final_analysis/LR_24h_hyper_resgenes.RDS")
 LR24h_hypo_nomtable <- readRDS("data/GO_KEGG_analysis/final_analysis/LR_24h_hypo_resgenes.RDS")
 
-LR24h_hyper_nomtable <-  LR24h_hyper_nomtable$result %>% 
-  dplyr::select(c(source, term_id,
-                  term_name,intersection_size, 
-                   term_size, p_value))# %>% 
-LR24h_hypo_nomtable <-  LR24h_hypo_nomtable$result %>% 
-  dplyr::select(c(source, term_id,
-                  term_name,intersection_size, 
-                   term_size, p_value))
-
-LR24h_hyper_nomtable %>%
-  filter(source=="GO:BP", p_value < 0.05) %>% 
-  mutate_at(.vars = 6, .funs = scientific_format()) %>%
-  kable(.,caption = " Significant (p<0.05) GO:BP terms found in 24 hr LR-hyper accesible neargenes" ) %>%
-  kable_paper("striped", full_width = FALSE) %>%
-  kable_styling(
-    full_width = FALSE,
-    position = "left",
-    bootstrap_options = c("striped", "hover")
-  ) %>%
-  scroll_box(width = "100%", height = "400px")
-
-LR24h_hyper_nomtable %>%
-  filter(source=="KEGG", p_value < 0.05) %>%
-  mutate_at(.vars = 6, .funs = scientific_format()) %>%
-  kable(., caption = "Significant (p<0.05) KEGG terms found in 24 hr LR-hyper accesible neargenes") %>%
-  kable_paper("striped", full_width = FALSE) %>%
-  kable_styling(
-    full_width = FALSE,
-    position = "left",
-    bootstrap_options = c("striped", "hover")
-  ) %>%
-  scroll_box(width = "100%", height = "400px")
-
-LR24h_hypo_nomtable %>%
-   filter(source=="GO:BP", p_value < 0.05) %>% 
-  mutate_at(.vars = 6, .funs = scientific_format()) %>%
-  kable(.,caption = " Significant (p<0.05) GO:BP terms found in 24 hr LR-hypo accesible neargenes" ) %>%
-  kable_paper("striped", full_width = FALSE) %>%
-  kable_styling(
-    full_width = FALSE,
-    position = "left",
-    bootstrap_options = c("striped", "hover")
-  ) %>%
-  scroll_box(width = "100%", height = "400px")
-
-LR24h_hypo_nomtable %>%
-  filter(source=="KEGG", p_value < 0.05) %>%
-  mutate_at(.vars = 6, .funs = scientific_format()) %>%
-  kable(., caption = "Significant (p<0.05) KEGG terms found in 24 hr LR-hypo accesible neargenes") %>%
-  kable_paper("striped", full_width = FALSE) %>%
-  kable_styling(
-    full_width = FALSE,
-    position = "left",
-    bootstrap_options = c("striped", "hover")
-  ) %>%
-  scroll_box(width = "100%", height = "400px")
+GO_KEGG_analysis(EAR3h_hyper_2k,"GO:BP")+
+       geom_col(fill=fills[4])
+GO_KEGG_analysis(EAR3h_hypo_2k,"GO:BP")+
+       geom_col(fill=fills[4])
+GO_KEGG_analysis(EAR3h_hyper_2k,"KEGG")+
+       geom_col(fill=fills[4])
+GO_KEGG_analysis(EAR3h_hypo_2k,"KEGG")+
+       geom_col(fill=fills[4])
 
 
 ```
@@ -1112,62 +678,14 @@ LR24h_hyper_nomtable_2k <- readRDS("data/GO_KEGG_analysis/final_analysis/LR_24h_
 LR24h_hypo_nomtable_2k <- readRDS("data/GO_KEGG_analysis/final_analysis/LR_24h_hypo_resgenes_2k.RDS")
 
 
-LR24h_hyper_nomtable_2k <-  LR24h_hyper_nomtable_2k$result %>% 
-  dplyr::select(c(source, term_id,
-                  term_name,intersection_size, 
-                   term_size, p_value))# %>% 
-LR24h_hypo_nomtable_2k <-  LR24h_hypo_nomtable_2k$result %>% 
-  dplyr::select(c(source, term_id,
-                  term_name,intersection_size, 
-                   term_size, p_value))
-
-LR24h_hyper_nomtable_2k %>%
-  filter(source=="GO:BP", p_value < 0.05) %>% 
-  mutate_at(.vars = 6, .funs = scientific_format()) %>%
-  kable(.,caption = " Significant (p<0.05) GO:BP terms found in LR-hyper accesible neargenes 2kb" ) %>%
-  kable_paper("striped", full_width = FALSE) %>%
-  kable_styling(
-    full_width = FALSE,
-    position = "left",
-    bootstrap_options = c("striped", "hover")
-  ) %>%
-  scroll_box(width = "100%", height = "400px")
-
-LR24h_hyper_nomtable_2k %>%
-  filter(source=="KEGG", p_value < 0.05) %>%
-  mutate_at(.vars = 6, .funs = scientific_format()) %>%
-  kable(., caption = "Significant (p<0.05) KEGG terms found in LR-hyper accesible neargenes 2kb") %>%
-  kable_paper("striped", full_width = FALSE) %>%
-  kable_styling(
-    full_width = FALSE,
-    position = "left",
-    bootstrap_options = c("striped", "hover")
-  ) %>%
-  scroll_box(width = "100%", height = "400px")
-
-LR24h_hypo_nomtable_2k %>%
-   filter(source=="GO:BP", p_value < 0.05) %>% 
-  mutate_at(.vars = 6, .funs = scientific_format()) %>%
-  kable(.,caption = " Significant (p<0.05) GO:BP terms found in LR-hypo accesible neargenes 2kb" ) %>%
-  kable_paper("striped", full_width = FALSE) %>%
-  kable_styling(
-    full_width = FALSE,
-    position = "left",
-    bootstrap_options = c("striped", "hover")
-  ) %>%
-  scroll_box(width = "100%", height = "400px")
-
-LR24h_hypo_nomtable_2k %>%
-  filter(source=="KEGG", p_value < 0.05) %>%
-  mutate_at(.vars = 6, .funs = scientific_format()) %>%
-  kable(., caption = "Significant (p<0.05) KEGG terms found in LR-hypo accesible neargenes 2kb") %>%
-  kable_paper("striped", full_width = FALSE) %>%
-  kable_styling(
-    full_width = FALSE,
-    position = "left",
-    bootstrap_options = c("striped", "hover")
-  ) %>%
-  scroll_box(width = "100%", height = "400px")
+GO_KEGG_analysis(EAR3h_hyper_2k,"GO:BP")+
+       geom_col(fill=fills[4])
+GO_KEGG_analysis(EAR3h_hypo_2k,"GO:BP")+
+       geom_col(fill=fills[4])
+GO_KEGG_analysis(EAR3h_hyper_2k,"KEGG")+
+       geom_col(fill=fills[4])
+GO_KEGG_analysis(EAR3h_hypo_2k,"KEGG")+
+       geom_col(fill=fills[4])
 
 
 ```
@@ -1181,62 +699,15 @@ LR24h_hypo_nomtable_2k %>%
 NR3h_hyper_nomtable <- readRDS("data/GO_KEGG_analysis/final_analysis/NR_3h_hyper_resgenes.RDS")
 NR3h_hypo_nomtable <- readRDS("data/GO_KEGG_analysis/final_analysis/NR_3h_hypo_resgenes.RDS")
 
-NR3h_hyper_nomtable <-  NR3h_hyper_nomtable$result %>% 
-  dplyr::select(c(source, term_id,
-                  term_name,intersection_size, 
-                   term_size, p_value))# %>% 
-NR3h_hypo_nomtable <-  NR3h_hypo_nomtable$result %>% 
-  dplyr::select(c(source, term_id,
-                  term_name,intersection_size, 
-                   term_size, p_value))
+GO_KEGG_analysis(EAR3h_hyper_2k,"GO:BP")+
+       geom_col(fill=fills[1])
+GO_KEGG_analysis(EAR3h_hypo_2k,"GO:BP")+
+       geom_col(fill=fills[1])
+GO_KEGG_analysis(EAR3h_hyper_2k,"KEGG")+
+       geom_col(fill=fills[1])
+GO_KEGG_analysis(EAR3h_hypo_2k,"KEGG")+
+       geom_col(fill=fills[1])
 
-NR3h_hyper_nomtable %>%
-  filter(source=="GO:BP", p_value < 0.05) %>% 
-  mutate_at(.vars = 6, .funs = scientific_format()) %>%
-  kable(.,caption = " Significant (p<0.05) GO:BP terms found in NR-hyper accesible neargenes" ) %>%
-  kable_paper("striped", full_width = FALSE) %>%
-  kable_styling(
-    full_width = FALSE,
-    position = "left",
-    bootstrap_options = c("striped", "hover")
-  ) %>%
-  scroll_box(width = "100%", height = "400px")
-
-NR3h_hyper_nomtable %>%
-  filter(source=="KEGG", p_value < 0.05) %>%
-  mutate_at(.vars = 6, .funs = scientific_format()) %>%
-  kable(., caption = "Significant (p<0.05) KEGG terms found in NR-hyper accesible neargenes") %>%
-  kable_paper("striped", full_width = FALSE) %>%
-  kable_styling(
-    full_width = FALSE,
-    position = "left",
-    bootstrap_options = c("striped", "hover")
-  ) %>%
-  scroll_box(width = "100%", height = "400px")
-
-NR3h_hypo_nomtable %>%
-   filter(source=="GO:BP", p_value < 0.05) %>% 
-  mutate_at(.vars = 6, .funs = scientific_format()) %>%
-  kable(.,caption = " Significant (p<0.05) GO:BP terms found in NR-hypo accesible neargenes" ) %>%
-  kable_paper("striped", full_width = FALSE) %>%
-  kable_styling(
-    full_width = FALSE,
-    position = "left",
-    bootstrap_options = c("striped", "hover")
-  ) %>%
-  scroll_box(width = "100%", height = "400px")
-
-NR3h_hypo_nomtable %>%
-  filter(source=="KEGG", p_value < 0.05) %>%
-  mutate_at(.vars = 6, .funs = scientific_format()) %>%
-  kable(., caption = "Significant (p<0.05) KEGG terms found in NR-hypo accesible neargenes") %>%
-  kable_paper("striped", full_width = FALSE) %>%
-  kable_styling(
-    full_width = FALSE,
-    position = "left",
-    bootstrap_options = c("striped", "hover")
-  ) %>%
-  scroll_box(width = "100%", height = "400px")
 
 
 ```
@@ -1250,62 +721,15 @@ NR3h_hyper_nomtable_2k <- readRDS("data/GO_KEGG_analysis/final_analysis/NR_3h_hy
 NR3h_hypo_nomtable_2k <- readRDS("data/GO_KEGG_analysis/final_analysis/NR_3h_hypo_resgenes_2k.RDS")
 
 
-NR3h_hyper_nomtable_2k <-  NR3h_hyper_nomtable_2k$result %>% 
-  dplyr::select(c(source, term_id,
-                  term_name,intersection_size, 
-                   term_size, p_value))# %>% 
-NR3h_hypo_nomtable_2k <-  NR3h_hypo_nomtable_2k$result %>% 
-  dplyr::select(c(source, term_id,
-                  term_name,intersection_size, 
-                   term_size, p_value))
+GO_KEGG_analysis(EAR3h_hyper_2k,"GO:BP")+
+       geom_col(fill=fills[1])
+GO_KEGG_analysis(EAR3h_hypo_2k,"GO:BP")+
+       geom_col(fill=fills[1])
+GO_KEGG_analysis(EAR3h_hyper_2k,"KEGG")+
+       geom_col(fill=fills[1])
+GO_KEGG_analysis(EAR3h_hypo_2k,"KEGG")+
+       geom_col(fill=fills[1])
 
-NR3h_hyper_nomtable_2k %>%
-  filter(source=="GO:BP", p_value < 0.05) %>% 
-  mutate_at(.vars = 6, .funs = scientific_format()) %>%
-  kable(.,caption = " Significant (p<0.05) GO:BP terms found in NR-hyper accesible neargenes 2kb" ) %>%
-  kable_paper("striped", full_width = FALSE) %>%
-  kable_styling(
-    full_width = FALSE,
-    position = "left",
-    bootstrap_options = c("striped", "hover")
-  ) %>%
-  scroll_box(width = "100%", height = "400px")
-
-NR3h_hyper_nomtable_2k %>%
-  filter(source=="KEGG", p_value < 0.05) %>%
-  mutate_at(.vars = 6, .funs = scientific_format()) %>%
-  kable(., caption = "Significant (p<0.05) KEGG terms found in NR-hyper accesible neargenes 2kb") %>%
-  kable_paper("striped", full_width = FALSE) %>%
-  kable_styling(
-    full_width = FALSE,
-    position = "left",
-    bootstrap_options = c("striped", "hover")
-  ) %>%
-  scroll_box(width = "100%", height = "400px")
-
-NR3h_hypo_nomtable_2k %>%
-   filter(source=="GO:BP", p_value < 0.05) %>% 
-  mutate_at(.vars = 6, .funs = scientific_format()) %>%
-  kable(.,caption = " Significant (p<0.05) GO:BP terms found in NR-hypo accesible neargenes 2kb" ) %>%
-  kable_paper("striped", full_width = FALSE) %>%
-  kable_styling(
-    full_width = FALSE,
-    position = "left",
-    bootstrap_options = c("striped", "hover")
-  ) %>%
-  scroll_box(width = "100%", height = "400px")
-
-NR3h_hypo_nomtable_2k %>%
-  filter(source=="KEGG", p_value < 0.05) %>%
-  mutate_at(.vars = 6, .funs = scientific_format()) %>%
-  kable(., caption = "Significant (p<0.05) KEGG terms found in NR-hypo accesible neargenes 2kb") %>%
-  kable_paper("striped", full_width = FALSE) %>%
-  kable_styling(
-    full_width = FALSE,
-    position = "left",
-    bootstrap_options = c("striped", "hover")
-  ) %>%
-  scroll_box(width = "100%", height = "400px")
 
 
 ```
@@ -1319,62 +743,14 @@ NR3h_hypo_nomtable_2k %>%
 NR24h_hyper_nomtable <- readRDS("data/GO_KEGG_analysis/final_analysis/NR_24h_hyper_resgenes.RDS")
 NR24h_hypo_nomtable <- readRDS("data/GO_KEGG_analysis/final_analysis/NR_24h_hypo_resgenes.RDS")
 
-NR24h_hyper_nomtable <-  NR24h_hyper_nomtable$result %>% 
-  dplyr::select(c(source, term_id,
-                  term_name,intersection_size, 
-                   term_size, p_value))# %>% 
-NR24h_hypo_nomtable <-  NR24h_hypo_nomtable$result %>% 
-  dplyr::select(c(source, term_id,
-                  term_name,intersection_size, 
-                   term_size, p_value))
-
-NR24h_hyper_nomtable %>%
-  filter(source=="GO:BP", p_value < 0.05) %>% 
-  mutate_at(.vars = 6, .funs = scientific_format()) %>%
-  kable(.,caption = " Significant (p<0.05) GO:BP terms found in 24 hr NR-hyper accesible neargenes" ) %>%
-  kable_paper("striped", full_width = FALSE) %>%
-  kable_styling(
-    full_width = FALSE,
-    position = "left",
-    bootstrap_options = c("striped", "hover")
-  ) %>%
-  scroll_box(width = "100%", height = "400px")
-
-NR24h_hyper_nomtable %>%
-  filter(source=="KEGG", p_value < 0.05) %>%
-  mutate_at(.vars = 6, .funs = scientific_format()) %>%
-  kable(., caption = "Significant (p<0.05) KEGG terms found in 24 hr NR-hyper accesible neargenes") %>%
-  kable_paper("striped", full_width = FALSE) %>%
-  kable_styling(
-    full_width = FALSE,
-    position = "left",
-    bootstrap_options = c("striped", "hover")
-  ) %>%
-  scroll_box(width = "100%", height = "400px")
-
-NR24h_hypo_nomtable %>%
-   filter(source=="GO:BP", p_value < 0.05) %>% 
-  mutate_at(.vars = 6, .funs = scientific_format()) %>%
-  kable(.,caption = " Significant (p<0.05) GO:BP terms found in 24 hr NR-hypo accesible neargenes" ) %>%
-  kable_paper("striped", full_width = FALSE) %>%
-  kable_styling(
-    full_width = FALSE,
-    position = "left",
-    bootstrap_options = c("striped", "hover")
-  ) %>%
-  scroll_box(width = "100%", height = "400px")
-
-NR24h_hypo_nomtable %>%
-  filter(source=="KEGG", p_value < 0.05) %>%
-  mutate_at(.vars = 6, .funs = scientific_format()) %>%
-  kable(., caption = "Significant (p<0.05) KEGG terms found in 24 hr NR-hypo accesible neargenes") %>%
-  kable_paper("striped", full_width = FALSE) %>%
-  kable_styling(
-    full_width = FALSE,
-    position = "left",
-    bootstrap_options = c("striped", "hover")
-  ) %>%
-  scroll_box(width = "100%", height = "400px")
+GO_KEGG_analysis(EAR3h_hyper_2k,"GO:BP")+
+       geom_col(fill=fills[1])
+GO_KEGG_analysis(EAR3h_hypo_2k,"GO:BP")+
+       geom_col(fill=fills[1])
+GO_KEGG_analysis(EAR3h_hyper_2k,"KEGG")+
+       geom_col(fill=fills[1])
+GO_KEGG_analysis(EAR3h_hypo_2k,"KEGG")+
+       geom_col(fill=fills[1])
 
 
 ```
@@ -1386,62 +762,15 @@ NR24h_hyper_nomtable_2k <- readRDS("data/GO_KEGG_analysis/final_analysis/NR_24h_
 NR24h_hypo_nomtable_2k <- readRDS("data/GO_KEGG_analysis/final_analysis/NR_24h_hypo_resgenes_2k.RDS")
 
 
-NR24h_hyper_nomtable_2k <-  NR24h_hyper_nomtable_2k$result %>% 
-  dplyr::select(c(source, term_id,
-                  term_name,intersection_size, 
-                   term_size, p_value))# %>% 
-NR24h_hypo_nomtable_2k <-  NR24h_hypo_nomtable_2k$result %>% 
-  dplyr::select(c(source, term_id,
-                  term_name,intersection_size, 
-                   term_size, p_value))
+GO_KEGG_analysis(EAR3h_hyper_2k,"GO:BP")+
+       geom_col(fill=fills[1])
+GO_KEGG_analysis(EAR3h_hypo_2k,"GO:BP")+
+       geom_col(fill=fills[1])
+GO_KEGG_analysis(EAR3h_hyper_2k,"KEGG")+
+       geom_col(fill=fills[1])
+GO_KEGG_analysis(EAR3h_hypo_2k,"KEGG")+
+       geom_col(fill=fills[1])
 
-NR24h_hyper_nomtable_2k %>%
-  filter(source=="GO:BP", p_value < 0.05) %>% 
-  mutate_at(.vars = 6, .funs = scientific_format()) %>%
-  kable(.,caption = " Significant (p<0.05) GO:BP terms found in NR-hyper accesible neargenes 2kb" ) %>%
-  kable_paper("striped", full_width = FALSE) %>%
-  kable_styling(
-    full_width = FALSE,
-    position = "left",
-    bootstrap_options = c("striped", "hover")
-  ) %>%
-  scroll_box(width = "100%", height = "400px")
-
-NR24h_hyper_nomtable_2k %>%
-  filter(source=="KEGG", p_value < 0.05) %>%
-  mutate_at(.vars = 6, .funs = scientific_format()) %>%
-  kable(., caption = "Significant (p<0.05) KEGG terms found in NR-hyper accesible neargenes 2kb") %>%
-  kable_paper("striped", full_width = FALSE) %>%
-  kable_styling(
-    full_width = FALSE,
-    position = "left",
-    bootstrap_options = c("striped", "hover")
-  ) %>%
-  scroll_box(width = "100%", height = "400px")
-
-NR24h_hypo_nomtable_2k %>%
-   filter(source=="GO:BP", p_value < 0.05) %>% 
-  mutate_at(.vars = 6, .funs = scientific_format()) %>%
-  kable(.,caption = " Significant (p<0.05) GO:BP terms found in NR-hypo accesible neargenes 2kb" ) %>%
-  kable_paper("striped", full_width = FALSE) %>%
-  kable_styling(
-    full_width = FALSE,
-    position = "left",
-    bootstrap_options = c("striped", "hover")
-  ) %>%
-  scroll_box(width = "100%", height = "400px")
-
-NR24h_hypo_nomtable_2k %>%
-  filter(source=="KEGG", p_value < 0.05) %>%
-  mutate_at(.vars = 6, .funs = scientific_format()) %>%
-  kable(., caption = "Significant (p<0.05) KEGG terms found in NR-hypo accesible neargenes 2kb") %>%
-  kable_paper("striped", full_width = FALSE) %>%
-  kable_styling(
-    full_width = FALSE,
-    position = "left",
-    bootstrap_options = c("striped", "hover")
-  ) %>%
-  scroll_box(width = "100%", height = "400px")
 
 
 ```
@@ -1486,485 +815,6 @@ ggVennDiagram(list(NR_NG_3hhyper$entrezgene_id,NR_NG_3hhypo$entrezgene_id),
 ```
 
 
-```{r bargraph EAR 3hr}
-EAR3h_hyper_nomtable %>%
-filter(source=="GO:BP") %>% 
-  slice_head(n=10) %>% 
-  mutate(log10_p=(-log(p_value, base=10))) %>% 
-  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
-    geom_col(fill="#F8766D")+
-  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
-  theme_bw()+
-  ylab("")+
-  xlab(paste0("-log10 p-value"))+
-  guides(fill="none")+
-  theme(axis.text.y = element_text(color="black"))+
-  ggtitle("3 EAR_hyper accessible GO:BP terms")
-
-
-EAR3h_hyper_nomtable %>%
-filter(source=="KEGG") %>% 
-  slice_head(n=10) %>% 
-  mutate(log10_p=(-log(p_value, base=10))) %>% 
-  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
-    geom_col(fill="#F8766D")+
-  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
-  theme_bw()+
-  ylab("")+
-  xlab(paste0("-log10 p-value"))+
-  guides(fill="none")+
-  theme(axis.text.y = element_text(color="black"))+
-  ggtitle("3 EAR_hyper accessible KEGG pathways")
-
-EAR3h_hypo_nomtable %>%
-filter(source=="GO:BP") %>% 
-  slice_head(n=10) %>% 
-  mutate(log10_p=(-log(p_value, base=10))) %>% 
-  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
-    geom_col(fill="#F8766D")+
-  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
-  theme_bw()+
-  ylab("")+
-  xlab(paste0("-log10 p-value"))+
-  guides(fill="none")+
-  theme(axis.text.y = element_text(color="black"))+
-  ggtitle("3 EAR_hypo accessible GO:BP terms")
-
-EAR3h_hypo_nomtable %>%
-filter(source=="KEGG") %>% 
-  slice_head(n=10) %>% 
-  mutate(log10_p=(-log(p_value, base=10))) %>% 
-  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
-    geom_col(fill="#F8766D")+
-  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
-  theme_bw()+
-  ylab("")+
-  xlab(paste0("-log10 p-value"))+
-  guides(fill="none")+
-  theme(axis.text.y = element_text(color="black"))+
-  ggtitle("3 EAR_hypo accessible KEGG pathways")
-```
-
-```{r bargraph EAR 24hr}
-EAR24h_hyper_nomtable %>%
-filter(source=="GO:BP") %>% 
-  slice_head(n=10) %>% 
-  mutate(log10_p=(-log(p_value, base=10))) %>% 
-  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
-    geom_col(fill="#F8766D")+
-  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
-  theme_bw()+
-  ylab("")+
-  xlab(paste0("-log10 p-value"))+
-  guides(fill="none")+
-  theme(axis.text.y = element_text(color="black"))+
-  ggtitle("24 EAR_hyper accessible GO:BP terms")
-
-
-EAR24h_hyper_nomtable %>%
-filter(source=="KEGG") %>% 
-  slice_head(n=10) %>% 
-  mutate(log10_p=(-log(p_value, base=10))) %>% 
-  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
-    geom_col(fill="#F8766D")+
-  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
-  theme_bw()+
-  ylab("")+
-  xlab(paste0("-log10 p-value"))+
-  guides(fill="none")+
-  theme(axis.text.y = element_text(color="black"))+
-  ggtitle("24 EAR_hyper accessible KEGG pathways")
-
-EAR24h_hypo_nomtable %>%
-filter(source=="GO:BP") %>% 
-  slice_head(n=10) %>% 
-  mutate(log10_p=(-log(p_value, base=10))) %>% 
-  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
-    geom_col(fill="#F8766D")+
-  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
-  theme_bw()+
-  ylab("")+
-  xlab(paste0("-log10 p-value"))+
-  guides(fill="none")+
-  theme(axis.text.y = element_text(color="black"))+
-  ggtitle("24 EAR_hypo accessible GO:BP terms")
-
-EAR24h_hypo_nomtable %>%
-filter(source=="KEGG") %>% 
-  slice_head(n=10) %>% 
-  mutate(log10_p=(-log(p_value, base=10))) %>% 
-  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
-    geom_col(fill="#F8766D")+
-  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
-  theme_bw()+
-  ylab("")+
-  xlab(paste0("-log10 p-value"))+
-  guides(fill="none")+
-  theme(axis.text.y = element_text(color="black"))+
-  ggtitle("24 EAR_hypo accessible KEGG pathways")
-```
-
-```{r bargraph ESR 3hr}
-ESR3h_hyper_nomtable %>%
-filter(source=="GO:BP") %>% 
-  slice_head(n=20) %>% 
-  mutate(log10_p=(-log(p_value, base=10))) %>% 
-  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
-       geom_col(fill=fills[3])+
-  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
-  theme_bw()+
-  ylab("")+
-  xlab(paste0("-log10 p-value"))+
-  guides(fill="none")+
-  theme(axis.text.y = element_text(color="black"))+
-  ggtitle("3 ESR_hyper accessible GO:BP terms")
-
-
-ESR3h_hyper_nomtable %>%
-filter(source=="KEGG") %>% 
-  slice_head(n=10) %>% 
-  mutate(log10_p=(-log(p_value, base=10))) %>% 
-  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
-      geom_col(fill=fills[3])+
-  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
-  theme_bw()+
-  ylab("")+
-  xlab(paste0("-log10 p-value"))+
-  guides(fill="none")+
-  theme(axis.text.y = element_text(color="black"))+
-  ggtitle("3 ESR_hyper accessible KEGG pathways")
-
-ESR3h_hypo_nomtable %>%
-filter(source=="GO:BP") %>% 
-  slice_head(n=20) %>% 
-  mutate(log10_p=(-log(p_value, base=10))) %>% 
-  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
-     geom_col(fill=fills[3])+
-  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
-  theme_bw()+
-  ylab("")+
-  xlab(paste0("-log10 p-value"))+
-  guides(fill="none")+
-  theme(axis.text.y = element_text(color="black"))+
-  ggtitle("3 ESR_hypo accessible GO:BP terms")
-
-ESR3h_hypo_nomtable %>%
-filter(source=="KEGG") %>% 
-  slice_head(n=20) %>% 
-  mutate(log10_p=(-log(p_value, base=10))) %>% 
-  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
-     geom_col(fill=fills[3])+
-  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
-  theme_bw()+
-  ylab("")+
-  xlab(paste0("-log10 p-value"))+
-  guides(fill="none")+
-  theme(axis.text.y = element_text(color="black"))+
-  ggtitle("3 ESR_hypo accessible KEGG pathways")
-```
-
-```{r bargraph ESR 24hr}
-ESR24h_hyper_nomtable %>%
-filter(source=="GO:BP") %>% 
-  slice_head(n=20) %>% 
-  mutate(log10_p=(-log(p_value, base=10))) %>% 
-  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
-       geom_col(fill=fills[3])+
-  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
-  theme_bw()+
-  ylab("")+
-  xlab(paste0("-log10 p-value"))+
-  guides(fill="none")+
-  theme(axis.text.y = element_text(color="black"))+
-  ggtitle("24 ESR_hyper accessible GO:BP terms")
-
-
-ESR24h_hyper_nomtable %>%
-filter(source=="KEGG") %>% 
-  slice_head(n=10) %>% 
-  mutate(log10_p=(-log(p_value, base=10))) %>% 
-  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
-    geom_col(fill=fills[3])+
-  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
-  theme_bw()+
-  ylab("")+
-  xlab(paste0("-log10 p-value"))+
-  guides(fill="none")+
-  theme(axis.text.y = element_text(color="black"))+
-  ggtitle("24 ESR_hyper accessible KEGG pathways")
-
-ESR24h_hypo_nomtable %>%
-filter(source=="GO:BP") %>% 
-  slice_head(n=20) %>% 
-  mutate(log10_p=(-log(p_value, base=10))) %>% 
-  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
-       geom_col(fill=fills[3])+
-  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
-  theme_bw()+
-  ylab("")+
-  xlab(paste0("-log10 p-value"))+
-  guides(fill="none")+
-  theme(axis.text.y = element_text(color="black"))+
-  ggtitle("24 ESR_hypo accessible GO:BP terms")
-
-ESR24h_hypo_nomtable %>%
-filter(source=="KEGG") %>% 
-  slice_head(n=20) %>% 
-  mutate(log10_p=(-log(p_value, base=10))) %>% 
-  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
-      geom_col(fill=fills[3])+
-  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
-  theme_bw()+
-  ylab("")+
-  xlab(paste0("-log10 p-value"))+
-  guides(fill="none")+
-  theme(axis.text.y = element_text(color="black"))+
-  ggtitle("24 ESR_hypo accessible KEGG pathways")
-```
-
-
-```{r bargraph LR 3hr}
-LR3h_hyper_nomtable %>%
-filter(source=="GO:BP") %>% 
-  slice_head(n=20) %>% 
-  mutate(log10_p=(-log(p_value, base=10))) %>% 
-  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
-       geom_col(fill=fills[4])+
-  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
-  theme_bw()+
-  ylab("")+
-  xlab(paste0("-log10 p-value"))+
-  guides(fill="none")+
-  theme(axis.text.y = element_text(color="black"))+
-  ggtitle("3 LR_hyper accessible GO:BP terms")
-
-
-LR3h_hyper_nomtable %>%
-filter(source=="KEGG") %>% 
-  slice_head(n=20) %>% 
-  mutate(log10_p=(-log(p_value, base=10))) %>% 
-  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
-      geom_col(fill=fills[4])+
-  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
-  theme_bw()+
-  ylab("")+
-  xlab(paste0("-log10 p-value"))+
-  guides(fill="none")+
-  theme(axis.text.y = element_text(color="black"))+
-  ggtitle("3 LR_hyper accessible KEGG pathways")
-
-LR3h_hypo_nomtable %>%
-filter(source=="GO:BP") %>% 
-  slice_head(n=20) %>% 
-  mutate(log10_p=(-log(p_value, base=10))) %>% 
-  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
-     geom_col(fill=fills[4])+
-  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
-  theme_bw()+
-  ylab("")+
-  xlab(paste0("-log10 p-value"))+
-  guides(fill="none")+
-  theme(axis.text.y = element_text(color="black"))+
-  ggtitle("3 LR_hypo accessible GO:BP terms")
-
-LR3h_hypo_nomtable %>%
-filter(source=="KEGG") %>% 
-  slice_head(n=20) %>% 
-  mutate(log10_p=(-log(p_value, base=10))) %>% 
-  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
-     geom_col(fill=fills[4])+
-  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
-  theme_bw()+
-  ylab("")+
-  xlab(paste0("-log10 p-value"))+
-  guides(fill="none")+
-  theme(axis.text.y = element_text(color="black"))+
-  ggtitle("3 LR_hypo accessible KEGG pathways")
-```
-
-```{r bargraph LR 24hr}
-LR24h_hyper_nomtable %>%
-filter(source=="GO:BP") %>% 
-  slice_head(n=20) %>% 
-  mutate(log10_p=(-log(p_value, base=10))) %>% 
-  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
-       geom_col(fill=fills[4])+
-  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
-  theme_bw()+
-  ylab("")+
-  xlab(paste0("-log10 p-value"))+
-  guides(fill="none")+
-  theme(axis.text.y = element_text(color="black"))+
-  ggtitle("24 LR_hyper accessible GO:BP terms")
-
-
-LR24h_hyper_nomtable %>%
-filter(source=="KEGG") %>% 
-  slice_head(n=20) %>% 
-  mutate(log10_p=(-log(p_value, base=10))) %>% 
-  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
-    geom_col(fill=fills[4])+
-  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
-  theme_bw()+
-  ylab("")+
-  xlab(paste0("-log10 p-value"))+
-  guides(fill="none")+
-  theme(axis.text.y = element_text(color="black"))+
-  ggtitle("24 LR_hyper accessible KEGG pathways")
-
-LR24h_hypo_nomtable %>%
-filter(source=="GO:BP") %>% 
-  slice_head(n=20) %>% 
-  mutate(log10_p=(-log(p_value, base=10))) %>% 
-  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
-       geom_col(fill=fills[4])+
-  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
-  theme_bw()+
-  ylab("")+
-  xlab(paste0("-log10 p-value"))+
-  guides(fill="none")+
-  theme(axis.text.y = element_text(color="black"))+
-  ggtitle("24 LR_hypo accessible GO:BP terms")
-
-LR24h_hypo_nomtable %>%
-filter(source=="KEGG") %>% 
-  slice_head(n=10) %>% 
-  mutate(log10_p=(-log(p_value, base=10))) %>% 
-  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
-      geom_col(fill=fills[4])+
-  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
-  theme_bw()+
-  ylab("")+
-  xlab(paste0("-log10 p-value"))+
-  guides(fill="none")+
-  theme(axis.text.y = element_text(color="black"))+
-  ggtitle("24 LR_hypo accessible KEGG pathways")
-```
-
-
-
-```{r bargraph NR 3hr}
-NR3h_hyper_nomtable %>%
-filter(source=="GO:BP") %>% 
-  slice_head(n=20) %>% 
-  mutate(log10_p=(-log(p_value, base=10))) %>% 
-  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
-       geom_col(fill=fills[1])+
-  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
-  theme_bw()+
-  ylab("")+
-  xlab(paste0("-log10 p-value"))+
-  guides(fill="none")+
-  theme(axis.text.y = element_text(color="black"))+
-  ggtitle("3 NR_hyper accessible GO:BP terms")
-
-
-NR3h_hyper_nomtable %>%
-filter(source=="KEGG") %>% 
-  slice_head(n=10) %>% 
-  mutate(log10_p=(-log(p_value, base=10))) %>% 
-  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
-      geom_col(fill=fills[1])+
-  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
-  theme_bw()+
-  ylab("")+
-  xlab(paste0("-log10 p-value"))+
-  guides(fill="none")+
-  theme(axis.text.y = element_text(color="black"))+
-  ggtitle("3 NR_hyper accessible KEGG pathways")
-
-NR3h_hypo_nomtable %>%
-filter(source=="GO:BP") %>% 
-  slice_head(n=20) %>% 
-  mutate(log10_p=(-log(p_value, base=10))) %>% 
-  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
-     geom_col(fill=fills[1])+
-  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
-  theme_bw()+
-  ylab("")+
-  xlab(paste0("-log10 p-value"))+
-  guides(fill="none")+
-  theme(axis.text.y = element_text(color="black"))+
-  ggtitle("3 NR_hypo accessible GO:BP terms")
-
-NR3h_hypo_nomtable %>%
-filter(source=="KEGG") %>% 
-  slice_head(n=10) %>% 
-  mutate(log10_p=(-log(p_value, base=10))) %>% 
-  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
-     geom_col(fill=fills[1])+
-  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
-  theme_bw()+
-  ylab("")+
-  xlab(paste0("-log10 p-value"))+
-  guides(fill="none")+
-  theme(axis.text.y = element_text(color="black"))+
-  ggtitle("3 NR_hypo accessible KEGG pathways")
-```
-
-```{r bargraph NR 24hr}
-NR24h_hyper_nomtable %>%
-filter(source=="GO:BP") %>% 
-  slice_head(n=20) %>% 
-  mutate(log10_p=(-log(p_value, base=10))) %>% 
-  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
-       geom_col(fill=fills[1])+
-  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
-  theme_bw()+
-  ylab("")+
-  xlab(paste0("-log10 p-value"))+
-  guides(fill="none")+
-  theme(axis.text.y = element_text(color="black"))+
-  ggtitle("24 NR_hyper accessible GO:BP terms")
-
-
-NR24h_hyper_nomtable %>%
-filter(source=="KEGG") %>% 
-  slice_head(n=20) %>% 
-  mutate(log10_p=(-log(p_value, base=10))) %>% 
-  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
-    geom_col(fill=fills[1])+
-  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
-  theme_bw()+
-  ylab("")+
-  xlab(paste0("-log10 p-value"))+
-  guides(fill="none")+
-  theme(axis.text.y = element_text(color="black"))+
-  ggtitle("24 NR_hyper accessible KEGG pathways")
-
-NR24h_hypo_nomtable %>%
-filter(source=="GO:BP") %>% 
-  slice_head(n=10) %>% 
-  mutate(log10_p=(-log(p_value, base=10))) %>% 
-  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
-       geom_col(fill=fills[1])+
-  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
-  theme_bw()+
-  ylab("")+
-  xlab(paste0("-log10 p-value"))+
-  guides(fill="none")+
-  theme(axis.text.y = element_text(color="black"))+
-  ggtitle("24 NR_hypo accessible GO:BP terms")
-
-NR24h_hypo_nomtable %>%
-filter(source=="KEGG") %>% 
-  slice_head(n=10) %>% 
-  mutate(log10_p=(-log(p_value, base=10))) %>% 
-  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
-      geom_col(fill=fills[1])+
-  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
-  theme_bw()+
-  ylab("")+
-  xlab(paste0("-log10 p-value"))+
-  guides(fill="none")+
-  theme(axis.text.y = element_text(color="black"))+
-  ggtitle("24 NR_hypo accessible KEGG pathways")
-```
-
-
-
-
-
 ### 3 hr and 24 hour 2K Near-genes shared between hyper/hypo
 ```{r EARhypo-hyper_2k, echo=FALSE}
 
@@ -2002,485 +852,54 @@ ggVennDiagram(list(NR_NG_3hhyper_2k$entrezgene_id,NR_NG_3hhypo_2k$entrezgene_id)
 
 ```
 
+### ESR 4 groups
 
-```{r bargraph EAR_2k 3hr}
-EAR3h_hyper_nomtable_2k %>%
-filter(source=="GO:BP") %>% 
-  slice_head(n=10) %>% 
-  mutate(log10_p=(-log(p_value, base=10))) %>% 
-  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
-    geom_col(fill="#F8766D")+
-  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
-  theme_bw()+
-  ylab("")+
-  xlab(paste0("-log10 p-value"))+
-  guides(fill="none")+
-  theme(axis.text.y = element_text(color="black"))+
-  ggtitle("3_2k EAR_hyper accessible GO:BP terms")
+```{r  ESRABCD}
+ESR_A <- readRDS("data/GO_KEGG_analysis/final_analysis/ESR_3h_A_resgenes.RDS")
+ESR_A_2k <- readRDS("data/GO_KEGG_analysis/final_analysis/ESR_3h_A2k_resgenes.RDS")
+
+ESR_B <- readRDS("data/GO_KEGG_analysis/final_analysis/ESR_3h_B_resgenes.RDS")
+ESR_B_2k <- readRDS("data/GO_KEGG_analysis/final_analysis/ESR_3h_B2k_resgenes.RDS")
+
+ESR_C <- readRDS("data/GO_KEGG_analysis/final_analysis/ESR_3h_C_resgenes.RDS")
+ESR_C_2k <- readRDS("data/GO_KEGG_analysis/final_analysis/ESR_3h_C2k_resgenes.RDS")
 
 
-EAR3h_hyper_nomtable_2k %>%
-filter(source=="KEGG") %>% 
-  slice_head(n=10) %>% 
-  mutate(log10_p=(-log(p_value, base=10))) %>% 
-  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
-    geom_col(fill="#F8766D")+
-  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
-  theme_bw()+
-  ylab("")+
-  xlab(paste0("-log10 p-value"))+
-  guides(fill="none")+
-  theme(axis.text.y = element_text(color="black"))+
-  ggtitle("3_2k EAR_hyper accessible KEGG pathways")
+ESR_D <- readRDS("data/GO_KEGG_analysis/final_analysis/ESR_3h_D_resgenes.RDS")
+ESR_D_2k <- readRDS("data/GO_KEGG_analysis/final_analysis/ESR_3h_D2k_resgenes.RDS")
 
-EAR3h_hypo_nomtable_2k %>%
-filter(source=="GO:BP") %>% 
-  slice_head(n=10) %>% 
-  mutate(log10_p=(-log(p_value, base=10))) %>% 
-  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
-    geom_col(fill="#F8766D")+
-  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
-  theme_bw()+
-  ylab("")+
-  xlab(paste0("-log10 p-value"))+
-  guides(fill="none")+
-  theme(axis.text.y = element_text(color="black"))+
-  ggtitle("3_2k EAR_hypo accessible GO:BP terms")
 
-EAR3h_hypo_nomtable_2k %>%
-filter(source=="KEGG") %>% 
-  slice_head(n=10) %>% 
-  mutate(log10_p=(-log(p_value, base=10))) %>% 
-  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
-    geom_col(fill="#F8766D")+
-  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
-  theme_bw()+
-  ylab("")+
-  xlab(paste0("-log10 p-value"))+
-  guides(fill="none")+
-  theme(axis.text.y = element_text(color="black"))+
-  ggtitle("3_2k EAR_hypo accessible KEGG pathways")
+GO_KEGG_analysis(ESR_A,"GO:BP")
+GO_KEGG_analysis(ESR_A_2k,"GO:BP")
+GO_KEGG_analysis(ESR_A,"KEGG")
+GO_KEGG_analysis(ESR_A_2k,"KEGG")
+
+
 ```
 
-```{r bargraph EAR_2k 24hr}
-EAR24h_hyper_nomtable_2k %>%
-filter(source=="GO:BP") %>% 
-  slice_head(n=10) %>% 
-  mutate(log10_p=(-log(p_value, base=10))) %>% 
-  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
-    geom_col(fill="#F8766D")+
-  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
-  theme_bw()+
-  ylab("")+
-  xlab(paste0("-log10 p-value"))+
-  guides(fill="none")+
-  theme(axis.text.y = element_text(color="black"))+
-  ggtitle("24_2k EAR_hyper accessible GO:BP terms")
+```{r ESRB}
+GO_KEGG_analysis(ESR_B,"GO:BP")
+GO_KEGG_analysis(ESR_B_2k,"GO:BP")
+GO_KEGG_analysis(ESR_B,"KEGG")
+GO_KEGG_analysis(ESR_B_2k,"KEGG")
 
-
-EAR24h_hyper_nomtable_2k %>%
-filter(source=="KEGG") %>% 
-  slice_head(n=10) %>% 
-  mutate(log10_p=(-log(p_value, base=10))) %>% 
-  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
-    geom_col(fill="#F8766D")+
-  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
-  theme_bw()+
-  ylab("")+
-  xlab(paste0("-log10 p-value"))+
-  guides(fill="none")+
-  theme(axis.text.y = element_text(color="black"))+
-  ggtitle("24_2k EAR_hyper accessible KEGG pathways")
-
-EAR24h_hypo_nomtable_2k %>%
-filter(source=="GO:BP") %>% 
-  slice_head(n=10) %>% 
-  mutate(log10_p=(-log(p_value, base=10))) %>% 
-  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
-    geom_col(fill="#F8766D")+
-  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
-  theme_bw()+
-  ylab("")+
-  xlab(paste0("-log10 p-value"))+
-  guides(fill="none")+
-  theme(axis.text.y = element_text(color="black"))+
-  ggtitle("24_2k EAR_hypo accessible GO:BP terms")
-
-EAR24h_hypo_nomtable_2k %>%
-filter(source=="KEGG") %>% 
-  slice_head(n=10) %>% 
-  mutate(log10_p=(-log(p_value, base=10))) %>% 
-  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
-    geom_col(fill="#F8766D")+
-  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
-  theme_bw()+
-  ylab("")+
-  xlab(paste0("-log10 p-value"))+
-  guides(fill="none")+
-  theme(axis.text.y = element_text(color="black"))+
-  ggtitle("24_2k EAR_hypo accessible KEGG pathways")
 ```
 
+```{r ESRC}
+GO_KEGG_analysis(ESR_C,"GO:BP")
+GO_KEGG_analysis(ESR_C_2k,"GO:BP")
+GO_KEGG_analysis(ESR_C,"KEGG")
+GO_KEGG_analysis(ESR_C_2k,"KEGG")
 
-
-```{r bargraph ESR_2k 3hr}
-ESR3h_hyper_nomtable_2k %>%
-filter(source=="GO:BP") %>% 
-  slice_head(n=20) %>% 
-  mutate(log10_p=(-log(p_value, base=10))) %>% 
-  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
-       geom_col(fill=fills[3])+
-  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
-  theme_bw()+
-  ylab("")+
-  xlab(paste0("-log10 p-value"))+
-  guides(fill="none")+
-  theme(axis.text.y = element_text(color="black"))+
-  ggtitle("3_2k ESR_hyper accessible GO:BP terms")
-
-
-ESR3h_hyper_nomtable_2k %>%
-filter(source=="KEGG") %>% 
-  slice_head(n=10) %>% 
-  mutate(log10_p=(-log(p_value, base=10))) %>% 
-  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
-      geom_col(fill=fills[3])+
-  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
-  theme_bw()+
-  ylab("")+
-  xlab(paste0("-log10 p-value"))+
-  guides(fill="none")+
-  theme(axis.text.y = element_text(color="black"))+
-  ggtitle("3_2k ESR_hyper accessible KEGG pathways")
-
-ESR3h_hypo_nomtable_2k %>%
-filter(source=="GO:BP") %>% 
-  slice_head(n=20) %>% 
-  mutate(log10_p=(-log(p_value, base=10))) %>% 
-  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
-     geom_col(fill=fills[3])+
-  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
-  theme_bw()+
-  ylab("")+
-  xlab(paste0("-log10 p-value"))+
-  guides(fill="none")+
-  theme(axis.text.y = element_text(color="black"))+
-  ggtitle("3_2k ESR_hypo accessible GO:BP terms")
-
-ESR3h_hypo_nomtable_2k %>%
-filter(source=="KEGG") %>% 
-  slice_head(n=20) %>% 
-  mutate(log10_p=(-log(p_value, base=10))) %>% 
-  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
-     geom_col(fill=fills[3])+
-  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
-  theme_bw()+
-  ylab("")+
-  xlab(paste0("-log10 p-value"))+
-  guides(fill="none")+
-  theme(axis.text.y = element_text(color="black"))+
-  ggtitle("3_2k ESR_hypo accessible KEGG pathways")
 ```
 
-```{r bargraph ESR_2k 24hr}
-ESR24h_hyper_nomtable_2k %>%
-filter(source=="GO:BP") %>% 
-  slice_head(n=20) %>% 
-  mutate(log10_p=(-log(p_value, base=10))) %>% 
-  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
-       geom_col(fill=fills[3])+
-  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
-  theme_bw()+
-  ylab("")+
-  xlab(paste0("-log10 p-value"))+
-  guides(fill="none")+
-  theme(axis.text.y = element_text(color="black"))+
-  ggtitle("24_2k ESR_hyper accessible GO:BP terms")
+```{r ESRD}
+GO_KEGG_analysis(ESR_D,"GO:BP")
+GO_KEGG_analysis(ESR_D_2k,"GO:BP")
+GO_KEGG_analysis(ESR_D,"KEGG")
+GO_KEGG_analysis(ESR_D_2k,"KEGG")
 
-
-ESR24h_hyper_nomtable_2k %>%
-filter(source=="KEGG") %>% 
-  slice_head(n=10) %>% 
-  mutate(log10_p=(-log(p_value, base=10))) %>% 
-  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
-    geom_col(fill=fills[3])+
-  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
-  theme_bw()+
-  ylab("")+
-  xlab(paste0("-log10 p-value"))+
-  guides(fill="none")+
-  theme(axis.text.y = element_text(color="black"))+
-  ggtitle("24_2k ESR_hyper accessible KEGG pathways")
-
-ESR24h_hypo_nomtable_2k %>%
-filter(source=="GO:BP") %>% 
-  slice_head(n=20) %>% 
-  mutate(log10_p=(-log(p_value, base=10))) %>% 
-  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
-       geom_col(fill=fills[3])+
-  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
-  theme_bw()+
-  ylab("")+
-  xlab(paste0("-log10 p-value"))+
-  guides(fill="none")+
-  theme(axis.text.y = element_text(color="black"))+
-  ggtitle("24_2k ESR_hypo accessible GO:BP terms")
-
-ESR24h_hypo_nomtable_2k %>%
-filter(source=="KEGG") %>% 
-  slice_head(n=20) %>% 
-  mutate(log10_p=(-log(p_value, base=10))) %>% 
-  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
-      geom_col(fill=fills[3])+
-  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
-  theme_bw()+
-  ylab("")+
-  xlab(paste0("-log10 p-value"))+
-  guides(fill="none")+
-  theme(axis.text.y = element_text(color="black"))+
-  ggtitle("24_2k ESR_hypo accessible KEGG pathways")
 ```
-
-
-```{r bargraph LR_2k 3hr}
-LR3h_hyper_nomtable_2k %>%
-filter(source=="GO:BP") %>% 
-  slice_head(n=20) %>% 
-  mutate(log10_p=(-log(p_value, base=10))) %>% 
-  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
-       geom_col(fill=fills[4])+
-  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
-  theme_bw()+
-  ylab("")+
-  xlab(paste0("-log10 p-value"))+
-  guides(fill="none")+
-  theme(axis.text.y = element_text(color="black"))+
-  ggtitle("3_2k LR_hyper accessible GO:BP terms")
-
-
-LR3h_hyper_nomtable_2k %>%
-filter(source=="KEGG") %>% 
-  slice_head(n=20) %>% 
-  mutate(log10_p=(-log(p_value, base=10))) %>% 
-  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
-      geom_col(fill=fills[4])+
-  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
-  theme_bw()+
-  ylab("")+
-  xlab(paste0("-log10 p-value"))+
-  guides(fill="none")+
-  theme(axis.text.y = element_text(color="black"))+
-  ggtitle("3_2k LR_hyper accessible KEGG pathways")
-
-LR3h_hypo_nomtable_2k %>%
-filter(source=="GO:BP") %>% 
-  slice_head(n=20) %>% 
-  mutate(log10_p=(-log(p_value, base=10))) %>% 
-  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
-     geom_col(fill=fills[4])+
-  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
-  theme_bw()+
-  ylab("")+
-  xlab(paste0("-log10 p-value"))+
-  guides(fill="none")+
-  theme(axis.text.y = element_text(color="black"))+
-  ggtitle("3_2k LR_hypo accessible GO:BP terms")
-
-LR3h_hypo_nomtable_2k %>%
-filter(source=="KEGG") %>% 
-  slice_head(n=20) %>% 
-  mutate(log10_p=(-log(p_value, base=10))) %>% 
-  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
-     geom_col(fill=fills[4])+
-  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
-  theme_bw()+
-  ylab("")+
-  xlab(paste0("-log10 p-value"))+
-  guides(fill="none")+
-  theme(axis.text.y = element_text(color="black"))+
-  ggtitle("3_2k LR_hypo accessible KEGG pathways")
-```
-
-```{r bargraph LR_2k 24hr}
-LR24h_hyper_nomtable_2k %>%
-filter(source=="GO:BP") %>% 
-  slice_head(n=20) %>% 
-  mutate(log10_p=(-log(p_value, base=10))) %>% 
-  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
-       geom_col(fill=fills[4])+
-  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
-  theme_bw()+
-  ylab("")+
-  xlab(paste0("-log10 p-value"))+
-  guides(fill="none")+
-  theme(axis.text.y = element_text(color="black"))+
-  ggtitle("24_2k LR_hyper accessible GO:BP terms")
-
-
-LR24h_hyper_nomtable_2k %>%
-filter(source=="KEGG") %>% 
-  slice_head(n=20) %>% 
-  mutate(log10_p=(-log(p_value, base=10))) %>% 
-  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
-    geom_col(fill=fills[4])+
-  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
-  theme_bw()+
-  ylab("")+
-  xlab(paste0("-log10 p-value"))+
-  guides(fill="none")+
-  theme(axis.text.y = element_text(color="black"))+
-  ggtitle("24_2k LR_hyper accessible KEGG pathways")
-
-LR24h_hypo_nomtable_2k %>%
-filter(source=="GO:BP") %>% 
-  slice_head(n=20) %>% 
-  mutate(log10_p=(-log(p_value, base=10))) %>% 
-  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
-       geom_col(fill=fills[4])+
-  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
-  theme_bw()+
-  ylab("")+
-  xlab(paste0("-log10 p-value"))+
-  guides(fill="none")+
-  theme(axis.text.y = element_text(color="black"))+
-  ggtitle("24_2k LR_hypo accessible GO:BP terms")
-
-LR24h_hypo_nomtable_2k %>%
-filter(source=="KEGG") %>% 
-  slice_head(n=10) %>% 
-  mutate(log10_p=(-log(p_value, base=10))) %>% 
-  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
-      geom_col(fill=fills[4])+
-  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
-  theme_bw()+
-  ylab("")+
-  xlab(paste0("-log10 p-value"))+
-  guides(fill="none")+
-  theme(axis.text.y = element_text(color="black"))+
-  ggtitle("24_2k LR_hypo accessible KEGG pathways")
-```
-
-
-
-```{r bargraph NR_2k 3hr}
-NR3h_hyper_nomtable_2k %>%
-filter(source=="GO:BP") %>% 
-  slice_head(n=20) %>% 
-  mutate(log10_p=(-log(p_value, base=10))) %>% 
-  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
-       geom_col(fill=fills[1])+
-  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
-  theme_bw()+
-  ylab("")+
-  xlab(paste0("-log10 p-value"))+
-  guides(fill="none")+
-  theme(axis.text.y = element_text(color="black"))+
-  ggtitle("3_2k NR_hyper accessible GO:BP terms")
-
-
-NR3h_hyper_nomtable_2k %>%
-filter(source=="KEGG") %>% 
-  slice_head(n=10) %>% 
-  mutate(log10_p=(-log(p_value, base=10))) %>% 
-  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
-      geom_col(fill=fills[1])+
-  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
-  theme_bw()+
-  ylab("")+
-  xlab(paste0("-log10 p-value"))+
-  guides(fill="none")+
-  theme(axis.text.y = element_text(color="black"))+
-  ggtitle("3_2k NR_hyper accessible KEGG pathways")
-
-NR3h_hypo_nomtable_2k %>%
-filter(source=="GO:BP") %>% 
-  slice_head(n=20) %>% 
-  mutate(log10_p=(-log(p_value, base=10))) %>% 
-  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
-     geom_col(fill=fills[1])+
-  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
-  theme_bw()+
-  ylab("")+
-  xlab(paste0("-log10 p-value"))+
-  guides(fill="none")+
-  theme(axis.text.y = element_text(color="black"))+
-  ggtitle("3_2k NR_hypo accessible GO:BP terms")
-
-NR3h_hypo_nomtable_2k %>%
-filter(source=="KEGG") %>% 
-  slice_head(n=10) %>% 
-  mutate(log10_p=(-log(p_value, base=10))) %>% 
-  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
-     geom_col(fill=fills[1])+
-  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
-  theme_bw()+
-  ylab("")+
-  xlab(paste0("-log10 p-value"))+
-  guides(fill="none")+
-  theme(axis.text.y = element_text(color="black"))+
-  ggtitle("3_2k NR_hypo accessible KEGG pathways")
-```
-
-```{r bargraph NR_2k 24hr}
-NR24h_hyper_nomtable_2k %>%
-filter(source=="GO:BP") %>% 
-  slice_head(n=20) %>% 
-  mutate(log10_p=(-log(p_value, base=10))) %>% 
-  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
-       geom_col(fill=fills[1])+
-  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
-  theme_bw()+
-  ylab("")+
-  xlab(paste0("-log10 p-value"))+
-  guides(fill="none")+
-  theme(axis.text.y = element_text(color="black"))+
-  ggtitle("24_2k NR_hyper accessible GO:BP terms")
-
-
-NR24h_hyper_nomtable_2k %>%
-filter(source=="KEGG") %>% 
-  slice_head(n=20) %>% 
-  mutate(log10_p=(-log(p_value, base=10))) %>% 
-  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
-    geom_col(fill=fills[1])+
-  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
-  theme_bw()+
-  ylab("")+
-  xlab(paste0("-log10 p-value"))+
-  guides(fill="none")+
-  theme(axis.text.y = element_text(color="black"))+
-  ggtitle("24_2k NR_hyper accessible KEGG pathways")
-
-NR24h_hypo_nomtable_2k %>%
-filter(source=="GO:BP") %>% 
-  slice_head(n=10) %>% 
-  mutate(log10_p=(-log(p_value, base=10))) %>% 
-  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
-       geom_col(fill=fills[1])+
-  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
-  theme_bw()+
-  ylab("")+
-  xlab(paste0("-log10 p-value"))+
-  guides(fill="none")+
-  theme(axis.text.y = element_text(color="black"))+
-  ggtitle("24_2k NR_hypo accessible GO:BP terms")
-
-NR24h_hypo_nomtable_2k %>%
-filter(source=="KEGG") %>% 
-  slice_head(n=10) %>% 
-  mutate(log10_p=(-log(p_value, base=10))) %>% 
-  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
-      geom_col(fill=fills[1])+
-  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
-  theme_bw()+
-  ylab("")+
-  xlab(paste0("-log10 p-value"))+
-  guides(fill="none")+
-  theme(axis.text.y = element_text(color="black"))+
-  ggtitle("24_2k NR_hypo accessible KEGG pathways")
-```
-
-
 
 
 
