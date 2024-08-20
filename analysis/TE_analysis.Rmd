@@ -149,7 +149,7 @@ all_TEs_gr %>%
     geom_density(aes(fill=repClass, alpha = 0.5))+
   geom_vline(aes(xintercept = median(width)), linetype = 2)+
   theme_classic()+
-  ggtitle("Distribution of widths of all LINEs across human genome",subtitle = " limited x axis")+
+  ggtitle("Distribution of lengths of all LINEs across human genome",subtitle = " limited x axis")+
   coord_cartesian(xlim= c(0,2500))
 
 all_TEs_gr %>% 
@@ -160,7 +160,7 @@ all_TEs_gr %>%
     geom_density(aes(fill=repClass, alpha = 0.5))+
    geom_vline(aes(xintercept = median(width)), linetype = 2)+
   theme_classic()+
-  ggtitle("Distribution of widths of all SINEs across human genome")
+  ggtitle("Distribution of lengths of all SINEs across human genome")
 
 all_TEs_gr %>% 
   as.data.frame() %>% 
@@ -170,7 +170,7 @@ all_TEs_gr %>%
     geom_density(aes(fill=repClass, alpha = 0.5))+
    geom_vline(aes(xintercept = median(width)), linetype = 2)+
   theme_classic()+
-  ggtitle("Distribution of widths of all LTRs across human genome",subtitle = " limited x axis")+
+  ggtitle("Distribution of lengths of all LTRs across human genome",subtitle = " limited x axis")+
   coord_cartesian(xlim= c(0,2500))
 
 all_TEs_gr %>% 
@@ -181,7 +181,7 @@ all_TEs_gr %>%
     geom_density(aes(fill=repClass, alpha = 0.5))+
    geom_vline(aes(xintercept = median(width)), linetype = 2)+
   theme_classic()+
-  ggtitle("Distribution of widths of all DNA-TEs across human genome",subtitle = " limited x axis")+
+  ggtitle("Distribution of lengths of all DNA-TEs across human genome",subtitle = " limited x axis")+
   coord_cartesian(xlim= c(0,2500))
 
 all_TEs_gr %>% 
@@ -192,7 +192,7 @@ all_TEs_gr %>%
     geom_density(aes(alpha = 0.5))+
    geom_vline(aes(xintercept = median(width)), linetype = 2)+
   theme_classic()+
-  ggtitle("Distribution of widths of all Retroposons across human genome",subtitle = " limited x axis")+
+  ggtitle("Distribution of lengths of all Retroposons across human genome",subtitle = " limited x axis")+
    coord_cartesian(xlim= c(0,2500))
 
 all_TEs_gr %>% 
@@ -2229,7 +2229,7 @@ This section reclassifies any TE that is NOT a LINE, SINE, LTR, DNA, or retropos
 ```{r breakdown by specific cluster}
 
 
-per_cov <- 00
+per_cov <- 00.5
 subsetall_df <-  TE_mrc_status_list %>% 
   mutate(repClass_org = repClass) %>% #copy repClass for storage
   mutate(repClass=if_else(##relable repClass with other
@@ -2340,10 +2340,105 @@ TE_mrc_status_list %>%
      ungroup() %>% 
      pivot_longer(., cols= c(TE_peak, not_TE_peak), names_to = c("TEstatus"), values_to = "n") %>% 
      mutate(percent_mrc= n/summary*100)
+
+```
+
+```{r percov mess}
+
+per_cov <- 0.5
+  TE_mrc_status_list %>% 
+   mutate(repClass_org = repClass) %>% #copy repClass for storage
+  mutate(repClass=if_else(##relable repClass with other
+    repClass_org=="LINE", repClass_org,if_else(repClass_org=="SINE",repClass_org,if_else(repClass_org=="LTR", repClass_org, if_else(repClass_org=="DNA", repClass_org, if_else(repClass_org=="Retroposon",repClass_org,"Other")))))) %>% 
+   dplyr::select(peakid,repName,repClass,repFamily,width,TEstatus, mrc, per_ol) %>% 
+   mutate(mrc="all_peaks") %>% 
+   rbind(TE_mrc_status_list) %>% 
+    dplyr::filter(is.na(per_ol)| per_ol > per_cov) %>% 
+     # dplyr::filter( per_ol > per_cov)
+   mutate(repClass=factor(repClass)) %>%
+   mutate(TEstatus=factor(TEstatus, levels = c("TE_peak","not_TE_peak")))%>% 
+   dplyr::filter(mrc != "not_mrc") %>% 
+  mutate(mrc=factor(mrc, levels = c("EAR","ESR", "LR", "NR","all_peaks"))) %>% 
+  ggplot(., aes(x=mrc, fill= TEstatus))+
+  geom_bar(position="fill", col="black")+
+  theme_classic()+
+  ggtitle(paste("TE status by MRC and Family",per_cov)) 
+  
+TE_mrc_status_list %>% 
+   mutate(repClass_org = repClass) %>% 
+  dplyr::filter(!repClass %in% notinterested_list) %>% 
+  mutate(repClass=if_else(##relable repClass with other
+    repClass_org=="LINE", repClass_org,
+    if_else(repClass_org=="SINE",repClass_org,
+            if_else(repClass_org=="LTR", repClass_org, 
+                    if_else(repClass_org=="DNA", repClass_org,
+                            if_else(repClass_org=="Retroposon",repClass_org,"Other")))))) %>% 
+   dplyr::select(peakid,repName,repClass,repFamily,width,TEstatus, mrc, per_ol) %>% 
+  rbind(Lines_Etc) %>% 
+   dplyr::filter(is.na(per_ol)| per_ol > per_cov) %>% 
+  mutate(repClass=factor(repClass)) %>%
+   mutate(TEstatus=factor(TEstatus, levels = c("TE_peak","not_TE_peak")))%>% 
+   dplyr::filter(mrc != "not_mrc") %>% 
+  mutate(mrc=factor(mrc, levels = c("EAR","ESR", "LR", "NR","all_peaks"))) %>% 
+     group_by(mrc, TEstatus) %>% 
+     count() %>% 
+     pivot_wider(., id_cols = mrc, names_from = TEstatus, values_from = n) %>% 
+     rowwise() %>% 
+     mutate(summary= sum(c_across(TE_peak:not_TE_peak))) %>% 
+     ungroup() %>% 
+     pivot_longer(., cols= c(TE_peak, not_TE_peak), names_to = c("TEstatus"), values_to = "n") %>% 
+     mutate(percent_mrc= n/summary*100)  
+  
+  
+
+TE_mrc_status_list %>% 
+   mutate(repClass_org = repClass) %>% 
+  dplyr::filter(!repClass %in% notinterested_list) %>% 
+  mutate(repClass=if_else(##relable repClass with other
+    repClass_org=="LINE", repClass_org,
+    if_else(repClass_org=="SINE",repClass_org,
+            if_else(repClass_org=="LTR", repClass_org, 
+                    if_else(repClass_org=="DNA", repClass_org,
+                            if_else(repClass_org=="Retroposon",repClass_org,"Other")))))) %>% 
+   dplyr::select(peakid,repName,repClass,repFamily,width,TEstatus, mrc, per_ol) %>% 
+  rbind(Lines_Etc) %>% 
+  dplyr::filter(is.na(per_ol)| per_ol > per_cov) %>% 
+   mutate(repClass=factor(repClass)) %>% 
+   mutate(TEstatus=factor(TEstatus, levels = c("TE_peak","not_TE_peak")))%>% 
+   dplyr::filter(mrc != "not_mrc") %>% 
+  mutate(mrc=factor(mrc, levels = c("EAR","ESR", "LR", "NR","all_peaks"))) %>% 
+  ggplot(., aes(x=mrc, fill= TEstatus))+
+  geom_bar(position="fill", col="black")+
+  theme_classic()+
+  ggtitle(paste("TE status by MRC and Family", per_cov), subtitle = "Just LINEs, SINEs,LTRs, DNAs, Retroposons, and all peaks in the MRC families")
+
+
+TE_mrc_status_list %>% 
+   mutate(repClass_org = repClass) %>% 
+  dplyr::filter(!repClass %in% notinterested_list) %>% 
+  mutate(repClass=if_else(##relable repClass with other
+    repClass_org=="LINE", repClass_org,
+    if_else(repClass_org=="SINE",repClass_org,
+            if_else(repClass_org=="LTR", repClass_org, 
+                    if_else(repClass_org=="DNA", repClass_org,
+                            if_else(repClass_org=="Retroposon",repClass_org,"Other")))))) %>% 
+   dplyr::select(peakid,repName,repClass,repFamily,width,TEstatus, mrc, per_ol) %>% 
+  rbind(Lines_Etc) %>% 
+  dplyr::filter(is.na(per_ol)| per_ol > per_cov) %>% 
+  mutate(repClass=factor(repClass)) %>%
+   mutate(TEstatus=factor(TEstatus, levels = c("TE_peak","not_TE_peak")))%>% 
+   dplyr::filter(mrc != "not_mrc") %>% 
+  mutate(mrc=factor(mrc, levels = c("EAR","ESR", "LR", "NR","all_peaks"))) %>% 
+     group_by(mrc, TEstatus) %>% 
+     count() %>% 
+     pivot_wider(., id_cols = mrc, names_from = TEstatus, values_from = n) %>% 
+     rowwise() %>% 
+     mutate(summary= sum(c_across(TE_peak:not_TE_peak))) %>% 
+     ungroup() %>% 
+     pivot_longer(., cols= c(TE_peak, not_TE_peak), names_to = c("TEstatus"), values_to = "n") %>% 
+     mutate(percent_mrc= n/summary*100)
      
    
-
-
 ```
 
 

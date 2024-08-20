@@ -106,6 +106,8 @@ toplist_ATAC <- readRDS("data/toplist_n45.RDS")
 median_24_lfc <- readRDS("data/median_24_lfc.RDS") %>% ungroup()
 median_3_lfc <- readRDS("data/median_3_lfc.RDS") %>% ungroup()
 
+
+
 hyper_3med <- median_3_lfc %>% 
   dplyr::filter(median > 0)
 
@@ -158,6 +160,7 @@ EAR_NG_3hhyper <- TSS_NG_data %>%
   dplyr::select(entrezgene_id) %>% 
   distinct()
 
+
 ESR_NG_3hhyper <- TSS_NG_data %>% 
     dplyr::filter(peakid %in% ESR_df$id) %>%
    dplyr::filter(peakid %in% hyper_3med$peak) %>% 
@@ -199,6 +202,7 @@ LR_NG_3hhyper <- TSS_NG_data %>%
   dplyr::filter(dist_to_NG<20000 & dist_to_NG>-20000) %>% 
  dplyr::select(entrezgene_id) %>% 
   distinct()
+
 
 NR_NG_3hhyper <- TSS_NG_data %>% 
     dplyr::filter(peakid %in% NR_df$id) %>%
@@ -431,6 +435,18 @@ NR_NG_24hhypo_2k <- TSS_NG_data %>%
  dplyr::select(entrezgene_id) %>% 
   distinct()
 
+NR_NG_20k <- TSS_NG_data %>% 
+    dplyr::filter(peakid %in% NR_df$id) %>%
+   dplyr::filter(dist_to_NG<20000 & dist_to_NG>-20000) %>% 
+    dplyr::select(entrezgene_id) %>% 
+  distinct()
+
+NR_NG_2k <- TSS_NG_data %>% 
+    dplyr::filter(peakid %in% NR_df$id) %>%
+   dplyr::filter(dist_to_NG<2000 & dist_to_NG>-2000) %>% 
+    dplyr::select(entrezgene_id) %>% 
+  distinct()
+
 
 ```
 ## Introduction
@@ -457,7 +473,9 @@ GO_KEGG_analysis(EAR3h_hyper,"KEGG")+
   geom_col(fill="#F8766D")
 GO_KEGG_analysis(EAR3h_hypo,"KEGG")+
   geom_col(fill="#F8766D")
-ESR_3h_D_resgenes <- gost(query = ESR_NG_D$entrezgene_id,
+
+
+NR_NG_2kresgenes <- gost(query = NR_NG_2k$entrezgene_id,
                     organism = "hsapiens",
                     significant = FALSE,
                     ordered_query = FALSE,
@@ -468,7 +486,7 @@ ESR_3h_D_resgenes <- gost(query = ESR_NG_D$entrezgene_id,
                     correction_method = c("fdr"),
                     custom_bg = background_genes$ENTREZID,
                     sources=c("GO:BP","KEGG"))
-saveRDS(ESR_3h_D_resgenes,"data/GO_KEGG_analysis/final_analysis/ESR_3h_D_resgenes.RDS")
+saveRDS(NR_NG_2kresgenes,"data/GO_KEGG_analysis/final_analysis/NR_NG_2kresgenes.RDS")
 
 
 
@@ -692,6 +710,23 @@ GO_KEGG_analysis(EAR3h_hypo_2k,"KEGG")+
 
 ### NR response genes
 
+#### NR all genes 20/2k
+```{r NRall}
+genes_NR_20k <- readRDS("data/GO_KEGG_analysis/final_analysis/NR_NG_resgenes.RDS")
+genes_NR_2k <- readRDS("data/GO_KEGG_analysis/final_analysis/NR_NG_2kresgenes.RDS")
+GO_KEGG_analysis(genes_NR_20k,"GO:BP")+
+       geom_col(fill=fills[1])
+GO_KEGG_analysis(genes_NR_2k,"GO:BP")+
+       geom_col(fill=fills[1])
+GO_KEGG_analysis(genes_NR_20k,"KEGG")+
+       geom_col(fill=fills[1])
+GO_KEGG_analysis(genes_NR_2k,"KEGG")+
+       geom_col(fill=fills[1])
+
+
+```
+
+
 #### Hyper/hypo-3hr
 
 ```{r GO_NR 3hr}
@@ -774,6 +809,10 @@ GO_KEGG_analysis(EAR3h_hypo_2k,"KEGG")+
 
 
 ```
+
+#### NR enrichment list
+
+
 
 
 
