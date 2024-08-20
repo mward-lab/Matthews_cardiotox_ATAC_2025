@@ -2283,6 +2283,29 @@ TE_mrc_status_list %>%
   theme_classic()+
   ggtitle(paste("TE status by MRC and Family","all"))
 
+
+TE_counts_nofilt <- TE_mrc_status_list %>% 
+   mutate(repClass_org = repClass) %>% #copy repClass for storage
+  mutate(repClass=if_else(##relable repClass with other
+    repClass_org=="LINE", repClass_org,if_else(repClass_org=="SINE",repClass_org,if_else(repClass_org=="LTR", repClass_org, if_else(repClass_org=="DNA", repClass_org, if_else(repClass_org=="Retroposon",repClass_org,"Other")))))) %>% 
+   dplyr::select(peakid,repName,repClass,repFamily,width,TEstatus, mrc, per_ol) %>% 
+   mutate(mrc="all_peaks") %>% 
+   rbind(TE_mrc_status_list) %>% 
+  mutate(repClass=factor(repClass)) %>%
+   mutate(TEstatus=factor(TEstatus, levels = c("TE_peak","not_TE_peak")))%>% 
+   dplyr::filter(mrc != "not_mrc") %>% 
+  mutate(mrc=factor(mrc, levels = c("EAR","ESR", "LR", "NR","all_peaks"))) %>% 
+     group_by(mrc, TEstatus) %>% 
+     count() %>% 
+     pivot_wider(., id_cols = mrc, names_from = TEstatus, values_from = n) %>% 
+     rowwise() %>% 
+     mutate(summary= sum(c_across(TE_peak:not_TE_peak))) %>% 
+     ungroup() %>% 
+     pivot_longer(., cols= c(TE_peak, not_TE_peak), names_to = c("TEstatus"), values_to = "n") %>% 
+     mutate(percent_mrc= n/summary*100)
+   
+
+
 notinterested_list <- c("Simple_repeat","Satellite","Low_complexity","DNA?","snRNA","tRNA","Unknown","RC","LTR?","srpRNA","scRNA","rRNA","RC?","SINE?")
 Lines_Etc <- TE_mrc_status_list %>% 
    mutate(repClass_org = repClass) %>% 
@@ -2317,7 +2340,7 @@ TE_mrc_status_list %>%
   ggtitle(paste("TE status by MRC and Family"), subtitle = "Just LINEs, SINEs,LTRs, DNAs, Retroposons, and all peaks in the MRC families")
 
 
-TE_mrc_status_list %>% 
+LiSiLTDNRe_TE_no_cut <- TE_mrc_status_list %>% 
    mutate(repClass_org = repClass) %>% 
   dplyr::filter(!repClass %in% notinterested_list) %>% 
   mutate(repClass=if_else(##relable repClass with other
@@ -2340,6 +2363,10 @@ TE_mrc_status_list %>%
      ungroup() %>% 
      pivot_longer(., cols= c(TE_peak, not_TE_peak), names_to = c("TEstatus"), values_to = "n") %>% 
      mutate(percent_mrc= n/summary*100)
+
+LiSiLTDNRe_TE_no_cut
+
+
 
 ```
 
@@ -2413,7 +2440,7 @@ TE_mrc_status_list %>%
   ggtitle(paste("TE status by MRC and Family", per_cov), subtitle = "Just LINEs, SINEs,LTRs, DNAs, Retroposons, and all peaks in the MRC families")
 
 
-TE_mrc_status_list %>% 
+LiSiLTDNRe_TE_df <- TE_mrc_status_list %>% 
    mutate(repClass_org = repClass) %>% 
   dplyr::filter(!repClass %in% notinterested_list) %>% 
   mutate(repClass=if_else(##relable repClass with other
@@ -2438,6 +2465,8 @@ TE_mrc_status_list %>%
      pivot_longer(., cols= c(TE_peak, not_TE_peak), names_to = c("TEstatus"), values_to = "n") %>% 
      mutate(percent_mrc= n/summary*100)
      
+
+LiSiLTDNRe_TE_df 
    
 ```
 
@@ -2668,40 +2697,45 @@ CUG_mrc_status_list %>%
   
 ```
 
-##### This code is for making peak lists for GO and MEME analysis:
+##### This code is for Chi analysis
 ```{r peak lists}
-# CUG_mrc_status_list
+# ##complete counts()
 
-notTE_NR <- TE_mrc_status_list %>% 
-  separate_wider_delim(col="peakid",".", 
-                       names= c("seqnames","start","end"), 
-                       cols_remove = FALSE) %>%
-  dplyr::filter(mrc !="not_mrc") %>% 
-  dplyr::filter(TEstatus=="not_TE_peak" & mrc =="NR")
+chitest_LRvNRTE_nf <- matrix(c(TE_counts_nofilt$n[5],TE_counts_nofilt$n[6],TE_counts_nofilt$n[7],TE_counts_nofilt$n[8]), ncol=2, byrow=TRUE)
+chisq.test(chitest_LRvNRTE_nf)
 
-notTE_EAR <- TE_mrc_status_list %>% 
-  separate_wider_delim(col="peakid",".", 
-                       names= c("seqnames","start","end"), 
-                       cols_remove = FALSE) %>%
-  dplyr::filter(mrc !="not_mrc") %>% 
-  dplyr::filter(TEstatus=="not_TE_peak" & mrc =="EAR")
+chitest_EARvNRTE_nf <- matrix(c(TE_counts_nofilt$n[1],TE_counts_nofilt$n[2],TE_counts_nofilt$n[7],TE_counts_nofilt$n[8]), ncol=2, byrow=TRUE)
+chisq.test(chitest_EARvNRTE_nf)
 
-notTE_ESR <- TE_mrc_status_list %>% 
-  separate_wider_delim(col="peakid",".", 
-                       names= c("seqnames","start","end"), 
-                       cols_remove = FALSE) %>%
-  dplyr::filter(mrc !="not_mrc") %>% 
-  dplyr::filter(TEstatus=="not_TE_peak" & mrc =="ESR")
+chitest_ESRvNRTE_nf <- matrix(c(TE_counts_nofilt$n[3],TE_counts_nofilt$n[4],TE_counts_nofilt$n[7],TE_counts_nofilt$n[8]), ncol=2, byrow=TRUE)
+chisq.test(chitest_ESRvNRTE_nf)
 
-notTE_LR <- TE_mrc_status_list %>% 
-  separate_wider_delim(col="peakid",".", 
-                       names= c("seqnames","start","end"), 
-                       cols_remove = FALSE) %>%
-  dplyr::filter(mrc !="not_mrc") %>% 
-  dplyr::filter(TEstatus=="not_TE_peak" & mrc =="LR")
+### just subsets
 
 
-  
+chitest_LRvNRTE_nc <- matrix(c(LiSiLTDNRe_TE_no_cut$n[5],LiSiLTDNRe_TE_no_cut$n[6],LiSiLTDNRe_TE_no_cut$n[7],LiSiLTDNRe_TE_no_cut$n[8]), ncol=2, byrow=TRUE)
+chisq.test(chitest_LRvNRTE_nc)
+
+chitest_EARvNRTE_nc <- matrix(c(LiSiLTDNRe_TE_no_cut$n[1],LiSiLTDNRe_TE_no_cut$n[2],LiSiLTDNRe_TE_no_cut$n[7],LiSiLTDNRe_TE_no_cut$n[8]), ncol=2, byrow=TRUE)
+chisq.test(chitest_EARvNRTE_nc)
+
+chitest_ESRvNRTE_nc <- matrix(c(LiSiLTDNRe_TE_no_cut$n[3],LiSiLTDNRe_TE_no_cut$n[4],LiSiLTDNRe_TE_no_cut$n[7],LiSiLTDNRe_TE_no_cut$n[8]), ncol=2, byrow=TRUE)
+chisq.test(chitest_ESRvNRTE_nc)
+
+
+
+##### JUst using the .5 overlap cutoff
+
+chitest_LRvNRTE <- matrix(c(LiSiLTDNRe_TE_df$n[5],LiSiLTDNRe_TE_df$n[6],LiSiLTDNRe_TE_df$n[7],LiSiLTDNRe_TE_df$n[8]), ncol=2, byrow=TRUE)
+chisq.test(chitest_LRvNRTE)
+
+chitest_EARvNRTE <- matrix(c(LiSiLTDNRe_TE_df$n[1],LiSiLTDNRe_TE_df$n[2],LiSiLTDNRe_TE_df$n[7],LiSiLTDNRe_TE_df$n[8]), ncol=2, byrow=TRUE)
+chisq.test(chitest_EARvNRTE)
+
+chitest_ESRvNRTE <- matrix(c(LiSiLTDNRe_TE_df$n[3],LiSiLTDNRe_TE_df$n[4],LiSiLTDNRe_TE_df$n[7],LiSiLTDNRe_TE_df$n[8]), ncol=2, byrow=TRUE)
+chisq.test(chitest_ESRvNRTE)
+
+
 ```
 ### SNP
 ```{r SNPnPeaknTE}
