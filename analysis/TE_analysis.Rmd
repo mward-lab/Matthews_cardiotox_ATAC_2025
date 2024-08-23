@@ -475,7 +475,7 @@ all_TEs_gr %>%
   mutate(repClass=factor(repClass)) %>% 
   dplyr::filter(repClass=="Retroposon") %>% 
   ggplot(., aes(x=width))+
-    geom_density(aes(alpha = 0.5))+
+    geom_density(aes(fill=repClass,alpha = 0.5))+
    geom_vline(aes(xintercept = median(width)), linetype = 2)+
   theme_classic()+
   ggtitle("Distribution of lengths of all Retroposons across human genome",subtitle = " limited x axis")+
@@ -499,7 +499,9 @@ Col_TSS_data_gr %>%
   theme_classic()+
   ggtitle("Distribution of peak length (bps) across all experimentally derived peaks",subtitle = " limited x axis")+
   coord_cartesian(xlim= c(0,2500))
+```
 
+```{r overlapping peaks}
 fullDF_overlap <- join_overlap_intersect(TSS_data_gr,all_TEs_gr)
 fullDF_overlap %>% 
   as.data.frame() %>% 
@@ -534,7 +536,7 @@ testingol %>% as.data.frame() %>%
 ```
   The first dataframe to subset peaks that overlap >50% of a TE, was using the full neargene dataframe, where a peak is listed more than once because it was assigned more than one neargene ( one-to-many relationships).   I changed the code to use the 'collapsed' data frame.  This means the data frame was simplified to only include peaks one time, but those peaks that were assigned to more than one neargene had the assigned neargenes condensed and separated by a comma into the same column to create a one-to-one relationship dataframe.  (yes, wordy I know)
   
-This yeiled a new observation about how I was subsetting the peaks that covered >50% of the specific TE.  I was using the `query hits` function of GRanges and later joining the peaks back to a dataframe, forgetting there were peaks that hit more than one TE.  I lost the metadata between the data sets in this process and missed the other possible sets of peak-TE overlap due to how I joined the data frame.  The last table (Table 3) gave the initial hint I did something wrong (NA=117,556). I checked this by subsetting using subjectHits data and started realizing where the error was.  Below is how I began to fix the lost data issue.
+This yeilded a new observation about how I was subsetting the peaks that covered >50% of the specific TE.  I was using the `queryHits` function of GRanges and later joining the peaks back to a dataframe, forgetting there were peaks that hit more than one TE.  I lost the metadata between the data sets in this process and missed the other possible sets of peak-TE overlap due to how I joined the data frame.  The last table (Table 3) gave the initial hint I did something wrong (NA=117,556). I checked this by subsetting using subjectHits data and started realizing where the error was.  Below is how I began to fix the lost data issue.
 ```{r run again}
 ######################################################
 all_TEs_gr$TE_width <- width(all_TEs_gr)
@@ -606,7 +608,7 @@ Note that the counts of peaks total to more than the total number of peaks that 
 A summary of numbers of peaks is below:  
 
 * Total number of peaks = `r length(Collapsed_peaks$peakid)` 
-* Total number of peaks overlapping at least 1 TE = `r` length(Unique_peak_overlap$peakid)`  
+* Total number of peaks overlapping at least 1 TE = `r length(Unique_peak_overlap$peakid)`  
 * Total number of peaks overlapping by >50% TE length = `r length(peak_overlap_50unique$peakid)`  
 
 
@@ -807,8 +809,7 @@ repeatmasker  %>%
     repClass_org=="LINE", repClass_org,
     if_else(repClass_org=="SINE",repClass_org,
             if_else(repClass_org=="LTR", repClass_org, 
-                    if_else(repClass_org=="DNA", repClass_org,
-                            if_else(repClass_org=="Retroposon",repClass_org,"Other")))))) %>% 
+                    if_else(repClass_org=="DNA", repClass_org,                            if_else(repClass_org=="Retroposon",repClass_org,"Other")))))) %>% 
   # dplyr::filter(repClass=="LINE"|repClass=="SINE"|repClass=="LTR"|repClass=="DNA"|repClass=="Retroposon") %>% 
 count(repClass) %>% 
    mutate(perc= n/sum(n)) %>% 
@@ -1018,7 +1019,7 @@ TE_mrc_status_list %>%
 
 
 #### Line repeats
-```{r LINEclass breakdown}
+```{r LINEclass breakdown,fig.height=6}
 per_cov <- 0.5
 
 
@@ -1180,7 +1181,7 @@ TE_mrc_status_list %>%
   scale_fill_lines()
 ```
 
-```{r L2breakdown}
+```{r L2breakdown,fig.height=6}
 
 all_L2_count <- TE_mrc_status_list %>% 
   dplyr::filter(repClass=="LINE"&repFamily=="L2"&per_ol>per_cov) %>% 
@@ -1314,7 +1315,7 @@ TE_mrc_status_list %>%
 
 
 #### Sine repeats
-```{r Sineclass breakdown, out.width="50%"}
+```{r Sineclass breakdown,fig.height=6}
 
 
 Sine_df%>% 
@@ -1480,7 +1481,7 @@ TE_mrc_status_list %>%
 
 ```
 #### LTR repeats
-```{r LTR breakdown}
+```{r LTR breakdown,fig.height=6}
 per_cov <- 0.5
 
 
@@ -1789,7 +1790,7 @@ TE_mrc_status_list %>%
 ```
 
 #### retroposon
-```{r retroposon breakdown}
+```{r retroposon breakdown,fig.height=6}
 per_cov <- 0.5
 
 retroposon_df%>% 
@@ -2072,11 +2073,7 @@ TE_mrc_status_list %>%
      ungroup() %>% 
      pivot_longer(., cols= c(TE_peak, not_TE_peak), names_to = c("TEstatus"), values_to = "n") %>% 
      mutate(percent_mrc= n/summary*100)
-LiSiLTDNRe_TE_df
-LiSiLTDNRe_TE_cut %>% 
-  kable(., caption="Table 10: Summary of peak numbers overlapping and not overlapping TEs by each basic MRC using stringency cutoff of 50%. LINEs/SINEs/etc only in TE_peak count") %>% 
-  kable_paper("striped", full_width = TRUE) %>%
-  kable_styling(full_width = FALSE, font_size = 14)
+
 
 TE_mrc_status_list %>% 
    mutate(repClass_org = repClass) %>% 
@@ -2099,14 +2096,14 @@ TE_mrc_status_list %>%
   theme_classic()+
   ggtitle(paste("TE status by MRC and Family", per_cov), subtitle = "Just LINEs, SINEs,LTRs, DNAs, Retroposons, and all peaks in the MRC families")
 
-
-
-
-
+LiSiLTDNRe_TE_cut %>% 
+  kable(., caption="Table 10: Summary of peak numbers overlapping and not overlapping TEs by each basic MRC using stringency cutoff of 50%. LINEs/SINEs/etc only in TE_peak count") %>% 
+  kable_paper("striped", full_width = TRUE) %>%
+  kable_styling(full_width = FALSE, font_size = 14)
 
 ```
 
-
+### Breakdown of Classes by 4 member clusters
 
 ```{r breakdown by cluster}
 per_cov <- 0.5
@@ -2216,19 +2213,23 @@ TE_mrc_status_list %>%
 
 ```
 
-##### Adding in the new categories
 
 
-Here I break up the categories using median LFC
-EAR_hyper = median 3 hour LFC > 0  
-EAR_hypo = median 3 hour LFC < 0
-ESR_A = median 3 hour > 0 and median 24 hour >0
-ESR_B = median 3 hour < 0 and median 24 hour <0
-ESR_C = median 3 hour > 0 and median 24 hour <0
-ESR_D = median 3 hour < 0 and median 24 hour >0
-LR_hyper = median 24 hour LFC > 0  
-LR_hypo = median 24 hour LFC < 0
-NR = all NR classified peaks
+### Adding in the new categories
+
+
+Here I break up the categories using median LFC  
+
+- EAR_hyper = median 3 hour LFC > 0  
+- EAR_hypo = median 3 hour LFC < 0
+- ESR_A = median 3 hour > 0 and median 24 hour >0
+- ESR_B = median 3 hour < 0 and median 24 hour <0
+- ESR_C = median 3 hour > 0 and median 24 hour <0
+- ESR_D = median 3 hour < 0 and median 24 hour >0
+- LR_hyper = median 24 hour LFC > 0  
+- LR_hypo = median 24 hour LFC < 0  
+- NR = all NR classified peaks  
+
 
 
 ```{r nine group category making}
@@ -2484,7 +2485,9 @@ Nine_group_TE %>%
 
 
 ```
-#### LR
+
+#### LR  
+
 
 ```{r LRTE,fig.height=5}
 TE_LR_hyper_count <-
@@ -2590,23 +2593,23 @@ h.genome_df <- repeatmasker %>%
    mutate(TEstatus ="TE_peak", mrc="h.genome",per_ol = "NA", width="NA")
  
 
-Nine_group_TE %>% 
-  dplyr::filter(mrc != "not_mrc") %>% 
-  dplyr::filter(per_ol>per_cov) %>% 
-  rbind(h.genome_df)%>% 
-  rbind(subsetall_df) %>% 
-  mutate(mrc=factor(mrc, levels = c("EAR_hyper","EAR_hypo","ESR_A", "ESR_B","ESR_C","ESR_D", "LR_hyper","LR_hypo","NR","all_peaks","h.genome"))) %>% 
-  ggplot(., aes(x=mrc, fill= repClass))+
-  geom_bar(position="fill", col="black")+
-  theme_bw()+
-  ggtitle(paste("Repeat breakdown by MRC", per_cov))+
-  scale_fill_repeat()
+# Nine_group_TE %>% 
+#   dplyr::filter(mrc != "not_mrc") %>% 
+#   dplyr::filter(per_ol>per_cov) %>% 
+#   rbind(h.genome_df)%>% 
+#   rbind(subsetall_df) %>% 
+#   mutate(mrc=factor(mrc, levels = c("EAR_hyper","EAR_hypo","ESR_A", "ESR_B","ESR_C","ESR_D", "LR_hyper","LR_hypo","NR","all_peaks","h.genome"))) %>% 
+#   ggplot(., aes(x=mrc, fill= repClass))+
+#   geom_bar(position="fill", col="black")+
+#   theme_bw()+
+#   ggtitle(paste("Repeat breakdown by MRC", per_cov))+
+#   scale_fill_repeat()
 
-Nine_group_TE %>% 
-  dplyr::filter(mrc != "not_mrc") %>% 
-  dplyr::filter(per_ol>per_cov) %>% 
-  rbind(subsetall_df) %>% 
-  mutate(mrc=factor(mrc, levels = c("EAR_hyper","EAR_hypo","ESR_A", "ESR_B","ESR_C","ESR_D", "LR_hyper","LR_hypo","NR","all_peaks"))) %>% 
+Nine_group_TE %>%
+  dplyr::filter(mrc != "not_mrc") %>%
+  dplyr::filter(per_ol>per_cov) %>%
+  rbind(subsetall_df) %>%
+  mutate(mrc=factor(mrc, levels = c("EAR_hyper","EAR_hypo","ESR_A", "ESR_B","ESR_C","ESR_D", "LR_hyper","LR_hypo","NR","all_peaks"))) %>%
   ggplot(., aes(x=mrc, fill= repClass))+
   geom_bar(position="fill", col="black")+
   theme_bw()+
@@ -2618,9 +2621,22 @@ Nine_group_TE %>%
 
 Now I will display without the "other" and regraph with new groups
 ```{r }
+Nine_group_TE %>%
+  dplyr::filter(mrc != "not_mrc") %>%
+  dplyr::filter(per_ol>per_cov) %>%
+  rbind(subsetall_df) %>%
+  mutate(mrc=factor(mrc, levels = c("EAR_hyper","EAR_hypo","ESR_A", "ESR_B","ESR_C","ESR_D", "LR_hyper","LR_hypo","NR","all_peaks"))) %>%
+  dplyr::filter(repClass!="Other") %>% 
+  ggplot(., aes(x=mrc, fill= repClass))+
+  geom_bar(position="fill", col="black")+
+  theme_bw()+
+  ggtitle(paste("Repeat breakdown across nine clusters without 'Other'", per_cov))+
+  scale_fill_repeat()
+
+
 Nine_group_TE %>% 
    mutate(repClass_org = repClass) %>% 
-  dplyr::filter(!repClass %in% notinterested_list) %>% 
+   dplyr::filter(!repClass %in% notinterested_list) %>% 
    dplyr::select(peakid,repName,repClass,repFamily,width,TEstatus, mrc, per_ol) %>% 
   rbind(Lines_Etc) %>% 
   dplyr::filter(per_ol>per_cov|is.na(per_ol)) %>% 
@@ -2632,8 +2648,6 @@ Nine_group_TE %>%
   geom_bar(position="fill", col="black")+
   theme_classic()+
   ggtitle(paste("TE status by MRC and Family > 50 %"), subtitle = "Just LINEs, SINEs,LTRs, DNAs, Retroposons, and all peaks in the MRC families")
-
-
 
 
 ```
@@ -2848,6 +2862,27 @@ Col_TSS_data_gr%>% as.data.frame() %>%
                              if_else(peakid %in% LR_df$id,"LR",
                                      if_else(peakid %in% NR_df$id,"NR","not_mrc"))))) %>% distinct()
 
+
+
+CUG_mrc_nine_list <-
+Col_TSS_data_gr%>% as.data.frame() %>%
+  left_join(., (Col_fullDF_cug_overlap %>% as.data.frame(.)), by =c("seqnames"="seqnames","start"="start","end"="end","peakid"="peakid", "NCBI_gene"="NCBI_gene", "ensembl_ID"="ensembl_ID","dist_to_NG"="dist_to_NG",  "SYMBOL" = "SYMBOL", "peak_width"="peak_width")) %>% 
+  left_join(., (Peaks_v_cpgpromo %>% dplyr::select(promotor_name,peakid,peak_width)), by=c("peak_width"="peak_width","peakid"="peakid")) %>% 
+  dplyr::select(peakid, name,cpgNum:promotor_name) %>% 
+  mutate(cugstatus=if_else(is.na(cpgNum),"not_CGi_peak","CGi_peak")) %>% 
+  mutate(prom_status= if_else(is.na(promotor_name),"not_CpGpromo","CpGpromo")) %>% 
+   mutate(mrc=if_else(peakid %in% EAR_hyper$id, "EAR_hyper",
+                      if_else(peakid %in% EAR_hypo$id, "EAR_hypo",
+                              if_else(peakid %in% ESR_A$id,"ESR_A",
+                                      if_else(peakid %in% ESR_B$id,"ESR_B",
+                                              if_else(peakid %in% ESR_C$id,"ESR_C",
+                                                      if_else(peakid %in% ESR_D$id,"ESR_D",
+                                                              if_else(peakid %in% LR_hyper$id,"LR_hyper",
+                                                                      if_else(peakid %in% LR_hypo$id,"LR_hypo",
+                                     if_else(peakid %in% NR_df$id,"NR","not_mrc")))))))))) %>%
+  distinct()
+
+
 CUG_mrc_status_list %>% 
  group_by(cugstatus, mrc) %>% 
  count
@@ -2893,6 +2928,18 @@ CUG_mrc_status_list %>%
    mutate(mrc="full_list") %>% 
   rbind(., CUG_mrc_status_list) %>% 
    mutate(mrc=factor(mrc, levels=c("EAR","ESR","LR","NR","not-mrc","full_list"))) %>% 
+  dplyr::filter(mrc !="not_mrc") %>% 
+  dplyr::filter(cugstatus=="CGi_peak") %>% 
+  ggplot(., aes(x = mrc,  fill = prom_status)) +
+  geom_bar(position="fill",color = "black")+
+  theme_bw()+
+  ggtitle("CG islands promotors vs non-promotor CpGi by mrc", subtitle=paste(length(CUG_mrc_status_list$peakid )))
+
+
+CUG_mrc_nine_list %>% 
+   mutate(mrc="full_list") %>% 
+  rbind(., CUG_mrc_nine_list) %>% 
+   mutate(mrc=factor(mrc, levels=c("EAR_hyper","EAR_hypo","ESR_A","ESR_B","ESR_C","ESR_D","LR_hyper","LR_hypo","NR","not-mrc","full_list"))) %>% 
   dplyr::filter(mrc !="not_mrc") %>% 
   dplyr::filter(cugstatus=="CGi_peak") %>% 
   ggplot(., aes(x = mrc,  fill = prom_status)) +
