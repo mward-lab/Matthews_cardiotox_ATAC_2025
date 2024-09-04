@@ -1,0 +1,412 @@
+---
+title: "final_four_analysis"
+author: "ERM"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE,
+	warning = FALSE
+)
+```
+
+```{css, echo=FALSE}
+pre {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+pre[class] {
+  max-height: 200px;
+}
+```
+
+```{r  package loading}
+library(tidyverse)
+library(kableExtra)
+library(broom)
+library(RColorBrewer)
+library(ChIPseeker)
+library("TxDb.Hsapiens.UCSC.hg38.knownGene")
+library("org.Hs.eg.db")
+library(rtracklayer)
+library(edgeR)
+library(ggfortify)
+library(limma)
+library(readr)
+library(BiocGenerics)
+library(gridExtra)
+library(VennDiagram)
+library(scales)
+library(Cormotif)
+library(BiocParallel)
+library(ggpubr)
+library(devtools)
+library(eulerr)
+library(genomation)
+library(ggsignif)
+library(plyranges)
+library(ggrepel)
+```
+
+```{r echo=TRUE, file='code/corMotifcustom.R'}
+
+```
+
+```{r functions to have}
+drug_pal <- c("#8B006D","#DF707E","#F1B72B", "#3386DD","#707031","#41B333")
+pca_plot <-
+  function(df,
+           col_var = NULL,
+           shape_var = NULL,
+           title = "") {
+    ggplot(df) + geom_point(aes_string(
+      x = "PC1",
+      y = "PC2",
+      color = col_var,
+      shape = shape_var
+    ),
+    size = 5) +
+      labs(title = title, x = "PC 1", y = "PC 2") +
+      scale_color_manual(values = c(
+        "#8B006D",
+        "#DF707E",
+        "#F1B72B",
+        "#3386DD",
+        "#707031",
+        "#41B333"
+      ))
+  }
+pca_var_plot <- function(pca) {
+  # x: class == prcomp
+  pca.var <- pca$sdev ^ 2
+  pca.prop <- pca.var / sum(pca.var)
+  var.plot <-
+    qplot(PC, prop, data = data.frame(PC = 1:length(pca.prop),
+                                      prop = pca.prop)) +
+    labs(title = 'Variance contributed by each PC',
+         x = 'PC', y = 'Proportion of variance')
+  plot(var.plot)
+}
+
+calc_pca <- function(x) {
+  # Performs principal components analysis with prcomp
+  # x: a sample-by-gene numeric matrix
+  prcomp(x, scale. = TRUE, retx = TRUE)
+}
+
+get_regr_pval <- function(mod) {
+  # Returns the p-value for the Fstatistic of a linear model
+  # mod: class lm
+  stopifnot(class(mod) == "lm")
+  fstat <- summary(mod)$fstatistic
+  pval <- 1 - pf(fstat[1], fstat[2], fstat[3])
+  return(pval)
+}
+
+plot_versus_pc <- function(df, pc_num, fac) {
+  # df: data.frame
+  # pc_num: numeric, specific PC for plotting
+  # fac: column name of df for plotting against PC
+  pc_char <- paste0("PC", pc_num)
+  # Calculate F-statistic p-value for linear model
+  pval <- get_regr_pval(lm(df[, pc_char] ~ df[, fac]))
+  if (is.numeric(df[, f])) {
+    ggplot(df, aes_string(x = f, y = pc_char)) + geom_point() +
+      geom_smooth(method = "lm") + labs(title = sprintf("p-val: %.2f", pval))
+  } else {
+    ggplot(df, aes_string(x = f, y = pc_char)) + geom_boxplot() +
+      labs(title = sprintf("p-val: %.2f", pval))
+  }
+}
+x_axis_labels = function(labels, every_nth = 1, ...) {
+  axis(side = 1,
+       at = seq_along(labels),
+       labels = F)
+  text(
+    x = (seq_along(labels))[seq_len(every_nth) == 1],
+    y = par("usr")[3] - 0.075 * (par("usr")[4] - par("usr")[3]),
+    labels = labels[seq_len(every_nth) == 1],
+    xpd = TRUE,
+    ...
+  )
+}
+
+```
+
+
+Analysis using the four selected individuals and the peaks generated from just that set:
+
+```{r loading peak file}
+# Peaks_bed_file <- rtracklayer::BEDFile("~/ATAC_downloads/finalfour_bl_filt_peaks.bed")
+# import(Peaks_bed_file) %>% as.data.frame()
+# write_delim(all_four_filt_counts, "data/all_four_filtered_counts.txt",delim = "\t")
+  all_four_filt_counts <- read.delim("data/all_four_filtered_counts.txt",header=TRUE) %>% GRanges() %>% 
+  keepStandardChromosomes(pruning.mode = "coarse") %>% 
+  as.data.frame()
+
+# keepStandardChromosomes(all_four_filt_counts) 
+#   distinct(Chr) %>% 
+#   dplyr::filter(., grepl("^["))
+```
+
+```{r edit_names of counts file} 
+# all_four_filt_counts %>% 
+names(all_four_filt_counts) = gsub(pattern = "_S.*", replacement = "", x = names(all_four_filt_counts))
+
+names(all_four_filt_counts) = gsub(pattern = "ind1.trimmed.filt_files.trimmed_|ind2.trimmed.filt_files.trimmed_|ind3.trimmed.filt_files.trimmed_|ind6.trimmed.filt_files.trimmed_", replacement = "", x = names(all_four_filt_counts))
+
+```
+
+```{r prcomp for 4}
+
+PCA4mat <- all_four_filt_counts%>% 
+  dplyr::select(Geneid,Ind1_75DA24h:Ind6_71V3h) %>% 
+  column_to_rownames("Geneid") %>% 
+  as.matrix()
+
+annotation_mat <- data.frame(timeset=colnames(PCA4mat)) %>% 
+  mutate(sample = timeset) %>% 
+  mutate(timeset=gsub("Ind1_75","1_",timeset)) %>% 
+  mutate(timeset=gsub("Ind2_87","2_",timeset)) %>% 
+  mutate(timeset=gsub("Ind3_77","3_",timeset)) %>% 
+  mutate(timeset=gsub("Ind6_71","4_",timeset)) %>% 
+  mutate(timeset = gsub("24h","_24h",timeset), 
+       timeset = gsub("3h","_3h",timeset)) %>%
+  separate(timeset, into = c("indv","trt","time"), sep= "_") %>% 
+  mutate(trt= case_match(trt, 'DX' ~'DOX', 'E'~'EPI', 'DA'~'DNR', 'M'~'MTX', 'T'~'TRZ', 'V'~'VEH',.default = trt)) %>% 
+  # mutate(indv = factor(indv, levels = c("1", "2", "3", "4", "5", "6"))) %>%
+  mutate(time = factor(time, levels = c("3h", "24h"), labels= c("3 hours","24 hours"))) %>% 
+  mutate(trt = factor(trt, levels = c("DOX","EPI", "DNR", "MTX", "TRZ", "VEH"))) 
+
+PCA4_info <- (prcomp(t(PCA4mat), scale. = TRUE)) 
+PCA4_info_anno <- PCA4_info$x %>% cbind(.,annotation_mat)
+# autoplot(PCA_info)
+summary(PCA4_info)
+# %>% as.tibble() %>% 
+#   kable(., caption = "Summary of PCA variables") %>% 
+#   kable_paper("striped", full_width = TRUE) %>%
+#   kable_styling(full_width = FALSE, font_size = 16) %>%
+#   scroll_box(height = "500px")
+# cpm(PCAmat, log=TRUE)
+pca_plot(PCA4_info_anno, col_var='trt', shape_var = 'time')+ggtitle("PCA of raw counts by time and treatment")
+        
+pca_plot(PCA4_info_anno, col_var='trt', shape_var = 'indv')+ggtitle("PCA of raw counts by treatment and individual")
+
+```
+
+```{r filter log2cpm}
+
+l4cpm <- cpm(PCA4mat, log=TRUE)  ### for determining the basic cutoffs
+dim(l4cpm)
+
+row_means <- rowMeans(l4cpm)
+x4_filtered <- PCA4mat[row_means > 0,]
+dim(x4_filtered)
+
+filt4_matrix_lcpm <- cpm(x4_filtered, log=TRUE)
+
+PCA4_info_filter <- (prcomp(t(filt4_matrix_lcpm), scale. = TRUE))
+summary(PCA4_info_filter)
+
+pca_var_plot(PCA4_info_filter)
+
+pca_final_four <- calc_pca(t(filt4_matrix_lcpm))
+pca_final_four_anno <- data.frame(annotation_mat, pca_final_four$x)
+
+
+pca_final_four_anno %>%
+  ggplot(.,aes(x = PC1, y = PC2, col=trt, shape=time, group=indv))+
+  geom_point(size= 5)+
+  scale_color_manual(values=drug_pal)+
+   ggrepel::geom_text_repel(aes(label = indv))+
+   ggtitle(expression("PCA of log"[2]*"(cpm) new filtered peak set"))+
+  theme_bw()+
+  guides(col="none", size =4)+
+  labs(y = "PC 2 (13.5%)", x ="PC 1 (22.3%)")+
+  theme(plot.title=element_text(size= 14,hjust = 0.5),
+        axis.title = element_text(size = 12, color = "black"))
+
+pca_final_four_anno %>%
+  ggplot(.,aes(x = PC3, y = PC4, col=trt, shape=time, group=indv))+
+  geom_point(size= 5)+
+  scale_color_manual(values=drug_pal)+
+   ggrepel::geom_text_repel(aes(label = indv))+
+   ggtitle(expression("PCA of log"[2]*"(cpm) new filtered peak set"))+
+  theme_bw()+
+  guides(col="none", size =4)+
+  labs(y = "PC 4 (5.5%)", x ="PC 3 (8.2%)")+
+  theme(plot.title=element_text(size= 14,hjust = 0.5),
+        axis.title = element_text(size = 12, color = "black"))
+
+```
+ We go from `r dim(l4cpm)` peaks to`r dim(x4_filtered)` peaks using rowMeans (log2cpm) > 0 across all samples. This is my new high confidence peak set.
+ 
+#### examine the confounding factors?
+pending code
+
+### Comparing the peak sets, old and new
+```{r compare old and new sets}
+# write_delim((filt4_matrix_lcpm %>% as.data.frame(.)), "data/Final_four_data/LCPM_matrix_ff.txt", delim = "/t")
+new_peaks_list <- row.names(filt4_matrix_lcpm) %>% as.data.frame() %>% separate_wider_delim(., cols =.,names=c("chr","start","end"), delim = ".", cols_remove = FALSE) %>%  dplyr::rename("peakid"=4)
+new_peaks_gr <- new_peaks_list %>% 
+  GRanges() %>% 
+   keepStandardChromosomes(., pruning.mode = "coarse")
+stdChr <- standardChromosomes(new_peaks_gr)
+peakAnnoList_n45_motif <- readRDS("data/peakAnnoList_n45_motif.RDS")
+old_peaks_gr <- peakAnnoList_n45_motif$background_gr %>% as.GRanges()
+old_peaks_gr$old_width <- width(old_peaks_gr)
+a <- join_overlap_intersect(old_peaks_gr,new_peaks_gr,suffix = c("old", "new")) %>% 
+  as.data.frame()
+
+a %>% 
+  dplyr::select(id,peakid,width,old_width) %>% 
+  mutate(check =if_else(id ==peakid, "TRUE","FALSE")) %>% 
+  dplyr::filter(check=="FALSE") %>% 
+  mutate(width_ol=if_else(width<old_width,"smaller","larger")) %>%
+  dplyr::rename("old_peak_id"="id","new_peak_id"="peakid") %>% 
+  mutate(diff= old_width - width) %>% 
+  kable(., caption = "summary of newpeaks that are smaller than old peaks, but are basically the same") %>% 
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")\
+
+b <- filter_by_overlaps(old_peaks_gr,new_peaks_gr)
+b.a <- filter_by_overlaps(new_peaks_gr, old_peaks_gr) 
+b.b <- filter_by_non_overlaps(new_peaks_gr, old_peaks_gr)
+b.c <- filter_by_non_overlaps(old_peaks_gr, new_peaks_gr)
+
+new_peaks_gr %>% as.data.frame %>% summarize(mean =mean(width))
+```
+
+number of peaks in old data set: `r length(old_peaks_gr)`  
+number of peaks in new data set: `r length(new_peaks_gr)`  
+number of overlaps in between both sets: `r length (a$id)`  
+number of peaks in new set that do not overlap old set: `r length(b.b)`
+number of peaks in old set that do not overlap new set: `r length(b.c)`
+
+```{r DAR of new}
+
+
+group <- c( rep(c(1,2,3,4,5,6,7,8,9,10,11,12),4))
+group <- factor(group, levels =c("1","2","3","4","5","6","7","8","9","10","11","12"))
+short_names <- paste0(pca_final_four_anno$indv,"_",pca_final_four_anno$trt,"_",pca_final_four_anno$time)
+
+dge <- DGEList.data.frame(counts = x4_filtered, group = group, genes = row.names(x4_filtered))
+
+group_1 <- c(rep(c("DNR_24","DNR_3","DOX_24","DOX_3","EPI_24","EPI_3","MTX_24","MTX_3","TRZ_24","TRZ_3","VEH_24", "VEH_3"),4))
+
+dge$group$indv <- pca_final_four_anno$indv
+dge$group$time <- pca_final_four_anno$time
+dge$group$trt <- pca_final_four_anno$trt
+
+indv <- pca_final_four_anno$indv
+efit4 <- readRDS("data/Final_four_data/efit4_filt_bl.RDS")
+# mm <- model.matrix(~0 +group_1)  
+# colnames(mm) <-  c("DNR_24", "DNR_3", "DOX_24","DOX_3","EPI_24", "EPI_3","MTX_24", "MTX_3", "TRZ_24","TRZ_3","VEH_24", "VEH_3")
+# 
+# y <- voom(dge$counts, mm,plot =TRUE)
+# # 
+# corfit <- duplicateCorrelation(y, mm, block = indv)
+# # 
+# v <- voom(dge$counts, mm, block = indv, correlation = corfit$consensus)
+# # 
+# fit <- lmFit(v, mm, block = indv, correlation = corfit$consensus)
+# colnames(mm) <- c("DNR_24","DNR_3","DOX_24","DOX_3","EPI_24","EPI_3","MTX_24","MTX_3","TRZ_24","TRZ_3","VEH_24", "VEH_3")
+#
+#
+# cm <- makeContrasts(
+#   DNR_3.VEH_3 = DNR_3-VEH_3,
+#   DOX_3.VEH_3 = DOX_3-VEH_3,
+#   EPI_3.VEH_3 = EPI_3-VEH_3,
+#   MTX_3.VEH_3 = MTX_3-VEH_3,
+#   TRZ_3.VEH_3 = TRZ_3-VEH_3,
+#   DNR_24.VEH_24 =DNR_24-VEH_24,
+#   DOX_24.VEH_24= DOX_24-VEH_24,
+#   EPI_24.VEH_24= EPI_24-VEH_24,
+#   MTX_24.VEH_24= MTX_24-VEH_24,
+#   TRZ_24.VEH_24= TRZ_24-VEH_24,
+#   levels = mm)
+
+# vfit <- lmFit(y, mm)
+
+# vfit<- contrasts.fit(vfit, contrasts=cm)
+# 
+# efit4 <- eBayes(vfit)
+# saveRDS(efit4,"data/Final_four_data/efit4_filt_bl.RDS")
+results = decideTests(efit4)
+summary(results)
+
+```
+
+```{r making the DAR dataframe}
+
+# V.DNR_3.top_ff= topTable(efit4, coef=1, adjust.method="BH", number=Inf, sort.by="p") %>% rownames_to_column("peak")
+# V.DOX_3.top_ff= topTable(efit4, coef=2, adjust.method="BH", number=Inf, sort.by="p")%>% rownames_to_column("peak")
+# V.EPI_3.top_ff= topTable(efit4, coef=3, adjust.method="BH", number=Inf, sort.by="p")%>% rownames_to_column("peak")
+# V.MTX_3.top_ff= topTable(efit4, coef=4, adjust.method="BH", number=Inf, sort.by="p")%>% rownames_to_column("peak")
+# V.TRZ_3.top_ff= topTable(efit4, coef=5, adjust.method="BH", number=Inf, sort.by="p")%>% rownames_to_column("peak")
+# V.DNR_24.top_ff= topTable(efit4, coef=6, adjust.method="BH", number=Inf, sort.by="p")%>% rownames_to_column("peak")
+# V.DOX_24.top_ff= topTable(efit4, coef=7, adjust.method="BH", number=Inf, sort.by="p")%>% rownames_to_column("peak")
+# V.EPI_24.top_ff= topTable(efit4, coef=8, adjust.method="BH", number=Inf, sort.by="p")%>% rownames_to_column("peak")
+# V.MTX_24.top_ff= topTable(efit4, coef=9, adjust.method="BH", number=Inf, sort.by="p")%>% rownames_to_column("peak")
+# V.TRZ_24.top_ff= topTable(efit4, coef=10, adjust.method="BH", number=Inf, sort.by="p")%>% rownames_to_column("peak")
+# 
+# toplist_full_ff  <- list(V.DNR_3.top_ff, V.DOX_3.top_ff,V.EPI_3.top_ff,V.MTX_3.top_ff,V.TRZ_3.top_ff,V.DNR_24.top_ff, V.DOX_24.top_ff,V.EPI_24.top_ff,V.MTX_24.top_ff,V.TRZ_24.top_ff)
+# names(toplist_full_ff) <- c("DNR_3", "DOX_3","EPI_3","MTX_3","TRZ_3","DNR_24", "DOX_24","EPI_24","MTX_24","TRZ_24")
+# toplist_ff <-map_df(toplist_full_ff, ~as.data.frame(.x), .id="trt_time")
+# #
+# toplist_ff <- toplist_ff %>%
+#   separate(trt_time, into= c("trt","time"), sep = "_") %>%
+#   mutate(trt=factor(trt, levels = c("DOX","EPI","DNR","MTX","TRZ"))) %>%
+#   mutate(time = factor(time, levels = c("3", "24"), labels = c("3 hours", "24 hours")))
+# saveRDS(toplist_ff,"data/Final_four_data/toplist_ff.RDS")
+toplist_ff <- readRDS("data/Final_four_data/toplist_ff.RDS")
+
+```
+
+```{r FF cormotif}
+
+                     
+# indv_n45 <- df_names_n45$indv
+# indv <- factor(indv, levels = c(1,2,3,4,5,6))
+# time_n45 <- df_names_n45$time
+# time <- factor(time, levels =c("3h","24"))
+# trt_n45 <- df_names_n45$trt
+# label_n45 <- paste0(indv_n45,"_",trt_n45,"_",time_n45)
+group_fac_ff <- group
+groupid_ff <- as.numeric(group_fac_ff)
+
+compid_ff <- data.frame(c1= c(2,4,6,8,10,1,3,5,7,9), c2 = c( 12,12,12,12,12,11,11,11,11,11))
+
+y_TMM_cpm_ff <- cpm(x4_filtered, log = TRUE)
+
+colnames(y_TMM_cpm_ff) <- short_names
+# y_TMM_cpm
+set.seed(31415)
+cormotif_initial_ff <- cormotiffit(exprs = y_TMM_cpm_ff, groupid = groupid_ff, compid = compid_ff, K=1:8, max.iter = 500, runtype = "logCPM")
+
+saveRDS(cormotif_initial_ff,"data/Final_four_data/cormotif_ff_4_run.RDS")
+
+```
+
+```{r CorrPlots}
+myColors <-  rev(c("#FFFFFF", "#E6E6E6" ,"#CCCCCC", "#B3B3B3", "#999999", "#808080", "#666666","#4C4C4C", "#333333", "#191919","#000000"))
+Cormotif::plotIC(cormotif_initial_ff)
+plot.new()
+legend('bottomright',fill=myColors, legend =rev(c("0", "0.1", "0.2", "0.3", "0.4",  "0.5", "0.6", "0.7", "0.8","0.9", "1")), box.col="white",title = "Probability\nlegend", horiz=FALSE,title.cex=.8)
+
+Cormotif::plotMotif(cormotif_initial_ff)
+
+myColors <-  rev(c("#FFFFFF", "#E6E6E6" ,"#CCCCCC", "#B3B3B3", "#999999", "#808080", "#666666","#4C4C4C", "#333333", "#191919","#000000"))
+# plot.new()
+# legend('bottomright',fill=myColors, legend =rev(c("0", "0.1", "0.2", "0.3", "0.4",  "0.5", "0.6", "0.7", "0.8","0.9", "1")), box.col="white",title = "Probability\nlegend", horiz=FALSE,title.cex=.8)
+```
+
