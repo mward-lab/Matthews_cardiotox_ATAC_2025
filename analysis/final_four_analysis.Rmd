@@ -144,7 +144,8 @@ Analysis using the four selected individuals and the peaks generated from just t
 # Peaks_bed_file <- rtracklayer::BEDFile("~/ATAC_downloads/finalfour_bl_filt_peaks.bed")
 # import(Peaks_bed_file) %>% as.data.frame()
 # write_delim(all_four_filt_counts, "data/all_four_filtered_counts.txt",delim = "\t")
-  all_four_filt_counts <- read.delim("data/all_four_filtered_counts.txt",header=TRUE) %>% GRanges() %>% 
+  all_four_filt_counts <- read.delim("data/all_four_filtered_counts.txt",header=TRUE) %>% 
+  GRanges() %>% 
   keepStandardChromosomes(pruning.mode = "coarse") %>% 
   as.data.frame()
 
@@ -291,7 +292,7 @@ number of peaks in new data set: `r length(new_peaks_gr)`
 number of overlaps in between both sets: `r length (a$id)`  
 number of peaks in new set that do not overlap old set: `r length(b.b)`
 number of peaks in old set that do not overlap new set: `r length(b.c)`
-
+### Differential analysis
 ```{r DAR of new}
 
 
@@ -371,7 +372,7 @@ summary(results)
 toplist_ff <- readRDS("data/Final_four_data/toplist_ff.RDS")
 
 ```
-
+### Cormotif
 ```{r FF cormotif}
 
                      
@@ -391,9 +392,13 @@ y_TMM_cpm_ff <- cpm(x4_filtered, log = TRUE)
 colnames(y_TMM_cpm_ff) <- short_names
 # y_TMM_cpm
 set.seed(31415)
-cormotif_initial_ff <- cormotiffit(exprs = y_TMM_cpm_ff, groupid = groupid_ff, compid = compid_ff, K=1:8, max.iter = 500, runtype = "logCPM")
+# cormotif_initial_ff <- cormotiffit(exprs = y_TMM_cpm_ff, groupid = groupid_ff, compid = compid_ff, K=1:8, max.iter = 500, runtype = "logCPM")
+# 
+# saveRDS(cormotif_initial_ff,"data/Final_four_data/cormotif_ff_4_run.RDS")
 
-saveRDS(cormotif_initial_ff,"data/Final_four_data/cormotif_ff_4_run.RDS")
+cormotif_four_ff <- cormotiffit(exprs = y_TMM_cpm_ff, groupid = groupid_ff, compid = compid_ff, K=4, max.iter = 500, runtype = "logCPM")
+
+# saveRDS(cormotif_initial_ff,"data/Final_four_data/cormotif_ff_4_run.RDS")
 
 ```
 
@@ -408,5 +413,71 @@ Cormotif::plotMotif(cormotif_initial_ff)
 myColors <-  rev(c("#FFFFFF", "#E6E6E6" ,"#CCCCCC", "#B3B3B3", "#999999", "#808080", "#666666","#4C4C4C", "#333333", "#191919","#000000"))
 # plot.new()
 # legend('bottomright',fill=myColors, legend =rev(c("0", "0.1", "0.2", "0.3", "0.4",  "0.5", "0.6", "0.7", "0.8","0.9", "1")), box.col="white",title = "Probability\nlegend", horiz=FALSE,title.cex=.8)
+```
+
+```{r ASsigning expressed NGs by TSS, eval=FALSE, include=TRUE}
+
+#### HOw I assigned expressed NG TSS to new peak file
+### export new peak file as .bed file
+a4gr <- all_four_filt_counts %>% 
+  dplyr::select(seqnames:Geneid) %>% 
+  dplyr::rename("Peakid"=Geneid) %>% 
+  GRanges()
+ 
+write_delim((as.data.frame(a4gr)),delim = "\t",file = "data/Final_four_data/all_four_filt.bed", col_name=FALSE)## write tab delim datafile without column headers
+
+###Do the same with TSS file
+#  ensembl <- useEnsembl(biomart = "genes", dataset = "hsapiens_gene_ensembl")
+# my_attributes <- c('chromosome_name', 'start_position', 'end_position','entrezgene_id', 'ensembl_gene_id', 'hgnc_symbol')
+# searchAttributes(mart = ensembl, pattern = "refseq")
+# searchDatasets(mart=ensembl,pattern="NCBI")
+# gene_list <- getBM(attributes=my_attributes,
+#       filters = "hgnc_symbol",
+#         values = S13Table$SYMBOL,
+#       mart = ensembl)
+# write.csv(gene_ref,"data/gene_ref.csv")
+# listFilters(ensembl)
+####
+# gene_ref <- read.csv("data/gene_ref.csv")
+# gene_full_list <- gene_list %>% 
+#   mutate(chromosome_name=as.numeric(chromosome_name))%>% 
+#   # filter(!is.na(chromosome_name)) #%>% 
+#   na.omit(.)
+#   dplyr::select(chromosome_name,start_position,end_position,entrezgene_id,ensembl_gene_id)
+### I performed the bedtools using cli. I moved the files to the correct directory on my hardrive to do this.
+# bedtools closest -a all_four_filt.bed -b All_TSS_NGs.bed -D b >assigned_newNGbyTSS.bed
+#### This file only has the tss, I had to link the geneIDs and symbols and names using the lookup_table (contains TSS, Start and end, ENTREZID, ensembl_id,and SYBOL)
+ lookup_table <- read.csv("data/Final_four_data/expressedgene_lookuptable.csv", row.names = 1)
+NG_assigned_table <- read_delim("data/Final_four_data/assigned_newNGbyTSS.bed", col_names = FALSE)
+
+TSS_NG_table <- NG_assigned_table %>% 
+  dplyr::rename("chr"=X1,
+         "start"=X2,
+         "end"= X3,
+         "Peakid"=X6,
+         "NG_chr"=X7,
+         "NG_start"=X8 ,
+         "NG_end"=X9 ,
+         "dist_to_NG"=X13) %>% 
+  dplyr::select(chr:end,Peakid:NG_end,dist_to_NG) %>%
+  left_join(., lookup_table, by= c("NG_chr"="NG_chr","NG_end"="NG_start")) %>% 
+  dplyr::rename("NG_end"="NG_end.y", "NG_TSS"=NG_end) %>% 
+  dplyr::select(chr:NG_start,NG_end,NG_TSS,ENTREZID:SYMBOL,dist_to_NG) #%>%
+  write_delim(.,"data/Final_four_data/TSS_assigned_NG.txt",delim = "\t",col_names = TRUE)
+
+Collapsed_new_peaks <- TSS_NG_table %>% 
+  group_by(chr, start, end, Peakid) %>%
+    summarise(chr=paste(unique(chr)),
+              start=paste(unique(start)),
+              end=paste(unique(end)),
+              NG_chr=paste(NG_chr,collapse=":"),
+              NG_start=paste(NG_start,collapse=":"),
+              NG_end=paste(NG_end,collapse=":"),
+              NG_TSS=paste(NG_TSS,collapse=":"),
+              NCBI_gene = paste(unique(ENTREZID),collapse=","),
+              ensembl_ID= paste(unique(ensembl_id),collapse = ","),
+              SYMBOL= paste(unique(SYMBOL),collapse = ",") , 
+              dist_to_NG =min(dist_to_NG))
+ write_delim(Collapsed_new_peaks,"data/Final_four_data/collapsed_new_peaks.txt",delim = "\t",col_names = TRUE)
 ```
 
