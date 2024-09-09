@@ -1889,7 +1889,9 @@ TE_mrc_status_list %>%
 LiSiLTDNRe_TE_no_cut %>% 
   kable(., caption="Table 9: Summary of peak numbers overlapping and not overlapping TEs by each basic MRC with LINEs/SINEs/etc only in TE_peak count") %>% 
   kable_paper("striped", full_width = TRUE) %>%
-  kable_styling(full_width = FALSE, font_size = 14)
+  kable_styling(full_width = FALSE, font_size = 14) %>% 
+  scroll_box(height = "500px")
+
 
 LiSiLTDNRe_TE_cut <-
 TE_mrc_status_list %>% 
@@ -1942,7 +1944,9 @@ TE_mrc_status_list %>%
 LiSiLTDNRe_TE_cut %>% 
   kable(., caption="Table 10: Summary of peak numbers overlapping and not overlapping TEs by each basic MRC using stringency cutoff of 50%. LINEs/SINEs/etc only in TE_peak count") %>% 
   kable_paper("striped", full_width = TRUE) %>%
-  kable_styling(full_width = FALSE, font_size = 14)
+  kable_styling(full_width = FALSE, font_size = 14) %>% 
+  scroll_box(height = "500px")
+
 
 ```
 #### Chi square tests
@@ -2107,22 +2111,22 @@ TE_mrc_status_list %>%
 
 Here I break up the categories using median LFC  
 
-- EAR_hyper = median 3 hour LFC > 0  
-- EAR_hypo = median 3 hour LFC < 0
+- EAR_open = median 3 hour LFC > 0  
+- EAR_close = median 3 hour LFC < 0
 - ESR_A = median 3 hour > 0 and median 24 hour >0
 - ESR_B = median 3 hour < 0 and median 24 hour <0
 - ESR_C = median 3 hour > 0 and median 24 hour <0
 - ESR_D = median 3 hour < 0 and median 24 hour >0
-- LR_hyper = median 24 hour LFC > 0  
-- LR_hypo = median 24 hour LFC < 0  
+- LR_open = median 24 hour LFC > 0  
+- LR_close = median 24 hour LFC < 0  
 - NR = all NR classified peaks  
 
 
 
 ```{r nine group category making}
 per_cov=0.5
-median_24_lfc <- readRDS("data/Final_four_data/median_24_lfc.RDS") %>% ungroup()
-median_3_lfc <- readRDS("data/Final_four_data/median_3_lfc.RDS") %>% ungroup()
+median_24_lfc <- read_csv("data/Final_four_data/median_24_lfc.csv") 
+median_3_lfc <- read_csv("data/Final_four_data/median_3_lfc.csv")
 
 open_3med <- median_3_lfc %>% 
   dplyr::filter(med_3h_lfc > 0)
@@ -2242,12 +2246,12 @@ TE_EAR_hyper_count <-
   dplyr::filter(TEstatus =="TE_peak"& mrc=="EAR_hyper"&per_ol>per_cov) %>%
   distinct() %>%
   count
-TE_EAR_hypo_count <-
+TE_EAR_close_count <-
   Nine_group_TE %>%
   dplyr::filter(TEstatus =="TE_peak"& mrc=="EAR_hypo"&per_ol>per_cov) %>%
   distinct() %>%
   count
-Nine_group_TE %>%
+Eight_group_TE %>%
    mutate(repClass=factor(repClass)) %>%
   dplyr::filter(TEstatus =="TE_peak"& mrc=="EAR_hyper"&per_ol>per_cov) %>%
   count(repClass) %>%
@@ -2265,7 +2269,7 @@ Nine_group_TE %>%
   ggtitle("EAR_hyper TE peak breakdown",subtitle = paste(TE_EAR_hyper_count$n, "using > 50% coverage "))+
   scale_fill_repeat()
 
-Nine_group_TE %>%
+Eight_group_TE %>%
    mutate(repClass=factor(repClass)) %>%
   dplyr::filter(TEstatus =="TE_peak"& mrc=="EAR_hypo"&per_ol>per_cov) %>%
   count(repClass) %>%
@@ -2557,7 +2561,8 @@ Eight_group_TE %>%
   pivot_wider(., id_cols = mrc, names_from = TEstatus, values_from = n) %>% 
   kable(., caption = "Unique Peak TE status counts for each MRC\nLINEs, SINEs,LTRs, DNAs, Retroposons only using >50% of TE") %>% 
   kable_paper("striped", full_width = TRUE) %>%
-  kable_styling(full_width = FALSE, font_size = 14)
+  kable_styling(full_width = FALSE, font_size = 14)%>% 
+  scroll_box(height = "500px")
 
 ```
 
@@ -2612,7 +2617,8 @@ chi_TE_nine %>%
   mutate(per_TE=sprintf("%.2f%% ",per_TE)) %>% 
     kable(., caption = "Unique Peak TE status with all TEs for each MRC, >50% TE coverage") %>% 
    kable_paper("striped", full_width = TRUE) %>%
-  kable_styling(full_width = FALSE, font_size = 14) 
+  kable_styling(full_width = FALSE, font_size = 14) %>% 
+  scroll_box(height = "500px")
 
 ```
 
@@ -2678,78 +2684,7 @@ ggretroposon_df <-retroposon_repeats %>%
     rbind(TE_mrc_status_list %>% dplyr::filter(repClass=="Retroposon"&per_ol>per_cov) %>% mutate(mrc="all_peaks")) %>%  mutate(repClass_org=repClass) 
 ```
 
-```{r LinesLTRand eight, eval=FALSE, fig.width=10, include=FALSE}
 
-Eight_group_TE %>% 
-    dplyr::filter(repClass=="LINE"&per_ol>per_cov) %>% 
-  # distinct(mrc)
-  dplyr::filter(mrc != "not_mrc") %>% 
-  rbind(., ggline_df) %>% 
-  mutate(repFamily=factor(repFamily)) %>% 
-  mutate(mrc=factor(mrc, levels = c("EAR_open","EAR_close","ESR_open", "ESR_close","ESR_OC", "LR_open","LR_close","NR","all_peaks"))) %>%
-  dplyr::filter(mrc != "h.genome") %>% 
-  ggplot(., aes(x=mrc, fill= repFamily))+
-  geom_bar(position="fill", col="black")+
-  theme_bw()+
-  ggtitle(paste("LINE breakdown by eight-clusters and Family", per_cov))+
-  scale_fill_lines()
-
-
-Eight_group_TE %>% 
-  dplyr::filter(repClass=="SINE"&per_ol>per_cov) %>% 
-  dplyr::filter(mrc != "not_mrc") %>% 
-   rbind(., ggsine_df) %>% 
-  mutate(repFamily=factor(repFamily)) %>% 
- mutate(mrc=factor(mrc, levels = c("EAR_open","EAR_close","ESR_open", "ESR_close","ESR_OC", "LR_open","LR_close","NR","all_peaks","h.genome"))) %>%
-  dplyr::filter(mrc != "h.genome") %>% 
-  ggplot(., aes(x=mrc, fill= repFamily))+
-  geom_bar(position="fill", col="black")+
-  theme_bw()+
-  ggtitle(paste("SINE breakdown by breakdown by eight-clusters and Family",per_cov))+
-  scale_fill_sines()
-
-Eight_group_TE %>% 
-  dplyr::filter(repClass=="LTR"&per_ol>per_cov) %>% 
-  dplyr::filter(mrc != "not_mrc") %>% 
-   rbind(., ggLTR_df) %>% 
-  mutate(repFamily=factor(repFamily)) %>% 
-mutate(mrc=factor(mrc, levels = c("EAR_open","EAR_close","ESR_open", "ESR_close","ESR_OC", "LR_open","LR_close","NR","all_peaks","h.genome"))) %>%
-  dplyr::filter(mrc != "h.genome") %>% 
-  ggplot(., aes(x=mrc, fill= repFamily))+
-  geom_bar(position="fill", col="black")+
-  theme_bw()+
-  ggtitle(paste("LTR breakdown by breakdown by eight-clusters and Family",per_cov))+
-  scale_fill_LTRs()
-
-
-Eight_group_TE %>% 
-  dplyr::filter(repClass=="DNA"&per_ol>per_cov) %>% 
-  dplyr::filter(mrc != "not_mrc") %>% 
-   rbind(., ggDNA_df) %>% 
-  mutate(repFamily=factor(repFamily)) %>% 
- mutate(mrc=factor(mrc, levels = c("EAR_open","EAR_close","ESR_open", "ESR_close","ESR_OC", "LR_open","LR_close","NR","all_peaks","h.genome"))) %>%
-  dplyr::filter(mrc != "h.genome") %>% 
-  ggplot(., aes(x=mrc, fill= repFamily))+
-  geom_bar(position="fill", col="black")+
-  theme_bw()+
-  ggtitle(paste("DNA breakdown by breakdown by eight-clusters and Family",per_cov))+
-  scale_fill_DNAs()
-
-
-Eight_group_TE %>% 
-  dplyr::filter(repClass=="Retroposon"&per_ol>per_cov) %>% 
-  dplyr::filter(mrc != "not_mrc") %>% 
-   rbind(., ggretroposon_df) %>% 
-  mutate(repName=factor(repName)) %>% 
- mutate(mrc=factor(mrc, levels = c("EAR_open","EAR_close","ESR_open", "ESR_close","ESR_OC", "LR_open","LR_close","NR","all_peaks","h.genome"))) %>%
-  dplyr::filter(mrc != "h.genome") %>% 
-  ggplot(., aes(x=mrc, fill= repName))+
-  geom_bar(position="fill", col="black")+
-  theme_classic()+
-  ggtitle(paste("Retroposon breakdown by by eight-clusters and Family",per_cov))+
-  scale_fill_retroposons()
-    
-```
 ### Eight group by subset TE type
 
 ```{r LinesLTRand eight, fig.width=10}
@@ -2778,7 +2713,8 @@ eight_lines %>%
  mutate(total= sum(c_across("CR1":"RTE-X"),na.rm =TRUE)) %>% 
   kable(., caption="Breakdown of SINE counts by Family") %>% 
 kable_paper("striped", full_width = TRUE) %>%
-  kable_styling(full_width = FALSE, font_size = 14) 
+  kable_styling(full_width = FALSE, font_size = 14) %>% 
+  scroll_box(height = "500px")
 ```
 
 ```{r Sines and eight, fig.width=10}
@@ -2806,7 +2742,8 @@ eight_sines %>%
  mutate(total= sum(c_across(1:6),na.rm =TRUE)) %>% 
   kable(., caption="Breakdown of SINE counts by Family") %>% 
 kable_paper("striped", full_width = TRUE) %>%
-  kable_styling(full_width = FALSE, font_size = 14)
+  kable_styling(full_width = FALSE, font_size = 14)%>% 
+  scroll_box(height = "500px")
 
 ```
 
@@ -2835,7 +2772,8 @@ eight_LTRs %>%
  mutate(total= sum(c_across(1:9),na.rm =TRUE)) %>% 
   kable(., caption="Breakdown of LTR counts by Family") %>% 
 kable_paper("striped", full_width = TRUE) %>%
-  kable_styling(full_width = FALSE, font_size = 14)
+  kable_styling(full_width = FALSE, font_size = 14)%>% 
+  scroll_box(height = "500px")
 ```
 
 ```{r DNA and eight, fig.width=10}
@@ -2863,7 +2801,8 @@ eight_DNA %>%
  mutate(total= sum(c_across(1:18),na.rm =TRUE)) %>% 
   kable(., caption="Breakdown of DNA counts by Family") %>% 
 kable_paper("striped", full_width = TRUE) %>%
-  kable_styling(full_width = FALSE, font_size = 14)
+  kable_styling(full_width = FALSE, font_size = 14)%>% 
+  scroll_box(height = "500px")
 ```
 
 ```{r Retroposon and eight, fig.width=10}
@@ -2891,7 +2830,8 @@ eight_retro %>%
  mutate(total= sum(c_across(1:6),na.rm =TRUE)) %>% 
   kable(., caption="Breakdown of Retroposon counts by Name") %>% 
 kable_paper("striped", full_width = TRUE) %>%
-  kable_styling(full_width = FALSE, font_size = 14)
+  kable_styling(full_width = FALSE, font_size = 14)%>% 
+  scroll_box(height = "500px")
     
 ```
 
@@ -2900,7 +2840,7 @@ kable_paper("striped", full_width = TRUE) %>%
 
 cpgislands_df <- read.delim("data/other_papers/cpg_islands.tsv")
 cpg_cCREs_df <- read_delim("data/other_papers/cpg_cCREs.tsv", delim="\t")
-aligncre <- genomation::readBed("data/enhancerdata/ENCFF867HAD_ENCFF152PBB_ENCFF352YYH_ENCFF252IVK.7group.bed") %>% as.data.frame
+# aligncre <- genomation::readBed("data/enhancerdata/ENCFF867HAD_ENCFF152PBB_ENCFF352YYH_ENCFF252IVK.7group.bed") %>% as.data.frame
 
 CPG_promoters_gr <- cpg_cCREs_df %>% 
     dplyr::rename(.,"seqnames"=X1,"start"=X2,"end"=X3,"promotor_name"=X4,"length"=X5,"strand"=X6,"color"=X9) %>% 
@@ -2931,7 +2871,8 @@ Col_fullDF_cug_overlap %>%
   tally %>% 
   kable(., caption="Count of peaks with CG islands") %>% 
   kable_paper("striped", full_width = TRUE) %>%
-  kable_styling(full_width = FALSE, font_size = 14)
+  kable_styling(full_width = FALSE, font_size = 14)%>% 
+  scroll_box(height = "500px")
 
 Col_fullDF_cug_overlap %>% 
   as.data.frame() %>% 
@@ -2940,22 +2881,23 @@ Col_fullDF_cug_overlap %>%
   tally %>% 
   kable(., caption="Count of peaks with >50% of CG islands") %>% 
   kable_paper("striped", full_width = TRUE) %>%
-  kable_styling(full_width = FALSE, font_size = 14)
+  kable_styling(full_width = FALSE, font_size = 14)%>% 
+  scroll_box(height = "500px")
 
 
-CUG_mrc_status_list <-
-Col_TSS_data_gr%>% 
-  as.data.frame() %>%
-  left_join(., (Col_fullDF_cug_overlap %>% as.data.frame(.)), by =c("seqnames"="seqnames","start"="start","end"="end","Peakid"="Peakid", "NCBI_gene"="NCBI_gene", "ensembl_ID"="ensembl_ID","dist_to_NG"="dist_to_NG",  "SYMBOL" = "SYMBOL", "peak_width"="peak_width")) %>% 
-  left_join(., (Peaks_v_cpgpromo %>% dplyr::select(promotor_name,Peakid,peak_width)), by=c("peak_width"="peak_width","Peakid"="Peakid")) %>% 
-  dplyr::select(Peakid, name,cpgNum:promotor_name) %>% 
-  mutate(cugstatus=if_else(is.na(cpgNum),"not_CGi_peak","CGi_peak")) %>% 
-  mutate(prom_status= if_else(is.na(promotor_name),"not_CpGpromo","CpGpromo")) %>% 
-   mutate(mrc=if_else(Peakid %in% EAR_df$id, "EAR",
-                     if_else(Peakid %in% ESR_df$id,"ESR",
-                             if_else(Peakid %in% LR_df$id,"LR",
-                                     if_else(Peakid %in% NR_df$id,"NR","not_mrc"))))) %>% distinct()
-
+# CUG_mrc_status_list <-
+# Col_TSS_data_gr%>% 
+#   as.data.frame() %>%
+#   left_join(., (Col_fullDF_cug_overlap %>% as.data.frame(.)), by =c("seqnames"="seqnames","start"="start","end"="end","Peakid"="Peakid", "NCBI_gene"="NCBI_gene", "ensembl_ID"="ensembl_ID","dist_to_NG"="dist_to_NG",  "SYMBOL" = "SYMBOL", "peak_width"="peak_width")) %>% 
+#   left_join(., (Peaks_v_cpgpromo %>% dplyr::select(promotor_name,Peakid,peak_width)), by=c("peak_width"="peak_width","Peakid"="Peakid")) %>% 
+#   dplyr::select(Peakid, name,cpgNum:promotor_name) %>% 
+#   mutate(cugstatus=if_else(is.na(cpgNum),"not_CGi_peak","CGi_peak")) %>% 
+#   mutate(prom_status= if_else(is.na(promotor_name),"not_CpGpromo","CpGpromo")) %>% 
+#    mutate(mrc=if_else(Peakid %in% EAR_df$id, "EAR",
+#                      if_else(Peakid %in% ESR_df$id,"ESR",
+#                              if_else(Peakid %in% LR_df$id,"LR",
+#                                      if_else(Peakid %in% NR_df$id,"NR","not_mrc"))))) %>% distinct()
+# 
 
 
 CUG_mrc_nine_list <-
@@ -2965,41 +2907,40 @@ Col_TSS_data_gr%>% as.data.frame() %>%
   dplyr::select(Peakid, name,cpgNum:promotor_name) %>% 
   mutate(cugstatus=if_else(is.na(cpgNum),"not_CGi_peak","CGi_peak")) %>% 
   mutate(prom_status= if_else(is.na(promotor_name),"not_CpGpromo","CpGpromo")) %>% 
-   mutate(mrc=if_else(Peakid %in% EAR_hyper$id, "EAR_hyper",
-                      if_else(Peakid %in% EAR_hypo$id, "EAR_hypo",
-                              if_else(Peakid %in% ESR_A$id,"ESR_A",
-                                      if_else(Peakid %in% ESR_B$id,"ESR_B",
-                                              if_else(Peakid %in% ESR_C$id,"ESR_CD",
-                                                      if_else(Peakid %in% ESR_D$id,"ESR_CD",
-                                                              if_else(Peakid %in% LR_hyper$id,"LR_hyper",
-                                                                      if_else(Peakid %in% LR_hypo$id,"LR_hypo",
-                                     if_else(Peakid %in% NR_df$id,"NR","not_mrc")))))))))) %>%
+   mutate(mrc=if_else(Peakid %in% EAR_open$Peakid, "EAR_open",
+                      if_else(Peakid %in% EAR_close$Peakid, "EAR_close",
+                              if_else(Peakid %in% ESR_open$Peakid,"ESR_open",
+                                      if_else(Peakid %in% ESR_close$Peakid,"ESR_close",
+                                              if_else(Peakid %in% ESR_OC$Peakid,"ESR_OC",
+                                                      if_else(Peakid %in% LR_open$Peakid,"LR_open",
+                                                                      if_else(Peakid %in% LR_close$Peakid,"LR_close",
+                                                                              if_else(Peakid %in% NR_df$Peakid,"NR","not_mrc"))))))))) %>%
   distinct()
 
+# 
+# CUG_mrc_status_list %>% 
+#  group_by(cugstatus, mrc) %>% 
+#   distinct(Peakid) %>% 
+#  count %>% 
+#   pivot_wider(., id_cols = mrc, names_from = cugstatus, values_from = n) %>% 
+#   kable(., caption="Breakdown of CG islands overlap four groups") %>% 
+# kable_paper("striped", full_width = TRUE) %>%
+#   kable_styling(full_width = FALSE, font_size = 14)
 
-CUG_mrc_status_list %>% 
- group_by(cugstatus, mrc) %>% 
-  distinct(Peakid) %>% 
- count %>% 
-  pivot_wider(., id_cols = mrc, names_from = cugstatus, values_from = n) %>% 
-  kable(., caption="Breakdown of CG islands overlap four groups") %>% 
-kable_paper("striped", full_width = TRUE) %>%
-  kable_styling(full_width = FALSE, font_size = 14)
-
-CUG_mrc_status_list %>% 
-  mutate(mrc=factor(mrc, levels = c("NR", "EAR", "ESR","LR","not_mrc"))) %>%
-  group_by(cugstatus, mrc) %>% 
-  ggplot(., aes(x = mrc,  fill = cugstatus)) +
-  geom_bar(position="fill",color = "black")+
-  theme_bw()+
-  ggtitle("CG islands by mrc")
+# CUG_mrc_status_list %>% 
+#   mutate(mrc=factor(mrc, levels = c("NR", "EAR", "ESR","LR","not_mrc"))) %>%
+#   group_by(cugstatus, mrc) %>% 
+#   ggplot(., aes(x = mrc,  fill = cugstatus)) +
+#   geom_bar(position="fill",color = "black")+
+#   theme_bw()+
+#   ggtitle("CG islands by mrc")
           # subtitle=paste((CUG_mrc_status_list %>% dplyr::filter(cugstatus=="CGi_peak") %>% count(cugstatus))$n))
   
 CUG_mrc_nine_list %>%
   distinct(Peakid,.keep_all = TRUE) %>%
   mutate(mrc="full_list") %>%
   rbind(., (CUG_mrc_nine_list %>% distinct(Peakid,.keep_all = TRUE))) %>%
-   mutate(mrc=factor(mrc, levels=c("EAR_hyper","EAR_hypo","ESR_A","ESR_B","ESR_D","LR_hyper","LR_hypo","NR","not-mrc","full_list"))) %>%
+   mutate(mrc=factor(mrc, levels=c("EAR_open","EAR_close","ESR_open","ESR_close","ESR_OC","LR_open","LR_close","NR","not-mrc","full_list"))) %>%
   dplyr::filter(mrc !="not_mrc") %>%
   group_by(cugstatus, mrc) %>%
   ggplot(., aes(x = mrc,  fill = cugstatus)) +
@@ -3013,14 +2954,15 @@ CUG_mrc_nine_list %>%
   dplyr::filter(mrc != "not_mrc") %>% 
   mutate(mrc="full_list") %>% 
   rbind(., (CUG_mrc_nine_list %>% distinct(Peakid,.keep_all = TRUE))) %>% 
-   mutate(mrc=factor(mrc, levels=c("EAR_hyper","EAR_hypo","ESR_A","ESR_B","ESR_CD","LR_hyper","LR_hypo","NR","not-mrc","full_list"))) %>%
+   mutate(mrc=factor(mrc, levels=c("EAR_open","EAR_close","ESR_open","ESR_close","ESR_OC","LR_open","LR_close","NR","not-mrc","full_list"))) %>%
   dplyr::filter(mrc !="not_mrc") %>% 
   group_by(cugstatus, mrc) %>% 
   tally %>% 
   pivot_wider(., id_cols = mrc, names_from = cugstatus, values_from = n) %>% 
   kable(., caption="Breakdown of CG islands overlap with not_mrc removed") %>% 
 kable_paper("striped", full_width = TRUE) %>%
-  kable_styling(full_width = FALSE, font_size = 14)
+  kable_styling(full_width = FALSE, font_size = 14)%>% 
+  scroll_box(height = "500px")
   
 ```
 
@@ -3044,16 +2986,16 @@ cpg_island_gr %>%
   ggtitle("Distribution of overlap widths of CGislands ",subtitle = " limited x axis")+
   coord_cartesian(xlim= c(0,2500))
 
-CUG_mrc_status_list %>% 
-   mutate(mrc="full_list") %>% 
-  rbind(., CUG_mrc_status_list) %>% 
-   mutate(mrc=factor(mrc, levels=c("EAR","ESR","LR","NR","not-mrc","full_list"))) %>% 
-  dplyr::filter(mrc !="not_mrc") %>% 
-  dplyr::filter(cugstatus=="CGi_peak") %>% 
-  ggplot(., aes(x = mrc,  fill = prom_status)) +
-  geom_bar(position="fill",color = "black")+
-  theme_bw()+
-  ggtitle("CG islands promotors vs non-promotor CpGi by mrc", subtitle=paste(length(CUG_mrc_status_list$Peakid )))
+# CUG_mrc_status_list %>% 
+#    mutate(mrc="full_list") %>% 
+#   rbind(., CUG_mrc_status_list) %>% 
+#    mutate(mrc=factor(mrc, levels=c("EAR","ESR","LR","NR","not-mrc","full_list"))) %>% 
+#   dplyr::filter(mrc !="not_mrc") %>% 
+#   dplyr::filter(cugstatus=="CGi_peak") %>% 
+#   ggplot(., aes(x = mrc,  fill = prom_status)) +
+#   geom_bar(position="fill",color = "black")+
+#   theme_bw()+
+#   ggtitle("CG islands promotors vs non-promotor CpGi by mrc", subtitle=paste(length(CUG_mrc_status_list$Peakid )))
 
 
 promo_count_list <- CUG_mrc_nine_list %>% 
@@ -3066,7 +3008,7 @@ promo_count_list <- CUG_mrc_nine_list %>%
 CUG_mrc_nine_list %>%
    mutate(mrc="full_list") %>%
   rbind(., CUG_mrc_nine_list) %>%
-   mutate(mrc=factor(mrc, levels=c("EAR_hyper","EAR_hypo","ESR_A","ESR_B","ESR_D","LR_hyper","LR_hypo","NR","not-mrc","full_list"))) %>%
+   mutate(mrc=factor(mrc, levels=c("EAR_open","EAR_close","ESR_open","ESR_close","ESR_OC","LR_open","LR_close","NR","not-mrc","full_list"))) %>%
   dplyr::filter(mrc !="not_mrc") %>%
   dplyr::filter(cugstatus=="CGi_peak") %>%
   ggplot(., aes(x = mrc,  fill = prom_status)) +
@@ -3136,15 +3078,15 @@ test <- join_overlap_intersect(gwas_snp_gr, all_TEs_gr) %>% GRanges
 
 test_new <-  test %>% 
    as.data.frame %>% 
-   dplyr::select (seqnames:gwas,repName:repFamily) %>% 
+   dplyr::select(seqnames:gwas,repName:repFamily) %>% 
    GRanges()
 peaks <-
   Collapsed_peaks %>% 
-    dplyr::select(seqnames:Peakid) %>% 
+    dplyr::select(chr:Peakid) %>% 
     GRanges()
 peak_test <- join_overlap_intersect(test_new, peaks)
 
-# peak_test
+# peak_test 135
 
 Col_fullDF_overlap %>% 
   as.data.frame %>% 
@@ -3158,15 +3100,14 @@ test2 %>%
    join_overlap_intersect(., all_TEs_gr) %>% 
   as.data.frame %>% 
   dplyr::select(seqnames:gwas,repName:repFamily) %>% 
-  mutate(mrc=if_else(Peakid %in% EAR_hyper$id, "EAR_hyper",
-                      if_else(Peakid %in% EAR_hypo$id, "EAR_hypo",
-                              if_else(Peakid %in% ESR_A$id,"ESR_A",
-                                      if_else(Peakid %in% ESR_B$id,"ESR_B",
-                                              if_else(Peakid %in% ESR_C$id,"ESR_C",
-                                                      if_else(Peakid %in% ESR_D$id,"ESR_D",
-                                                              if_else(Peakid %in% LR_hyper$id,"LR_hyper",
-                                                                      if_else(Peakid %in% LR_hypo$id,"LR_hypo",
-                                     if_else(Peakid %in% NR_df$id,"NR","not_mrc")))))))))) %>% 
+  mutate(mrc=if_else(Peakid %in% EAR_open$Peakid, "EAR_open",
+                      if_else(Peakid %in% EAR_close$Peakid, "EAR_close",
+                              if_else(Peakid %in% ESR_open$Peakid,"ESR_open",
+                                      if_else(Peakid %in% ESR_close$Peakid,"ESR_close",
+                                              if_else(Peakid %in% ESR_OC$Peakid,"ESR_OC",
+                                                      if_else(Peakid %in% LR_open$Peakid,"LR_open",
+                                                                      if_else(Peakid %in% LR_close$Peakid,"LR_close",
+                                                                              if_else(Peakid %in% NR_df$Peakid,"NR","not_mrc"))))))))) %>%
   # distinct(Peakid, .keep_all = TRUE) %>% 
   group_by(gwas,mrc) %>% 
   tally
@@ -3175,15 +3116,14 @@ SNP_df <- test2 %>%
    join_overlap_intersect(., all_TEs_gr) %>% 
   as.data.frame %>% 
   dplyr::select(seqnames:gwas,repName:repFamily) %>% 
-  mutate(mrc=if_else(Peakid %in% EAR_hyper$id, "EAR_hyper",
-                      if_else(Peakid %in% EAR_hypo$id, "EAR_hypo",
-                              if_else(Peakid %in% ESR_A$id,"ESR_A",
-                                      if_else(Peakid %in% ESR_B$id,"ESR_B",
-                                              if_else(Peakid %in% ESR_C$id,"ESR_CD",
-                                                      if_else(Peakid %in% ESR_D$id,"ESR_CD",
-                                                              if_else(Peakid %in% LR_hyper$id,"LR_hyper",
-                                                                      if_else(Peakid %in% LR_hypo$id,"LR_hypo",
-                                     if_else(Peakid %in% NR_df$id,"NR","not_mrc"))))))))))
+  mutate(mrc=if_else(Peakid %in% EAR_open$Peakid, "EAR_open",
+                      if_else(Peakid %in% EAR_close$Peakid, "EAR_close",
+                              if_else(Peakid %in% ESR_open$Peakid,"ESR_open",
+                                      if_else(Peakid %in% ESR_close$Peakid,"ESR_close",
+                                              if_else(Peakid %in% ESR_OC$Peakid,"ESR_OC",
+                                                      if_else(Peakid %in% LR_open$Peakid,"LR_open",
+                                                                      if_else(Peakid %in% LR_close$Peakid,"LR_close",
+                                                                              if_else(Peakid %in% NR_df$Peakid,"NR","not_mrc"))))))))) 
 
 SNP_df %>%  group_by(Peakid) %>%
     summarise(snp_id=paste(unique(SNPS), collapse = ","),
@@ -3197,7 +3137,8 @@ SNP_df %>%  group_by(Peakid) %>%
   kable(., caption = "The output of all SNPs and their SNP category followed by location and peak") %>% 
   
   kable_paper("striped", full_width = TRUE) %>%
-  kable_styling(full_width = FALSE, font_size = 14) 
+  kable_styling(full_width = FALSE, font_size = 14) %>% 
+  scroll_box(height = "500px")
 
 
 # SNP_df %>%  group_by(Peakid) %>%
@@ -3231,15 +3172,14 @@ SNPanno <-
   test2 %>% 
   as.data.frame() %>% 
   dplyr::select(Peakid,SNPS,gwas) %>% 
-  mutate(mrc=if_else(Peakid %in% EAR_hyper$id, "EAR_hyper",
-                      if_else(Peakid %in% EAR_hypo$id, "EAR_hypo",
-                              if_else(Peakid %in% ESR_A$id,"ESR_A",
-                                      if_else(Peakid %in% ESR_B$id,"ESR_B",
-                                              if_else(Peakid %in% ESR_C$id,"ESR_CD",
-                                                      if_else(Peakid %in% ESR_D$id,"ESR_CD",
-                                                              if_else(Peakid %in% LR_hyper$id,"LR_hyper",
-                                                                      if_else(Peakid %in% LR_hypo$id,"LR_hypo",
-                                     if_else(Peakid %in% NR_df$id,"NR","not_mrc")))))))))) %>% 
+ mutate(mrc=if_else(Peakid %in% EAR_open$Peakid, "EAR_open",
+                      if_else(Peakid %in% EAR_close$Peakid, "EAR_close",
+                              if_else(Peakid %in% ESR_open$Peakid,"ESR_open",
+                                      if_else(Peakid %in% ESR_close$Peakid,"ESR_close",
+                                              if_else(Peakid %in% ESR_OC$Peakid,"ESR_OC",
+                                                      if_else(Peakid %in% LR_open$Peakid,"LR_open",
+                                                                      if_else(Peakid %in% LR_close$Peakid,"LR_close",
+                                                                              if_else(Peakid %in% NR_df$Peakid,"NR","not_mrc"))))))))) %>%
   left_join(Col_fullDF_cug_overlap) %>% 
   mutate(has_cpg= if_else(is.na(name),"not_CpGi","CpGi")) %>% 
   dplyr::select(Peakid:mrc,has_cpg,name,per_ol) %>% 
@@ -3262,14 +3202,15 @@ SNPanno <-
                repName=paste(unique(repName),collapse=","),
                repClass=paste(unique(repClass),collapse=","),
                repFamily=paste(unique(repFamily),collapse=","),
-               TE_per_ol=paste(unique(TE_per_ol),collapse=","))
+               TE_per_ol=paste(unique(TE_per_ol),collapse=";"))
               
-# write.csv(SNPanno,"data/annotated_gwas_SNPS.csv")
+# write.csv(SNPanno,"data/Final_four_data/annotated_gwas_SNPS.csv")
 
 SNPanno %>% 
   kable(., caption = "SNPs and their annotations from my data") %>% 
   kable_paper("striped", full_width = TRUE) %>%
-  kable_styling(full_width = FALSE, font_size = 14) 
+  kable_styling(full_width = FALSE, font_size = 14) %>% 
+  scroll_box(height = "500px")
   
 ```
 
@@ -3281,23 +3222,22 @@ SNPanno %>%
 
 
 Collapsed_peaks %>% 
-  dplyr::filter(seqnames!="chrX") %>% 
-  dplyr::filter(seqnames!="chrY") %>%  ### number of peaks is 146,572 w/o chr X
-   mutate(mrc=if_else(Peakid %in% EAR_hyper$id, "EAR_hyper",
-                      if_else(Peakid %in% EAR_hypo$id, "EAR_hypo",
-                              if_else(Peakid %in% ESR_A$id,"ESR_A",
-                                      if_else(Peakid %in% ESR_B$id,"ESR_B",
-                                              if_else(Peakid %in% ESR_C$id,"ESR_CD",
-                                                      if_else(Peakid %in% ESR_D$id,"ESR_CD",
-                                                              if_else(Peakid %in% LR_hyper$id,"LR_hyper",
-                                                                      if_else(Peakid %in% LR_hypo$id,"LR_hypo",
-                                     if_else(Peakid %in% NR_df$id,"NR","not_mrc")))))))))) %>% 
+  dplyr::filter(chr!="chrX") %>% 
+  dplyr::filter(chr!="chrY") %>%  ### number of peaks is 166,534 w/o chr X
+   mutate(mrc=if_else(Peakid %in% EAR_open$Peakid, "EAR_open",
+                      if_else(Peakid %in% EAR_close$Peakid, "EAR_close",
+                              if_else(Peakid %in% ESR_open$Peakid,"ESR_open",
+                                      if_else(Peakid %in% ESR_close$Peakid,"ESR_close",
+                                              if_else(Peakid %in% ESR_OC$Peakid,"ESR_OC",
+                                                      if_else(Peakid %in% LR_open$Peakid,"LR_open",
+                                                                      if_else(Peakid %in% LR_close$Peakid,"LR_close",
+                                                                              if_else(Peakid %in% NR_df$Peakid,"NR","not_mrc"))))))))) %>%
    left_join(.,(Col_fullDF_cug_overlap %>% dplyr::select(Peakid,name,per_ol)), by=c("Peakid"="Peakid")) %>% 
   mutate(has_cpg= if_else(is.na(name),"not_CpGi","CpGi")) %>% 
    dplyr::rename("CpG"="has_cpg","cpg_per_ol"="per_ol","CpG_name"="name") %>% 
   left_join(., (Peaks_v_cpgpromo %>% dplyr::select(promotor_name,Peakid)), by=c("Peakid"="Peakid"))%>% 
     
-    mutate(CpG_promo=if_else(is.na(promotor_name),"not_CpGpromo","CpGpromo")) 
+    mutate(CpG_promo=if_else(is.na(promotor_name),"not_CpGpromo","CpGpromo")) %>% 
   # dplyr::select(Peakid:mrc,)
   left_join(., (SNPanno %>% dplyr::select(!mrc)), by=c("Peakid"="Peakid")) %>% 
   distinct()
@@ -3308,15 +3248,14 @@ Collapsed_peaks %>%
   left_join(.,(Col_fullDF_overlap %>% 
                  as.data.frame)) %>% 
    mutate(TEstatus=if_else(is.na(repClass),"not_TE_peak","TE_peak")) %>% 
-   mutate(mrc=if_else(Peakid %in% EAR_hyper$id, "EAR_hyper",
-                      if_else(Peakid %in% EAR_hypo$id, "EAR_hypo",
-                              if_else(Peakid %in% ESR_A$id,"ESR_A",
-                                      if_else(Peakid %in% ESR_B$id,"ESR_B",
-                                              if_else(Peakid %in% ESR_C$id,"ESR_C",
-                                                      if_else(Peakid %in% ESR_D$id, "ESR_D",
-                                                              if_else(Peakid %in% LR_hyper$id, "LR_hyper",
-                                                                      if_else(Peakid %in% LR_hypo$id, "LR_hypo",
-                                     if_else(Peakid %in% NR_df$id, "NR", "not_mrc")))))))))) %>%  
+   mutate(mrc=if_else(Peakid %in% EAR_open$Peakid, "EAR_open",
+                      if_else(Peakid %in% EAR_close$Peakid, "EAR_close",
+                              if_else(Peakid %in% ESR_open$Peakid,"ESR_open",
+                                      if_else(Peakid %in% ESR_close$Peakid,"ESR_close",
+                                              if_else(Peakid %in% ESR_OC$Peakid,"ESR_OC",
+                                                      if_else(Peakid %in% LR_open$Peakid,"LR_open",
+                                                                      if_else(Peakid %in% LR_close$Peakid,"LR_close",
+                                                                              if_else(Peakid %in% NR_df$Peakid,"NR","not_mrc"))))))))) %>%
                                        mutate(per_ol= width/TE_width) %>% 
   mutate(repClass_org=repClass) %>% 
   mutate(repClass=factor(repClass)) %>%
