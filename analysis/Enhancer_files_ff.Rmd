@@ -1,0 +1,1410 @@
+---
+title: "Enhancer_files"
+author: "ERM"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE,
+	warning = FALSE
+)
+```
+
+```{css, echo=FALSE}
+pre {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+pre[class] {
+  max-height: 200px;
+}
+```
+####Loading
+```{r package loading, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(kableExtra)
+library(broom)
+library(RColorBrewer)
+library(ChIPseeker)
+library("TxDb.Hsapiens.UCSC.hg38.knownGene")
+library("org.Hs.eg.db")
+library(rtracklayer)
+library(edgeR)
+library(ggfortify)
+library(limma)
+library(readr)
+library(BiocGenerics)
+library(gridExtra)
+library(VennDiagram)
+library(scales)
+library(Cormotif)
+library(BiocParallel)
+library(ggpubr)
+library(devtools)
+library(JASPAR2022)
+library(TFBSTools)
+library(MotifDb)
+library(BSgenome.Hsapiens.UCSC.hg38)
+library(plyranges)
+library(genomation)
+library(gprofiler2)
+
+```
+
+Data loading
+
+```{r data loading}
+# toplistall_RNA <- readRDS("data/other_papers/toplistall_RNA.RDS") 
+# S13Table <- read.csv( "data/other_papers/S13Table_Matthews2024.csv",row.names = 1)
+# ##14021
+# 
+# EAR_RNA <- S13Table %>% 
+#   dplyr::filter(MOTIF=="EAR") %>% 
+#   dplyr::select(ENTREZID) %>% 
+#   mutate(ENTREZID= as.character(ENTREZID))
+# ESR_RNA <- S13Table %>% 
+#   dplyr::filter(MOTIF=="ESR")%>% 
+#   dplyr::select(ENTREZID)%>% 
+#   mutate(ENTREZID= as.character(ENTREZID))
+# LR_RNA <- S13Table %>% 
+#   dplyr::filter(MOTIF=="LR")%>% 
+#   dplyr::select(ENTREZID)%>% 
+#   mutate(ENTREZID=as.character(ENTREZID))
+# NR_RNA <- S13Table %>% 
+#   dplyr::filter(MOTIF=="NR")%>% 
+#   dplyr::select(ENTREZID)%>% 
+#   mutate(ENTREZID= as.character(ENTREZID))
+
+# exp_neargene_table <- read_delim("data/n45_bedfiles/exp_neargene_table.tsv", 
+#     delim = "\t", escape_double = FALSE, 
+#     trim_ws = TRUE)
+
+TSS_NG_data <- read_delim("data/Final_four_data/TSS_assigned_NG.txt", 
+    delim = "\t", escape_double = FALSE, 
+    trim_ws = TRUE)
+
+col_ng_peak <- read.delim("data/Final_four_data/collapsed_new_peaks.txt")
+
+peakAnnoList_ff_8motif <- readRDS("data/Final_four_data/peakAnnoList_ff_8motif.RDS")
+# list2env(peakAnnoList_n45_motif, envir = .GlobalEnv)
+
+# peakAnnoList_3_n45 <- readRDS("data/peakAnnoList_3_n45.RDS")
+# peakAnnoList_24_n45<- readRDS("data/peakAnnoList_24_n45.RDS")
+
+all_peak_gr <- as.GRanges(peakAnnoList_ff_8motif$background)
+
+# Joined_tss_neargene <- all_peak_gr %>%
+#   as.data.frame() %>% 
+#   dplyr::select(seqnames:id,geneId,distanceToTSS) %>% 
+#   dplyr::filter(!grepl("chrX",id)& !grepl("chrY",id))%>%
+#   dplyr::rename("close_geneId"="geneId") %>% 
+#   mutate(start=start+1) %>% 
+#   left_join(., TSS_NG_data, by=c("id"="peakid", "start"="start","end"="end")) %>%
+#   dplyr::select(seqnames.x:close_geneId,distanceToTSS, entrezgene_id:dist_to_NG)
+  
+
+
+EAR_open <- as.data.frame(peakAnnoList_ff_8motif$EAR_open)
+EAR_open_gr <-  as.GRanges(peakAnnoList_ff_8motif$EAR_open)
+EAR_close <- as.data.frame(peakAnnoList_ff_8motif$EAR_close)
+EAR_close_gr <-  as.GRanges(peakAnnoList_ff_8motif$EAR_close)
+
+
+ESR_open <- as.data.frame(peakAnnoList_ff_8motif$ESR_open)
+ESR_open_gr <- as.GRanges(peakAnnoList_ff_8motif$ESR_open)
+ESR_close <- as.data.frame(peakAnnoList_ff_8motif$ESR_close)
+ESR_close_gr <- as.GRanges(peakAnnoList_ff_8motif$ESR_close)
+ESR_OC <- as.data.frame(peakAnnoList_ff_8motif$ESR_OC)
+ESR_OC_gr <- as.GRanges(peakAnnoList_ff_8motif$ESR_OC)
+
+
+LR_open <- as.data.frame(peakAnnoList_ff_8motif$LR_open)
+LR_open_gr <-  as.GRanges(peakAnnoList_ff_8motif$LR_open)
+LR_close <- as.data.frame(peakAnnoList_ff_8motif$LR_close)
+LR_close_gr <-  as.GRanges(peakAnnoList_ff_8motif$LR_close)
+
+NR <- as.data.frame(peakAnnoList_ff_8motif$NR)
+NR_gr <-  as.GRanges(peakAnnoList_ff_8motif$NR)
+
+EAR_open_list_all <-  TSS_NG_data %>%
+    dplyr::filter(peakid %in% EAR_open$Peakid) %>% 
+  mutate(MRC="EAR_open") 
+EAR_close_list_all <-  TSS_NG_data %>%
+    dplyr::filter(peakid %in% EAR_close$Peakid) %>% 
+  mutate(MRC="EAR") 
+
+ESR_open_list_all <- TSS_NG_data %>%
+    dplyr::filter(peakid %in% ESR_open$Peakid) %>% 
+    mutate(MRC="ESR")
+ESR_close_list_all <- TSS_NG_data %>%
+    dplyr::filter(peakid %in% ESR_close$Peakid) %>% 
+    mutate(MRC="ESR")
+ESR_OC_list_all <- TSS_NG_data %>%
+    dplyr::filter(peakid %in% ESR_df$Peakid) %>% 
+    mutate(MRC="ESR")
+
+LR_open_list_all <- TSS_NG_data %>%
+    dplyr::filter(peakid %in% LR_df$Peakid) %>% 
+    mutate(MRC="LR")
+LR_close_list_all <- TSS_NG_data %>%
+    dplyr::filter(peakid %in% LR_df$Peakid) %>% 
+    mutate(MRC="LR")
+
+NR_list_all <- TSS_NG_data %>%
+    dplyr::filter(peakid %in% NR_df$Peakid) %>% 
+    mutate(MRC="NR")
+
+peak_list_all_mrc <- col_ng_peak %>% 
+  mutate(mrc=if_else(Peakid %in% EAR_open$Peakid, "EAR_open",
+                      if_else(Peakid %in% EAR_close$Peakid, "EAR_close",
+                              if_else(Peakid %in% ESR_open$Peakid,"ESR_open",
+                                      if_else(Peakid %in% ESR_close$Peakid,"ESR_close",
+                                              if_else(Peakid %in% ESR_OC$Peakid,"ESR_OC",
+                                                      if_else(Peakid %in% LR_open$Peakid,"LR_open",
+                                                                      if_else(Peakid %in% LR_close$Peakid,"LR_close",
+                                                                              if_else(Peakid %in% NR$Peakid,"NR","not_mrc"))))))))) 
+  
+
+
+EAR_open_NG_2k<-  peak_list_all_mrc %>% 
+      dplyr::filter(mrc =="EAR_open") %>% 
+    dplyr::filter(dist_to_NG >-2000&dist_to_NG<2000) %>% 
+    dplyr::select(Peakid, NCBI_gene:SYMBOL,dist_to_NG, mrc) %>% 
+    separate_longer_delim(., cols=NCBI_gene:SYMBOL, delim= ",") %>% 
+    distinct(NCBI_gene,SYMBOL)
+EAR_close_NG_2k<-  peak_list_all_mrc %>% 
+      dplyr::filter(mrc =="EAR_close") %>% 
+    dplyr::filter(dist_to_NG >-2000&dist_to_NG<2000) %>% 
+    dplyr::select(Peakid, NCBI_gene:SYMBOL,dist_to_NG, mrc) %>% 
+    separate_longer_delim(., cols=NCBI_gene:SYMBOL, delim= ",") %>% 
+    distinct(NCBI_gene,SYMBOL)
+  
+ESR_open_NG_2k<-  peak_list_all_mrc %>% 
+      dplyr::filter(mrc =="ESR_open") %>% 
+    dplyr::filter(dist_to_NG >-2000&dist_to_NG<2000) %>% 
+    dplyr::select(Peakid, NCBI_gene:SYMBOL,dist_to_NG, mrc) %>% 
+    separate_longer_delim(., cols=NCBI_gene:SYMBOL, delim= ",") %>% 
+    distinct(NCBI_gene,SYMBOL)
+ESR_close_NG_2k<-  peak_list_all_mrc %>% 
+      dplyr::filter(mrc =="ESR_close") %>% 
+    dplyr::filter(dist_to_NG >-2000&dist_to_NG<2000) %>% 
+    dplyr::select(Peakid, NCBI_gene:SYMBOL,dist_to_NG, mrc) %>% 
+    separate_longer_delim(., cols=NCBI_gene:SYMBOL, delim= ",") %>% 
+    distinct(NCBI_gene,SYMBOL)
+ESR_OC_NG_2k<-  peak_list_all_mrc %>% 
+      dplyr::filter(mrc =="ESR_OC") %>% 
+    dplyr::filter(dist_to_NG >-2000&dist_to_NG<2000) %>% 
+    dplyr::select(Peakid, NCBI_gene:SYMBOL,dist_to_NG, mrc) %>% 
+    separate_longer_delim(., cols=NCBI_gene:SYMBOL, delim= ",") %>% 
+    distinct(NCBI_gene,SYMBOL)
+
+LR_open_NG_2k<-  peak_list_all_mrc %>% 
+      dplyr::filter(mrc =="LR_open") %>% 
+    dplyr::filter(dist_to_NG >-2000&dist_to_NG<2000) %>% 
+    dplyr::select(Peakid, NCBI_gene:SYMBOL,dist_to_NG, mrc) %>% 
+    separate_longer_delim(., cols=NCBI_gene:SYMBOL, delim= ",") %>% 
+    distinct(NCBI_gene,SYMBOL)
+LR_close_NG_2k<-  peak_list_all_mrc %>% 
+      dplyr::filter(mrc =="LR_close") %>% 
+    dplyr::filter(dist_to_NG >-2000&dist_to_NG<2000) %>% 
+    dplyr::select(Peakid, NCBI_gene:SYMBOL,dist_to_NG, mrc) %>% 
+    separate_longer_delim(., cols=NCBI_gene:SYMBOL, delim= ",") %>% 
+    distinct(NCBI_gene,SYMBOL)
+
+NR_NG_2k <-   peak_list_all_mrc %>%
+      dplyr::filter(mrc =="NR") %>% 
+    dplyr::filter(dist_to_NG >-2000&dist_to_NG<2000) %>% 
+    dplyr::select(Peakid, NCBI_gene:SYMBOL,dist_to_NG, mrc) %>% 
+    separate_longer_delim(., cols=NCBI_gene, delim= ",") %>% 
+     separate_longer_delim(., cols=,SYMBOL, delim= ",")  
+ 
+  
+
+median_24_lfc <- read_csv("data/Final_four_data/median_24_lfc.csv") 
+median_3_lfc <- read_csv("data/Final_four_data/median_3_lfc.csv")
+
+
+
+
+Top2b_peaks_gr <- readBed("data/n45_bedfiles/TOP2B_CM.bed")
+
+```
+
+### Enhancers and Response clusters
+
+
+First:  obtained a list of cis Regulatory Elements from Encode Screen
+[(https://screen.encodeproject.org/#)]
+
+
+```{r  enhancers of the heart}
+# BiocManager::install("plyranges")
+# enhancers_HLV_46F <- genomation::readBed("C:/Users/renee/Downloads/Supplements folde manuscriptr/ENCODE/heart_left_ventricle_tissue_female_adult_46_years.enhancers.bed")
+cREs_HLV_46F <- genomation::readBed("data/enhancerdata/ENCFF867HAD_ENCFF152PBB_ENCFF352YYH_ENCFF252IVK.7group.bed")
+
+# cREs_HLV_53F <- genomation::readBed("data/enhancerdata/ENCFF417JSF_ENCFF651XRK_ENCFF320IPT_ENCFF440RUS.7group.bed") 
+ 
+NR_cREs <- join_overlap_intersect(NR_gr,cREs_HLV_46F)
+LR_open_cREs <- join_overlap_intersect(LR_open_gr,cREs_HLV_46F)
+LR_close_cREs <- join_overlap_intersect(LR_close_gr,cREs_HLV_46F)
+ESR_open_cREs <- join_overlap_intersect(ESR_open_gr,cREs_HLV_46F)
+ESR_close_cREs <- join_overlap_intersect(ESR_close_gr,cREs_HLV_46F)
+ESR_OC_cREs <- join_overlap_intersect(ESR_OC_gr,cREs_HLV_46F)
+EAR_open_cREs <- join_overlap_intersect(EAR_open_gr,cREs_HLV_46F)
+EAR_close_cREs <- join_overlap_intersect(EAR_close_gr,cREs_HLV_46F)
+
+
+# NR_cREs_all <- join_overlap_intersect(NR_df_gr,cREs_HLV_46F)
+# LR_cREs_all <- join_overlap_intersect(LR_df_gr,cREs_HLV_46F)
+# ESR_cREs_all <- join_overlap_intersect(ESR_df_gr,cREs_HLV_46F)
+# EAR_cREs_all <- join_overlap_intersect(EAR_df_gr,cREs_HLV_46F)
+allpeak_gr <- peak_list_all_mrc %>% 
+  GRanges(.)
+Whole_peaks <- join_overlap_intersect(allpeak_gr, cREs_HLV_46F)
+
+
+Whole_peaks %>% 
+  as.data.frame() %>% 
+  group_by(blockCount, mrc) %>%  tally %>% 
+  pivot_wider(., id_cols = mrc, names_from = blockCount, values_from = n) %>% 
+  dplyr::select(mrc, PLS:'pELS,CTCF-bound') %>% 
+  kable(., caption="Breakdown of peaks overlapping cREs") %>% 
+  kable_paper("striped", full_width = TRUE) %>%
+  kable_styling(full_width = FALSE, font_size = 14)
+
+```
+
+### Visualization of categories:
+
+First, filtering cRE set by type to include 'CTCF-only,CTCF-bound', 'PLS', 'PLS,CTCF-bound','dELS', 'dELS,CTCF-bound', 'pELS', 'pELS,CTCF-bound'.
+
+Second, reclassify (new column) to group the CTCF-bound into their respective groups so only 4 groups, ("CTCF-only","PLS","dELS", "pELS") are created.
+
+Third, left-join the median LFC for both 3 hour and 24 hour data to data set and boxplot by group.
+
+Fourth, rbind two more data frames to help with ggplot visualization
+
+PLS= promoter like sequences
+pELS= proximal enhancer like sequences
+dELS=distal enhancer like sequences
+#### EAR
+```{r  EAR cRE 3 and 24 hours}
+EAR_24h_peak_list <-  col_ng_peak %>% 
+  distinct(peakid) %>% 
+  dplyr::filter(peakid %in% EAR_df$id) %>% 
+  mutate(type="all_EAR") %>% 
+  left_join(.,(median_24_lfc %>% 
+                 dplyr::select(peak,median)),by = c("peakid"="peak"))
+EAR_cRE_peak_list <- EAR_cREs %>%
+  as.data.frame() %>%
+  distinct(peakid)
+
+not_EAR_24h_cREs <-   median_24_lfc %>%  
+  dplyr::filter(peak %in% EAR_df$id) %>%
+  dplyr::filter(!peak %in% EAR_cRE_peak_list$peakid) %>% 
+  dplyr::rename("peakid"="peak") %>% 
+  mutate(type = "not_cRE_peaks") %>% 
+  dplyr::select(peakid, median, type)
+
+EAR_3h_peak_list <-  col_ng_peak %>% 
+  distinct(peakid) %>% 
+  dplyr::filter(peakid %in% EAR_df$id) %>% 
+  mutate(type="all_EAR") %>% 
+  left_join(.,(median_3_lfc %>% 
+                 dplyr::select(peak,median)),by = c("peakid"="peak"))
+
+not_EAR_3h_cREs <-   median_3_lfc %>%  
+  dplyr::filter(peak %in% EAR_df$id) %>% 
+  dplyr::filter(!peak %in% EAR_cRE_peak_list$peakid) %>% 
+  dplyr::rename("peakid"="peak") %>% 
+  mutate(type = "not_cRE_peaks") %>% 
+  dplyr::select(peakid, median, type)
+
+EAR_cREs %>%
+  as.data.frame() %>%
+  dplyr::filter(blockCount=="CTCF-only,CTCF-bound"|blockCount =="PLS"|blockCount =="PLS,CTCF-bound"|blockCount =="dELS"|blockCount =="dELS,CTCF-bound"|blockCount =="pELS"|blockCount =="pELS,CTCF-bound") %>% 
+  mutate(type=if_else(blockCount=="CTCF-only,CTCF-bound","CTCF-only",
+                      if_else(grepl("PLS",blockCount),"Promoter-like",
+                              if_else(grepl("pELS",blockCount),"Proximal enhancer-like", "Distal enhancer-like"),blockCount))) %>% 
+  left_join(., median_24_lfc, by =c("peakid"="peak")) %>% 
+  na.omit() %>% 
+  dplyr::select(median,peakid,type) %>%
+  distinct() %>% 
+  rbind(EAR_24h_peak_list) %>% 
+  rbind(not_EAR_24h_cREs) %>% 
+  mutate(direction=if_else(median>0,"open","closed")) %>% 
+  mutate(type=factor(type, levels = c("Promoter-like","Proximal enhancer-like","Distal enhancer-like","CTCF-only","not_cRE_peaks","all_EAR"))) %>%
+  mutate(direction=factor(direction, levels=c("open","closed"))) %>% 
+  ggplot(., aes(y=type, x=median,group=type))+
+  geom_boxplot() +
+  scale_fill_discrete()+
+  ggtitle(paste0(" 24 hour EAR n = ",length(unique(EAR_cREs$peakid))," out of ", length(unique(EAR_df$id)), " total peaks (",sprintf("%.1f",length(unique(EAR_cREs$peakid))/length(unique(EAR_df$id))*100),"%)"))+
+  # facet_wrap(~direction)+
+  theme_bw()+
+  xlim(-4,4)
+
+EAR_cREs %>%
+  as.data.frame() %>%
+  dplyr::filter(blockCount=="CTCF-only,CTCF-bound"|blockCount =="PLS"|blockCount =="PLS,CTCF-bound"|blockCount =="dELS"|blockCount =="dELS,CTCF-bound"|blockCount =="pELS"|blockCount =="pELS,CTCF-bound") %>% 
+  mutate(type=if_else(blockCount=="CTCF-only,CTCF-bound","CTCF-only",
+                      if_else(grepl("PLS",blockCount),"Promoter-like",
+                              if_else(grepl("pELS",blockCount),"Proximal enhancer-like", "Distal enhancer-like"),blockCount))) %>% 
+  left_join(., median_3_lfc, by =c("peakid"="peak")) %>% 
+  na.omit() %>% 
+  dplyr::select(median,peakid,type) %>%
+  distinct() %>% 
+  rbind(EAR_3h_peak_list) %>% 
+  rbind(not_EAR_3h_cREs) %>% 
+  mutate(direction=if_else(median>0,"open","closed")) %>% 
+  mutate(type=factor(type, levels = c("Promoter-like","Proximal enhancer-like","Distal enhancer-like","CTCF-only","not_cRE_peaks","all_EAR"))) %>%
+  mutate(direction=factor(direction, levels=c("open","closed"))) %>% 
+  ggplot(., aes(y=type, x=median,group=type))+
+  geom_boxplot() +
+  scale_fill_discrete()+
+  ggtitle(paste0("3 hour EAR n = ",length(unique(EAR_cREs$peakid))," out of ", length(unique(EAR_df$id)), " total peaks (",sprintf("%.1f",length(unique(EAR_cREs$peakid))/length(unique(EAR_df$id))*100),"%)"))+
+  # facet_wrap(~direction)+
+  theme_bw()+
+  xlim(-4,4)
+
+```
+##### Combined dataframes
+
+```{r EAR_combo}
+EAR_combo <- EAR_cREs %>%
+  as.data.frame() %>%
+  dplyr::filter(blockCount=="CTCF-only,CTCF-bound"|blockCount =="PLS"|blockCount =="PLS,CTCF-bound"|blockCount =="dELS"|blockCount =="dELS,CTCF-bound"|blockCount =="pELS"|blockCount =="pELS,CTCF-bound") %>% 
+  mutate(type=if_else(blockCount=="CTCF-only,CTCF-bound","CTCF-only",
+                      if_else(grepl("PLS",blockCount),"Promoter-like",
+                              if_else(grepl("pELS",blockCount),"Proximal enhancer-like", "Distal enhancer-like"),blockCount))) %>% 
+  left_join(., median_24_lfc, by =c("peakid"="peak")) %>% 
+  na.omit() %>% 
+  dplyr::select(median,peakid,type) %>%
+  distinct() %>% 
+  rbind(EAR_24h_peak_list) %>% 
+  rbind(not_EAR_24h_cREs) %>% 
+  mutate(direction=if_else(median>0,"open","closed")) %>% 
+  #
+  mutate(direction=factor(direction, levels=c("open","closed"))) %>% 
+  group_by(type) %>% 
+  summarize(mead=median(median),min_val=min(median),max_val=max(median)) %>% 
+  mutate(type=if_else(type=="all_EAR","all",type)) %>% 
+  mutate(mrc_color="EAR") %>% 
+  mutate(time="24_hrs") %>% 
+  rbind(EAR_cREs %>%
+  as.data.frame() %>%
+  dplyr::filter(blockCount=="CTCF-only,CTCF-bound"|blockCount =="PLS"|blockCount =="PLS,CTCF-bound"|blockCount =="dELS"|blockCount =="dELS,CTCF-bound"|blockCount =="pELS"|blockCount =="pELS,CTCF-bound") %>% 
+  mutate(type=if_else(blockCount=="CTCF-only,CTCF-bound","CTCF-only",
+                      if_else(grepl("PLS",blockCount),"Promoter-like",
+                              if_else(grepl("pELS",blockCount),"Proximal enhancer-like", "Distal enhancer-like"),blockCount))) %>% 
+  left_join(., median_3_lfc, by =c("peakid"="peak")) %>% 
+  na.omit() %>% 
+  dplyr::select(median,peakid,type) %>%
+  distinct() %>% 
+  rbind(EAR_3h_peak_list) %>% 
+  rbind(not_EAR_3h_cREs) %>% 
+  mutate(direction=if_else(median>0,"open","closed")) %>% 
+  #
+  mutate(direction=factor(direction, levels=c("open","closed"))) %>% 
+  group_by(type) %>% 
+  summarize(mead=median(median),min_val=min(median),max_val=max(median)) %>% 
+  mutate(type=if_else(type=="all_EAR","all",type)) %>% 
+  mutate(mrc_color="EAR") %>% 
+  mutate(time="3_hrs"))
+ 
+```
+
+
+
+##### GO analysis of EAR peaks
+
+```{r peak lists for go}
+EAR_24h_peaks <- EAR_cREs %>%
+  as.data.frame() %>%
+  dplyr::filter(blockCount=="CTCF-only,CTCF-bound"|blockCount =="PLS"|blockCount =="PLS,CTCF-bound"|blockCount =="dELS"|blockCount =="dELS,CTCF-bound"|blockCount =="pELS"|blockCount =="pELS,CTCF-bound") %>% 
+  mutate(type=if_else(blockCount=="CTCF-only,CTCF-bound","CTCF-only",                      if_else(grepl("PLS",blockCount),"Promoter-like",                              if_else(grepl("pELS",blockCount),"Proximal enhancer-like", "Distal enhancer-like"),blockCount))) %>% 
+  left_join(., median_24_lfc, by =c("peakid"="peak")) %>% 
+  na.omit() %>% 
+  dplyr::select(median,peakid,type) %>%
+  distinct() %>% 
+  rbind(EAR_24h_peak_list) %>% 
+  rbind(not_EAR_24h_cREs) %>% 
+  mutate(direction=if_else(median>0,"open","closed")) %>% 
+  mutate(type=factor(type, levels = c("Promoter-like","Proximal enhancer-like","Distal enhancer-like","CTCF-only","not_cRE_peaks","all_EAR"))) %>%
+  mutate(direction=factor(direction, levels=c("open","closed"))) %>% 
+  left_join(., (col_ng_peak %>% dplyr::select(seqnames:peakid)), by=c("peakid"="peakid"))
+### contains all peaks, need to call out by type
+
+```
+resp
+```{r EAR-respgo 3 and 24}
+EAR_cRE_resp <- EAR_24h_peaks %>% filter(type!="not_cRE_peaks") %>% 
+  filter(type!="all_EAR") %>% 
+  dplyr::select(seqnames:end) %>% 
+  unite(., col="id",seqnames:end,remove=TRUE, sep = ":")
+
+background_peaks <- col_ng_peak %>% 
+  dplyr::select(seqnames:end) %>% 
+  unite(., col="id",seqnames:end,remove=TRUE, sep=":")
+# 
+# EAR_24h_cRE_resp <- gost(query = EAR_cRE_resp$id,
+#                     organism = "hsapiens",
+#                     significant = FALSE,
+#                     ordered_query = FALSE,
+#                     domain_scope = "custom",
+#                     measure_underrepresentation = FALSE,
+#                     evcodes = FALSE,
+#                     user_threshold = 0.05,
+#                     correction_method = c("fdr"),
+#                     custom_bg = background_peaks$id,
+#                     sources=c("GO:BP","KEGG"))
+# saveRDS(EAR_24h_cRE_resp,"data/GO_KEGG_analysis/EAR_24h_cRE_resp.RDS")
+EAR_24h_cRE_resp <- readRDS("data/GO_KEGG_analysis/EAR_24h_not_cRE_resp.RDS")
+
+EAR_cRE_table <- EAR_24h_cRE_resp$result %>% 
+  dplyr::select(c(source, term_id,
+                  term_name,intersection_size, 
+                   term_size, p_value))# %>% 
+
+EAR_cRE_table %>%
+   filter(source=="GO:BP") %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(.,caption = "GO:BP terms found in EAR peaks that are not cREs" ) %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
+EAR_cRE_table %>%
+  filter(source=="KEGG") %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(., caption = "KEGG terms found in EAR peaks that are not cREs" ) %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
+```
+
+
+```{r EAR-go 3 and 24}
+EAR_not_cRE_resp <- EAR_24h_peaks %>% filter(type=="not_cRE_peaks") %>% 
+  dplyr::select(seqnames:end) %>% 
+  unite(., col="id",seqnames:end,remove=TRUE, sep = ":")
+
+background_peaks <- col_ng_peak %>% 
+  dplyr::select(seqnames:end) %>% 
+  unite(., col="id",seqnames:end,remove=TRUE, sep=":")
+
+# EAR_24h_not_cRE_resp <- gost(query = EAR_not_cRE_resp$id,
+#                     organism = "hsapiens",
+#                     significant = FALSE,
+#                     ordered_query = FALSE,
+#                     domain_scope = "custom",
+#                     measure_underrepresentation = FALSE,
+#                     evcodes = FALSE,
+#                     user_threshold = 0.05,
+#                     correction_method = c("fdr"),
+#                     custom_bg = background_peaks$id,
+#                     sources=c("GO:BP","KEGG"))
+# saveRDS(EAR_24h_not_cRE_resp,"data/GO_KEGG_analysis/EAR_24h_not_cRE_resp.RDS")
+EAR_24h_not_cRE_resp <- readRDS("data/GO_KEGG_analysis/EAR_24h_not_cRE_resp.RDS")
+
+EAR_not_cRE_table <- EAR_24h_not_cRE_resp$result %>% 
+  dplyr::select(c(source, term_id,
+                  term_name,intersection_size, 
+                   term_size, p_value))# %>% 
+
+EAR_not_cRE_table %>%
+   filter(source=="GO:BP") %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(.,caption = "GO:BP terms found in EAR peaks that are not cREs" ) %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
+EAR_not_cRE_table %>%
+  filter(source=="KEGG") %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(., caption = "KEGG terms found in EAR peaks that are not cREs" ) %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
+```
+
+#### ESR
+
+```{r  ESR cRE 3 and 24 hours}
+ESR_24h_peak_list <-  col_ng_peak %>% 
+  distinct(peakid) %>% 
+  dplyr::filter(peakid %in% ESR_df$id) %>% 
+  mutate(type="all_ESR") %>% 
+  left_join(.,(median_24_lfc %>% 
+                 dplyr::select(peak,median)),by = c("peakid"="peak"))
+ESR_cRE_peak_list <- ESR_cREs %>%
+  as.data.frame() %>%
+  distinct(peakid)
+
+not_ESR_24h_cREs <-   median_24_lfc %>%  
+  dplyr::filter(peak %in% ESR_df$id) %>%
+  dplyr::filter(!peak %in% ESR_cRE_peak_list$peakid) %>% 
+  dplyr::rename("peakid"="peak") %>% 
+  mutate(type = "not_cRE_peaks") %>% 
+  dplyr::select(peakid, median, type)
+
+ESR_3h_peak_list <-  col_ng_peak %>% 
+  distinct(peakid) %>% 
+  dplyr::filter(peakid %in% ESR_df$id) %>% 
+  mutate(type="all_ESR") %>% 
+  left_join(.,(median_3_lfc %>% 
+                 dplyr::select(peak,median)),by = c("peakid"="peak"))
+
+not_ESR_3h_cREs <-   median_3_lfc %>%  
+  dplyr::filter(peak %in% ESR_df$id) %>% 
+  dplyr::filter(!peak %in% ESR_cRE_peak_list$peakid) %>% 
+  dplyr::rename("peakid"="peak") %>% 
+  mutate(type = "not_cRE_peaks") %>% 
+  dplyr::select(peakid, median, type)
+
+ESR_cREs %>%
+  as.data.frame() %>%
+  dplyr::filter(blockCount=="CTCF-only,CTCF-bound"|blockCount =="PLS"|blockCount =="PLS,CTCF-bound"|blockCount =="dELS"|blockCount =="dELS,CTCF-bound"|blockCount =="pELS"|blockCount =="pELS,CTCF-bound") %>% 
+  mutate(type=if_else(blockCount=="CTCF-only,CTCF-bound","CTCF-only",
+                      if_else(grepl("PLS",blockCount),"Promoter-like",
+                              if_else(grepl("pELS",blockCount),"Proximal enhancer-like", "Distal enhancer-like"),blockCount))) %>% 
+  left_join(., median_24_lfc, by =c("peakid"="peak")) %>% 
+  na.omit() %>% 
+  dplyr::select(median,peakid,type) %>%
+  distinct() %>% 
+  rbind(ESR_24h_peak_list) %>% 
+  rbind(not_ESR_24h_cREs) %>% 
+  mutate(direction=if_else(median>0,"open","closed")) %>% 
+  mutate(type=factor(type, levels = c("Promoter-like","Proximal enhancer-like","Distal enhancer-like","CTCF-only","not_cRE_peaks","all_ESR"))) %>%
+  mutate(direction=factor(direction, levels=c("open","closed"))) %>% 
+  ggplot(., aes(y=type, x=median,group=type))+
+  geom_boxplot() +
+  scale_fill_discrete()+
+  ggtitle(paste0(" 24 hour ESR n = ",length(unique(ESR_cREs$peakid))," out of ", length(unique(ESR_df$id)), " total peaks (",sprintf("%.1f",length(unique(ESR_cREs$peakid))/length(unique(ESR_df$id))*100),"%)"))+
+  # facet_wrap(~direction)+
+  theme_bw()+
+  xlim(-4,4)
+
+ESR_cREs %>%
+  as.data.frame() %>%
+  dplyr::filter(blockCount=="CTCF-only,CTCF-bound"|blockCount =="PLS"|blockCount =="PLS,CTCF-bound"|blockCount =="dELS"|blockCount =="dELS,CTCF-bound"|blockCount =="pELS"|blockCount =="pELS,CTCF-bound") %>% 
+  mutate(type=if_else(blockCount=="CTCF-only,CTCF-bound","CTCF-only",
+                      if_else(grepl("PLS",blockCount),"Promoter-like",
+                              if_else(grepl("pELS",blockCount),"Proximal enhancer-like", "Distal enhancer-like"),blockCount))) %>% 
+  left_join(., median_3_lfc, by =c("peakid"="peak")) %>% 
+  na.omit() %>% 
+  dplyr::select(median,peakid,type) %>%
+  distinct() %>% 
+  rbind(ESR_3h_peak_list) %>% 
+  rbind(not_ESR_3h_cREs) %>% 
+  mutate(direction=if_else(median>0,"open","closed")) %>% 
+  mutate(type=factor(type, levels = c("Promoter-like","Proximal enhancer-like","Distal enhancer-like","CTCF-only","not_cRE_peaks","all_ESR"))) %>%
+  mutate(direction=factor(direction, levels=c("open","closed"))) %>% 
+  ggplot(., aes(y=type, x=median,group=type))+
+  geom_boxplot() +
+  scale_fill_discrete()+
+  ggtitle(paste0("3 hour ESR n = ",length(unique(ESR_cREs$peakid))," out of ", length(unique(ESR_df$id)), " total peaks (",sprintf("%.1f",length(unique(ESR_cREs$peakid))/length(unique(ESR_df$id))*100),"%)"))+
+  # facet_wrap(~direction)+
+  theme_bw()+
+  xlim(-4,4)
+
+
+
+ESR_24h_peaks <- ESR_cREs %>%
+  as.data.frame() %>%
+  dplyr::filter(blockCount=="CTCF-only,CTCF-bound"|blockCount =="PLS"|blockCount =="PLS,CTCF-bound"|blockCount =="dELS"|blockCount =="dELS,CTCF-bound"|blockCount =="pELS"|blockCount =="pELS,CTCF-bound") %>% 
+  mutate(type=if_else(blockCount=="CTCF-only,CTCF-bound","CTCF-only",
+                      if_else(grepl("PLS",blockCount),"Promoter-like",
+                              if_else(grepl("pELS",blockCount),"Proximal enhancer-like", "Distal enhancer-like"),blockCount))) %>% 
+  left_join(., median_24_lfc, by =c("peakid"="peak")) %>% 
+  na.omit() %>% 
+  dplyr::select(median,peakid,type) %>%
+  distinct() %>% 
+  rbind(ESR_24h_peak_list) %>% 
+  rbind(not_ESR_24h_cREs) %>% 
+  mutate(direction=if_else(median>0,"open","closed")) %>% 
+  mutate(type=factor(type, levels = c("Promoter-like","Proximal enhancer-like","Distal enhancer-like","CTCF-only","not_cRE_peaks","all_ESR"))) %>%
+  mutate(direction=factor(direction, levels=c("open","closed"))) %>% 
+  left_join(., (col_ng_peak %>% dplyr::select(seqnames:peakid)), by=c("peakid"="peakid"))
+
+```
+Combined dataframes
+
+```{r ESR_combo}
+ESR_combo <- ESR_cREs %>%
+  as.data.frame() %>%
+  dplyr::filter(blockCount=="CTCF-only,CTCF-bound"|blockCount =="PLS"|blockCount =="PLS,CTCF-bound"|blockCount =="dELS"|blockCount =="dELS,CTCF-bound"|blockCount =="pELS"|blockCount =="pELS,CTCF-bound") %>% 
+  mutate(type=if_else(blockCount=="CTCF-only,CTCF-bound","CTCF-only",
+                      if_else(grepl("PLS",blockCount),"Promoter-like",
+                              if_else(grepl("pELS",blockCount),"Proximal enhancer-like", "Distal enhancer-like"),blockCount))) %>% 
+  left_join(., median_24_lfc, by =c("peakid"="peak")) %>% 
+  na.omit() %>% 
+  dplyr::select(median,peakid,type) %>%
+  distinct() %>% 
+  rbind(ESR_24h_peak_list) %>% 
+  rbind(not_ESR_24h_cREs) %>% 
+  mutate(direction=if_else(median>0,"open","closed")) %>% 
+  #
+  mutate(direction=factor(direction, levels=c("open","closed"))) %>% 
+  group_by(type) %>% 
+  summarize(mead=median(median),min_val=min(median),max_val=max(median)) %>% 
+  mutate(type=if_else(type=="all_ESR","all",type)) %>% 
+  mutate(mrc_color="ESR") %>% 
+  mutate(time="24_hrs") %>% 
+  rbind(ESR_cREs %>%
+  as.data.frame() %>%
+  dplyr::filter(blockCount=="CTCF-only,CTCF-bound"|blockCount =="PLS"|blockCount =="PLS,CTCF-bound"|blockCount =="dELS"|blockCount =="dELS,CTCF-bound"|blockCount =="pELS"|blockCount =="pELS,CTCF-bound") %>% 
+  mutate(type=if_else(blockCount=="CTCF-only,CTCF-bound","CTCF-only",
+                      if_else(grepl("PLS",blockCount),"Promoter-like",
+                              if_else(grepl("pELS",blockCount),"Proximal enhancer-like", "Distal enhancer-like"),blockCount))) %>% 
+  left_join(., median_3_lfc, by =c("peakid"="peak")) %>% 
+  na.omit() %>% 
+  dplyr::select(median,peakid,type) %>%
+  distinct() %>% 
+  rbind(ESR_3h_peak_list) %>% 
+  rbind(not_ESR_3h_cREs) %>% 
+  mutate(direction=if_else(median>0,"open","closed")) %>% 
+  #
+  mutate(direction=factor(direction, levels=c("open","closed"))) %>% 
+  group_by(type) %>% 
+  summarize(mead=median(median),min_val=min(median),max_val=max(median)) %>% 
+  mutate(type=if_else(type=="all_ESR","all",type)) %>% 
+  mutate(mrc_color="ESR") %>% 
+  mutate(time="3_hrs"))
+
+```
+
+##### ESR GO analysis
+
+resp
+```{r ESR-respgo 3 and 24}
+ESR_cRE_resp <- ESR_24h_peaks %>% filter(type!="not_cRE_peaks") %>% 
+  filter(type!="all_ESR") %>% 
+  dplyr::select(seqnames:end) %>% 
+  unite(., col="id",seqnames:end,remove=TRUE, sep = ":")
+
+# 
+# ESR_24h_cRE_resp <- gost(query = ESR_cRE_resp$id,
+#                     organism = "hsapiens",
+#                     significant = FALSE,
+#                     ordered_query = FALSE,
+#                     domain_scope = "custom",
+#                     measure_underrepresentation = FALSE,
+#                     evcodes = FALSE,
+#                     user_threshold = 0.05,
+#                     correction_method = c("fdr"),
+#                     custom_bg = background_peaks$id,
+#                     sources=c("GO:BP","KEGG"))
+# saveRDS(ESR_24h_cRE_resp,"data/GO_KEGG_analysis/ESR_24h_cRE_resp.RDS")
+ESR_24h_cRE_resp <- readRDS("data/GO_KEGG_analysis/ESR_24h_not_cRE_resp.RDS")
+
+ESR_cRE_table <- ESR_24h_cRE_resp$result %>% 
+  dplyr::select(c(source, term_id,
+                  term_name,intersection_size, 
+                   term_size, p_value))# %>% 
+
+ESR_cRE_table %>%
+   filter(source=="GO:BP") %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(.,caption = "GO:BP terms found in ESR peaks that are cREs" ) %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
+ESR_cRE_table %>%
+  filter(source=="KEGG") %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(., caption = "KEGG terms found in ESR peaks that are cREs" ) %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
+```
+
+```{r ESR-go 3 and 24}
+ESR_not_cRE_resp <- ESR_24h_peaks %>% filter(type=="not_cRE_peaks") %>% 
+  dplyr::select(seqnames:end) %>% 
+  unite(., col="id",seqnames:end,remove=TRUE, sep = ":")
+# 
+# ESR_24h_not_cRE_resp <- gost(query = ESR_not_cRE_resp$id,
+#                     organism = "hsapiens",
+#                     significant = FALSE,
+#                     ordered_query = FALSE,
+#                     domain_scope = "custom",
+#                     measure_underrepresentation = FALSE,
+#                     evcodes = FALSE,
+#                     user_threshold = 0.05,
+#                     correction_method = c("fdr"),
+#                     custom_bg = background_peaks$id,
+#                     sources=c("GO:BP","KEGG"))
+# saveRDS(ESR_24h_not_cRE_resp,"data/GO_KEGG_analysis/ESR_24h_not_cRE_resp.RDS")
+ESR_24h_not_cRE_resp <- readRDS("data/GO_KEGG_analysis/ESR_24h_not_cRE_resp.RDS")
+
+ESR_not_cRE_table <- ESR_24h_not_cRE_resp$result %>% 
+  dplyr::select(c(source, term_id,
+                  term_name,intersection_size, 
+                   term_size, p_value))# %>% 
+
+ESR_not_cRE_table %>%
+   filter(source=="GO:BP") %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(.,caption = "GO:BP terms found in ESR peaks that are not cREs" ) %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
+ESR_not_cRE_table %>%
+  filter(source=="KEGG") %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(., caption = "KEGG terms found in ESR peaks that are not cREs" ) %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
+```
+
+
+
+
+#### LR
+
+```{r  LR cRE 3 and 24 hours}
+LR_24h_peak_list <-  col_ng_peak %>% 
+  distinct(peakid) %>% 
+  dplyr::filter(peakid %in% LR_df$id) %>% 
+  mutate(type="all_LR") %>% 
+  left_join(.,(median_24_lfc %>% 
+                 dplyr::select(peak,median)),by = c("peakid"="peak"))
+LR_cRE_peak_list <- LR_cREs %>%
+  as.data.frame() %>%
+  distinct(peakid)
+
+not_LR_24h_cREs <-   median_24_lfc %>%  
+  dplyr::filter(peak %in% LR_df$id) %>%
+  dplyr::filter(!peak %in% LR_cRE_peak_list$peakid) %>% 
+  dplyr::rename("peakid"="peak") %>% 
+  mutate(type = "not_cRE_peaks") %>% 
+  dplyr::select(peakid, median, type)
+
+LR_3h_peak_list <-  col_ng_peak %>% 
+  distinct(peakid) %>% 
+  dplyr::filter(peakid %in% LR_df$id) %>% 
+  mutate(type="all_LR") %>% 
+  left_join(.,(median_3_lfc %>% 
+                 dplyr::select(peak,median)),by = c("peakid"="peak"))
+
+not_LR_3h_cREs <-   median_3_lfc %>%  
+  dplyr::filter(peak %in% LR_df$id) %>% 
+  dplyr::filter(!peak %in% LR_cRE_peak_list$peakid) %>% 
+  dplyr::rename("peakid"="peak") %>% 
+  mutate(type = "not_cRE_peaks") %>% 
+  dplyr::select(peakid, median, type)
+
+LR_cREs %>%
+  as.data.frame() %>%
+  dplyr::filter(blockCount=="CTCF-only,CTCF-bound"|blockCount =="PLS"|blockCount =="PLS,CTCF-bound"|blockCount =="dELS"|blockCount =="dELS,CTCF-bound"|blockCount =="pELS"|blockCount =="pELS,CTCF-bound") %>% 
+  mutate(type=if_else(blockCount=="CTCF-only,CTCF-bound","CTCF-only",
+                      if_else(grepl("PLS",blockCount),"Promoter-like",
+                              if_else(grepl("pELS",blockCount),"Proximal enhancer-like", "Distal enhancer-like"),blockCount))) %>% 
+  left_join(., median_24_lfc, by =c("peakid"="peak")) %>% 
+  na.omit() %>% 
+  dplyr::select(median,peakid,type) %>%
+  distinct() %>% 
+  rbind(LR_24h_peak_list) %>% 
+  rbind(not_LR_24h_cREs) %>% 
+  mutate(direction=if_else(median>0,"open","closed")) %>% 
+  mutate(type=factor(type, levels = c("Promoter-like","Proximal enhancer-like","Distal enhancer-like","CTCF-only","not_cRE_peaks","all_LR"))) %>%
+  mutate(direction=factor(direction, levels=c("open","closed"))) %>% 
+  ggplot(., aes(y=type, x=median,group=type))+
+  geom_boxplot() +
+  scale_fill_discrete()+
+  ggtitle(paste0(" 24 hour LR n = ",length(unique(LR_cREs$peakid))," out of ", length(unique(LR_df$id)), " total peaks (",sprintf("%.1f",length(unique(LR_cREs$peakid))/length(unique(LR_df$id))*100),"%)"))+
+  # facet_wrap(~direction)+
+  theme_bw()+
+  xlim(-4,4)
+
+LR_cREs %>%
+  as.data.frame() %>%
+  dplyr::filter(blockCount=="CTCF-only,CTCF-bound"|blockCount =="PLS"|blockCount =="PLS,CTCF-bound"|blockCount =="dELS"|blockCount =="dELS,CTCF-bound"|blockCount =="pELS"|blockCount =="pELS,CTCF-bound") %>% 
+  mutate(type=if_else(blockCount=="CTCF-only,CTCF-bound","CTCF-only",
+                      if_else(grepl("PLS",blockCount),"Promoter-like",
+                              if_else(grepl("pELS",blockCount),"Proximal enhancer-like", "Distal enhancer-like"),blockCount))) %>% 
+  left_join(., median_3_lfc, by =c("peakid"="peak")) %>% 
+  na.omit() %>% 
+  dplyr::select(median,peakid,type) %>%
+  distinct() %>% 
+  rbind(LR_3h_peak_list) %>% 
+  rbind(not_LR_3h_cREs) %>% 
+  mutate(direction=if_else(median>0,"open","closed")) %>% 
+  mutate(type=factor(type, levels = c("Promoter-like","Proximal enhancer-like","Distal enhancer-like","CTCF-only","not_cRE_peaks","all_LR"))) %>%
+  mutate(direction=factor(direction, levels=c("open","closed"))) %>% 
+  ggplot(., aes(y=type, x=median,group=type))+
+  geom_boxplot() +
+  scale_fill_discrete()+
+  ggtitle(paste0("3 hour LR n = ",length(unique(LR_cREs$peakid))," out of ", length(unique(LR_df$id)), " total peaks (",sprintf("%.1f",length(unique(LR_cREs$peakid))/length(unique(LR_df$id))*100),"%)"))+
+  # facet_wrap(~direction)+
+  theme_bw()+
+  xlim(-4,4)
+
+LR_24h_peaks <- LR_cREs %>%
+  as.data.frame() %>%
+  dplyr::filter(blockCount=="CTCF-only,CTCF-bound"|blockCount =="PLS"|blockCount =="PLS,CTCF-bound"|blockCount =="dELS"|blockCount =="dELS,CTCF-bound"|blockCount =="pELS"|blockCount =="pELS,CTCF-bound") %>% 
+  mutate(type=if_else(blockCount=="CTCF-only,CTCF-bound","CTCF-only",
+                      if_else(grepl("PLS",blockCount),"Promoter-like",
+                              if_else(grepl("pELS",blockCount),"Proximal enhancer-like", "Distal enhancer-like"),blockCount))) %>% 
+  left_join(., median_24_lfc, by =c("peakid"="peak")) %>% 
+  na.omit() %>% 
+  dplyr::select(median,peakid,type) %>%
+  distinct() %>% 
+  rbind(LR_24h_peak_list) %>% 
+  rbind(not_LR_24h_cREs) %>% 
+  mutate(direction=if_else(median>0,"open","closed")) %>% 
+  mutate(type=factor(type, levels = c("Promoter-like","Proximal enhancer-like","Distal enhancer-like","CTCF-only","not_cRE_peaks","all_LR"))) %>%
+  mutate(direction=factor(direction, levels=c("open","closed"))) %>% 
+   left_join(., (col_ng_peak %>% dplyr::select(seqnames:peakid)), by=c("peakid"="peakid"))
+
+
+
+```
+##### Combined dataframes
+```{r LR_combo}
+LR_combo <- LR_cREs %>%
+  as.data.frame() %>%
+  dplyr::filter(blockCount=="CTCF-only,CTCF-bound"|blockCount =="PLS"|blockCount =="PLS,CTCF-bound"|blockCount =="dELS"|blockCount =="dELS,CTCF-bound"|blockCount =="pELS"|blockCount =="pELS,CTCF-bound") %>% 
+  mutate(type=if_else(blockCount=="CTCF-only,CTCF-bound","CTCF-only",
+                      if_else(grepl("PLS",blockCount),"Promoter-like",
+                              if_else(grepl("pELS",blockCount),"Proximal enhancer-like", "Distal enhancer-like"),blockCount))) %>% 
+  left_join(., median_24_lfc, by =c("peakid"="peak")) %>% 
+  na.omit() %>% 
+  dplyr::select(median,peakid,type) %>%
+  distinct() %>% 
+  rbind(LR_24h_peak_list) %>% 
+  rbind(not_LR_24h_cREs) %>% 
+  mutate(direction=if_else(median>0,"open","closed")) %>% 
+  #
+  mutate(direction=factor(direction, levels=c("open","closed"))) %>% 
+  group_by(type) %>% 
+  summarize(mead=median(median),min_val=min(median),max_val=max(median)) %>% 
+  mutate(type=if_else(type=="all_LR","all",type)) %>% 
+  mutate(mrc_color="LR") %>% 
+  mutate(time="24_hrs") %>% 
+  rbind(LR_cREs %>%
+  as.data.frame() %>%
+  dplyr::filter(blockCount=="CTCF-only,CTCF-bound"|blockCount =="PLS"|blockCount =="PLS,CTCF-bound"|blockCount =="dELS"|blockCount =="dELS,CTCF-bound"|blockCount =="pELS"|blockCount =="pELS,CTCF-bound") %>% 
+  mutate(type=if_else(blockCount=="CTCF-only,CTCF-bound","CTCF-only",
+                      if_else(grepl("PLS",blockCount),"Promoter-like",
+                              if_else(grepl("pELS",blockCount),"Proximal enhancer-like", "Distal enhancer-like"),blockCount))) %>% 
+  left_join(., median_3_lfc, by =c("peakid"="peak")) %>% 
+  na.omit() %>% 
+  dplyr::select(median,peakid,type) %>%
+  distinct() %>% 
+  rbind(LR_3h_peak_list) %>% 
+  rbind(not_LR_3h_cREs) %>% 
+  mutate(direction=if_else(median>0,"open","closed")) %>% 
+  #
+  mutate(direction=factor(direction, levels=c("open","closed"))) %>% 
+  group_by(type) %>% 
+  summarize(mead=median(median),min_val=min(median),max_val=max(median)) %>% 
+  mutate(type=if_else(type=="all_LR","all",type)) %>% 
+  mutate(mrc_color="LR") %>% 
+  mutate(time="3_hrs"))
+ 
+```
+
+
+##### LR GO analysis
+resp
+```{r LR-respgo 3 and 24}
+LR_cRE_resp <- LR_24h_peaks %>% filter(type!="not_cRE_peaks") %>% 
+  filter(type!="all_LR") %>% 
+  dplyr::select(seqnames:end) %>% 
+  unite(., col="id",seqnames:end,remove=TRUE, sep = ":")
+
+
+# LR_24h_cRE_resp <- gost(query = LR_cRE_resp$id,
+#                     organism = "hsapiens",
+#                     significant = FALSE,
+#                     ordered_query = FALSE,
+#                     domain_scope = "custom",
+#                     measure_underrepresentation = FALSE,
+#                     evcodes = FALSE,
+#                     user_threshold = 0.05,
+#                     correction_method = c("fdr"),
+#                     custom_bg = background_peaks$id,
+#                     sources=c("GO:BP","KEGG"))
+# saveRDS(LR_24h_cRE_resp,"data/GO_KEGG_analysis/LR_24h_cRE_resp.RDS")
+LR_24h_cRE_resp <- readRDS("data/GO_KEGG_analysis/LR_24h_not_cRE_resp.RDS")
+
+LR_cRE_table <- LR_24h_cRE_resp$result %>% 
+  dplyr::select(c(source, term_id,
+                  term_name,intersection_size, 
+                   term_size, p_value))# %>% 
+
+LR_cRE_table %>%
+   filter(source=="GO:BP") %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(.,caption = "GO:BP terms found in LR peaks that are cREs" ) %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
+LR_cRE_table %>%
+  filter(source=="KEGG") %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(., caption = "KEGG terms found in LR peaks that are cREs" ) %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
+```
+
+
+```{r LRGO analysis}
+
+LR_not_cRE_resp <- LR_24h_peaks %>% filter(type=="not_cRE_peaks") %>% 
+  dplyr::select(seqnames:end) %>% 
+  unite(., col="id",seqnames:end,remove=TRUE, sep = ":")
+# 
+# LR_24h_not_cRE_resp <- gost(query = LR_not_cRE_resp$id,
+#                     organism = "hsapiens",
+#                     significant = FALSE,
+#                     ordered_query = FALSE,
+#                     domain_scope = "custom",
+#                     measure_underrepresentation = FALSE,
+#                     evcodes = FALSE,
+#                     user_threshold = 0.05,
+#                     correction_method = c("fdr"),
+#                     custom_bg = background_peaks$id,
+#                     sources=c("GO:BP","KEGG"))
+# saveRDS(LR_24h_not_cRE_resp,"data/GO_KEGG_analysis/LR_24h_not_cRE_resp.RDS")
+LR_24h_not_cRE_resp <- readRDS("data/GO_KEGG_analysis/LR_24h_not_cRE_resp.RDS")
+
+LR_not_cRE_table <- LR_24h_not_cRE_resp$result %>% 
+  dplyr::select(c(source, term_id,
+                  term_name,intersection_size, 
+                   term_size, p_value))# %>% 
+
+LR_not_cRE_table %>%
+   filter(source=="GO:BP") %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(.,caption = "GO:BP terms found in LR peaks that are not cREs" ) %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
+LR_not_cRE_table %>%
+  filter(source=="KEGG") %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(., caption = "KEGG terms found in LR peaks that are not cREs" ) %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
+
+```
+
+#### NR
+
+```{r  NR cRE 3 and 24 hours}
+NR_24h_peak_list <-  col_ng_peak %>% 
+  distinct(peakid) %>% 
+  dplyr::filter(peakid %in% NR_df$id) %>% 
+  mutate(type = "all_NR") %>% 
+  left_join(.,(median_24_lfc %>% 
+                 dplyr::select(peak,median)),by = c("peakid"="peak")) %>% 
+  na.omit() 
+
+NR_cRE_peak_list <- NR_cREs %>%
+  as.data.frame() %>%
+  distinct(peakid)
+
+not_NR_24h_cREs <-   median_24_lfc %>%  
+  dplyr::filter(peak %in% NR_df$id) %>%
+  dplyr::filter(!peak %in% NR_cRE_peak_list$peakid) %>% 
+  dplyr::rename("peakid"="peak") %>% 
+  mutate(type = "not_cRE_peaks") %>% 
+  dplyr::select(peakid, median, type)
+
+NR_3h_peak_list <-  col_ng_peak %>% 
+  distinct(peakid) %>% 
+  dplyr::filter(peakid %in% NR_df$id) %>% 
+  mutate(type="all_NR") %>% 
+  left_join(.,(median_3_lfc %>% 
+                 dplyr::select(peak,median)),by = c("peakid"="peak"))%>% 
+  na.omit() 
+
+not_NR_3h_cREs <-   median_3_lfc %>%  
+  dplyr::filter(peak %in% NR_df$id) %>% 
+  dplyr::filter(!peak %in% NR_cRE_peak_list$peakid) %>% 
+  dplyr::rename("peakid"="peak") %>% 
+  mutate(type = "not_cRE_peaks") %>% 
+  dplyr::select(peakid, median, type)
+
+NR_cREs %>%
+  as.data.frame() %>%
+  dplyr::filter(blockCount=="CTCF-only,CTCF-bound"|blockCount =="PLS"|blockCount =="PLS,CTCF-bound"|blockCount =="dELS"|blockCount =="dELS,CTCF-bound"|blockCount =="pELS"|blockCount =="pELS,CTCF-bound") %>% 
+  mutate(type=if_else(blockCount=="CTCF-only,CTCF-bound","CTCF-only",
+                      if_else(grepl("PLS",blockCount),"Promoter-like",
+                              if_else(grepl("pELS",blockCount),"Proximal enhancer-like", "Distal enhancer-like"),blockCount))) %>% 
+  left_join(., median_24_lfc, by =c("peakid"="peak")) %>% 
+  na.omit() %>% 
+  dplyr::select(median,peakid,type) %>%
+  distinct() %>% 
+  rbind(NR_24h_peak_list) %>% 
+  rbind(not_NR_24h_cREs) %>% 
+  mutate(direction=if_else(median>0,"open","closed")) %>% 
+  mutate(type=factor(type, levels = c("Promoter-like","Proximal enhancer-like","Distal enhancer-like","CTCF-only","not_cRE_peaks","all_NR"))) %>%
+  mutate(direction=factor(direction, levels=c("open","closed"))) %>% 
+  ggplot(., aes(y=type, x=median,group=type))+
+  geom_boxplot() +
+  scale_fill_discrete()+
+  ggtitle(paste0(" 24 hour NR n = ",length(unique(NR_cREs$peakid))," out of ", length(unique(NR_df$id)), " total peaks (",sprintf("%.1f",length(unique(NR_cREs$peakid))/length(unique(NR_df$id))*100),"%)"))+
+  # facet_wrap(~direction)+
+  theme_bw()+
+  xlim(-4,4)
+
+NR_cREs %>%
+  as.data.frame() %>%
+  dplyr::filter(blockCount=="CTCF-only,CTCF-bound"|blockCount =="PLS"|blockCount =="PLS,CTCF-bound"|blockCount =="dELS"|blockCount =="dELS,CTCF-bound"|blockCount =="pELS"|blockCount =="pELS,CTCF-bound") %>% 
+  mutate(type=if_else(blockCount=="CTCF-only,CTCF-bound","CTCF-only",
+                      if_else(grepl("PLS",blockCount),"Promoter-like",
+                              if_else(grepl("pELS",blockCount),"Proximal enhancer-like", "Distal enhancer-like"),blockCount))) %>% 
+  left_join(., median_3_lfc, by =c("peakid"="peak")) %>% 
+  na.omit() %>% 
+  dplyr::select(median,peakid,type) %>%
+  distinct() %>% 
+  rbind(NR_3h_peak_list) %>% 
+  rbind(not_NR_3h_cREs) %>% 
+  mutate(direction=if_else(median>0,"open","closed")) %>% 
+  mutate(type=factor(type, levels = c("Promoter-like","Proximal enhancer-like","Distal enhancer-like","CTCF-only","not_cRE_peaks","all_NR"))) %>%
+  mutate(direction=factor(direction, levels=c("open","closed"))) %>% 
+  ggplot(., aes(y=type, x=median,group=type))+
+  geom_boxplot() +
+  scale_fill_discrete()+
+  ggtitle(paste0("3 hour NR n = ",length(unique(NR_cREs$peakid))," out of ", length(unique(NR_df$id)), " total peaks (",sprintf("%.1f",length(unique(NR_cREs$peakid))/length(unique(NR_df$id))*100),"%)"))+
+  # facet_wrap(~direction)+
+  theme_bw()+
+  xlim(-4,4)
+
+NR_24h_peaks <- NR_cREs %>%
+  as.data.frame() %>%
+  dplyr::filter(blockCount=="CTCF-only,CTCF-bound"|blockCount =="PLS"|blockCount =="PLS,CTCF-bound"|blockCount =="dELS"|blockCount =="dELS,CTCF-bound"|blockCount =="pELS"|blockCount =="pELS,CTCF-bound") %>% 
+  mutate(type=if_else(blockCount=="CTCF-only,CTCF-bound","CTCF-only",
+                      if_else(grepl("PLS",blockCount),"Promoter-like",
+                              if_else(grepl("pELS",blockCount),"Proximal enhancer-like", "Distal enhancer-like"),blockCount))) %>% 
+  left_join(., median_24_lfc, by =c("peakid"="peak")) %>% 
+  na.omit() %>% 
+  dplyr::select(median,peakid,type) %>%
+  distinct() %>% 
+  rbind(NR_24h_peak_list) %>% 
+  rbind(not_NR_24h_cREs) %>% 
+  mutate(direction=if_else(median>0,"open","closed")) %>% 
+  mutate(type=factor(type, levels = c("Promoter-like","Proximal enhancer-like","Distal enhancer-like","CTCF-only","not_cRE_peaks","all_NR"))) %>%
+  mutate(direction=factor(direction, levels=c("open","closed"))) %>%
+
+left_join(., (col_ng_peak %>% dplyr::select(seqnames:peakid)), by=c("peakid"="peakid"))
+
+```
+##### Combined dataframes
+
+
+```{r NR_combo}
+NR_combo <- NR_cREs %>%
+  as.data.frame() %>%
+  dplyr::filter(blockCount=="CTCF-only,CTCF-bound"|blockCount =="PLS"|blockCount =="PLS,CTCF-bound"|blockCount =="dELS"|blockCount =="dELS,CTCF-bound"|blockCount =="pELS"|blockCount =="pELS,CTCF-bound") %>% 
+  mutate(type=if_else(blockCount=="CTCF-only,CTCF-bound","CTCF-only",
+                      if_else(grepl("PLS",blockCount),"Promoter-like",
+                              if_else(grepl("pELS",blockCount),"Proximal enhancer-like", "Distal enhancer-like"),blockCount))) %>% 
+  left_join(., median_24_lfc, by =c("peakid"="peak")) %>% 
+  na.omit() %>% 
+  dplyr::select(median,peakid,type) %>%
+  distinct() %>% 
+   rbind(NR_24h_peak_list) %>% 
+  rbind(not_NR_24h_cREs) %>% 
+  group_by(type) %>%  mutate(type=if_else(type=="all_NR","all",type)) %>% 
+  summarize(mead=median(median),min_val=min(median),max_val=max(median)) %>% 
+ 
+  mutate(mrc_color="NR") %>% 
+  mutate(time="24_hrs") %>% 
+  rbind(NR_cREs %>%
+  as.data.frame() %>%
+  dplyr::filter(blockCount=="CTCF-only,CTCF-bound"|blockCount =="PLS"|blockCount =="PLS,CTCF-bound"|blockCount =="dELS"|blockCount =="dELS,CTCF-bound"|blockCount =="pELS"|blockCount =="pELS,CTCF-bound") %>% 
+  mutate(type=if_else(blockCount=="CTCF-only,CTCF-bound","CTCF-only",
+                      if_else(grepl("PLS",blockCount),"Promoter-like",
+                              if_else(grepl("pELS",blockCount),"Proximal enhancer-like", "Distal enhancer-like"),blockCount))) %>% 
+  left_join(., median_3_lfc, by =c("peakid"="peak")) %>% 
+  na.omit() %>% 
+  dplyr::select(median,peakid,type) %>%
+  distinct() %>% 
+  rbind(NR_3h_peak_list) %>% 
+  rbind(not_NR_3h_cREs) %>% 
+  group_by(type) %>% 
+  summarize(mead=median(median),min_val=min(median),max_val=max(median)) %>% 
+  mutate(type=if_else(type=="all_NR","all",type)) %>% 
+  mutate(mrc_color="NR") %>% 
+  mutate(time="3_hrs"))
+ 
+```
+
+
+
+##### NR GO analysis
+resp
+```{r NR-respgo 3 and 24}
+NR_cRE_resp <- NR_24h_peaks %>% filter(type!="not_cRE_peaks") %>% 
+  filter(type!="all_NR") %>% 
+  dplyr::select(seqnames:end) %>% 
+  unite(., col="id",seqnames:end,remove=TRUE, sep = ":")
+
+
+# NR_24h_cRE_resp <- gost(query = NR_cRE_resp$id,
+#                     organism = "hsapiens",
+#                     significant = FALSE,
+#                     ordered_query = FALSE,
+#                     domain_scope = "custom",
+#                     measure_underrepresentation = FALSE,
+#                     evcodes = FALSE,
+#                     user_threshold = 0.05,
+#                     correction_method = c("fdr"),
+#                     custom_bg = background_peaks$id,
+#                     sources=c("GO:BP","KEGG"))
+# saveRDS(NR_24h_cRE_resp,"data/GO_KEGG_analysis/NR_24h_cRE_resp.RDS")
+NR_24h_cRE_resp <- readRDS("data/GO_KEGG_analysis/NR_24h_not_cRE_resp.RDS")
+
+NR_cRE_table <- NR_24h_cRE_resp$result %>% 
+  dplyr::select(c(source, term_id,
+                  term_name,intersection_size, 
+                   term_size, p_value))# %>% 
+
+NR_cRE_table %>%
+   filter(source=="GO:BP") %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(.,caption = "GO:BP terms found in NR peaks that are cREs" ) %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
+NR_cRE_table %>%
+  filter(source=="KEGG") %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(., caption = "KEGG terms found in NR peaks that are cREs" ) %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
+```
+
+
+```{r NRGO anaNysis}
+
+NR_not_cRE_resp <- NR_24h_peaks %>% filter(type=="not_cRE_peaks") %>% 
+  dplyr::select(seqnames:end) %>% 
+  unite(., col="id",seqnames:end,remove=TRUE, sep = ":")
+# 
+# NR_24h_not_cRE_resp <- gost(query = NR_not_cRE_resp$id,
+#                     organism = "hsapiens",
+#                     significant = FALSE,
+#                     ordered_query = FALSE,
+#                     domain_scope = "custom",
+#                     measure_underrepresentation = FALSE,
+#                     evcodes = FALSE,
+#                     user_threshold = 0.05,
+#                     correction_method = c("fdr"),
+#                     custom_bg = background_peaks$id,
+#                     sources=c("GO:BP","KEGG"))
+# saveRDS(NR_24h_not_cRE_resp,"data/GO_KEGG_analysis/NR_24h_not_cRE_resp.RDS")
+NR_24h_not_cRE_resp <- readRDS("data/GO_KEGG_analysis/NR_24h_not_cRE_resp.RDS")
+
+NR_not_cRE_table <- NR_24h_not_cRE_resp$result %>% 
+  dplyr::select(c(source, term_id,
+                  term_name,intersection_size, 
+                   term_size, p_value))# %>% 
+
+NR_not_cRE_table %>%
+   filter(source=="GO:BP") %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(.,caption = "GO:BP terms found in NR peaks that are not cREs" ) %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
+NR_not_cRE_table %>%
+  filter(source=="KEGG") %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(., caption = "KEGG terms found in NR peaks that are not cREs" ) %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
+
+```
+
+| Cluster | eREs                                           | not cREs                                                                |
+|------------------------|------------------------|------------------------|
+| NR      | `r length(unique(NR_cREs$peakid))` | `r length(unique(NR_df$id))-length(unique(NR_cREs$peakid))`  |
+| LR      | `r length(unique(LR_cREs$peakid))` | `r length(unique(LR_df$id))-length(unique(LR_cREs$peakid))` |
+| ESR     | `r length(unique(ESR_cREs$peakid))` | `r length(unique(ESR_df$id))-length(unique(ESR_cREs$peakid))` |
+| EAR     | `r length(unique(EAR_cREs$peakid))` | `r length(unique(EAR_df$id))-length(unique(EAR_cREs$peakid))` |
+
+
+### summarizing plots:
+
+```{r comboplots, fig.width=12, fig.height=8}
+ggplot_combo_df <- rbind(EAR_combo,ESR_combo,LR_combo, NR_combo)
+
+ggplot_combo_df %>% 
+  mutate(time=factor(time, levels= c("3_hrs", "24_hrs"), labels=c("3 hours","24 hours)"))) %>% 
+  mutate(type=factor(type, levels = c("Promoter-like","Proximal enhancer-like","Distal enhancer-like","CTCF-only","not_cRE_peaks","all"))) %>% 
+  ggplot(., aes(y=type, x=mead, color=mrc_color))+
+  geom_pointrange(aes(xmin=min_val, xmax=max_val),position=position_dodge(width =.7),  width=.3,size=0.5,shape=15, fatten=8)+
+  geom_vline(xintercept = 0, linetype=2)+
+  facet_wrap(~time) + 
+  theme_classic()
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+### Top2b
+
+```{r Top2b peaks}
+
+### created the marked dataframe with mRC
+Peak_MRC_table <- TSS_NG_data %>%
+    distinct(peakid, .keep_all = TRUE) %>% 
+    mutate(mrc=if_else(peakid %in% EAR_df$id, "EAR",
+                     if_else(peakid %in% ESR_df$id,"ESR",
+                             if_else(peakid %in% LR_df$id,"LR",
+                                     if_else(peakid %in% NR_df$id,"NR","not_mrc")))))%>%
+    dplyr::select(peakid:end,entrezgene_id:mrc) 
+  
+##overlapping and intersection top2b peaks with my peaks
+top2Boverlap <- join_overlap_intersect(all_peak_gr,Top2b_peaks_gr)
+
+### TAking the list of peaks dataframe by MRC and joining with marked group above so neargenes by TSS are joined thenchecking for distance to neargene across categories
+
+peak_list_all_MRC %>% 
+  dplyr::filter(peakid %in% top2Boverlap$id) %>% 
+  dplyr::select(peakid,MRC) %>% 
+  left_join(.,Peak_MRC_table, by=c("peakid"="peakid")) %>% 
+  ggplot(., aes(x=mrc,y=dist_to_NG))+
+  geom_boxplot()
+peak_list_all_MRC %>% 
+  dplyr::filter(peakid %in% top2Boverlap$id) %>% 
+  dplyr::select(peakid,MRC) %>% 
+  left_join(.,median_24_lfc, by=c("peakid"="peak")) %>% 
+  ggplot(., aes(x=MRC,y=median))+
+  geom_boxplot()  +
+  theme_bw()+
+  ggtitle("24 hr median logFC across response peaks overlapped with TOP2B")+
+  coord_cartesian(ylim= c(-3.5,2))
+
+peak_list_all_MRC %>% 
+  dplyr::filter(peakid %in% top2Boverlap$id) %>% 
+  dplyr::select(peakid,MRC) %>% 
+  left_join(.,median_3_lfc, by=c("peakid"="peak")) %>% 
+  ggplot(., aes(x=MRC,y=median))+
+  geom_boxplot()  +
+   theme_bw()+
+  ggtitle("3 hr median logFC across response peaks overlapped with TOP2B")+
+  coord_cartesian(ylim= c(-3.5,2))
+
+```
+
+### Counts of peaks-
+
+```{r top2b_cluster}
+peak_list_all_MRC %>% 
+  dplyr::filter(peakid %in% top2Boverlap$id) %>% 
+  dplyr::select(peakid,MRC) %>% 
+  left_join(.,Peak_MRC_table, by=c("peakid"="peakid")) %>% 
+  group_by(MRC) %>% 
+  tally
+
+
+```
+
+```{r peaks not in CREs}
+
+```
+
