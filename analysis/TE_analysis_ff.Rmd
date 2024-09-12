@@ -587,7 +587,7 @@ A summary of numbers of peaks is below:
 **note** these numbers include peaks that are not classified by an MRC.
 
 
- Tables 4 and 5 above used the "new" way of sub-setting (keeping all metadata organized vs the sub-setting code I found on the internet).  Just to verify the numbers were the same, I ran the data using the old method and compared the numbers.  They are identical (Table 6) to each other.  Success!
+ Tables 3 above used the "new" way of sub-setting (keeping all metadata organized vs the sub-setting code I found on the internet).  Just to verify the numbers were the same, I ran the data using the old method and compared the numbers.  They are identical (Table 6) to each other.  Success!
 
 
 ### Distribution of TE overlaps by peaks according to class
@@ -639,7 +639,7 @@ TE_mrc_status_list <- Peak_TE_overlapbreakdown %>%
    mutate(mrc="all_peaks") %>% 
    rbind((TE_mrc_status_list %>%
             ### adding a line to only show single peaks
-            distinct(Peakid, .keep_all = TRUE))) %>% 
+            distinct(Peakid,mrc,TEstatus, .keep_all = TRUE))) %>% 
    mutate(repClass=factor(repClass)) %>%
    mutate(TEstatus=factor(TEstatus, levels = c("TE_peak","not_TE_peak")))%>% 
    dplyr::filter(mrc != "not_mrc") %>% 
@@ -682,24 +682,29 @@ Peak_TE_overlapbreakdown %>%
    mutate(mrc="all_peaks") %>% 
    rbind((TE_mrc_status_list %>%  distinct(Peakid, .keep_all = TRUE))) %>% 
    mutate(repClass=factor(repClass)) %>%
-   mutate(TEstatus=factor(TEstatus, levels = c("TE_peak","not_TE_peak")))%>% 
    dplyr::filter(mrc != "not_mrc") %>% 
   mutate(mrc=factor(mrc, levels = c("EAR","ESR", "LR", "NR","all_peaks"))) %>%
-   dplyr::filter(per_ol>per_cov| is.na(per_ol)) %>% 
+   # dplyr::filter(per_ol>per_cov| is.na(per_ol)) %>% 
+  mutate(TEstatus=if_else(is.na(per_ol),"not_TE_peak",if_else(per_ol>per_cov, "TE_peak",
+                          if_else(per_ol<per_cov,"not_TE_peak","not_TE_peak")))) %>% 
+mutate(TEstatus=factor(TEstatus, levels = c("TE_peak","not_TE_peak")))%>% 
    ggplot(., aes(x=mrc, fill= TEstatus))+
   geom_bar(position="fill", col="black")+
   theme_classic()+
   ggtitle(paste("TE status by MRC and Family",">",per_cov*100,"% covered"))
    
-   TE_mrc_status_list %>% 
+TE_mrc_status_list %>% 
   distinct(Peakid, .keep_all = TRUE) %>% 
    mutate(mrc="all_peaks") %>% 
    rbind((TE_mrc_status_list %>%  distinct(Peakid, .keep_all = TRUE))) %>% 
    mutate(repClass=factor(repClass)) %>%
-   mutate(TEstatus=factor(TEstatus, levels = c("TE_peak","not_TE_peak")))%>% 
+   dplyr::filter(mrc != "not_mrc") %>% 
+  mutate(mrc=factor(mrc, levels = c("EAR","ESR", "LR", "NR","all_peaks"))) %>%
+    mutate(TEstatus=if_else(is.na(per_ol),"not_TE_peak",
+                            if_else(per_ol>per_cov, "TE_peak", if_else(per_ol<per_cov, "not_TE_peak","not_TE_peak")))) %>% 
+mutate(TEstatus=factor(TEstatus, levels = c("TE_peak","not_TE_peak")))%>% 
    dplyr::filter(mrc != "not_mrc") %>% 
   mutate(mrc=factor(mrc, levels = c("EAR","ESR", "LR", "NR","all_peaks"))) %>% 
-      dplyr::filter(per_ol>per_cov| is.na(per_ol)) %>% 
      group_by(mrc, TEstatus) %>% 
      count() %>% 
      pivot_wider(., id_cols = mrc, names_from = TEstatus, values_from = n) %>% 
