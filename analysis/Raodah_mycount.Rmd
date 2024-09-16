@@ -1,0 +1,794 @@
+---
+title: "Raodah's data"
+author: "ERM"
+date: '`r Sys.Date()`'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE,
+	warning = FALSE
+)
+```
+
+```{css, echo=FALSE}
+pre {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+pre[class] {
+  max-height: 200px;
+}
+```
+
+```{r  package loading}
+library(tidyverse)
+library(kableExtra)
+library(broom)
+library(RColorBrewer)
+# library(ChIPseeker)
+# library("TxDb.Hsapiens.UCSC.hg38.knownGene")
+# library("org.Hs.eg.db")
+library(rtracklayer)
+library(edgeR)
+# library(ggfortify)
+library(limma)
+library(readr)
+library(BiocGenerics)
+library(gridExtra)
+library(VennDiagram)
+library(scales)
+library(Cormotif)
+library(BiocParallel)
+library(ggpubr)
+library(devtools)
+library(eulerr)
+library(genomation)
+library(ggsignif)
+library(plyranges)
+library(ggrepel)
+library(ComplexHeatmap)
+```
+
+
+```{r functions}
+drug_pal <- c("#8B006D","#DF707E","#F1B72B", "#3386DD","#41B333")
+pca_plot <-
+  function(df,
+           col_var = NULL,
+           shape_var = NULL,
+           title = "") {
+    ggplot(df) + geom_point(aes_string(
+      x = "PC1",
+      y = "PC2",
+      color = col_var,
+      shape = shape_var
+    ),
+    size = 5) +
+      labs(title = title, x = "PC 1", y = "PC 2") +
+      scale_color_manual(values = c(
+        "#8B006D",
+        "#DF707E",
+        "#F1B72B",
+        "#3386DD",
+        
+        "#41B333"
+      ))
+  }
+pca_var_plot <- function(pca) {
+  # x: class == prcomp
+  pca.var <- pca$sdev ^ 2
+  pca.prop <- pca.var / sum(pca.var)
+  var.plot <-
+    qplot(PC, prop, data = data.frame(PC = 1:length(pca.prop),
+                                      prop = pca.prop)) +
+    labs(title = 'Variance contributed by each PC',
+         x = 'PC', y = 'Proportion of variance')
+  plot(var.plot)
+}
+
+calc_pca <- function(x) {
+  # Performs principal components analysis with prcomp
+  # x: a sample-by-gene numeric matrix
+  prcomp(x, scale. = TRUE, retx = TRUE)
+}
+
+get_regr_pval <- function(mod) {
+  # Returns the p-value for the Fstatistic of a linear model
+  # mod: class lm
+  stopifnot(class(mod) == "lm")
+  fstat <- summary(mod)$fstatistic
+  pval <- 1 - pf(fstat[1], fstat[2], fstat[3])
+  return(pval)
+}
+
+plot_versus_pc <- function(df, pc_num, fac) {
+  # df: data.frame
+  # pc_num: numeric, specific PC for plotting
+  # fac: column name of df for plotting against PC
+  pc_char <- paste0("PC", pc_num)
+  # Calculate F-statistic p-value for linear model
+  pval <- get_regr_pval(lm(df[, pc_char] ~ df[, fac]))
+  if (is.numeric(df[, f])) {
+    ggplot(df, aes_string(x = f, y = pc_char)) + geom_point() +
+      geom_smooth(method = "lm") + labs(title = sprintf("p-val: %.2f", pval))
+  } else {
+    ggplot(df, aes_string(x = f, y = pc_char)) + geom_boxplot() +
+      labs(title = sprintf("p-val: %.2f", pval))
+  }
+}
+```
+
+```{r fixing the labels renee style}
+# saveRDS(cardiotox_highConf_3location, "data/Final_four_data/Raodah_location_counts.RDS")
+# saveRDS(H3K27ac_countstable,"data/Final_four_data/Raodah_counts_fixed.RDS" )
+H3K27ac_countstable<- readRDS("data/Final_four_data/Raodah_counts.RDS")
+cardiotox_highConf_3location <-  readRDS("data/Final_four_data/Raodah_location_counts.RDS")
+# saveRDS(roadah_counts,  "data/Final_four_data/New_raodah_counts.RDS")
+raodah_counts <- readRDS("data/Final_four_data/New_raodah_counts.RDS")
+ 
+names(raodah_counts ) = gsub(pattern = "_final.bam*", replacement = "", x = names(raodah_counts ))
+names(raodah_counts ) = gsub(pattern = "^Raodah_data/77-1/bamFiles/*", replacement = "", x = names(raodah_counts ))
+names(raodah_counts ) = gsub(pattern = "^Raodah_data/87-1/bamFiles/*", replacement = "", x = names(raodah_counts ))
+names(raodah_counts ) = gsub(pattern = "^Raodah_data/71-1/bamFiles/*", replacement = "", x = names(raodah_counts ))
+
+
+names(raodah_counts ) = gsub(pattern = "*87_1_*", replacement = "A_", x = names(raodah_counts ))
+ names(raodah_counts ) = gsub(pattern = "77_1_*", replacement = "B_", x = names(raodah_counts ))
+ # names(roadah_counts) = gsub(pattern = "*79-1 *", replacement = "4_", x = names(roadah_counts))
+ # names(roadah_counts) = gsub(pattern = "*78-1 *", replacement = "5_", x = names(roadah_counts))
+ names(raodah_counts ) = gsub(pattern = "*71_1_*", replacement = "C_", x = names(raodah_counts ))
+ names(raodah_counts ) = gsub(pattern = "3$", replacement = "_3", x = names(raodah_counts ))
+ names(raodah_counts ) = gsub(pattern = "24$", replacement = "_24", x = names(raodah_counts ))
+raodah_counts_list <- raodah_counts[1:6]
+raodah_counts_file <- raodah_counts[,c(1,7:31)]
+saveRDS(raodah_counts_list, "data/Final_four_data/All_Raodahpeaks.RDS")
+
+```
+
+```{r examine inital data}
+
+PCA_H3_mat <- raodah_counts_file%>% column_to_rownames("Geneid") %>% 
+  as.matrix()
+
+annotation_H3_mat <-  data.frame(timeset=colnames(PCA_H3_mat)) %>% 
+  mutate(sample = timeset) %>% 
+  separate(timeset, into = c("indv","trt","time"), sep= "_") %>% 
+  mutate(time = factor(time, levels = c("3", "24"), labels= c("3 hours","24 hours"))) %>% 
+  mutate(trt = factor(trt, levels = c("DOX","EPI", "DNR", "MTX", "VEH"))) 
+
+PCA_H3_info <- (prcomp(t(PCA_H3_mat), scale. = TRUE)) 
+PCA_H3_info_anno <- PCA_H3_info$x %>% cbind(.,annotation_H3_mat)
+# autoplot(PCA_info)
+summary(PCA_H3_info)
+# %>% as.tibble() %>% 
+#   kable(., caption = "Summary of PCA variables") %>% 
+#   kable_paper("striped", full_width = TRUE) %>%
+#   kable_styling(full_width = FALSE, font_size = 16) %>%
+#   scroll_box(height = "500px")
+# cpm(PCAmat, log=TRUE)
+pca_plot(PCA_H3_info_anno, col_var='trt', shape_var = 'time')+ggtitle("PCA of raw counts by time and treatment")
+        
+# pca_plot(PCA_H3_info_anno, col_var='trt', shape_var = 'indv')+ggtitle("PCA of raw counts by treatment and individual")
+
+
+```
+
+```{r filter and do again}
+# PCA_H3_mat_t <- H3K27ac_countstable %>% 
+#   dplyr::select('2_DNR_3':'3_VEH_24','6_DNR_3':'6_VEH_24')
+
+anno_H3_mat <-  data.frame(timeset=colnames(PCA_H3_mat)) %>%
+  mutate(sample = timeset) %>% 
+  separate(timeset, into = c("indv","trt","time"), sep= "_") %>% 
+  mutate(time = factor(time, levels = c("3", "24"), labels= c("3 hours","24 hours"))) %>% 
+  mutate(trt = factor(trt, levels = c("DOX","EPI", "DNR", "MTX","VEH")))
+  
+lcpm_h3 <- cpm(PCA_H3_mat, log=TRUE)  ### for determining the basic cutoffs
+dim(lcpm_h3)
+
+row_means <- rowMeans(lcpm_h3)
+lcpm_h3_filtered <- PCA_H3_mat[row_means >0,]
+dim(lcpm_h3_filtered)
+
+filt_H3_matrix_lcpm <- cpm(lcpm_h3_filtered, log=TRUE)
+
+PCA_H3_info_filter <- (prcomp(t(filt_H3_matrix_lcpm), scale. = TRUE))
+summary(PCA_H3_info_filter)
+
+pca_var_plot(PCA_H3_info_filter)
+
+pca_H3 <- calc_pca(t(filt_H3_matrix_lcpm))
+pca_H3_anno <- data.frame(anno_H3_mat, pca_H3$x)
+
+
+pca_H3_anno %>%
+  ggplot(.,aes(x = PC1, y = PC2, col=trt, shape=time, group=indv))+
+  geom_point(size= 5)+
+  scale_color_manual(values=drug_pal)+
+   ggrepel::geom_text_repel(aes(label = indv))+
+   ggtitle(expression("PCA of log"[2]*"(cpm) Raodah data, same three individuals"))+
+  theme_bw()+
+  guides(col="none", size =4)+
+  labs(y = "PC 2 11.65%", x ="PC 1 16.3%")+
+  theme(plot.title=element_text(size= 14,hjust = 0.5),
+        axis.title = element_text(size = 12, color = "black"))
+
+pca_H3_anno %>%
+  ggplot(.,aes(x = PC3, y = PC4, col=trt, shape=time, group=indv))+
+  geom_point(size= 5)+
+  scale_color_manual(values=drug_pal)+
+   ggrepel::geom_text_repel(aes(label = indv))+
+   ggtitle(expression("PCA of log"[2]*"(cpm)  Raodah data, same three individuals"))+
+  theme_bw()+
+  guides(col="none", size =4)+
+  labs(y = "PC 4 6.7% ", x ="PC 3 10.4%")+
+  theme(plot.title=element_text(size= 14,hjust = 0.5),
+        axis.title = element_text(size = 12, color = "black"))
+
+```
+
+### Diff analysis, 3 individual and 5 individuals
+
+3 is 2,3& 6
+5 is 1 ,2, 3, 4, 5
+```{r diff analysis}
+###group for 3 individuals
+group <- c( 1,2,4,5,6,7,9,10,1,2,3,4,7,8,9,10,1,2,3,5,6,7,8,9,10)
+
+##group for 5 individuals
+# group <- c(1,2,3,4,7,8,9,10,1,2,3,5,6,8,9,10, 1,2,3,4,5,6,7,8,9,10,1,2,3,4,5,6,7,8,9,10,1,2,4,5,6,7,8,9,10)
+# group <- factor(group, levels =c("1","2","3","4","5","6","7","8","9","10"))
+# short_names <- paste0(pca_final_four_anno$indv,"_",pca_final_four_anno$trt,"_",pca_final_four_anno$time)
+
+for_group <- data.frame(timeset=colnames(PCA_H3_mat)) %>% 
+  mutate(sample = timeset) %>% 
+  separate(timeset, into = c("indv","trt","time"), sep= "_") %>% 
+  unite("test", trt:time,sep="_", remove = FALSE)
+
+
+dge <- DGEList.data.frame(counts = PCA_H3_mat, group = group, genes = lcpm_h3_filtered)
+
+group_1 <- for_group$test
+# efit_raodah1 <- readRDS("data/Final_four_data/efit4_raodah1.RDS")
+# efit_raodah_shared <- readRDS("data/Final_four_data/efit4_raodah_shared.RDS")
+dge$group$indv <- for_group$indv
+dge$group$time <- for_group$time
+dge$group$trt <- for_group$trt
+# 
+indv <- for_group$indv
+# efit4 <- readRDS("data/Final_four_data/efit4_filt_bl.RDS")
+mm <- model.matrix(~0 +group_1)
+colnames(mm) <-  c("DNR_24", "DNR_3", "DOX_24","DOX_3","EPI_24", "EPI_3","MTX_24", "MTX_3","VEH_24", "VEH_3")
+# 
+# y <- voom(dge$counts, mm,plot =TRUE)
+# 
+# corfit <- duplicateCorrelation(y, mm, block = indv)
+# 
+# v <- voom(dge$counts, mm, block = indv, correlation = corfit$consensus)
+# 
+# fit <- lmFit(v, mm, block = indv, correlation = corfit$consensus)
+# # colnames(mm) <- c("DNR_24","DNR_3","DOX_24","DOX_3","EPI_24","EPI_3","MTX_24","MTX_3","TRZ_24","TRZ_3","VEH_24", "VEH_3")
+# #
+# #
+# cm <- makeContrasts(
+#   DNR_3.VEH_3 = DNR_3-VEH_3,
+#   DOX_3.VEH_3 = DOX_3-VEH_3,
+#   EPI_3.VEH_3 = EPI_3-VEH_3,
+#   MTX_3.VEH_3 = MTX_3-VEH_3,
+#   DNR_24.VEH_24 =DNR_24-VEH_24,
+#   DOX_24.VEH_24= DOX_24-VEH_24,
+#   EPI_24.VEH_24= EPI_24-VEH_24,
+#   MTX_24.VEH_24= MTX_24-VEH_24,
+#     levels = mm)
+# # 
+# vfit <- lmFit(y, mm)
+# # 
+# vfit<- contrasts.fit(vfit, contrasts=cm)
+# 
+# efit_raodah_new <- eBayes(vfit)
+
+# saveRDS(efit_raodah_new,"data/Final_four_data/efit4_raodah_new.RDS")
+efit_raodah_new <- readRDS("data/Final_four_data/efit4_raodah_new.RDS")
+results = decideTests(efit_raodah_new)
+summary(results)
+
+
+```
+### removing low peak number samples:  
+ 
+ Veh-3hr-71 (C) and Veh-24hr-77 (B)
+```{r removing low reads}
+
+PCA_H3_mat_23s <- raodah_counts_file %>% 
+  dplyr::select(Geneid,B_DNR_24:B_MTX_24, B_VEH_3:C_VEH_3) %>% 
+  column_to_rownames("Geneid") %>% 
+  as.matrix()
+
+anno_H3_mat_23s <-
+data.frame(timeset=colnames(PCA_H3_mat_23s)) %>%
+  mutate(sample = timeset) %>% 
+  separate(timeset, into = c("indv","trt","time"), sep= "_") %>% 
+  mutate(time = factor(time, levels = c("3", "24"), labels= c("3 hours","24 hours"))) %>% 
+  mutate(trt = factor(trt, levels = c("DOX","EPI", "DNR", "MTX","VEH")))%>% 
+  # dplyr::filter(sample != "C_VEH_3") %>% 
+  dplyr::filter(sample != "B_VEH_24")
+
+  
+lcpm_h3_23s <- cpm(PCA_H3_mat_23s, log=TRUE)  ### for determining the basic cutoffs
+# dim(lcpm_h3_23s)
+
+row_means23s <- rowMeans(lcpm_h3_23s)
+lcpm_h3_23s_filtered <- PCA_H3_mat_23s[row_means23s >0,]
+dim(lcpm_h3_23s_filtered)
+
+filt_H3_matrix_lcpm_23s <- cpm(lcpm_h3_23s_filtered, log=TRUE)
+
+PCA_H3_info_filter_23s <- (prcomp(t(filt_H3_matrix_lcpm_23s), scale. = TRUE))
+summary(PCA_H3_info_filter_23s)
+
+pca_var_plot(PCA_H3_info_filter_23s)
+
+pca_H3_23s <- calc_pca(t(filt_H3_matrix_lcpm_23s))
+pca_H3_anno_23s <- data.frame(anno_H3_mat_23s, pca_H3_23s$x)
+
+
+pca_H3_anno_23s %>%
+  ggplot(.,aes(x = PC1, y = PC2, col=trt, shape=time, group=indv))+
+  geom_point(size= 5)+
+  scale_color_manual(values=drug_pal)+
+   ggrepel::geom_text_repel(aes(label = indv))+
+   ggtitle(expression("PCA of log"[2]*"(cpm) Raodah data, same three individuals without low peak samples"))+
+  theme_bw()+
+  guides(col="none", size =4)+
+  labs(y = "PC 2 12.5%", x ="PC 1 13.5%")+
+  theme(plot.title=element_text(size= 14,hjust = 0.5),
+        axis.title = element_text(size = 12, color = "black")) 
+pca_H3_anno_23s %>%
+  ggplot(.,aes(x = PC3, y = PC4, col=trt, shape=time, group=indv))+
+  geom_point(size= 5)+
+  scale_color_manual(values=drug_pal)+
+   ggrepel::geom_text_repel(aes(label = indv))+
+   ggtitle(expression("PCA of log"[2]*"(cpm)  Raodah data, same three individuals without low peak samples"))+
+  theme_bw()+
+  guides(col="none", size =4)+
+  labs(y = "PC 4 7.5 % ", x ="PC 3 10.%")+
+  theme(plot.title=element_text(size= 14,hjust = 0.5),
+        axis.title = element_text(size = 12, color = "black"))
+### group for -veh3hr and 24hr individual samples
+# group_23s <- c( 1,2,4,5,6,7,10,1,2,3,4,7,8,9,10,1,2,3,5,6,7,8,9)
+### group for -24hr individual sample
+# group_24s <- c( 1,2,4,5,6,7,9,10,1,2,3,4,7,8,9,10,1,2,3,5,6,7,8,9)
+# for_group_23s <- data.frame(timeset=colnames(PCA_H3_mat_23s)) %>% 
+#   mutate(sample = timeset) %>% 
+#   separate(timeset, into = c("indv","trt","time"), sep= "_") %>% 
+#   unite("test", trt:time,sep="_", remove = FALSE)
+
+# dge_23s <- DGEList.data.frame(counts = PCA_H3_mat_23s, group = group_23s, genes = lcpm_h3_23s_filtered)
+
+# group_1 <- for_group_23s$test
+# 
+# dge_23s$group$indv <- for_group_23s$indv
+# dge_23s$group$time <- for_group_23s$time
+# dge_23s$group$trt <- for_group_23s$trt
+# # 
+# indv_23s <- for_group_23s$indv
+# mm <- model.matrix(~0 +group_1)
+# colnames(mm) <-  c("DNR_24", "DNR_3", "DOX_24","DOX_3","EPI_24", "EPI_3","MTX_24", "MTX_3","VEH_24", "VEH_3")
+# 
+# y <- voom(dge_23s$counts, mm,plot =TRUE)
+# 
+# corfit <- duplicateCorrelation(y, mm, block = indv_23s)
+# 
+# v <- voom(dge_23s$counts, mm, block = indv_23s, correlation = corfit$consensus)
+# 
+# fit <- lmFit(v, mm, block = indv_23s, correlation = corfit$consensus)
+# # colnames(mm) <- c("DNR_24","DNR_3","DOX_24","DOX_3","EPI_24","EPI_3","MTX_24","MTX_3","TRZ_24","TRZ_3","VEH_24", "VEH_3")
+# #
+# #
+# cm <- makeContrasts(
+#   DNR_3.VEH_3 = DNR_3-VEH_3,
+#   DOX_3.VEH_3 = DOX_3-VEH_3,
+#   EPI_3.VEH_3 = EPI_3-VEH_3,
+#   MTX_3.VEH_3 = MTX_3-VEH_3,
+#   DNR_24.VEH_24 =DNR_24-VEH_24,
+#   DOX_24.VEH_24= DOX_24-VEH_24,
+#   EPI_24.VEH_24= EPI_24-VEH_24,
+#   MTX_24.VEH_24= MTX_24-VEH_24,
+#     levels = mm)
+#
+# vfit <- lmFit(y, mm)
+# # 
+# vfit<- contrasts.fit(vfit, contrasts=cm)
+# 
+# efit_raodah_24s <- eBayes(vfit)
+
+# saveRDS(efit_raodah_24s,"data/Final_four_data/efit4_raodah_24s.RDS")
+efit_raodah_23s <- readRDS("data/Final_four_data/efit4_raodah_23s.RDS")
+efit_raodah_24s <- readRDS("data/Final_four_data/efit4_raodah_24s.RDS")
+results = decideTests(efit_raodah_24s)
+summary(results)
+
+
+
+
+
+```
+
+```{r correlation 24 samples, fig.height=10}
+
+Frag_cor <- raodah_counts_file %>% 
+  dplyr::select(Geneid,B_DNR_24:B_MTX_24, B_VEH_3:C_VEH_3) %>% 
+  column_to_rownames("Geneid") %>% 
+  cpm(., log = TRUE) %>% 
+  cor()
+  
+filmat_groupmat_col <- data.frame(timeset = colnames(Frag_cor))
+
+counts_corr_mat <-  filmat_groupmat_col %>% 
+ # mutate(sample = timeset) %>% 
+  separate(timeset, into = c("indv","trt","time"), sep= "_") %>% 
+  mutate(time = factor(time, levels = c("3", "24"), labels= c("3 hours","24 hours"))) %>% 
+  mutate(trt = factor(trt, levels = c("DOX","EPI", "DNR", "MTX","VEH"))) %>% 
+  mutate(class = if_else(trt == "DNR", "AC", if_else(
+    trt == "DOX", "AC", if_else(trt == "EPI", "AC", "nAC")
+  ))) %>%
+  mutate(TOP2i = if_else(trt == "DNR", "yes", if_else(
+    trt == "DOX", "yes", if_else(trt == "EPI", "yes", if_else(trt == "MTX", "yes", "no"))))) %>% 
+  mutate(indv=factor(indv, levels = c("A","B","C"))) 
+                         
+ mat_colors <- list( 
+   trt= c("#F1B72B","#8B006D","#DF707E","#3386DD","#41B333"),
+   # indv=c("#1B9E77", "#D95F02" ,"#7570B3", "#E7298A" ,"#66A61E", "#E6AB02"),
+  indv=c(A="#1B9E77",B= "#D95F02" ,C="#7570B3"),
+   time=c("pink", "chocolate4"),
+   class=c("yellow1","darkorange1"), 
+   TOP2i =c("darkgreen","lightgreen"))                        
+                         
+names(mat_colors$trt)   <- unique(counts_corr_mat$trt)                      
+names(mat_colors$indv) <- unique(counts_corr_mat$indv)
+names(mat_colors$time) <- unique(counts_corr_mat$time)
+names(mat_colors$class) <- unique(counts_corr_mat$class)
+names(mat_colors$TOP2i) <- unique(counts_corr_mat$TOP2i)
+
+htanno <-  ComplexHeatmap::HeatmapAnnotation(df = counts_corr_mat, col = mat_colors)
+ComplexHeatmap::Heatmap(Frag_cor, top_annotation = htanno)
+
+
+Frag_cor_all <- raodah_counts_file %>% 
+  # dplyr::select(Geneid,B_DNR_24:B_MTX_24, B_VEH_3:C_VEH_3) %>% 
+  column_to_rownames("Geneid") %>% 
+  cpm(., log = TRUE) %>% 
+  cor()
+  
+filmat_groupmat_col_all <- data.frame(timeset = colnames(Frag_cor_all))
+
+counts_corr_mat_all <-  filmat_groupmat_col_all %>% 
+ # mutate(sample = timeset) %>% 
+  separate(timeset, into = c("indv","trt","time"), sep= "_") %>% 
+  mutate(time = factor(time, levels = c("3", "24"), labels= c("3 hours","24 hours"))) %>% 
+  mutate(trt = factor(trt, levels = c("DOX","EPI", "DNR", "MTX","VEH"))) %>% 
+  mutate(class = if_else(trt == "DNR", "AC", if_else(
+    trt == "DOX", "AC", if_else(trt == "EPI", "AC", "nAC")
+  ))) %>%
+  mutate(TOP2i = if_else(trt == "DNR", "yes", if_else(
+    trt == "DOX", "yes", if_else(trt == "EPI", "yes", if_else(trt == "MTX", "yes", "no"))))) %>% 
+  mutate(indv=factor(indv, levels = c("A","B","C"))) 
+                         
+
+htanno <-  ComplexHeatmap::HeatmapAnnotation(df = counts_corr_mat_all, col = mat_colors)
+ComplexHeatmap::Heatmap(Frag_cor_all, top_annotation = htanno)
+
+                        
+```
+
+
+```{r log fold change correlation}
+
+FCmatrix_24s <- subset(efit_raodah_24s$coefficients)
+
+colnames(FCmatrix_24s) <-
+  c("DNR\n3h",
+    "DOX\n3h",
+    "EPI\n3h",
+    "MTX\n3h",
+    "DNR\n24h",
+    "DOX\n24h",
+    "EPI\n24h",
+    "MTX\n24h"
+     )
+
+
+mat_col_FC <-
+  data.frame(
+    time = c(rep("3 hours", 4), rep("24 hours", 4)),
+    class = (c(
+      "AC", "AC", "AC", "nAC", "AC", "AC", "AC", "nAC"
+    )))
+rownames(mat_col_FC) <- colnames(FCmatrix_24s)
+
+mat_colors_FC <-
+  list(
+    time = c("pink", "chocolate4"),
+    class = c("yellow1", "lightgreen"))
+
+names(mat_colors_FC$time) <- unique(mat_col_FC$time)
+names(mat_colors_FC$class) <- unique(mat_col_FC$class)
+# names(mat_colors_FC$TOP2i) <- unique(mat_col_FC$TOP2i)
+corrFC_24s <- cor(FCmatrix_24s)
+
+htanno_24s <-  HeatmapAnnotation(df = mat_col_FC, col = mat_colors_FC)
+Heatmap(corrFC_24s, top_annotation = htanno_24s)
+  
+```
+
+```{r Volcano}
+
+
+AC.DNR_3.top= topTable(efit_raodah_24s, coef=1, adjust.method="BH", number=Inf, sort.by="p")
+AC.DOX_3.top= topTable(efit_raodah_24s, coef=2, adjust.method="BH", number=Inf, sort.by="p")
+AC.EPI_3.top= topTable(efit_raodah_24s, coef=3, adjust.method="BH", number=Inf, sort.by="p")
+AC.MTX_3.top= topTable(efit_raodah_24s, coef=4, adjust.method="BH", number=Inf, sort.by="p")
+
+AC.DNR_24.top= topTable(efit_raodah_24s, coef=5, adjust.method="BH", number=Inf, sort.by="p")
+AC.DOX_24.top= topTable(efit_raodah_24s, coef=6, adjust.method="BH", number=Inf, sort.by="p")
+AC.EPI_24.top= topTable(efit_raodah_24s, coef=7, adjust.method="BH", number=Inf, sort.by="p")
+AC.MTX_24.top= topTable(efit_raodah_24s, coef=8, adjust.method="BH", number=Inf, sort.by="p")
+
+# volcanoplot(efit2,coef = c(1,2,3,4,5,6),style = "p-value",
+#                           # highlight = 8,
+#                           # names = efit2$genes$SYMBOL,
+#                           hl.col = "red",xlab = "Log2 Fold Change",
+#                           ylab = NULL,pch = 16,cex = 0.35,
+#                           main = "test")
+# 
+
+plot_filenames <- c("AC.DNR_3.top","AC.DOX_3.top","AC.EPI_3.top","AC.MTX_3.top",
+                    "AC.DNR_24.top","AC.DOX_24.top","AC.EPI_24.top",
+                    "AC.MTX_24.top")
+plot_files <- c( AC.DNR_3.top,AC.DOX_3.top,AC.EPI_3.top,AC.MTX_3.top,
+                    AC.DNR_24.top,AC.DOX_24.top,AC.EPI_24.top,
+                    AC.MTX_24.top)
+
+volcanosig <- function(df, psig.lvl) {
+    df <- df %>% 
+    mutate(threshold = ifelse(adj.P.Val > psig.lvl, "A", ifelse(adj.P.Val <= psig.lvl & logFC<=0,"B","C")))
+      # ifelse(adj.P.Val <= psig.lvl & logFC >= 0,"B", "C")))
+    ##This is where I could add labels, but I have taken out
+    # df <- df %>% mutate(genelabels = "")
+    # df$genelabels[1:topg] <- df$rownames[1:topg]
+    
+  ggplot(df, aes(x=logFC, y=-log10(P.Value))) + 
+    geom_point(aes(color=threshold))+
+    # geom_text_repel(aes(label = genelabels), segment.curvature = -1e-20,force = 1,size=2.5,
+    # arrow = arrow(length = unit(0.015, "npc")), max.overlaps = Inf) +
+    #geom_hline(yintercept = -log10(psig.lvl))+
+    xlab(expression("Log"[2]*" FC"))+
+    ylab(expression("-log"[10]*"P Value"))+
+    scale_color_manual(values = c("black", "red","blue"))+
+    theme_cowplot()+
+    theme(legend.position = "none",
+              plot.title = element_text(size = rel(1.5), hjust = 0.5),
+              axis.title = element_text(size = rel(0.8))) 
+}
+#v1<- volcanosig(V.DA24.top, 0.01,0)
+v1 <- volcanosig(AC.DNR_3.top, 0.01)+ ggtitle("H3K27ac DNR 3 hour")
+v2 <- volcanosig(AC.DNR_24.top, 0.01)+ ggtitle("H3K27ac DNR 24 hour")+ylab("")
+v3 <- volcanosig(AC.DOX_3.top, 0.01)+ ggtitle("H3K27ac DOX 3 hour")
+v4 <- volcanosig(AC.DOX_24.top, 0.01)+ ggtitle("H3K27ac DOX 24 hour")+ylab("")
+v5 <- volcanosig(AC.EPI_3.top, 0.01)+ ggtitle("H3K27ac EPI 3 hour")
+v6 <- volcanosig(AC.EPI_24.top, 0.01)+ ggtitle("H3K27ac EPI 24 hour")+ylab("")
+v7 <- volcanosig(AC.MTX_3.top, 0.01)+ ggtitle("H3K27ac MTX 3 hour")
+v8 <- volcanosig(AC.MTX_24.top, 0.01)+ ggtitle("H3K27ac MTX 24 hour")+ylab("")
+# v9 <- volcanosig(V.TRZ_3.top, 0.01)+ ggtitle("Trastuzumab 3 hour")
+# v10 <- volcanosig(V.TRZ_24.top, 0.01)+ ggtitle("Trastuzumab 24 hour")+ylab("")
+# volcanoplot(efit2,coef = 10,style = "p-value",
+#                           highlight = 8,
+#                           names = efit2$genes$SYMBOL,
+#                           hl.col = "red",xlab = "Log2 Fold Change",
+#                           ylab = NULL,pch = 16,cex = 0.35,
+#                           main = "Using Trastuzumab 24 hour data and volcanoplot function")
+plot_grid(v1,v2,  rel_widths =c(.8,1))
+plot_grid(v3,v4,  rel_widths =c(.8,1))
+plot_grid(v5,v6,  rel_widths =c(.8,1))
+plot_grid(v7,v8,  rel_widths =c(.8,1))
+# plot_grid(v9,v10,  rel_widths =c(.8,1))
+
+
+```
+
+### Examples of DARs
+
+
+```{r example 3hr expression}
+DNR_3_top3 <- row.names(AC.DNR_3.top[1:3,])
+
+log_filt_23s <- lcpm_h3_23s_filtered %>% 
+  cpm(., log=TRUE) %>% as.data.frame()
+
+row.names(log_filt_23s) <- row.names(lcpm_h3_23s_filtered)
+log_filt_23s %>% 
+  dplyr::filter(row.names(.) %in% DNR_3_top3) %>% 
+  mutate(Peak = row.names(.)) %>% 
+  pivot_longer(cols = !Peak, names_to = "sample", values_to = "counts") %>% 
+  separate("sample", into = c("indv","trt","time")) %>% 
+  mutate(time=factor(time, levels = c("3h","24h"))) %>% 
+  mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","VEH"))) %>% 
+  ggplot(., aes (x = time, y=counts))+
+  geom_boxplot(aes(fill=trt))+
+  facet_wrap(Peak~.)+
+  ggtitle("top 3 DAR in 3 hour DNR")+
+  scale_fill_manual(values = drug_pal)+
+  theme_bw()
+
+DOX_3_top3 <- row.names(AC.DOX_3.top[1:3,])
+
+log_filt_23s %>% 
+  dplyr::filter(row.names(.) %in% DOX_3_top3) %>% 
+  mutate(Peak = row.names(.)) %>% 
+  pivot_longer(cols = !Peak, names_to = "sample", values_to = "counts") %>% 
+  separate("sample", into = c("indv","trt","time")) %>% 
+  mutate(time=factor(time, levels = c("3h","24h"))) %>% 
+  mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","VEH"))) %>% 
+  ggplot(., aes (x = time, y=counts))+
+  geom_boxplot(aes(fill=trt))+
+  facet_wrap(Peak~.)+
+  ggtitle("top 3 DAR in 3 hour DOX")+
+  scale_fill_manual(values = drug_pal)+
+  theme_bw()
+
+EPI_3_top3 <- row.names(AC.EPI_3.top[1:3,])
+
+log_filt_23s %>% 
+  dplyr::filter(row.names(.) %in% EPI_3_top3) %>% 
+  mutate(Peak = row.names(.)) %>% 
+  pivot_longer(cols = !Peak, names_to = "sample", values_to = "counts") %>% 
+  separate("sample", into = c("indv","trt","time")) %>% 
+  mutate(time=factor(time, levels = c("3h","24h"))) %>% 
+  mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","VEH"))) %>% 
+  ggplot(., aes (x = time, y=counts))+
+  geom_boxplot(aes(fill=trt))+
+  facet_wrap(Peak~.)+
+  ggtitle("top 3 DAR in 3 hour EPI")+
+  scale_fill_manual(values = drug_pal)+
+  theme_bw()
+
+MTX_3_top3 <- row.names(AC.MTX_3.top[1:3,])
+
+log_filt_23s %>% 
+  dplyr::filter(row.names(.) %in% MTX_3_top3) %>% 
+  mutate(Peak = row.names(.)) %>% 
+  pivot_longer(cols = !Peak, names_to = "sample", values_to = "counts") %>% 
+  separate("sample", into = c("indv","trt","time")) %>% 
+  mutate(time=factor(time, levels = c("3h","24h"))) %>% 
+  mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","VEH"))) %>% 
+  ggplot(., aes (x = time, y=counts))+
+  geom_boxplot(aes(fill=trt))+
+  facet_wrap(Peak~.)+
+  ggtitle("top 3 DAR in 3 hour MTX")+
+  scale_fill_manual(values = drug_pal)+
+  theme_bw()
+```
+
+
+
+
+```{r example 24hr expression}
+DNR_24_top3 <- row.names(AC.DNR_24.top[1:3,])
+
+log_filt_23s <- lcpm_h3_23s_filtered %>% 
+  cpm(., log=TRUE) %>% as.data.frame()
+
+row.names(log_filt_23s) <- row.names(lcpm_h3_23s_filtered)
+log_filt_23s %>% 
+  dplyr::filter(row.names(.) %in% DNR_24_top3) %>% 
+  mutate(Peak = row.names(.)) %>% 
+  pivot_longer(cols = !Peak, names_to = "sample", values_to = "counts") %>% 
+  separate("sample", into = c("indv","trt","time")) %>% 
+  mutate(time=factor(time, levels = c("3h","24h"))) %>% 
+  mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","VEH"))) %>% 
+  ggplot(., aes (x = time, y=counts))+
+  geom_boxplot(aes(fill=trt))+
+  facet_wrap(Peak~.)+
+  ggtitle("top 3 DAR in 24 hour DNR")+
+  scale_fill_manual(values = drug_pal)+
+  theme_bw()
+
+DOX_24_top3 <- row.names(AC.DOX_24.top[1:3,])
+
+log_filt_23s %>% 
+  dplyr::filter(row.names(.) %in% DOX_24_top3) %>% 
+  mutate(Peak = row.names(.)) %>% 
+  pivot_longer(cols = !Peak, names_to = "sample", values_to = "counts") %>% 
+  separate("sample", into = c("indv","trt","time")) %>% 
+  mutate(time=factor(time, levels = c("3h","24h"))) %>% 
+  mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","VEH"))) %>% 
+  ggplot(., aes (x = time, y=counts))+
+  geom_boxplot(aes(fill=trt))+
+  facet_wrap(Peak~.)+
+  ggtitle("top 3 DAR in 24 hour DOX")+
+  scale_fill_manual(values = drug_pal)+
+  theme_bw()
+
+EPI_24_top3 <- row.names(AC.EPI_24.top[1:3,])
+
+log_filt_23s %>% 
+  dplyr::filter(row.names(.) %in% EPI_24_top3) %>% 
+  mutate(Peak = row.names(.)) %>% 
+  pivot_longer(cols = !Peak, names_to = "sample", values_to = "counts") %>% 
+  separate("sample", into = c("indv","trt","time")) %>% 
+  mutate(time=factor(time, levels = c("3h","24h"))) %>% 
+  mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","VEH"))) %>% 
+  ggplot(., aes (x = time, y=counts))+
+  geom_boxplot(aes(fill=trt))+
+  facet_wrap(Peak~.)+
+  ggtitle("top 3 DAR in 24 hour EPI")+
+  scale_fill_manual(values = drug_pal)+
+  theme_bw()
+
+MTX_24_top3 <- row.names(AC.MTX_24.top[1:3,])
+
+log_filt_23s %>% 
+  dplyr::filter(row.names(.) %in% MTX_24_top3) %>% 
+  mutate(Peak = row.names(.)) %>% 
+  pivot_longer(cols = !Peak, names_to = "sample", values_to = "counts") %>% 
+  separate("sample", into = c("indv","trt","time")) %>% 
+  mutate(time=factor(time, levels = c("3h","24h"))) %>% 
+  mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","VEH"))) %>% 
+  ggplot(., aes (x = time, y=counts))+
+  geom_boxplot(aes(fill=trt))+
+  facet_wrap(Peak~.)+
+  ggtitle("top 3 DAR in 24 hour MTX")+
+  scale_fill_manual(values = drug_pal)+
+  theme_bw()
+```
+
+
+
+
+```{r comparions mapping to ATAC seq}
+
+
+
+
+```
+
+
+
+
+
+
+
+
+### Cormotif
+```{r cormotif3}
+
+for_group3 <- data.frame(timeset=colnames(PCA_H3_mat)) %>% 
+  mutate(sample = timeset) %>% 
+  separate(timeset, into = c("indv","trt","time"), sep= "_") %>% 
+  unite("test", trt:time,sep="_", remove = FALSE)
+### for 3 individuals {2,3,6}
+group_3 <- c( 1,2,3,4,7,8,9,10,1,2,3,5,6,8,9,10,1,2,4,5,6,7,8,9,10)
+group_fac_3 <- group_3
+groupid_3 <- as.numeric(group_fac_3)
+label <- for_group3$sample
+compid_3 <- data.frame(c1= c(1,3,5,7,2,4,6,8), c2 = c( 9,9,9,9,10,10,10,10))
+
+y_TMM_cpm_3 <- cpm(PCA_H3_mat_t, log = TRUE)
+
+colnames(y_TMM_cpm_3) <- label
+
+# set.seed(31415)
+# cormotif_initial_3 <- cormotiffit(exprs = y_TMM_cpm_3, groupid = groupid_3, compid = compid_3, K=1:8, max.iter = 500, runtype = "logCPM")
+cormotif_initial_3 <- readRDS("data/Final_four_data/cormotif_3_raodah_run.RDS")
+# saveRDS(cormotif_initial_3,"data/Final_four_data/cormotif_3_raodah_run.RDS")
+plotIC(cormotif_initial_3)
+plotMotif(cormotif_initial_3)
+# head(cormotif_initial_3$bestmotif)
+
+
+```
+
