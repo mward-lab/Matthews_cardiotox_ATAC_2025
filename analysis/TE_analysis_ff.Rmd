@@ -1913,57 +1913,81 @@ chisq.test(chitest_ESRvNRTE)
 ```{r breakdown by cluster}
 per_cov <- 0.5
  
-ggline_df <-   Line_repeats %>%
-  as.data.frame() %>% 
- tidyr::unite(Peakid,seqnames:end, sep= ".") %>% 
-  dplyr::select(Peakid,repName,repClass, repFamily) %>% 
-  mutate(TEstatus ="TE_peak", mrc="h.genome", per_ol = "NA") %>% 
-    rbind((TE_mrc_status_list %>%  
+# ggline_df <-   Line_repeats %>%
+#   as.data.frame() %>% 
+#  tidyr::unite(Peakid,seqnames:end, sep= ".") %>% 
+#   dplyr::select(Peakid,repName,repClass, repFamily) %>% 
+#   mutate(TEstatus ="TE_peak", mrc="h.genome", per_ol = "NA") %>% 
+  ggline_df <-   TE_mrc_status_list %>%  
              mutate(TEstatus= if_else(is.na(repClass), "not_TE_peak","TE_peak")) %>%
-             dplyr::filter(repClass=="LINE"))) %>%
+             dplyr::filter(repClass=="LINE") %>%
+  distinct(Peakid, TEstatus,repClass,.keep_all = TRUE) %>% 
   mutate(mrc="all_peaks")
 
-ggsine_df <-
-  Sine_repeats %>% 
-  as.data.frame() %>% 
- tidyr::unite(Peakid,seqnames:end, sep= ".") %>% 
-  dplyr::select(Peakid,repName,repClass, repFamily) %>% 
-  mutate(TEstatus ="TE_peak", mrc="h.genome",per_ol = "NA") %>% 
-    rbind((TE_mrc_status_list %>%  
+ggsine_df <-TE_mrc_status_list %>%  
              mutate(TEstatus= if_else(is.na(repClass), "not_TE_peak","TE_peak")) %>%
-             dplyr::filter(repClass=="SINE"))) %>%
+             dplyr::filter(repClass=="SINE") %>%
+  distinct(Peakid, TEstatus,repClass,.keep_all = TRUE) %>% 
   mutate(mrc="all_peaks")
 
-ggLTR_df <-LTR_repeats %>% 
-  as.data.frame() %>% 
- tidyr::unite(Peakid,seqnames:end, sep= ".") %>% 
-  dplyr::select(Peakid,repName,repClass, repFamily) %>% 
-  mutate(TEstatus ="TE_peak", mrc="h.genome",per_ol = "NA")%>% 
-    rbind((TE_mrc_status_list %>%  
+ #  Sine_repeats %>% 
+ #  as.data.frame() %>% 
+ # tidyr::unite(Peakid,seqnames:end, sep= ".") %>% 
+ #  dplyr::select(Peakid,repName,repClass, repFamily) %>% 
+ #  mutate(TEstatus ="TE_peak", mrc="h.genome",per_ol = "NA") %>% 
+ #    rbind((TE_mrc_status_list %>%  
+ #             mutate(TEstatus= if_else(is.na(repClass), "not_TE_peak","TE_peak")) %>%
+ #             dplyr::filter(repClass=="SINE"))) %>%
+ #  mutate(mrc="all_peaks")
+
+ggLTR_df <- TE_mrc_status_list %>%  
              mutate(TEstatus= if_else(is.na(repClass), "not_TE_peak","TE_peak")) %>%
-             dplyr::filter(repClass=="LTR"))) %>%
+             dplyr::filter(repClass=="LTR") %>%
+  distinct(Peakid, TEstatus,repClass,.keep_all = TRUE) %>% 
   mutate(mrc="all_peaks")
 
+ #  LTR_repeats %>% 
+ #  as.data.frame() %>% 
+ # tidyr::unite(Peakid,seqnames:end, sep= ".") %>% 
+ #  dplyr::select(Peakid,repName,repClass, repFamily) %>% 
+ #  mutate(TEstatus ="TE_peak", mrc="h.genome",per_ol = "NA")%>% 
+ #    rbind((TE_mrc_status_list %>%  
+ #             mutate(TEstatus= if_else(is.na(repClass), "not_TE_peak","TE_peak")) %>%
+ #             dplyr::filter(repClass=="LTR"))) %>%
+ #  mutate(mrc="all_peaks")
 
-ggDNA_df <-DNA_repeats %>% 
-  as.data.frame() %>% 
- tidyr::unite(Peakid,seqnames:end, sep= ".") %>% 
-  dplyr::select(Peakid,repName,repClass, repFamily) %>% 
-  mutate(TEstatus ="TE_peak", mrc="h.genome",per_ol = "NA")%>% 
-     rbind((TE_mrc_status_list %>%  
+
+ggDNA_df <-TE_mrc_status_list %>%  
              mutate(TEstatus= if_else(is.na(repClass), "not_TE_peak","TE_peak")) %>%
-             dplyr::filter(repClass=="DNA"))) %>%
+             dplyr::filter(repClass=="DNA") %>%
+  distinct(Peakid, TEstatus,repClass,.keep_all = TRUE) %>% 
   mutate(mrc="all_peaks")
 
-ggretroposon_df <-retroposon_repeats %>% 
-  as.data.frame() %>% 
- tidyr::unite(Peakid,seqnames:end, sep= ".") %>% 
-  dplyr::select(Peakid,repName,repClass, repFamily) %>% 
-  mutate(TEstatus ="TE_peak", mrc="h.genome",per_ol = "NA")%>% 
-     rbind((TE_mrc_status_list %>%  
+ #  DNA_repeats %>% 
+ #  as.data.frame() %>% 
+ # tidyr::unite(Peakid,seqnames:end, sep= ".") %>% 
+ #  dplyr::select(Peakid,repName,repClass, repFamily) %>% 
+ #  mutate(TEstatus ="TE_peak", mrc="h.genome",per_ol = "NA")%>% 
+ #     rbind((TE_mrc_status_list %>%  
+ #             mutate(TEstatus= if_else(is.na(repClass), "not_TE_peak","TE_peak")) %>%
+ #             dplyr::filter(repClass=="DNA"))) %>%
+ #  mutate(mrc="all_peaks")
+
+ggretroposon_df <-TE_mrc_status_list %>%  
              mutate(TEstatus= if_else(is.na(repClass), "not_TE_peak","TE_peak")) %>%
-             dplyr::filter(repClass=="Retroposon"))) %>%
+             dplyr::filter(repClass=="Retroposons") %>%
+  distinct(Peakid, TEstatus,repClass,.keep_all = TRUE) %>% 
   mutate(mrc="all_peaks")
+
+  # retroposon_repeats %>% 
+ #  as.data.frame() %>% 
+ # tidyr::unite(Peakid,seqnames:end, sep= ".") %>% 
+ #  dplyr::select(Peakid,repName,repClass, repFamily) %>% 
+ #  mutate(TEstatus ="TE_peak", mrc="h.genome",per_ol = "NA")%>% 
+ #     rbind((TE_mrc_status_list %>%  
+ #             mutate(TEstatus= if_else(is.na(repClass), "not_TE_peak","TE_peak")) %>%
+ #             dplyr::filter(repClass=="Retroposon"))) %>%
+ #  mutate(mrc="all_peaks")
 
 
 plot1 <- TE_mrc_status_list %>% 
@@ -2439,7 +2463,7 @@ Eight_group_TE %>%
   # mutate(repClass=if_else(per_ol>0.5, repClass,NA)) %>% 
    dplyr::select(Peakid,repName,repClass,repFamily,repClass_org,width,TEstatus, mrc, per_ol)%>%
   distinct(Peakid, .keep_all = TRUE)%>% 
-  rbind(subsetall_df ) %>% 
+  rbind((subsetall_df %>% distinct(Peakid,TEstatus,.keep_all = TRUE))) %>% 
     mutate(repClass=if_else(per_ol>0.5, repClass,NA)) %>% 
    mutate(TEstatus= if_else(is.na(repClass), "not_TE_peak","TE_peak")) %>% 
   mutate(repClass=factor(repClass)) %>% 
@@ -2459,7 +2483,7 @@ Eight_group_TE %>%
   mutate(repClass=if_else(per_ol>0.5, repClass,NA)) %>% 
    dplyr::select(Peakid,repName,repClass,repFamily,repClass_org,width,TEstatus, mrc, per_ol)%>%
   distinct(Peakid, .keep_all = TRUE)%>% 
-  rbind(subsetall_df) %>% 
+  rbind((subsetall_df %>% distinct(Peakid,TEstatus, .keep_all = TRUE))) %>% 
     mutate(repClass=if_else(per_ol>0.5, repClass,NA)) %>% 
    mutate(TEstatus= if_else(is.na(repClass), "not_TE_peak","TE_peak")) %>%
   mutate(repClass=factor(repClass)) %>% 
