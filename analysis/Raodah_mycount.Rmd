@@ -51,6 +51,9 @@ library(ggsignif)
 library(plyranges)
 library(ggrepel)
 library(ComplexHeatmap)
+library(smplot2)
+library(stringr)
+library(cowplot)
 ```
 
 
@@ -145,8 +148,9 @@ names(raodah_counts ) = gsub(pattern = "*87_1_*", replacement = "A_", x = names(
  names(raodah_counts ) = gsub(pattern = "24$", replacement = "_24", x = names(raodah_counts ))
 raodah_counts_list <- raodah_counts[1:6]
 raodah_counts_file <- raodah_counts[,c(1,7:31)]
-saveRDS(raodah_counts_list, "data/Final_four_data/All_Raodahpeaks.RDS")
+# saveRDS(raodah_counts_list, "data/Final_four_data/All_Raodahpeaks.RDS")
 
+# rtracklayer::export.bed(raodah_counts_list,con="data/Final_four_data/Raodah_ac_peaks.bed",format="bed")
 ```
 
 ```{r examine inital data}
@@ -304,7 +308,7 @@ summary(results)
 ```{r removing low reads}
 
 PCA_H3_mat_23s <- raodah_counts_file %>% 
-  dplyr::select(Geneid,B_DNR_24:B_MTX_24, B_VEH_3:C_VEH_3) %>% 
+  dplyr::select(Geneid,B_DNR_24:B_MTX_24, B_VEH_3:C_VEH_24) %>% 
   column_to_rownames("Geneid") %>% 
   as.matrix()
 
@@ -408,8 +412,8 @@ pca_H3_anno_23s %>%
 
 # saveRDS(efit_raodah_24s,"data/Final_four_data/efit4_raodah_24s.RDS")
 efit_raodah_23s <- readRDS("data/Final_four_data/efit4_raodah_23s.RDS")
-efit_raodah_24s <- readRDS("data/Final_four_data/efit4_raodah_24s.RDS")
-results = decideTests(efit_raodah_24s)
+# efit_raodah_24s <- readRDS("data/Final_four_data/efit4_raodah_24s.RDS")
+results = decideTests(efit_raodah_23s)
 summary(results)
 
 
@@ -421,7 +425,7 @@ summary(results)
 ```{r correlation 24 samples, fig.height=10}
 
 Frag_cor <- raodah_counts_file %>% 
-  dplyr::select(Geneid,B_DNR_24:B_MTX_24, B_VEH_3:C_VEH_3) %>% 
+  dplyr::select(Geneid,B_DNR_24:B_MTX_24, B_VEH_3:C_VEH_24) %>% 
   column_to_rownames("Geneid") %>% 
   cpm(., log = TRUE) %>% 
   cor()
@@ -488,9 +492,9 @@ ComplexHeatmap::Heatmap(Frag_cor_all, top_annotation = htanno)
 
 ```{r log fold change correlation}
 
-FCmatrix_24s <- subset(efit_raodah_24s$coefficients)
+FCmatrix_23s <- subset(efit_raodah_23s$coefficients)
 
-colnames(FCmatrix_24s) <-
+colnames(FCmatrix_23s) <-
   c("DNR\n3h",
     "DOX\n3h",
     "EPI\n3h",
@@ -508,7 +512,7 @@ mat_col_FC <-
     class = (c(
       "AC", "AC", "AC", "nAC", "AC", "AC", "AC", "nAC"
     )))
-rownames(mat_col_FC) <- colnames(FCmatrix_24s)
+rownames(mat_col_FC) <- colnames(FCmatrix_23s)
 
 mat_colors_FC <-
   list(
@@ -518,25 +522,25 @@ mat_colors_FC <-
 names(mat_colors_FC$time) <- unique(mat_col_FC$time)
 names(mat_colors_FC$class) <- unique(mat_col_FC$class)
 # names(mat_colors_FC$TOP2i) <- unique(mat_col_FC$TOP2i)
-corrFC_24s <- cor(FCmatrix_24s)
+corrFC_23s <- cor(FCmatrix_23s)
 
-htanno_24s <-  HeatmapAnnotation(df = mat_col_FC, col = mat_colors_FC)
-Heatmap(corrFC_24s, top_annotation = htanno_24s)
+htanno_23s <-  HeatmapAnnotation(df = mat_col_FC, col = mat_colors_FC)
+Heatmap(corrFC_23s, top_annotation = htanno_23s)
   
 ```
 
 ```{r Volcano}
 
 
-AC.DNR_3.top= topTable(efit_raodah_24s, coef=1, adjust.method="BH", number=Inf, sort.by="p")
-AC.DOX_3.top= topTable(efit_raodah_24s, coef=2, adjust.method="BH", number=Inf, sort.by="p")
-AC.EPI_3.top= topTable(efit_raodah_24s, coef=3, adjust.method="BH", number=Inf, sort.by="p")
-AC.MTX_3.top= topTable(efit_raodah_24s, coef=4, adjust.method="BH", number=Inf, sort.by="p")
+AC.DNR_3.top= topTable(efit_raodah_23s, coef=1, adjust.method="BH", number=Inf, sort.by="p")
+AC.DOX_3.top= topTable(efit_raodah_23s, coef=2, adjust.method="BH", number=Inf, sort.by="p")
+AC.EPI_3.top= topTable(efit_raodah_23s, coef=3, adjust.method="BH", number=Inf, sort.by="p")
+AC.MTX_3.top= topTable(efit_raodah_23s, coef=4, adjust.method="BH", number=Inf, sort.by="p")
 
-AC.DNR_24.top= topTable(efit_raodah_24s, coef=5, adjust.method="BH", number=Inf, sort.by="p")
-AC.DOX_24.top= topTable(efit_raodah_24s, coef=6, adjust.method="BH", number=Inf, sort.by="p")
-AC.EPI_24.top= topTable(efit_raodah_24s, coef=7, adjust.method="BH", number=Inf, sort.by="p")
-AC.MTX_24.top= topTable(efit_raodah_24s, coef=8, adjust.method="BH", number=Inf, sort.by="p")
+AC.DNR_24.top= topTable(efit_raodah_23s, coef=5, adjust.method="BH", number=Inf, sort.by="p")
+AC.DOX_24.top= topTable(efit_raodah_23s, coef=6, adjust.method="BH", number=Inf, sort.by="p")
+AC.EPI_24.top= topTable(efit_raodah_23s, coef=7, adjust.method="BH", number=Inf, sort.by="p")
+AC.MTX_24.top= topTable(efit_raodah_23s, coef=8, adjust.method="BH", number=Inf, sort.by="p")
 
 # volcanoplot(efit2,coef = c(1,2,3,4,5,6),style = "p-value",
 #                           # highlight = 8,
@@ -598,6 +602,63 @@ plot_grid(v7,v8,  rel_widths =c(.8,1))
 # plot_grid(v9,v10,  rel_widths =c(.8,1))
 
 
+```
+```{r median LFC for raodah}
+
+# AC.DNR_3.top= topTable(efit_raodah_23s, coef=1, adjust.method="BH", number=Inf, sort.by="p")
+# AC.DOX_3.top= topTable(efit_raodah_23s, coef=2, adjust.method="BH", number=Inf, sort.by="p")
+# AC.EPI_3.top= topTable(efit_raodah_23s, coef=3, adjust.method="BH", number=Inf, sort.by="p")
+# AC.MTX_3.top= topTable(efit_raodah_23s, coef=4, adjust.method="BH", number=Inf, sort.by="p")
+# 
+# AC.DNR_24.top= topTable(efit_raodah_23s, coef=5, adjust.method="BH", number=Inf, sort.by="p")
+# AC.DOX_24.top= topTable(efit_raodah_23s, coef=6, adjust.method="BH", number=Inf, sort.by="p")
+# AC.EPI_24.top= topTable(efit_raodah_23s, coef=7, adjust.method="BH", number=Inf, sort.by="p")
+# AC.MTX_24.top= topTable(efit_raodah_23s, coef=8, adjust.method="BH", number=Inf, sort.by="p")
+# toplist_ac_23  <- list(AC.DNR_3.top,  AC.DOX_3.top, AC.EPI_3.top, AC.MTX_3.top, AC.DNR_24.top, AC.DOX_24.top, AC.EPI_24.top, AC.MTX_24.top)
+# names(toplist_ac_23 ) <- c("DNR_3", "DOX_3","EPI_3","MTX_3","DNR_24", "DOX_24","EPI_24","MTX_24")
+# toplist_ac_lfc <-map_df(toplist_ac_23, ~as.data.frame(.x), .id="trt_time")
+# # # #
+# toplist_ac_lfc <- toplist_ac_lfc %>%
+#   # rownames_to_column("Peakid")%>%
+  # mutate(Peakid=(gsub("\\.\\.\\.{5}.$","",Peakid)))
+#   separate(trt_time, into= c("trt","time"), sep = "_") %>%
+#   mutate(trt=factor(trt, levels = c("DOX","EPI","DNR","MTX"))) %>%
+#   mutate(time = factor(time, levels = c("3", "24"), labels = c("3 hours", "24 hours")))
+# saveRDS(toplist_ac_lfc,"data/Final_four_data/toplist_ac_lfc.RDS")
+toplist_ac_lfc <- readRDS("data/Final_four_data/toplist_ac_lfc.RDS") #%>% 
+  # rownames_to_column("Peakid") %>% 
+  # mutate(Peakid=(gsub("\\.\\.\\.*","",Peakid)))
+  
+
+```
+### making of median dataframe, code only
+```{r making median dfs, echo=TRUE, eval=FALSE}
+### making median lfc
+library(stringr)
+# 
+AC_median_df <- toplist_ac_lfc %>%
+    dplyr::select(Peakid:logFC)%>% 
+   mutate(Peakid=str_replace(Peakid, "\\.\\.\\.[0=9]*","/")) %>% separate(Peakid, into=c("Peakid",NA),sep="/") %>% 
+  pivot_wider(., id_cols=c(time,Peakid), names_from = "trt", values_from = "logFC") %>% 
+  rowwise() %>% 
+  mutate(median_lfc= median(c_across(DNR:MTX))) %>% 
+  ungroup()
+
+AC_median_3_lfc <-  AC_median_df %>%
+    dplyr::filter(time == "3") %>% 
+  ungroup() %>% 
+  dplyr::select(time, Peakid,median_lfc) %>% 
+  dplyr::rename("AC_3h_lfc"=median_lfc)
+  
+
+AC_median_24_lfc <- AC_median_df %>%
+    dplyr::filter(time == "24") %>% 
+  ungroup() %>% 
+  dplyr::select(time, Peakid,median_lfc) %>% 
+  dplyr::rename("AC_24h_lfc"=median_lfc)
+  
+write_csv(AC_median_3_lfc, "data/Final_four_data/AC_median_3_lfc.csv")
+write_csv(AC_median_24_lfc, "data/Final_four_data/AC_median_24_lfc.csv")
 ```
 
 ### Examples of DARs
@@ -674,8 +735,6 @@ log_filt_23s %>%
 ```
 
 
-
-
 ```{r example 24hr expression}
 DNR_24_top3 <- row.names(AC.DNR_24.top[1:3,])
 
@@ -748,11 +807,41 @@ log_filt_23s %>%
 
 
 
-
+### Correlation to ATAC data
 ```{r comparions mapping to ATAC seq}
+atac_median_3_lfc <- read_csv("data/Final_four_data/median_3_lfc.csv")
+atac_median_24_lfc <- read_csv( "data/Final_four_data/median_24_lfc.csv")
 
+AC_median_3_lfc <- read_csv("data/Final_four_data/AC_median_3_lfc.csv")
+AC_median_24_lfc <- read_csv("data/Final_four_data/AC_median_24_lfc.csv")
 
+overlap_atac_ac_peaks <- readRDS( "data/Final_four_data/overlapping_ac_atac_peaks.RDS")
 
+# threehroverlap <- 
+ overlap_df_ggplot <-  overlap_atac_ac_peaks %>% 
+    dplyr::select(peakid, Geneid) %>% 
+    left_join(AC_median_3_lfc,by = c("Geneid"="Peakid")) %>% 
+    left_join(AC_median_24_lfc,by = c("Geneid"="Peakid")) %>% 
+    dplyr::select(peakid:Geneid,AC_3h_lfc,AC_24h_lfc) %>% 
+    left_join(., (atac_median_3_lfc %>% dplyr::select(peak,med_3h_lfc)), by = c("peakid"="peak")) %>% 
+    left_join(., (atac_median_24_lfc %>% dplyr::select(peak,med_24h_lfc)), by = c("peakid"="peak"))
+ 
+ overlap_df_ggplot %>% 
+   ggplot(., aes(x=AC_3h_lfc,y=med_3h_lfc))+
+   geom_point()+
+   sm_statCorr(corr_method = 'pearson')+
+   ggtitle("Correlation of H3K27ac peaks and ATAC peaks that overlap at 3 hours")+
+  xlab("H3K27ac peak LFC")+
+   ylab("ATAC peak LFC")
+ 
+ overlap_df_ggplot %>% 
+   ggplot(., aes(x=AC_24h_lfc,y=med_24h_lfc))+
+   geom_point()+
+   sm_statCorr(corr_method = 'pearson')+
+   
+   ggtitle("Correlation of H3K27ac peaks and ATAC peaks that overlap at 24 hours")+
+  xlab("H3K27ac peak LFC")+
+   ylab("ATAC peak LFC")
 
 ```
 
@@ -765,30 +854,83 @@ log_filt_23s %>%
 
 ### Cormotif
 ```{r cormotif3}
-
-for_group3 <- data.frame(timeset=colnames(PCA_H3_mat)) %>% 
+###now adjusted for 23 samples:
+# notes for self in future: I have adjusted this and run on both 23 samples and 25 samples of all 3 shared individuals.  A is individual 87, B is individual 77 and C is individual 71.
+for_group3 <- data.frame(timeset=colnames(PCA_H3_mat_23s)) %>% 
   mutate(sample = timeset) %>% 
   separate(timeset, into = c("indv","trt","time"), sep= "_") %>% 
   unite("test", trt:time,sep="_", remove = FALSE)
 ### for 3 individuals {2,3,6}
-group_3 <- c( 1,2,3,4,7,8,9,10,1,2,3,5,6,8,9,10,1,2,4,5,6,7,8,9,10)
+group_3 <- c( 1,2,4,5,6,7,10,1,2,3,4,7,8,9,10,1,2,3,5,6,7,8,9)
 group_fac_3 <- group_3
 groupid_3 <- as.numeric(group_fac_3)
 label <- for_group3$sample
-compid_3 <- data.frame(c1= c(1,3,5,7,2,4,6,8), c2 = c( 9,9,9,9,10,10,10,10))
+compid_3 <- data.frame(c1= c(2,4,6,8,1,3,5,7), c2 = c( 10,10,10,10,9,9,9,9))
 
-y_TMM_cpm_3 <- cpm(PCA_H3_mat_t, log = TRUE)
+y_TMM_cpm_3 <- cpm(PCA_H3_mat_23s, log = TRUE)
 
 colnames(y_TMM_cpm_3) <- label
 
 # set.seed(31415)
-# cormotif_initial_3 <- cormotiffit(exprs = y_TMM_cpm_3, groupid = groupid_3, compid = compid_3, K=1:8, max.iter = 500, runtype = "logCPM")
-cormotif_initial_3 <- readRDS("data/Final_four_data/cormotif_3_raodah_run.RDS")
-# saveRDS(cormotif_initial_3,"data/Final_four_data/cormotif_3_raodah_run.RDS")
-plotIC(cormotif_initial_3)
-plotMotif(cormotif_initial_3)
+# cormotif_initial_3 <- cormotiffit(exprs = y_TMM_cpm_3, groupid = groupid_3, compid = compid_3, K=1:6, max.iter = 500, runtype = "logCPM")
+cormotif_initial_23s <- readRDS("data/Final_four_data/cormotif_3_raodah_run_23s.RDS")
+# saveRDS(cormotif_initial_3,"data/Final_four_data/cormotif_3_raodah_run_23s.RDS")
+plotIC(cormotif_initial_23s)
+plotMotif(cormotif_initial_23s)
 # head(cormotif_initial_3$bestmotif)
 
+
+```
+
+```{r Cormotif groups}
+motif_prob_23s <- cormotif_initial_23s$bestmotif$clustlike
+rownames(motif_prob_23s) <- rownames(y_TMM_cpm_3)
+
+background_AC_peaks <- motif_prob_23s %>% 
+  as.data.frame() %>% 
+  rownames_to_column("Peakid") %>% 
+  dplyr::select(Peakid) %>% 
+  separate(Peakid, into=c("chr","start","end"),remove = FALSE)
+
+NR_23s <- motif_prob_23s %>%
+  as.data.frame() %>% 
+  dplyr::filter(V1>.5 & V2<.5 & V3 <.5& V4<0.5) %>% 
+  rownames_to_column("Peakid") %>% 
+  dplyr::select(Peakid) %>% 
+  separate(Peakid, into=c("chr","start","end"),remove = FALSE)
+ 
+ESR_23s <- motif_prob_23s %>%
+   as.data.frame() %>% 
+  dplyr::filter(V1<.5 & V2>.5 & V3 <.5& V4<0.5) %>% 
+  rownames_to_column("Peakid") %>% 
+  dplyr::select(Peakid) %>% 
+  separate(Peakid, into=c("chr","start","end"),remove = FALSE)
+ 
+ 
+EAR_23s <- motif_prob_23s %>%
+  as.data.frame() %>% 
+  dplyr::filter(V1<.5 & V2<.5 & V3 >.5& V4<0.5) %>% 
+  rownames_to_column("Peakid") %>% 
+  dplyr::select(Peakid) %>% 
+  separate(Peakid, into=c("chr","start","end"),remove = FALSE)
+ 
+
+LR_23s <- motif_prob_23s %>%
+  as.data.frame() %>% 
+  dplyr::filter(V1<.5 & V2<.5 & V3 <.5& V4>0.5) %>% 
+  rownames_to_column("Peakid") %>% 
+  dplyr::select(Peakid) %>% 
+  separate(Peakid, into=c("chr","start","end"),remove = FALSE)
+ 
+# saveRDS(background_AC_peaks,"data/Final_four_data/H3K27ac_files/background_AC_peaks.RDS")
+# 
+# saveRDS(NR_23s,"data/Final_four_data/H3K27ac_files/NR_23s.RDS")
+# 
+# saveRDS(ESR_23s,"data/Final_four_data/H3K27ac_files/ESR_23s.RDS")
+# 
+# saveRDS(EAR_23s,"data/Final_four_data/H3K27ac_files/EAR_23s.RDS")
+# 
+# saveRDS(LR_23s,"data/Final_four_data/H3K27ac_files/LR_23s.RDS")
 
 ```
 
