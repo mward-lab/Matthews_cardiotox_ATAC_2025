@@ -52,11 +52,30 @@ library(biomaRt)
 
 ```{r table function}
 GO_KEGG_analysis <- function(df,type, setp_value=1){
-a <- deparse(substitute(df))
+# Extract the name of the dataframe
+  a <- deparse(substitute(df)) %>% 
+  gsub("_NG_2kresgenes","",.)
+
+ # Prepare the table output
   df_nomtable <-  df$result %>% 
   dplyr::select(c(source, term_id,
                   term_name,intersection_size, 
                    term_size, p_value))
+# Create a color palette for different dataframe names
+  # You can customize this color palette as needed  
+  
+  mrc_palette <- c(
+    "EAR_open" = "#F8766D",
+    "EAR_close" = "#f6483c",
+    "ESR_open" = "#7CAE00",
+    "ESR_close" = "#587b00",
+     "ESR_OC" = "#6a9500",
+     "LR_open" = "#00BFC4",
+     "LR_close" = "#008d91",
+     "NR" = "#C77CFF"
+  )
+   # Use the dataframe name as the fill color (fallback to black if name is not in the palette)
+   fill_color <- mrc_palette[a] %||% "darkgrey"
 table <- df_nomtable %>%
   dplyr::filter(source==type) %>% 
   dplyr::filter(p_value < setp_value) %>% 
@@ -69,13 +88,13 @@ table <- df_nomtable %>%
     bootstrap_options = c("striped", "hover")
   ) %>%
   scroll_box(width = "100%", height = "400px")
-
+# plot the table as ggplot object
 plot <- df_nomtable %>%
   filter(source==type) %>% 
   slice_head(n=10) %>% 
   mutate(log10_p=(-log(p_value, base=10))) %>% 
   ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
-    geom_col()+
+    geom_col(fill=fill_color)+
   geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
   theme_bw()+
   ylab("")+
@@ -92,394 +111,104 @@ print(plot)
 
 ##### data loading
 ```{r loading data}
-peakAnnoList_n45_motif <- readRDS("data/peakAnnoList_n45_motif.RDS")
-# list2env(peakAnnoList_n45_motif, envir = .GlobalEnv)
-fills <- c("#C77CFF","#F8766D","#7CAE00",  "#00BFC4" )
-
-EAR_df <- as.data.frame(peakAnnoList_n45_motif$EAR_n45_gr)
-ESR_df <- as.data.frame(peakAnnoList_n45_motif$ESR_n45_gr)
-LR_df <- as.data.frame(peakAnnoList_n45_motif$LR_n45_gr)
-NR_df <- as.data.frame(peakAnnoList_n45_motif$NR_n45_gr)
-
-toplist_ATAC <- readRDS("data/toplist_n45.RDS")
-
-median_24_lfc <- readRDS("data/median_24_lfc.RDS") %>% ungroup()
-median_3_lfc <- readRDS("data/median_3_lfc.RDS") %>% ungroup()
-# LR_df %>% 
-#   left_join(.,median_24_lfc, by=c("id"="peak")) %>% 
-#   mutate(direction= if_else(median>0,"up","down")) %>% 
-#   mutate(direction=as.factor(direction)) %>%
-#   group_by(direction) %>% 
-#   count
-
-hyper_3med <- median_3_lfc %>% 
-  dplyr::filter(median > 0)
-
-hypo_3med <- median_3_lfc %>% 
-  dplyr::filter(median < 0)
-
-
-hyper_24med <- median_24_lfc %>% 
-  dplyr::filter(median > 0)
-
-hypo_24med <- median_24_lfc %>% 
-  dplyr::filter(median < 0)
-
-medA <- median_3_lfc %>% 
-  left_join(median_24_lfc, by=c("peak"="peak")) %>% 
-  dplyr::rename("3_hours"="median.x", "24_hours"="median.y") %>% 
-  dplyr::filter(`3_hours`>0 & `24_hours`>0)
-
-medB <- median_3_lfc %>% 
-  left_join(median_24_lfc, by=c("peak"="peak")) %>% 
-  dplyr::rename("3_hours"="median.x", "24_hours"="median.y") %>% 
-  dplyr::filter(`3_hours`<0 & `24_hours`<0)
-
-medC <- median_3_lfc %>% 
-  left_join(median_24_lfc, by=c("peak"="peak")) %>% 
-  dplyr::rename("3_hours"="median.x", "24_hours"="median.y") %>% 
-  dplyr::filter(`3_hours`>0 & `24_hours`<0)
-
-medD <- median_3_lfc %>% 
-  left_join(median_24_lfc, by=c("peak"="peak")) %>% 
-  dplyr::rename("3_hours"="median.x", "24_hours"="median.y") %>% 
-  dplyr::filter(`3_hours`<0 & `24_hours`>0)
-
-# medD %>% dplyr::filter(peak %in% ESR_df$id) %>% tally()
-background_genes <- read.csv("data/other_papers/backgroundRNAlist.csv", row.names = 1)
-
-
-TSS_NG_data <- read_delim("data/n45_bedfiles/TSS_NG_data.tsv", 
+col_ng_peak <- read.delim("data/Final_four_data/collapsed_new_peaks.txt")
+TSS_NG_data <- read_delim("data/Final_four_data/TSS_assigned_NG.txt", 
     delim = "\t", escape_double = FALSE, 
     trim_ws = TRUE)
-Collapsed_peaks <- read_delim("data/n45_bedfiles/TSS_NG_data_collapsed_peaks.tsv",
-                              delim = "\t", 
-                              escape_double = FALSE, 
-                              trim_ws = TRUE)
 
-EAR_NG_3hhyper <- TSS_NG_data %>% 
-    dplyr::filter(peakid %in% EAR_df$id) %>%
-  dplyr::filter(peakid %in% hyper_3med$peak) %>% 
-  dplyr::filter(dist_to_NG<20000 & dist_to_NG>-20000) %>% 
-  dplyr::select(entrezgene_id) %>% 
-  distinct()
+# scale_fill_mrc <-  function(...){
+#   ggplot2:::manual_scale(
+#     'fill',
+#     values = setNames(c("#F8766D","#f6483c","#7CAE00","#587b00","#6a9500",  "#00BFC4","#008d91", "#C77CFF"), c("EAR_open","EAR_close","ESR_open","ESR_close","ESR_OC","LR_open","LR_close","NR")),
+#     ...
+#   )
+# }
+peak_list_all_mrc <- readRDS( "data/Final_four_data/Peak_list_all_mrc_NG.RDS")
 
-
-ESR_NG_3hhyper <- TSS_NG_data %>% 
-    dplyr::filter(peakid %in% ESR_df$id) %>%
-   dplyr::filter(peakid %in% hyper_3med$peak) %>% 
- dplyr::filter(dist_to_NG<20000 & dist_to_NG>-20000) %>% 
- dplyr::select(entrezgene_id) %>% 
-  distinct()
-
-ESR_NG_A<- TSS_NG_data %>% 
-    dplyr::filter(peakid %in% ESR_df$id) %>%
-   dplyr::filter(peakid %in% medA$peak) %>% 
- dplyr::filter(dist_to_NG<20000 & dist_to_NG>-20000) %>% 
- dplyr::select(entrezgene_id) %>% 
-  distinct()
-
-ESR_NG_B<- TSS_NG_data %>% 
-    dplyr::filter(peakid %in% ESR_df$id) %>%
-   dplyr::filter(peakid %in% medB$peak) %>% 
- dplyr::filter(dist_to_NG<20000 & dist_to_NG>-20000) %>% 
- dplyr::select(entrezgene_id) %>% 
-  distinct()
-
-ESR_NG_C<- TSS_NG_data %>% 
-    dplyr::filter(peakid %in% ESR_df$id) %>%
-   dplyr::filter(peakid %in% medC$peak) %>% 
- dplyr::filter(dist_to_NG<20000 & dist_to_NG>-20000) %>% 
- dplyr::select(entrezgene_id) %>% 
-  distinct()
-
-ESR_NG_D<- TSS_NG_data %>% 
-    dplyr::filter(peakid %in% ESR_df$id) %>%
-   dplyr::filter(peakid %in% medD$peak) %>% 
- dplyr::filter(dist_to_NG<20000 & dist_to_NG>-20000) %>% 
- dplyr::select(entrezgene_id) %>% 
-  distinct()
-
-LR_NG_3hhyper <- TSS_NG_data %>% 
-    dplyr::filter(peakid %in% LR_df$id) %>%
-   dplyr::filter(peakid %in% hyper_3med$peak) %>% 
-  dplyr::filter(dist_to_NG<20000 & dist_to_NG>-20000) %>% 
- dplyr::select(entrezgene_id) %>% 
-  distinct()
+background_NGs <- TSS_NG_data %>% distinct(ENTREZID,SYMBOL)
 
 
-NR_NG_3hhyper <- TSS_NG_data %>% 
-    dplyr::filter(peakid %in% NR_df$id) %>%
-   dplyr::filter(peakid %in% hyper_3med$peak) %>% 
- dplyr::filter(dist_to_NG<20000 & dist_to_NG>-20000) %>% 
- dplyr::select(entrezgene_id) %>% 
-  distinct()
 
-EAR_NG_24hhyper <- TSS_NG_data %>% 
-    dplyr::filter(peakid %in% EAR_df$id) %>%
-   dplyr::filter(peakid %in% hyper_24med$peak) %>% 
-  dplyr::filter(dist_to_NG<20000 & dist_to_NG>-20000) %>% 
-  dplyr::select(entrezgene_id) %>% 
-  distinct()
-
-ESR_NG_24hhyper <- TSS_NG_data %>% 
-    dplyr::filter(peakid %in% ESR_df$id) %>%
-  dplyr::filter(peakid %in% hyper_24med$peak) %>%
- dplyr::filter(dist_to_NG<20000 & dist_to_NG>-20000) %>% 
- dplyr::select(entrezgene_id) %>% 
-  distinct()
-
-LR_NG_24hhyper <- TSS_NG_data %>% 
-    dplyr::filter(peakid %in% LR_df$id) %>%
-  dplyr::filter(peakid %in% hyper_24med$peak) %>%
-  dplyr::filter(dist_to_NG<20000 & dist_to_NG>-20000) %>% 
- dplyr::select(entrezgene_id) %>% 
-  distinct()
-
-NR_NG_24hhyper <- TSS_NG_data %>% 
-    dplyr::filter(peakid %in% NR_df$id) %>%
-  dplyr::filter(peakid %in% hyper_24med$peak) %>%
- dplyr::filter(dist_to_NG<20000 & dist_to_NG>-20000) %>% 
- dplyr::select(entrezgene_id) %>% 
-  distinct()
-
-EAR_NG_3hhypo <- TSS_NG_data %>% 
-    dplyr::filter(peakid %in% EAR_df$id) %>%
-  dplyr::filter(peakid %in% hypo_3med$peak) %>% 
-  dplyr::filter(dist_to_NG<20000 & dist_to_NG>-20000) %>% 
-  dplyr::select(entrezgene_id) %>% 
-  distinct()
-
-ESR_NG_3hhypo <- TSS_NG_data %>% 
-    dplyr::filter(peakid %in% ESR_df$id) %>%
-   dplyr::filter(peakid %in% hypo_3med$peak) %>% 
- dplyr::filter(dist_to_NG<20000 & dist_to_NG>-20000) %>% 
- dplyr::select(entrezgene_id) %>% 
-  distinct()
-
-LR_NG_3hhypo <- TSS_NG_data %>% 
-    dplyr::filter(peakid %in% LR_df$id) %>%
-   dplyr::filter(peakid %in% hypo_3med$peak) %>% 
-  dplyr::filter(dist_to_NG<20000 & dist_to_NG>-20000) %>% 
- dplyr::select(entrezgene_id) %>% 
-  distinct()
-
-NR_NG_3hhypo <- TSS_NG_data %>% 
-    dplyr::filter(peakid %in% NR_df$id) %>%
-   dplyr::filter(peakid %in%hypo_3med$peak) %>% 
- dplyr::filter(dist_to_NG<20000 & dist_to_NG>-20000) %>% 
- dplyr::select(entrezgene_id) %>% 
-  distinct()
-
-EAR_NG_24hhypo <- TSS_NG_data %>% 
-    dplyr::filter(peakid %in% EAR_df$id) %>%
-   dplyr::filter(peakid %in% hypo_24med$peak) %>% 
-  dplyr::filter(dist_to_NG<20000 & dist_to_NG>-20000) %>% 
-  dplyr::select(entrezgene_id) %>% 
-  distinct()
-
-ESR_NG_24hhypo <- TSS_NG_data %>% 
-    dplyr::filter(peakid %in% ESR_df$id) %>%
-  dplyr::filter(peakid %in% hypo_24med$peak) %>%
- dplyr::filter(dist_to_NG<20000 & dist_to_NG>-20000) %>% 
- dplyr::select(entrezgene_id) %>% 
-  distinct()
-
-LR_NG_24hhypo <- TSS_NG_data %>% 
-    dplyr::filter(peakid %in% LR_df$id) %>%
-  dplyr::filter(peakid %in% hypo_24med$peak) %>% 
-  dplyr::filter(dist_to_NG<20000 & dist_to_NG>-20000) %>% 
- dplyr::select(entrezgene_id) %>% 
-  distinct()
-
-NR_NG_24hhypo <- TSS_NG_data %>% 
-    dplyr::filter(peakid %in% NR_df$id) %>%
-  dplyr::filter(peakid %in% hypo_24med$peak) %>% 
- dplyr::filter(dist_to_NG<20000 & dist_to_NG>-20000) %>% 
- dplyr::select(entrezgene_id) %>% 
-  distinct()
-###########################################################
-EAR_NG_3hhyper_2k <-  TSS_NG_data %>% 
-    dplyr::filter(peakid %in% EAR_df$id) %>%
-  dplyr::filter(peakid %in% hyper_3med$peak) %>% 
-  dplyr::filter(dist_to_NG<2000 & dist_to_NG>-2000) %>% 
-  dplyr::select(entrezgene_id) %>% 
-  distinct()
-
-ESR_NG_3hhyper_2k <- TSS_NG_data %>% 
-    dplyr::filter(peakid %in% ESR_df$id) %>%
-   dplyr::filter(peakid %in% hyper_3med$peak) %>% 
- dplyr::filter(dist_to_NG<2000 & dist_to_NG>-2000) %>% 
- dplyr::select(entrezgene_id) %>% 
-  distinct()
-
-LR_NG_3hhyper_2k <- TSS_NG_data %>% 
-    dplyr::filter(peakid %in% LR_df$id) %>%
-   dplyr::filter(peakid %in% hyper_3med$peak) %>% 
-  dplyr::filter(dist_to_NG<2000 & dist_to_NG>-2000) %>% 
- dplyr::select(entrezgene_id) %>% 
-  distinct()
-
-NR_NG_3hhyper_2k <- TSS_NG_data %>% 
-    dplyr::filter(peakid %in% NR_df$id) %>%
-   dplyr::filter(peakid %in% hyper_3med$peak) %>% 
- dplyr::filter(dist_to_NG<2000 & dist_to_NG>-2000) %>% 
- dplyr::select(entrezgene_id) %>% 
-  distinct()
-
-EAR_NG_24hhyper_2k <- TSS_NG_data %>% 
-    dplyr::filter(peakid %in% EAR_df$id) %>%
-   dplyr::filter(peakid %in% hyper_24med$peak) %>% 
-  dplyr::filter(dist_to_NG<2000 & dist_to_NG>-2000) %>% 
-  dplyr::select(entrezgene_id) %>% 
-  distinct()
-
-ESR_NG_24hhyper_2k <- TSS_NG_data %>% 
-    dplyr::filter(peakid %in% ESR_df$id) %>%
-  dplyr::filter(peakid %in% hyper_24med$peak) %>%
- dplyr::filter(dist_to_NG<2000 & dist_to_NG>-2000) %>% 
- dplyr::select(entrezgene_id) %>% 
-  distinct()
-
-ESR_NG_A_2k<- TSS_NG_data %>% 
-    dplyr::filter(peakid %in% ESR_df$id) %>%
-   dplyr::filter(peakid %in% medA$peak) %>% 
- dplyr::filter(dist_to_NG<2000 & dist_to_NG>-2000) %>% 
- dplyr::select(entrezgene_id) %>% 
-  distinct()
-
-ESR_NG_B_2k<- TSS_NG_data %>% 
-    dplyr::filter(peakid %in% ESR_df$id) %>%
-   dplyr::filter(peakid %in% medB$peak) %>% 
- dplyr::filter(dist_to_NG<2000 & dist_to_NG>-2000) %>% 
- dplyr::select(entrezgene_id) %>% 
-  distinct()
-
-ESR_NG_C_2k<- TSS_NG_data %>% 
-    dplyr::filter(peakid %in% ESR_df$id) %>%
-   dplyr::filter(peakid %in% medC$peak) %>% 
- dplyr::filter(dist_to_NG<2000 & dist_to_NG>-2000) %>% 
- dplyr::select(entrezgene_id) %>% 
-  distinct()
-
-ESR_NG_D_2k<- TSS_NG_data %>% 
-    dplyr::filter(peakid %in% ESR_df$id) %>%
-   dplyr::filter(peakid %in% medD$peak) %>% 
- dplyr::filter(dist_to_NG<2000 & dist_to_NG>-2000) %>% 
- dplyr::select(entrezgene_id) %>% 
-  distinct()
-
-LR_NG_24hhyper_2k <- TSS_NG_data %>% 
-    dplyr::filter(peakid %in% LR_df$id) %>%
-  dplyr::filter(peakid %in% hyper_24med$peak) %>%
-  dplyr::filter(dist_to_NG<2000 & dist_to_NG>-2000) %>% 
- dplyr::select(entrezgene_id) %>% 
-  distinct()
-
-NR_NG_24hhyper_2k <- TSS_NG_data %>% 
-    dplyr::filter(peakid %in% NR_df$id) %>%
-  dplyr::filter(peakid %in% hyper_24med$peak) %>%
- dplyr::filter(dist_to_NG<2000 & dist_to_NG>-2000) %>% 
- dplyr::select(entrezgene_id) %>% 
-  distinct()
-
-EAR_NG_3hhypo_2k <- TSS_NG_data %>% 
-    dplyr::filter(peakid %in% EAR_df$id) %>%
-  dplyr::filter(peakid %in% hypo_3med$peak) %>% 
-  dplyr::filter(dist_to_NG<2000 & dist_to_NG>-2000) %>% 
-  dplyr::select(entrezgene_id) %>% 
-  distinct()
-
-ESR_NG_3hhypo_2k <- TSS_NG_data %>% 
-    dplyr::filter(peakid %in% ESR_df$id) %>%
-   dplyr::filter(peakid %in% hypo_3med$peak) %>% 
- dplyr::filter(dist_to_NG<2000 & dist_to_NG>-2000) %>% 
- dplyr::select(entrezgene_id) %>% 
-  distinct()
-
-LR_NG_3hhypo_2k <- TSS_NG_data %>% 
-    dplyr::filter(peakid %in% LR_df$id) %>%
-   dplyr::filter(peakid %in% hypo_3med$peak) %>% 
-  dplyr::filter(dist_to_NG<2000 & dist_to_NG>-2000) %>% 
- dplyr::select(entrezgene_id) %>% 
-  distinct()
-
-NR_NG_3hhypo_2k <- TSS_NG_data %>% 
-    dplyr::filter(peakid %in% NR_df$id) %>%
-   dplyr::filter(peakid %in%hypo_3med$peak) %>% 
- dplyr::filter(dist_to_NG<2000 & dist_to_NG>-2000) %>% 
- dplyr::select(entrezgene_id) %>% 
-  distinct()
-
-EAR_NG_24hhypo_2k <- TSS_NG_data %>% 
-    dplyr::filter(peakid %in% EAR_df$id) %>%
-   dplyr::filter(peakid %in% hypo_24med$peak) %>% 
-  dplyr::filter(dist_to_NG<2000 & dist_to_NG>-2000) %>% 
-  dplyr::select(entrezgene_id) %>% 
-  distinct()
-
-ESR_NG_24hhypo_2k <- TSS_NG_data %>% 
-    dplyr::filter(peakid %in% ESR_df$id) %>%
-  dplyr::filter(peakid %in% hypo_24med$peak) %>%
- dplyr::filter(dist_to_NG<2000 & dist_to_NG>-2000) %>% 
- dplyr::select(entrezgene_id) %>% 
-  distinct()
-
-LR_NG_24hhypo_2k <- TSS_NG_data %>% 
-    dplyr::filter(peakid %in% LR_df$id) %>%
-  dplyr::filter(peakid %in% hypo_24med$peak) %>% 
-  dplyr::filter(dist_to_NG<2000 & dist_to_NG>-2000) %>% 
- dplyr::select(entrezgene_id) %>% 
-  distinct()
-
-NR_NG_24hhypo_2k <- TSS_NG_data %>% 
-    dplyr::filter(peakid %in% NR_df$id) %>%
-  dplyr::filter(peakid %in% hypo_24med$peak) %>% 
- dplyr::filter(dist_to_NG<2000 & dist_to_NG>-2000) %>% 
- dplyr::select(entrezgene_id) %>% 
-  distinct()
-
-NR_NG_20k <- TSS_NG_data %>% 
-    dplyr::filter(peakid %in% NR_df$id) %>%
-   dplyr::filter(dist_to_NG<20000 & dist_to_NG>-20000) %>% 
-    dplyr::select(entrezgene_id) %>% 
-  distinct()
-
-NR_NG_2k <- TSS_NG_data %>% 
-    dplyr::filter(peakid %in% NR_df$id) %>%
-   dplyr::filter(dist_to_NG<2000 & dist_to_NG>-2000) %>% 
-    dplyr::select(entrezgene_id) %>% 
-  distinct()
-
-
+mrc_palette <- c(
+    "EAR_open" = "#F8766D",
+    "EAR_close" = "#f6483c",
+    "ESR_open" = "#7CAE00",
+    "ESR_close" = "#587b00",
+     "ESR_OC" = "#6a9500",
+     "LR_open" = "#00BFC4",
+     "LR_close" = "#008d91",
+     "NR" = "#C77CFF"
+  )
 ```
+
+
 ## Introduction
 
-This is an updated page of GO/KEGG analysis based on previous analysis (link pending). To get this analysis, I took the peaks from my data, assigned them to the nearest RNA expressed gene, then I used my Doxorubicin ATAC peak log fold change(LFC) data at 3 hours and 24 hours to create lists of  hyper-accessible peaks (LFC >0) and hypo-accessible peaks (LFC<0) for enrichment testing. Additionally, most peaks fall within multiple response clusters (MRCs) using the Cormotif package.  This created lists of EAR-hyper, EAR-hypo, ESR-hyper,ESR-hypo, LR-hyper, LR-hypo, and NR-hyper, NR-hypo peaks at 3 and 24 hours (a total of 16 groups).  Enrichment testing was done using the neargenes assigned to each of the MRC hypo and hyper clusters, using the full list of RNA expressed genes (14,084) as the background.  This page is broken up into the following sections:  
-1. Hyper and Hypo MRC response for 3 and 24 hours
-2. Hyper and Hypo MRC response within 20kb of neargene 3 and 24 hours
+This is an updated page of GO/KEGG analysis based on previous analysis. To get this analysis, I took the  8 sets of peaks from my data and filtered each group by peaks that are within 2000 kb of a TSS of a near-gene.   I used the background of all expressed RNA genes (14,084) (the genes used to generate the  expressed near-gene list) to test for enrichment of GO:Biological Processes and KEGG Pathways.
+
+This page is broken up into the following sections:  
+1. Creation of NG lists
+2. List of terms from GO:BP and KEGG by each MRC
 3. Bargraphs of top KEGG/~~GO terms~~ 
 
-### EAR response genes
-#### Hyper/hypo-3hr
+### Making the lists
+#### EAR_open to background list
 
-```{r GO_EAR 3hr}
+```{r GO_making lists}
 
-EAR3h_hyper <- readRDS("data/GO_KEGG_analysis/final_analysis/EAR_3h_hyper_resgenes.RDS")
-EAR3h_hypo <- readRDS("data/GO_KEGG_analysis/final_analysis/EAR_3h_hypo_resgenes.RDS")
+EAR_open_NG_2k<-  peak_list_all_mrc %>% 
+      dplyr::filter(mrc =="EAR_open") %>% 
+    dplyr::filter(dist_to_NG >-2000&dist_to_NG<2000) %>% 
+    dplyr::select(Peakid, NCBI_gene:SYMBOL,dist_to_NG, mrc) %>% 
+    separate_longer_delim(., cols=NCBI_gene:SYMBOL, delim= ",") %>% 
+    distinct(NCBI_gene,SYMBOL)
+EAR_close_NG_2k<-  peak_list_all_mrc %>% 
+      dplyr::filter(mrc =="EAR_close") %>% 
+    dplyr::filter(dist_to_NG >-2000&dist_to_NG<2000) %>% 
+    dplyr::select(Peakid, NCBI_gene:SYMBOL,dist_to_NG, mrc) %>% 
+    separate_longer_delim(., cols=NCBI_gene:SYMBOL, delim= ",") %>% 
+    distinct(NCBI_gene,SYMBOL)
+  
+ESR_open_NG_2k<-  peak_list_all_mrc %>% 
+      dplyr::filter(mrc =="ESR_open") %>% 
+    dplyr::filter(dist_to_NG >-2000&dist_to_NG<2000) %>% 
+    dplyr::select(Peakid, NCBI_gene:SYMBOL,dist_to_NG, mrc) %>% 
+    separate_longer_delim(., cols=NCBI_gene:SYMBOL, delim= ",") %>% 
+    distinct(NCBI_gene,SYMBOL)
+ESR_close_NG_2k<-  peak_list_all_mrc %>% 
+      dplyr::filter(mrc =="ESR_close") %>% 
+    dplyr::filter(dist_to_NG >-2000&dist_to_NG<2000) %>% 
+    dplyr::select(Peakid, NCBI_gene:SYMBOL,dist_to_NG, mrc) %>% 
+    separate_longer_delim(., cols=NCBI_gene:SYMBOL, delim= ",") %>% 
+    distinct(NCBI_gene,SYMBOL)
+ESR_OC_NG_2k<-  peak_list_all_mrc %>% 
+      dplyr::filter(mrc =="ESR_OC") %>% 
+    dplyr::filter(dist_to_NG >-2000&dist_to_NG<2000) %>% 
+    dplyr::select(Peakid, NCBI_gene:SYMBOL,dist_to_NG, mrc) %>% 
+    separate_longer_delim(., cols=NCBI_gene:SYMBOL, delim= ",") %>% 
+    distinct(NCBI_gene,SYMBOL)
 
+LR_open_NG_2k<-  peak_list_all_mrc %>% 
+      dplyr::filter(mrc =="LR_open") %>% 
+    dplyr::filter(dist_to_NG >-2000&dist_to_NG<2000) %>% 
+    dplyr::select(Peakid, NCBI_gene:SYMBOL,dist_to_NG, mrc) %>% 
+    separate_longer_delim(., cols=NCBI_gene:SYMBOL, delim= ",") %>% 
+    distinct(NCBI_gene,SYMBOL)
+LR_close_NG_2k<-  peak_list_all_mrc %>% 
+      dplyr::filter(mrc =="LR_close") %>% 
+    dplyr::filter(dist_to_NG >-2000&dist_to_NG<2000) %>% 
+    dplyr::select(Peakid, NCBI_gene:SYMBOL,dist_to_NG, mrc) %>% 
+    separate_longer_delim(., cols=NCBI_gene:SYMBOL, delim= ",") %>% 
+    distinct(NCBI_gene,SYMBOL)
 
-GO_KEGG_analysis(EAR3h_hyper,"GO:BP")+
-  geom_col(fill="#F8766D")
-GO_KEGG_analysis(EAR3h_hypo,"GO:BP")+
-  geom_col(fill="#F8766D")
-GO_KEGG_analysis(EAR3h_hyper,"KEGG")+
-  geom_col(fill="#F8766D")
-GO_KEGG_analysis(EAR3h_hypo,"KEGG")+
-  geom_col(fill="#F8766D")
-
-
-NR_NG_2kresgenes <- gost(query = NR_NG_2k$entrezgene_id,
+NR_NG_2k <-   peak_list_all_mrc %>%
+      dplyr::filter(mrc =="NR") %>% 
+    dplyr::filter(dist_to_NG >-2000&dist_to_NG<2000) %>% 
+    dplyr::select(Peakid, NCBI_gene:SYMBOL,dist_to_NG, mrc) %>% 
+    separate_longer_delim(., cols=NCBI_gene, delim= ",") %>% 
+     separate_longer_delim(., cols=,SYMBOL, delim= ",")  
+ 
+NR_NG_2kresgenes <- gost(query = NR_NG_2k$NCBI_gene,
                     organism = "hsapiens",
                     significant = FALSE,
                     ordered_query = FALSE,
@@ -488,611 +217,53 @@ NR_NG_2kresgenes <- gost(query = NR_NG_2k$entrezgene_id,
                     evcodes = FALSE,
                     user_threshold = 0.05,
                     correction_method = c("fdr"),
-                    custom_bg = background_genes$ENTREZID,
+                    custom_bg = background_NGs$ENTREZID,
                     sources=c("GO:BP","KEGG"))
-saveRDS(NR_NG_2kresgenes,"data/GO_KEGG_analysis/final_analysis/NR_NG_2kresgenes.RDS")
 
 
 
-```
-
-##### 2k hyper/hypo 3 hr
-
-
-```{r GO_EAR 3hr_2k}
-
-EAR3h_hyper_2k <- readRDS("data/GO_KEGG_analysis/final_analysis/EAR_3h_hyper_resgenes_2k.RDS")
-EAR3h_hypo_2k <- readRDS("data/GO_KEGG_analysis/final_analysis/EAR_3h_hypo_resgenes_2k.RDS")
-GO_KEGG_analysis(EAR3h_hyper_2k,"GO:BP")+
-  geom_col(fill="#F8766D")
-GO_KEGG_analysis(EAR3h_hypo_2k,"GO:BP")+
-  geom_col(fill="#F8766D")
-GO_KEGG_analysis(EAR3h_hyper_2k,"KEGG")+
-  geom_col(fill="#F8766D")
-GO_KEGG_analysis(EAR3h_hypo_2k,"KEGG")+
-  geom_col(fill="#F8766D")
-
-```
-
-
-
-#### Hyper/hypo-24hr
-
-```{r GO_EAR 24hr}
-
-EAR24h_hyper <- readRDS("data/GO_KEGG_analysis/final_analysis/EAR_24h_hyper_resgenes.RDS")
-EAR24h_hypo<- readRDS("data/GO_KEGG_analysis/final_analysis/EAR_24h_hypo_resgenes.RDS")
-
-GO_KEGG_analysis(EAR24h_hyper_2k,"GO:BP")+
-  geom_col(fill="#F8766D")
-GO_KEGG_analysis(EAR24h_hypo_2k,"GO:BP")+
-  geom_col(fill="#F8766D")
-GO_KEGG_analysis(EAR24h_hyper_2k,"KEGG")+
-  geom_col(fill="#F8766D")
-GO_KEGG_analysis(EAR24h_hypo_2k,"KEGG")+
-  geom_col(fill="#F8766D")
-
+# saveRDS(NR_NG_2k,"data/Final_four_data/GO_analysis/NR_NG_2kresgenes.RDS")
+# saveRDS(EAR_close_NG_2kresgenes,"data/Final_four_data/GO_analysis/EAR_close_NG_2kresgenes.RDS")
+# saveRDS(ESR_close_NG_2kresgenes,"data/Final_four_data/GO_analysis/ESR_close_NG_2kresgenes.RDS")
+# saveRDS(ESR_OC_NG_2kresgenes,"data/Final_four_data/GO_analysis/ESR_OC_NG_2kresgenes.RDS")
+# saveRDS(LR_open_NG_2kresgenes,"data/Final_four_data/GO_analysis/LR_open_NG_2kresgenes.RDS")
+# saveRDS(ESR_open_NG_2kresgenes,"data/Final_four_data/GO_analysis/ESR_open_NG_2kresgenes.RDS")
+# saveRDS(EAR_open_NG_2kresgenes,"data/Final_four_data/GO_analysis/EAR_open_NG_2kresgenes.RDS")
+NR_NG_2k <- readRDS("data/Final_four_data/GO_analysis/NR_NG_2kresgenes.RDS")
+EAR_close_NG_2kresgenes <- readRDS("data/Final_four_data/GO_analysis/EAR_close_NG_2kresgenes.RDS")
+ESR_close_NG_2kresgenes <- readRDS("data/Final_four_data/GO_analysis/ESR_close_NG_2kresgenes.RDS")
+ESR_OC_NG_2kresgenes <- readRDS("data/Final_four_data/GO_analysis/ESR_OC_NG_2kresgenes.RDS")
+LR_open_NG_2kresgenes <- readRDS("data/Final_four_data/GO_analysis/LR_open_NG_2kresgenes.RDS")
+LR_close_NG_2kresgenes <- readRDS("data/Final_four_data/GO_analysis/LR_close_NG_2kresgenes.RDS")
+ESR_open_NG_2kresgenes <-readRDS ("data/Final_four_data/GO_analysis/ESR_open_NG_2kresgenes.RDS")
+EAR_open_NG_2kresgenes<-readRDS  ("data/Final_four_data/GO_analysis/EAR_open_NG_2kresgenes.RDS")
 
 
 ```
-##### 2k hyper/hypo 24 hr
-
-
-```{r GO_EAR 24hr_2k}
-
-EAR24h_hyper_2k <- readRDS("data/GO_KEGG_analysis/final_analysis/EAR_24h_hyper_resgenes_2k.RDS")
-EAR24h_hypo_2k <- readRDS("data/GO_KEGG_analysis/final_analysis/EAR_24h_hypo_resgenes_2k.RDS")
-
-GO_KEGG_analysis(EAR24h_hyper_2k,"GO:BP")+
-  geom_col(fill="#F8766D")
-GO_KEGG_analysis(EAR24h_hypo_2k,"GO:BP")+
-  geom_col(fill="#F8766D")
-GO_KEGG_analysis(EAR24h_hyper_2k,"KEGG")+
-  geom_col(fill="#F8766D")
-GO_KEGG_analysis(EAR24h_hypo_2k,"KEGG")+
-  geom_col(fill="#F8766D")
-
-```
-
-
-
-### ESR response genes
-#### Hyper/hypo-3hr
-
-```{r GO_ESR 3hr}
-
-ESR3h_hyper<- readRDS("data/GO_KEGG_analysis/final_analysis/ESR_3h_hyper_resgenes.RDS")
-ESR3h_hypo <- readRDS("data/GO_KEGG_analysis/final_analysis/ESR_3h_hypo_resgenes.RDS")
-
-GO_KEGG_analysis(ESR3h_hyper,"GO:BP")+
-       geom_col(fill=fills[3])
-GO_KEGG_analysis(ESR3h_hypo,"GO:BP")+
-       geom_col(fill=fills[3])
-GO_KEGG_analysis(ESR3h_hyper,"KEGG")+
-       geom_col(fill=fills[3])
-GO_KEGG_analysis(ESR3h_hypo,"KEGG")+
-       geom_col(fill=fills[3])
-
-
-```
-##### 2k hyper/hypo 3 hr
-
-
-```{r GO_ESR 3hr_2k}
-
-ESR3h_hyper_2k <- readRDS("data/GO_KEGG_analysis/final_analysis/ESR_3h_hyper_resgenes_2k.RDS")
-ESR3h_hypo_2k <- readRDS("data/GO_KEGG_analysis/final_analysis/ESR_3h_hypo_resgenes_2k.RDS")
-
-GO_KEGG_analysis(ESR3h_hyper_2k,"GO:BP")+
-       geom_col(fill=fills[3])
-GO_KEGG_analysis(ESR3h_hypo_2k,"GO:BP")+
-       geom_col(fill=fills[3])
-GO_KEGG_analysis(ESR3h_hyper_2k,"KEGG")+
-       geom_col(fill=fills[3])
-GO_KEGG_analysis(ESR3h_hypo_2k,"KEGG")+
-       geom_col(fill=fills[3])
-
-```
-
-
-#### Hyper/hypo-24hr
-
-```{r GO_ESR 24hr}
-
-ESR24h_hyper_nomtable <- readRDS("data/GO_KEGG_analysis/final_analysis/ESR_24h_hyper_resgenes.RDS")
-ESR24h_hypo_nomtable <- readRDS("data/GO_KEGG_analysis/final_analysis/ESR_24h_hypo_resgenes.RDS")
-
-GO_KEGG_analysis(EAR3h_hyper_2k,"GO:BP")+
-       geom_col(fill=fills[3])
-GO_KEGG_analysis(EAR3h_hypo_2k,"GO:BP")+
-       geom_col(fill=fills[3])
-GO_KEGG_analysis(EAR3h_hyper_2k,"KEGG")+
-       geom_col(fill=fills[3])
-GO_KEGG_analysis(EAR3h_hypo_2k,"KEGG")+
-       geom_col(fill=fills[3])
-
-
-```
-##### 2k hyper/hypo 24 hr
-
-
-```{r GO_ESR 24hr_2k}
-
-ESR24h_hyper_nomtable_2k <- readRDS("data/GO_KEGG_analysis/final_analysis/ESR_24h_hyper_resgenes_2k.RDS")
-ESR24h_hypo_nomtable_2k <- readRDS("data/GO_KEGG_analysis/final_analysis/ESR_24h_hypo_resgenes_2k.RDS")
-
-
-GO_KEGG_analysis(EAR3h_hyper_2k,"GO:BP")+
-       geom_col(fill=fills[3])
-GO_KEGG_analysis(EAR3h_hypo_2k,"GO:BP")+
-       geom_col(fill=fills[3])
-GO_KEGG_analysis(EAR3h_hyper_2k,"KEGG")+
-       geom_col(fill=fills[3])
-GO_KEGG_analysis(EAR3h_hypo_2k,"KEGG")+
-       geom_col(fill=fills[3])
-
-```
-
-
-### LR response genes
-#### Hyper/hypo-3hr
-
-```{r GO_LR 3hr}
-
-LR3h_hyper_nomtable <- readRDS("data/GO_KEGG_analysis/final_analysis/LR_3h_hyper_resgenes.RDS")
-LR3h_hypo_nomtable <- readRDS("data/GO_KEGG_analysis/final_analysis/LR_3h_hypo_resgenes.RDS")
-
-GO_KEGG_analysis(EAR3h_hyper_2k,"GO:BP")+
-       geom_col(fill=fills[4])
-GO_KEGG_analysis(EAR3h_hypo_2k,"GO:BP")+
-       geom_col(fill=fills[4])
-GO_KEGG_analysis(EAR3h_hyper_2k,"KEGG")+
-       geom_col(fill=fills[4])
-GO_KEGG_analysis(EAR3h_hypo_2k,"KEGG")+
-       geom_col(fill=fills[4])
-
-
-
-```
-
-##### 2k hyper/hypo 3 hr
-
-```{r GO_LR 3hr_2k}
-
-LR3h_hyper_nomtable_2k <- readRDS("data/GO_KEGG_analysis/final_analysis/LR_3h_hyper_resgenes_2k.RDS")
-LR3h_hypo_nomtable_2k <- readRDS("data/GO_KEGG_analysis/final_analysis/LR_3h_hypo_resgenes_2k.RDS")
-
-
-GO_KEGG_analysis(EAR3h_hyper_2k,"GO:BP")+
-       geom_col(fill=fills[4])
-GO_KEGG_analysis(EAR3h_hypo_2k,"GO:BP")+
-       geom_col(fill=fills[4])
-GO_KEGG_analysis(EAR3h_hyper_2k,"KEGG")+
-       geom_col(fill=fills[4])
-GO_KEGG_analysis(EAR3h_hypo_2k,"KEGG")+
-       geom_col(fill=fills[4])
-
-```
-
-#### Hyper/hypo-24hr
-
-```{r GO_LR 24hr}
-
-LR24h_hyper_nomtable <- readRDS("data/GO_KEGG_analysis/final_analysis/LR_24h_hyper_resgenes.RDS")
-LR24h_hypo_nomtable <- readRDS("data/GO_KEGG_analysis/final_analysis/LR_24h_hypo_resgenes.RDS")
-
-GO_KEGG_analysis(EAR3h_hyper_2k,"GO:BP")+
-       geom_col(fill=fills[4])
-GO_KEGG_analysis(EAR3h_hypo_2k,"GO:BP")+
-       geom_col(fill=fills[4])
-GO_KEGG_analysis(EAR3h_hyper_2k,"KEGG")+
-       geom_col(fill=fills[4])
-GO_KEGG_analysis(EAR3h_hypo_2k,"KEGG")+
-       geom_col(fill=fills[4])
-
-
-```
-##### 2k hyper/hypo 24 hr
-
-```{r GO_LR 24hr_2k}
-
-LR24h_hyper_nomtable_2k <- readRDS("data/GO_KEGG_analysis/final_analysis/LR_24h_hyper_resgenes_2k.RDS")
-LR24h_hypo_nomtable_2k <- readRDS("data/GO_KEGG_analysis/final_analysis/LR_24h_hypo_resgenes_2k.RDS")
-
-
-GO_KEGG_analysis(EAR3h_hyper_2k,"GO:BP")+
-       geom_col(fill=fills[4])
-GO_KEGG_analysis(EAR3h_hypo_2k,"GO:BP")+
-       geom_col(fill=fills[4])
-GO_KEGG_analysis(EAR3h_hyper_2k,"KEGG")+
-       geom_col(fill=fills[4])
-GO_KEGG_analysis(EAR3h_hypo_2k,"KEGG")+
-       geom_col(fill=fills[4])
-
-
-```
-
-### NR response genes
-
-#### NR all genes 20/2k
-```{r NRall}
-genes_NR_20k <- readRDS("data/GO_KEGG_analysis/final_analysis/NR_NG_resgenes.RDS")
-genes_NR_2k <- readRDS("data/GO_KEGG_analysis/final_analysis/NR_NG_2kresgenes.RDS")
-GO_KEGG_analysis(genes_NR_20k,"GO:BP")+
-       geom_col(fill=fills[1])
-GO_KEGG_analysis(genes_NR_2k,"GO:BP")+
-       geom_col(fill=fills[1])
-GO_KEGG_analysis(genes_NR_20k,"KEGG")+
-       geom_col(fill=fills[1])
-GO_KEGG_analysis(genes_NR_2k,"KEGG")+
-       geom_col(fill=fills[1])
-
-
-```
-
-
-#### Hyper/hypo-3hr
-
-```{r GO_NR 3hr}
-
-NR3h_hyper_nomtable <- readRDS("data/GO_KEGG_analysis/final_analysis/NR_3h_hyper_resgenes.RDS")
-NR3h_hypo_nomtable <- readRDS("data/GO_KEGG_analysis/final_analysis/NR_3h_hypo_resgenes.RDS")
-
-GO_KEGG_analysis(EAR3h_hyper_2k,"GO:BP")+
-       geom_col(fill=fills[1])
-GO_KEGG_analysis(EAR3h_hypo_2k,"GO:BP")+
-       geom_col(fill=fills[1])
-GO_KEGG_analysis(EAR3h_hyper_2k,"KEGG")+
-       geom_col(fill=fills[1])
-GO_KEGG_analysis(EAR3h_hypo_2k,"KEGG")+
-       geom_col(fill=fills[1])
-
-
-
-```
-
-
-##### 2k hyper/hypo 3 hr
-
-```{r GO_NR 3hr_2k}
-
-NR3h_hyper_nomtable_2k <- readRDS("data/GO_KEGG_analysis/final_analysis/NR_3h_hyper_resgenes_2k.RDS")
-NR3h_hypo_nomtable_2k <- readRDS("data/GO_KEGG_analysis/final_analysis/NR_3h_hypo_resgenes_2k.RDS")
-
-
-GO_KEGG_analysis(EAR3h_hyper_2k,"GO:BP")+
-       geom_col(fill=fills[1])
-GO_KEGG_analysis(EAR3h_hypo_2k,"GO:BP")+
-       geom_col(fill=fills[1])
-GO_KEGG_analysis(EAR3h_hyper_2k,"KEGG")+
-       geom_col(fill=fills[1])
-GO_KEGG_analysis(EAR3h_hypo_2k,"KEGG")+
-       geom_col(fill=fills[1])
-
-
-
-```
-
-
-
-#### Hyper/hypo-24hr
-
-```{r GO_NR 24hr}
-
-NR24h_hyper_nomtable <- readRDS("data/GO_KEGG_analysis/final_analysis/NR_24h_hyper_resgenes.RDS")
-NR24h_hypo_nomtable <- readRDS("data/GO_KEGG_analysis/final_analysis/NR_24h_hypo_resgenes.RDS")
-
-GO_KEGG_analysis(EAR3h_hyper_2k,"GO:BP")+
-       geom_col(fill=fills[1])
-GO_KEGG_analysis(EAR3h_hypo_2k,"GO:BP")+
-       geom_col(fill=fills[1])
-GO_KEGG_analysis(EAR3h_hyper_2k,"KEGG")+
-       geom_col(fill=fills[1])
-GO_KEGG_analysis(EAR3h_hypo_2k,"KEGG")+
-       geom_col(fill=fills[1])
-
-
-```
-##### 2k hyper/hypo 3 hr
-
-```{r GO_NR 24hr_2k}
-
-NR24h_hyper_nomtable_2k <- readRDS("data/GO_KEGG_analysis/final_analysis/NR_24h_hyper_resgenes_2k.RDS")
-NR24h_hypo_nomtable_2k <- readRDS("data/GO_KEGG_analysis/final_analysis/NR_24h_hypo_resgenes_2k.RDS")
-
-
-GO_KEGG_analysis(EAR3h_hyper_2k,"GO:BP")+
-       geom_col(fill=fills[1])
-GO_KEGG_analysis(EAR3h_hypo_2k,"GO:BP")+
-       geom_col(fill=fills[1])
-GO_KEGG_analysis(EAR3h_hyper_2k,"KEGG")+
-       geom_col(fill=fills[1])
-GO_KEGG_analysis(EAR3h_hypo_2k,"KEGG")+
-       geom_col(fill=fills[1])
-
-
-
-```
-
-#### NR enrichment list
-
-
-
-
-
-### 3 hr and 24 hour Near-genes shared between hyper/hypo
-```{r EARhypo-hyper, echo=FALSE}
-
-ggVennDiagram(list(EAR_NG_3hhyper$entrezgene_id,EAR_NG_3hhypo$entrezgene_id),
-              category.names= c("hyper\nEAR\n3","hypo\nEAR\n3"))+
- scale_x_continuous(expand = expansion(mult = .2))+
-  ggVennDiagram(list(EAR_NG_24hhyper$entrezgene_id,EAR_NG_24hhypo$entrezgene_id),
-              category.names= c("hyper\nEAR\n24 hr","hypo\nEAR\n24 hr"))+
- scale_x_continuous(expand = expansion(mult = .2))+
-  labs(title = "EAR 3hr and 24hr Neargene similarities")
-
-ggVennDiagram(list(ESR_NG_3hhyper$entrezgene_id,ESR_NG_3hhypo$entrezgene_id),
-              category.names= c("hyper\nESR\n3","hypo\nESR\n3"))+
- scale_x_continuous(expand = expansion(mult = .2))+
-  ggVennDiagram(list(ESR_NG_24hhyper$entrezgene_id,ESR_NG_24hhypo$entrezgene_id),
-              category.names= c("hyper\nESR\n24 hr","hypo\nESR\n24 hr"))+
- scale_x_continuous(expand = expansion(mult = .2))+
-  labs(title = "ESR 3hr and 24hr Neargene similarities")
-
-ggVennDiagram(list(LR_NG_3hhyper$entrezgene_id,LR_NG_3hhypo$entrezgene_id),
-              category.names= c("hyper\nLR\n3","hypo\nLR\n3"))+
- scale_x_continuous(expand = expansion(mult = .2))+
-  ggVennDiagram(list(LR_NG_24hhyper$entrezgene_id,LR_NG_24hhypo$entrezgene_id),
-              category.names= c("hyper\nLR\n24 hr","hypo\nLR\n24 hr"))+
- scale_x_continuous(expand = expansion(mult = .2))+
-  labs(title = "LR 3hr and 24hr Neargene similarities")
-
-ggVennDiagram(list(NR_NG_3hhyper$entrezgene_id,NR_NG_3hhypo$entrezgene_id),
-              category.names= c("hyper\nNR\n3","hypo\nNR\n3"))+
- scale_x_continuous(expand = expansion(mult = .2))+
-  ggVennDiagram(list(NR_NG_24hhyper$entrezgene_id,NR_NG_24hhypo$entrezgene_id),
-              category.names= c("hyper\nNR\n24 hr","hypo\nNR\n24 hr"))+
- scale_x_continuous(expand = expansion(mult = .2))+
-  labs(title = "NR 3hr and 24hr Neargene similarities")
-
-```
-
-
-### 3 hr and 24 hour 2K Near-genes shared between hyper/hypo
-```{r EARhypo-hyper_2k, echo=FALSE}
-
-ggVennDiagram(list(EAR_NG_3hhyper_2k$entrezgene_id,EAR_NG_3hhypo_2k$entrezgene_id),
-              category.names= c("hyper\nEAR\n3","hypo\nEAR\n3"))+
- scale_x_continuous(expand = expansion(mult = .2))+
-  ggVennDiagram(list(EAR_NG_24hhyper_2k$entrezgene_id,EAR_NG_24hhypo_2k$entrezgene_id),
-              category.names= c("hyper\nEAR\n24 hr","hypo\nEAR\n24 hr"))+
- scale_x_continuous(expand = expansion(mult = .2))+
-  labs(title = "EAR 3hr and 24hr Neargene_2k similarities")
-
-ggVennDiagram(list(ESR_NG_3hhyper_2k$entrezgene_id,ESR_NG_3hhypo_2k$entrezgene_id),
-              category.names= c("hyper\nESR\n3","hypo\nESR\n3"))+
- scale_x_continuous(expand = expansion(mult = .2))+
-  ggVennDiagram(list(ESR_NG_24hhyper_2k$entrezgene_id,ESR_NG_24hhypo_2k$entrezgene_id),
-              category.names= c("hyper\nESR\n24 hr","hypo\nESR\n24 hr"))+
- scale_x_continuous(expand = expansion(mult = .2))+
-  labs(title = "ESR 3hr and 24hr Neargene_2k similarities")
-
-ggVennDiagram(list(LR_NG_3hhyper_2k$entrezgene_id,LR_NG_3hhypo_2k$entrezgene_id),
-              category.names= c("hyper\nLR\n3","hypo\nLR\n3"))+
- scale_x_continuous(expand = expansion(mult = .2))+
-  ggVennDiagram(list(LR_NG_24hhyper_2k$entrezgene_id,LR_NG_24hhypo_2k$entrezgene_id),
-              category.names= c("hyper\nLR\n24 hr","hypo\nLR\n24 hr"))+
- scale_x_continuous(expand = expansion(mult = .2))+
-  labs(title = "LR 3hr and 24hr Neargene_2k similarities")
-
-ggVennDiagram(list(NR_NG_3hhyper_2k$entrezgene_id,NR_NG_3hhypo_2k$entrezgene_id),
-              category.names= c("hyper\nNR\n3","hypo\nNR\n3"))+
- scale_x_continuous(expand = expansion(mult = .2))+
-  ggVennDiagram(list(NR_NG_24hhyper_2k$entrezgene_id,NR_NG_24hhypo_2k$entrezgene_id),
-              category.names= c("hyper\nNR\n24 hr","hypo\nNR\n24 hr"))+
- scale_x_continuous(expand = expansion(mult = .2))+
-  labs(title = "NR 3hr and 24hr Neargene_2k similarities")
-
-```
-
-### ESR 4 groups
-
-```{r  ESRABCD}
-ESR_A <- readRDS("data/GO_KEGG_analysis/final_analysis/ESR_3h_A_resgenes.RDS")
-ESR_A_2k <- readRDS("data/GO_KEGG_analysis/final_analysis/ESR_3h_A2k_resgenes.RDS")
-
-ESR_B <- readRDS("data/GO_KEGG_analysis/final_analysis/ESR_3h_B_resgenes.RDS")
-ESR_B_2k <- readRDS("data/GO_KEGG_analysis/final_analysis/ESR_3h_B2k_resgenes.RDS")
-
-ESR_C <- readRDS("data/GO_KEGG_analysis/final_analysis/ESR_3h_C_resgenes.RDS")
-ESR_C_2k <- readRDS("data/GO_KEGG_analysis/final_analysis/ESR_3h_C2k_resgenes.RDS")
-
-
-ESR_D <- readRDS("data/GO_KEGG_analysis/final_analysis/ESR_3h_D_resgenes.RDS")
-ESR_D_2k <- readRDS("data/GO_KEGG_analysis/final_analysis/ESR_3h_D2k_resgenes.RDS")
-
-
-GO_KEGG_analysis(ESR_A,"GO:BP")
-GO_KEGG_analysis(ESR_A_2k,"GO:BP")
-GO_KEGG_analysis(ESR_A,"KEGG")
-GO_KEGG_analysis(ESR_A_2k,"KEGG")
-
-
-```
-
-```{r ESRB}
-GO_KEGG_analysis(ESR_B,"GO:BP")
-GO_KEGG_analysis(ESR_B_2k,"GO:BP")
-GO_KEGG_analysis(ESR_B,"KEGG")
-GO_KEGG_analysis(ESR_B_2k,"KEGG")
-
-```
-
-```{r ESRC}
-GO_KEGG_analysis(ESR_C,"GO:BP")
-GO_KEGG_analysis(ESR_C_2k,"GO:BP")
-GO_KEGG_analysis(ESR_C,"KEGG")
-GO_KEGG_analysis(ESR_C_2k,"KEGG")
-
-```
-
-```{r ESRD}
-GO_KEGG_analysis(ESR_D,"GO:BP")
-GO_KEGG_analysis(ESR_D_2k,"GO:BP")
-GO_KEGG_analysis(ESR_D,"KEGG")
-GO_KEGG_analysis(ESR_D_2k,"KEGG")
-
-```
-
-
 
 ## experimental GO
-```{r noodles, eval=FALSE, message=FALSE, warning=FALSE, include=FALSE}
 
-### Trying to make lists of DEG RNA neargene peaks and that are hyper and hypo accessible for AC only peaks
-
-siglist_n45 <- readRDS("data/siglist_n45.RDS")
-peak_24hr_list <- sapply(siglist_n45[1:4], "[","peak")
-peak_24hr_list <- sapply(siglist_n45[6:9], "[","peak")
-
-ggVennDiagram(peak_24hr_list)
-
-test <-calculate.overlap(peak_24hr_list)
-AC_only <- test$a12
-
-TOP2_only <- test$a6
-
-length(intersect(TOP2_only,NR_df$id))
-length(intersect(TOP2_only,LR_df$id))
-length(intersect(TOP2_only,ESR_df$id))
-length(intersect(TOP2_only,EAR_df$id))
-
-
-length(intersect(AC_only,NR_df$id))
-length(intersect(AC_only,LR_df$id))
-length(intersect(AC_only,ESR_df$id))
-length(intersect(AC_only,EAR_df$id))
-
-
-
-NR_hyper_list_AC <- TSS_NG_data %>%
-  dplyr::filter(peakid %in% intersect(AC_only,NR_df$id)) %>%
-  dplyr:: filter(peakid %in% DOX24h_peaks_hyper_list$peak) %>%
-  dplyr::filter(dist_to_NG<20000) %>% 
-  dplyr::select(entrezgene_id) %>% 
-  distinct()
-
-NR_hypo_list_AC <- TSS_NG_data %>%
-  dplyr::filter(peakid %in% intersect(AC_only,NR_df$id)) %>%
-  dplyr:: filter(peakid %in% DOX24h_peaks_hypo_list$peak) %>%
-  dplyr::filter(dist_to_NG<20000) %>% 
-  dplyr::select(entrezgene_id) %>% 
-  distinct()
-# NR_hyper_resgenes_AC <- gost(query =intersect(NR_hyper_list_AC$ENTREZID,Resp_RNA$ENTREZID),
-#                     organism = "hsapiens",
-#                     significant = FALSE,
-#                     ordered_query = FALSE,
-#                     domain_scope = "custom",
-#                     measure_underrepresentation = FALSE,
-#                     evcodes = FALSE,
-#                     user_threshold = 0.05,
-#                     correction_method = c("fdr"),
-#                     custom_bg = background_genes$ENTREZID,
-#                     sources=c("GO:BP","KEGG"))
-# saveRDS(NR_hyper_resgenes_AC,"data/GO_KEGG_analysis/NR_hyper_resgenes_AC.RDS")
-
-
-NR_hypo_resgenes_AC <- readRDS("data/GO_KEGG_analysis/NR_hypo_resgenes_AC.RDS")
-
-NR_hypo_restable_AC <- NR_hypo_resgenes_AC$result %>% 
-  dplyr::select(c(source, term_id,
-                  term_name,intersection_size, 
-                   term_size, p_value))# %>% 
-
-NR_hypo_restable_AC %>%
-   filter(source=="GO:BP", p_value < 0.05) %>%
-  mutate_at(.vars = 6, .funs = scientific_format()) %>%
-  kable(.,caption = "GO:BP terms found in NR_hypo neargenes") %>%
-  kable_paper("striped", full_width = FALSE) %>%
-  kable_styling(
-    full_width = FALSE,
-    position = "left",
-    bootstrap_options = c("striped", "hover")
-  ) %>%
-  scroll_box(width = "100%", height = "400px")
-
-NR_hypo_restable_AC %>%
-  filter(source=="KEGG") %>% 
-  mutate_at(.vars = 6, .funs = scientific_format()) %>%
-  kable(., caption = "KEGG terms found in NR_hypo accesible genes") %>%
-  kable_paper("striped", full_width = FALSE) %>%
-  kable_styling(
-    full_width = FALSE,
-    position = "left",
-    bootstrap_options = c("striped", "hover")
-  ) %>%
-  scroll_box(width = "100%", height = "400px")
-# intersect(unique(Resp_RNA$ENTREZID), unique(NR_peak_list_20k$ENTREZID)))
-
-NR_hypo_restable_AC %>%
-filter(source=="GO:BP", p_value < 0.05) %>% 
-  slice_head(n=10) %>% 
-  mutate(log10_p=(-log(p_value, base=10))) %>% 
-  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
-    geom_col(fill="#C77CFF")+
-  theme_bw()+
-  ylab("")+
-  xlab(paste0("-log10 p-value"))+
-  guides(fill="none")+
-  theme(axis.text.y = element_text(color="black"))+
-  ggtitle("NR_hypo accessible gene list")
-
-
-
-NR_hyper_resgenes_AC <- readRDS("data/GO_KEGG_analysis/NR_hyper_resgenes_AC.RDS")
-
-NR_hyper_restable_AC <- NR_hyper_resgenes_AC$result %>% 
-  dplyr::select(c(source, term_id,
-                  term_name,intersection_size, 
-                   term_size, p_value))# %>% 
-
-NR_hyper_restable_AC %>%
-   filter(source=="GO:BP", p_value < 0.05) %>%
-  mutate_at(.vars = 6, .funs = scientific_format()) %>%
-  kable(.,caption = "GO:BP terms found in NR_hypo neargenes") %>%
-  kable_paper("striped", full_width = FALSE) %>%
-  kable_styling(
-    full_width = FALSE,
-    position = "left",
-    bootstrap_options = c("striped", "hover")
-  ) %>%
-  scroll_box(width = "100%", height = "400px")
-
-NR_hyper_restable_AC %>%
-  filter(source=="KEGG") %>% 
-  mutate_at(.vars = 6, .funs = scientific_format()) %>%
-  kable(., caption = "KEGG terms found in NR_hypo accesible genes") %>%
-  kable_paper("striped", full_width = FALSE) %>%
-  kable_styling(
-    full_width = FALSE,
-    position = "left",
-    bootstrap_options = c("striped", "hover")
-  ) %>%
-  scroll_box(width = "100%", height = "400px")
-# intersect(unique(Resp_RNA$ENTREZID), unique(NR_peak_list_20k$ENTREZID)))
-
-NR_hyper_restable_AC %>%
-filter(source=="GO:BP", p_value < 0.05) %>% 
-  slice_head(n=10) %>% 
-  mutate(log10_p=(-log(p_value, base=10))) %>% 
-  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
-    geom_col(fill="#C77CFF")+
-  theme_bw()+
-  ylab("")+
-  xlab(paste0("-log10 p-value"))+
-  guides(fill="none")+
-  theme(axis.text.y = element_text(color="black"))+
-  ggtitle("NR_hypo accessible gene list")
-
+```{r GOBP}
+GO_KEGG_analysis(EAR_open_NG_2kresgenes,"GO:BP", 0.05)
+GO_KEGG_analysis(EAR_close_NG_2kresgenes,"GO:BP", 0.05)
+GO_KEGG_analysis(ESR_open_NG_2kresgenes,"GO:BP", 0.05)
+GO_KEGG_analysis(ESR_close_NG_2kresgenes,"GO:BP", 0.05)
+GO_KEGG_analysis(ESR_OC_NG_2kresgenes,"GO:BP", 0.05)
+GO_KEGG_analysis(LR_open_NG_2kresgenes,"GO:BP", 0.05)
+GO_KEGG_analysis(LR_close_NG_2kresgenes,"GO:BP", 0.05)
+GO_KEGG_analysis(NR_NG_2kresgenes,"GO:BP", 0.05)
 
 ```
+ 
+##### KEGG (not informative)
+```{r KEGG analysis}
+GO_KEGG_analysis(EAR_open_NG_2kresgenes,"KEGG", 0.05)
+GO_KEGG_analysis(EAR_close_NG_2kresgenes,"KEGG", 0.05)
+GO_KEGG_analysis(ESR_open_NG_2kresgenes,"KEGG", 0.05)
+GO_KEGG_analysis(ESR_close_NG_2kresgenes,"KEGG", 0.05)
+GO_KEGG_analysis(ESR_OC_NG_2kresgenes,"KEGG", 0.05)
+GO_KEGG_analysis(LR_open_NG_2kresgenes,"KEGG", 0.05)
+GO_KEGG_analysis(LR_close_NG_2kresgenes,"KEGG", 0.05)
+GO_KEGG_analysis(NR_NG_2kresgenes,"KEGG", 0.05)
+```
+
