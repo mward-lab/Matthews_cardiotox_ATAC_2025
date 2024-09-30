@@ -10,6 +10,7 @@ knitr::opts_chunk$set(
 	echo = TRUE,
 	message = FALSE,
 	warning = FALSE
+	
 )
 ```
 
@@ -264,6 +265,11 @@ ESR_close_cREs <- join_overlap_intersect(ESR_close_gr,cREs_HLV_46F)
 ESR_OC_cREs <- join_overlap_intersect(ESR_OC_gr,cREs_HLV_46F)
 EAR_open_cREs <- join_overlap_intersect(EAR_open_gr,cREs_HLV_46F)
 EAR_close_cREs <- join_overlap_intersect(EAR_close_gr,cREs_HLV_46F)
+### These unique peaks are cREs that contain all types of cREs such as
+# [1] "Low-DNase"                "DNase-only"               "CTCF-only,CTCF-bound"    
+#  [4] "PLS,CTCF-bound"           "PLS"                      "dELS"                    
+#  [7] "pELS"                     "DNase-H3K4me3"            "DNase-H3K4me3,CTCF-bound"
+# [10] "dELS,CTCF-bound"          "pELS,CTCF-bound" #### NOT the exact ones I am interested in.      
  uni_EAR_open  <-  EAR_open_cREs %>% as.data.frame() %>% distinct(Peakid)
  uni_EAR_close <- EAR_close_cREs %>% as.data.frame() %>% distinct(Peakid)
  uni_ESR_open <- ESR_open_cREs%>% as.data.frame() %>% distinct(Peakid)
@@ -305,7 +311,7 @@ pELS= proximal enhancer like sequences
 dELS=distal enhancer like sequences
 
 #### EAR open
-```{r EAR cRE open3 and 24 hours}
+```{r EAR cRE open3 and 24 hours, dev=c("png","pdf")}
 all_EAR_open_list <- 
   peak_list_all_mrc %>% 
   dplyr::filter(mrc=="EAR_open") %>% 
@@ -353,7 +359,7 @@ EAR_open_cRE_list %>%
   ggplot(., aes(y=type, x=lfc,group=type))+
   geom_boxplot() +
   scale_fill_discrete()+
-  ggtitle(paste0(" 24 hour EAR_open n = ",length(unique(EAR_open_cRE_list$Peakid))," out of ", length(uni_EAR_open$Peakid), " total peaks (",sprintf("%.1f",length(unique(EAR_open_cRE_list$Peakid))/length(uni_EAR_open$Peakid)*100),"%)"))#+
+  ggtitle(paste(" 24 hour EAR_open\n n = ",length(unique(EAR_open_cRE_list$Peakid))," out of ",peakAnnoList_ff_8motif$EAR_open@peakNum, " total peaks (",sprintf("%.1f",(length(unique(EAR_open_cRE_list$Peakid))/peakAnnoList_ff_8motif$EAR_open@peakNum*100)),"%)"))#+
   # facet_wrap(~direction)+
   theme_bw()#+
   # xlim(-4,4)
@@ -413,7 +419,7 @@ EAR_close_cRE_list %>%
   ggplot(., aes(y=type, x=lfc,group=type))+
   geom_boxplot() +
   scale_fill_discrete()+
-  ggtitle(paste0(" 24 hour EAR_close n = ",length(unique(EAR_close_cRE_list$Peakid))," out of ", length(uni_EAR_close$Peakid), " total peaks (",sprintf("%.1f",length(unique(EAR_close_cRE_list$Peakid))/length(uni_EAR_close$Peakid)*100),"%)"))#+
+  ggtitle(paste0(" 24 hour EAR_close\n n = ",length(unique(EAR_close_cRE_list$Peakid))," out of ", peakAnnoList_ff_8motif$EAR_close@peakNum, " total peaks (",sprintf("%.1f",length(unique(EAR_close_cRE_list$Peakid))/ peakAnnoList_ff_8motif$EAR_close@peakNum*100),"%)"))#+
   # facet_wrap(~direction)+
   # theme_bw()+
   # xlim(-4,4)
@@ -473,7 +479,7 @@ ESR_close_cRE_list %>%
   ggplot(., aes(y=type, x=lfc,group=type))+
   geom_boxplot() +
   scale_fill_discrete()+
-  ggtitle(paste0(" 24 hour ESR_close n = ",length(unique(ESR_close_cRE_list$Peakid))," out of ", length(uni_ESR_close$Peakid), " total peaks (",sprintf("%.1f",length(unique(ESR_close_cRE_list$Peakid))/length(uni_ESR_close$Peakid)*100),"%)"))#+
+  ggtitle(paste0(" 24 hour ESR_close\n n = ",length(unique(ESR_close_cRE_list$Peakid))," out of ",  peakAnnoList_ff_8motif$ESR_close@peakNum, " total peaks (",sprintf("%.1f",length(unique(ESR_close_cRE_list$Peakid))/ peakAnnoList_ff_8motif$ESR_close@peakNum*100),"%)"))#+
   # facet_wrap(~direction)+
   # theme_bw()+
   # xlim(-4,4)
@@ -534,7 +540,7 @@ ESR_open_cRE_list %>%
   ggplot(., aes(y=type, x=lfc,group=type))+
   geom_boxplot() +
   scale_fill_discrete()+
-  ggtitle(paste0(" 24 hour ESR_open n = ",length(unique(ESR_open_cRE_list$Peakid))," out of ", length(uni_ESR_open$Peakid), " total peaks (",sprintf("%.1f",length(unique(ESR_open_cRE_list$Peakid))/length(uni_ESR_open$Peakid)*100),"%)"))#+
+  ggtitle(paste0(" 24 hour ESR_open\n n = ",length(unique(ESR_open_cRE_list$Peakid))," out of ",  peakAnnoList_ff_8motif$ESR_open@peakNum, " total peaks (",sprintf("%.1f",length(unique(ESR_open_cRE_list$Peakid))/ peakAnnoList_ff_8motif$ESR_open@peakNum*100),"%)"))#+
   # facet_wrap(~direction)+
   # theme_bw()+
   # xlim(-4,4)
@@ -594,7 +600,7 @@ ESR_OC_cRE_list %>%
   ggplot(., aes(y=type, x=lfc,group=type))+
   geom_boxplot() +
   scale_fill_discrete()+
-  ggtitle(paste0(" 24 hour ESR_OC n = ",length(unique(ESR_OC_cRE_list$Peakid))," out of ", length(uni_ESR_OC$Peakid), " total peaks (",sprintf("%.1f",length(unique(ESR_OC_cRE_list$Peakid))/length(uni_ESR_OC$Peakid)*100),"%)"))#+
+  ggtitle(paste0(" 24 hour ESR_OC\n n = ",length(unique(ESR_OC_cRE_list$Peakid))," out of ",  peakAnnoList_ff_8motif$ESR_OC@peakNum, " total peaks (",sprintf("%.1f",length(unique(ESR_OC_cRE_list$Peakid))/ peakAnnoList_ff_8motif$ESR_OC@peakNum*100),"%)"))#+
   # facet_wrap(~direction)+
   # theme_bw()+
   # xlim(-4,4)
@@ -654,7 +660,7 @@ LR_open_cRE_list %>%
   ggplot(., aes(y=type, x=lfc,group=type))+
   geom_boxplot() +
   scale_fill_discrete()+
-  ggtitle(paste0(" 24 hour LR_open n = ",length(unique(LR_open_cRE_list$Peakid))," out of ", length(uni_LR_open$Peakid), " total peaks (",sprintf("%.1f",length(unique(LR_open_cRE_list$Peakid))/length(uni_LR_open$Peakid)*100),"%)"))#+
+ ggtitle(paste0(" 24 hour LR_open\n n = ",length(unique(LR_open_cRE_list$Peakid))," out of ",  peakAnnoList_ff_8motif$LR_open@peakNum, " total peaks (",sprintf("%.1f",length(unique(LR_open_cRE_list$Peakid))/ peakAnnoList_ff_8motif$LR_open@peakNum*100),"%)"))#+
   # facet_wrap(~direction)+
   # theme_bw()+
   # xlim(-4,4)
@@ -715,7 +721,7 @@ LR_close_cRE_list %>%
   ggplot(., aes(y=type, x=lfc,group=type))+
   geom_boxplot() +
   scale_fill_discrete()+
-  ggtitle(paste0(" 24 hour LR_close n = ",length(unique(LR_close_cRE_list$Peakid))," out of ", length(uni_LR_close$Peakid), " total peaks (",sprintf("%.1f",length(unique(LR_close_cRE_list$Peakid))/length(uni_LR_close$Peakid)*100),"%)"))#+
+  ggtitle(paste0(" 24 hour LR_close\n n = ",length(unique(LR_close_cRE_list$Peakid))," out of ",  peakAnnoList_ff_8motif$LR_close@peakNum, " total peaks (",sprintf("%.1f",length(unique(LR_close_cRE_list$Peakid))/ peakAnnoList_ff_8motif$LR_close@peakNum*100),"%)"))#+
   # facet_wrap(~direction)+
   # theme_bw()+
   # xlim(-4,4)
@@ -776,10 +782,11 @@ NR_cRE_list %>%
   ggplot(., aes(y=type, x=lfc,group=type))+
   geom_boxplot() +
   scale_fill_discrete()+
-  ggtitle(paste0(" 24 hour NR n = ",length(unique(NR_cRE_list$Peakid))," out of ", length(uni_NR$Peakid), " total peaks (",sprintf("%.1f",length(unique(NR_cRE_list$Peakid))/length(uni_NR$Peakid)*100),"%)"))#+
+  ggtitle(paste0(" 24 hour NR\n n = ",length(unique(NR_cRE_list$Peakid))," out of ",  peakAnnoList_ff_8motif$NR@peakNum, " total peaks (",sprintf("%.1f",length(unique(NR_cRE_list$Peakid))/ peakAnnoList_ff_8motif$NR@peakNum*100),"%)"))#+
   # facet_wrap(~direction)+
   # theme_bw()+
   # xlim(-4,4)
+
 
 NR_complete_list <- NR_cRE_list %>% 
   rbind(notCRE_NR_list) %>% 
