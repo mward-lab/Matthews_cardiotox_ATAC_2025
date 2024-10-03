@@ -54,6 +54,7 @@ library(plyranges)
 library(ggrepel)
 library(ComplexHeatmap)
 library(cowplot)
+library(smplot2)
 ```
 
 ```{r echo=TRUE, file='code/corMotifcustom.R'}
@@ -144,7 +145,7 @@ x_axis_labels = function(labels, every_nth = 1, ...) {
 #### Counts summary
 
 Adding analysis of first peak counts into one large file
-```{r read counts, fig.width=12, fig.height=8}
+```{r read counts, fig.width=10, fig.height=7}
 drug_pal <- c("#8B006D","#DF707E","#F1B72B", "#3386DD","#707031","#41B333")
 Ind1_summary  <- read.csv("data/Ind1_summary.txt", row.names = 1) %>% 
   dplyr::rename("sample"=X1,"reads"=X2,"mapped"=X3)%>% 
@@ -293,6 +294,23 @@ pivot_longer(cols = reads:mapped_reads, names_to="count_type", values_to = "read
         strip.background = element_rect(fill = "white", linetype = "solid",
                                         color = "black", linewidth = 1),
         panel.spacing = unit(1, 'points'))
+
+
+```
+### cardiomyocyte purity
+```{r purity table}
+
+Purity_table <- cbind("indv"= c("75-1","87-1","77-1","71-1"),
+"assign"=c("D","A","B","C"),
+"num"= c(1,2,3,6),
+"cm_purity"=c(98.5,98.3,99.5,86.75))
+Purity_table %>% 
+  kable(.,caption = "cTNT2 percent positive table") %>% 
+  kable_paper("striped", full_width = TRUE) %>%
+  kable_styling(full_width = FALSE, font_size = 16) %>%
+  scroll_box(height = "800px")
+  
+
 ```
 
 ```{r  TSS enrichment}
@@ -346,12 +364,13 @@ Analysis using the four selected individuals and the peaks generated from just t
 ```{r loading peak file}
 # Peaks_bed_file <- rtracklayer::BEDFile("~/ATAC_downloads/finalfour_bl_filt_peaks.bed")
 # import(Peaks_bed_file) %>% as.data.frame()
-# write_delim(all_four_filt_counts, "data/all_four_filtered_counts.txt",delim = "\t")
+# write_delim(Snyder_41peaks, "data/other_papers/ENCFF966JZT_bed_Snyder_41peaks.bed",delim = "\t")
   all_four_filt_counts <- read.delim("data/all_four_filtered_counts.txt",header=TRUE) %>% 
   GRanges() %>% 
   keepStandardChromosomes(pruning.mode = "coarse") %>% 
   as.data.frame()
 
+ 
 ```
 
 ```{r edit_names of counts file}
@@ -387,6 +406,11 @@ summary of peaks by sample
 #   dplyr::rename(peak_number=X2) %>% write_delim(., file="data/Final_four_data/Peak_count_ff.txt", delim = "\t")
 
 peakcount_ff <- read_delim("data/Final_four_data/Peak_count_ff.txt",delim= "\t")
+frip_newpeaks <- c(38.8,36.3,46.0,38.9,49.6,40.0,39.2,30.2,52.1,39.8,51.1,28.0,
+                   42.3,40.3,39.7,38.7,37.9,36.6,36.0,48.7,50.4,44.2,52.0,31.9,
+                   40.5,34.1,41.2,33.7,43.5,28.6,34.7,42.8,38.1,40.3,44.6,26.4,
+                   46.5,23.9,46.9,25.8,46.7,23.8,21.8,39.2,33.2,22.8,36.8,34.8)
+peakcount_ff$frip_newpeaks <- frip_newpeaks
 
 peakcount_ff %>% 
   mutate(time = factor(time, levels = c("3h", "24h"), labels= c("3 hours","24 hours"))) %>% 
@@ -405,6 +429,32 @@ peakcount_ff %>%
                                         color = "black", linewidth = 1),
         panel.spacing = unit(1, 'points'))
 
+peakcount_ff %>% 
+  mutate(time = factor(time, levels = c("3h", "24h"), labels= c("3 hours","24 hours"))) %>% 
+  mutate(trt = factor(trt, levels = c("DOX","EPI", "DNR", "MTX", "TRZ", "VEH"))) %>% 
+  mutate(indv=factor(indv)) %>% 
+   ggplot(., aes(x=trt,y=frip_newpeaks))+
+  geom_boxplot(aes(fill=trt))+
+   geom_point(aes(col=indv, size =3))+
+  geom_hline(aes(yintercept = 20), linetype=2, color="red")+
+  facet_wrap(time~.)+
+     scale_fill_manual(values=drug_pal)+
+  scale_color_brewer(palette = "Dark2")+
+  ggtitle("Fraction of reads in peaks, percentage")+
+  theme_bw()+
+  theme(strip.text = element_text(face = "bold",  hjust = .5, size = 8),
+        strip.background = element_rect(fill = "white", linetype = "solid",
+                                        color = "black", linewidth = 1),
+        panel.spacing = unit(1, 'points'))+
+  coord_cartesian(ylim = c(0,100))
+
+
+peakcount_ff %>% 
+  mutate(time = factor(time, levels = c("3h", "24h"), labels= c("3 hours","24 hours"))) %>% 
+  mutate(trt = factor(trt, levels = c("DOX","EPI", "DNR", "MTX", "TRZ", "VEH"))) %>% 
+  mutate(indv=factor(indv)) %>% 
+  group_by(time) %>% 
+  summarize(medal=median(peak_number))
 ```
 
 
@@ -510,7 +560,7 @@ names(mat_colors$TOP2i) <- unique(counts_corr_mat$TOP2i)
 # names(mat_colors_FC$TOP2i) <- unique(mat_col_FC$TOP2i)
 # corrFC_ff <- cor(FCmatrix_ff)
 
-htanno_full <-  HeatmapAnnotation(df = counts_corr_mat, col = mat_colors)
+htanno_full <-  ComplexHeatmap::HeatmapAnnotation(df = counts_corr_mat, col = mat_colors)
 Heatmap(FCmatrix_full, top_annotation = htanno_full)
 
 
@@ -518,7 +568,7 @@ Heatmap(FCmatrix_full, top_annotation = htanno_full)
 
 ```
 
-
+### PCA analysis 155560 peaks
 ```{r filter log2cpm}
 # saveRDS(x4_filtered,"data/Final_four_data/ATAC_filtered_raw_counts_allsamples.RDS")
 l4cpm <- cpm(PCA4mat, log=TRUE)  ### for determining the basic cutoffs
@@ -633,11 +683,33 @@ b.c <- filter_by_non_overlaps(old_peaks_gr, new_peaks_gr)
 new_peaks_gr %>% as.data.frame %>% summarize(mean =mean(width))
 ```
 
+
 number of peaks in old data set: `r length(old_peaks_gr)`\
 number of peaks in new data set: `r length(new_peaks_gr)`\
 number of overlaps in between both sets: `r length (a$id)`\
 number of peaks in new set that do not overlap old set: `r length(b.b)`\
 number of peaks in old set that do not overlap new set: `r length(b.c)` \
+
+
+
+### Overlapping peaks with ATAC-seq heart, left ventricle data, Snyder ENCFF966JZT.
+```{r anno overlap with heart data}
+Snyder_41peaks <- read.delim("data/other_papers/ENCFF966JZT_bed_Snyder_41peaks.bed",header=TRUE) %>% 
+  GRanges()
+
+heart_overlap <- join_overlap_intersect(new_peaks_gr,Snyder_41peaks)
+ol_count <- heart_overlap %>% 
+  as.data.frame %>% 
+  distinct(peakid) %>% tally
+
+
+```
+number of peaks in Snyder heart ATAC set: `r length(Snyder_41peaks)`\
+number of peaks in my data set: `r length(new_peaks_gr)`\
+number of unique peaks that overlap the Snyder data: `r ol_count$n`  
+percent of my peaks overlapping Snyder Heart left ventricle data: `r sprintf("%.2f", (ol_count$n/length(new_peaks_gr))*100)` %  
+
+
 
 ### Differential analysis
 
@@ -863,9 +935,9 @@ plot_grid(v9,v10,  rel_widths =c(.8,1))
 
 
 ```
+### examples of top DAR peaks by treatment
 
-
-```{r example 3hr expression}
+```{r example 3hr accesibility}
 DNR_3_top3_ff <- row.names(V.DNR_3.top[1:3,])
 
 log_filt_ff <- filt4_matrix_lcpm %>% 
@@ -970,7 +1042,7 @@ log_filt_ff %>%
 
 
 
-```{r example 24hr expression}
+```{r example 24hr accesibility}
 DNR_24_top3_ff <- row.names(V.DNR_24.top[1:3,])
 
 
@@ -1054,6 +1126,53 @@ log_filt_ff %>%
   scale_fill_manual(values = drug_pal)+
   theme_bw()
 ```
+#### Correlations of LFC by treatment
+```{r LFC time and treamtment 20kb}
+hour3_lfc <- toplist_ff %>% 
+  dplyr::filter(time=="3 hours") %>% 
+  dplyr::select(trt:logFC) %>% 
+  pivot_wider(id_cols = c(time, peak), names_from = trt, values_from = logFC)
+hour3_lfc %>% 
+  ggplot(.,aes(x=DOX, y=DNR))+
+   geom_point()+
+   sm_statCorr(corr_method = 'pearson')+
+  ggtitle("3 hour logFC, no filtering peaks")
+hour3_lfc %>% 
+  ggplot(.,aes(x=DOX, y=EPI))+
+   geom_point()+
+   sm_statCorr(corr_method = 'pearson')+
+  ggtitle("3 hour logFC, no filtering peaks")
+hour3_lfc %>% 
+  ggplot(.,aes(x=DOX, y=MTX))+
+   geom_point()+
+   sm_statCorr(corr_method = 'pearson')+
+  ggtitle("3 hour logFC, no filtering peaks")
+
+```
+
+```{r}
+hour24_lfc <- toplist_ff %>% 
+  dplyr::filter(time=="24 hours") %>% 
+  dplyr::select(trt:logFC) %>% 
+  pivot_wider(id_cols = c(time, peak), names_from = trt, values_from = logFC)
+hour24_lfc %>% 
+  ggplot(.,aes(x=DOX, y=DNR))+
+   geom_point()+
+   sm_statCorr(corr_method = 'pearson')+
+  ggtitle("24 hour logFC, no filtering peaks")
+hour24_lfc %>% 
+  ggplot(.,aes(x=DOX, y=EPI))+
+   geom_point()+
+   sm_statCorr(corr_method = 'pearson')+
+  ggtitle("24 hour logFC, no filtering peaks")
+hour24_lfc %>% 
+  ggplot(.,aes(x=DOX, y=MTX))+
+   geom_point()+
+   sm_statCorr(corr_method = 'pearson')+
+  ggtitle("24 hour logFC, no filtering peaks")
+```
+
+
 
 
 
@@ -1156,10 +1275,10 @@ EAR_ff <- motif_prob_ff %>%
 ```
 
 Number of Peaks by main grouping:  
--EAR group has `r length(EAR_ff$Peakid)` peaks.  
--ESR group has `r length(ESR_ff$Peakid)` peaks.  
--LR group has `r length(LR_ff$Peakid)` peaks.  
--NR group has `r length(NR_ff$Peakid)` peaks.  
+-EAR group has `r unique(length(EAR_ff$Peakid))` peaks.  
+-ESR group has `r unique(length(ESR_ff$Peakid))` peaks.  
+-LR group has `r unique(length(LR_ff$Peakid))` peaks.  
+-NR group has `r unique(length(NR_ff$Peakid))` peaks.  
 --Total number of peaks is `r length(background_peaks$Peakid)`
 --Total number of peaks in clusters is `r sum(length(EAR_ff$Peakid),length(ESR_ff$Peakid),length(LR_ff$Peakid),length(NR_ff$Peakid))`  
 -percent of peaks classified into clusters: `r (length(EAR_ff$Peakid)+length(ESR_ff$Peakid)+length(LR_ff$Peakid)+length(NR_ff$Peakid)) / length(background_peaks$Peakid)*100`   
@@ -1255,6 +1374,9 @@ Collapsed_new_peaks <- TSS_NG_table %>%
 TSS_assigned_NG <- read_delim("data/Final_four_data/TSS_assigned_NG.txt", delim = "\t", col_names = TRUE)
 Collapsed_new_peaks <- read_delim("data/Final_four_data/collapsed_new_peaks.txt", delim = "\t", col_names = TRUE)
 
+median_24_lfc <- read_csv("data/Final_four_data/median_24_lfc.csv") 
+median_3_lfc <- read_csv("data/Final_four_data/median_3_lfc.csv")
+
 open_3med <- median_3_lfc %>% 
   dplyr::filter(med_3h_lfc > 0)
 
@@ -1338,23 +1460,97 @@ names(mylist_new) <- c("EAR_open", "EAR_close","ESR_open", "ESR_close","ESR_OC",
 peakAnnoList_8_motif <- readRDS("data/Final_four_data/peakAnnoList_ff_8motif.RDS")
 plotAnnoBar(peakAnnoList_8_motif[c(8,1:7)])+
   ggtitle ("Genomic Feature Distribution, eight groups")
+
 ```
-
-
+```{r Correlations by distance, eval=FALSE, include=FALSE}
+hour3_lfc_2kb <- toplist_ff %>% 
+  dplyr::filter(time=="3 hours") %>% 
+  dplyr::select(trt:logFC) %>% 
+  pivot_wider(id_cols = c(time, peak), names_from = trt, values_from = logFC) %>% 
+  left_join(., (Collapsed_new_peaks %>% dplyr::select(Peakid, NCBI_gene:dist_to_NG)), by = c("peak"="Peakid") ) %>% 
+  dplyr::filter(dist_to_NG>-2000| dist_to_NG<2000)
+hour3_lfc_2kb %>% 
+  ggplot(.,aes(x=DOX, y=DNR))+
+   geom_point()+
+   sm_statCorr(corr_method = 'pearson')+
+  ggtitle("3 hour logFC,2kb filtering")
+hour3_lfc_2kb %>% 
+  ggplot(.,aes(x=DOX, y=EPI))+
+   geom_point()+
+   sm_statCorr(corr_method = 'pearson')+
+  ggtitle("3 hour logFC, 2kb filtering")
+hour3_lfc_2kb %>% 
+  ggplot(.,aes(x=DOX, y=MTX))+
+   geom_point()+
+   sm_statCorr(corr_method = 'pearson')+
+  ggtitle("3 hour logFC, 2kb filtering")
+```
+```{r 24hour 2kb, eval=FALSE, include=FALSE}
+hour24_lfc_2kb <- toplist_ff %>% 
+  dplyr::filter(time=="24 hours") %>% 
+  dplyr::select(trt:logFC) %>% 
+  pivot_wider(id_cols = c(time, peak), names_from = trt, values_from = logFC) %>% 
+  left_join(., (Collapsed_new_peaks %>% dplyr::select(Peakid, NCBI_gene:dist_to_NG)), by = c("peak"="Peakid") ) %>% 
+  dplyr::filter(dist_to_NG>-2000| dist_to_NG<2000)
+hour24_lfc_2kb %>% 
+  ggplot(.,aes(x=DOX, y=DNR))+
+   geom_point()+
+   sm_statCorr(corr_method = 'pearson')+
+  ggtitle("24 hour logFC,2kb filtering")
+hour24_lfc_2kb %>% 
+  ggplot(.,aes(x=DOX, y=EPI))+
+   geom_point()+
+   sm_statCorr(corr_method = 'pearson')+
+  ggtitle("24 hour logFC, 2kb filtering")
+hour24_lfc_2kb %>% 
+  ggplot(.,aes(x=DOX, y=MTX))+
+   geom_point()+
+   sm_statCorr(corr_method = 'pearson')+
+  ggtitle("24 hour logFC, 2kb filtering")
+```
+  
 ### Overlapping peaks with H3K27ac data
 ```{r anno overlap with h3k27ac}
+Snyder_41peaks <- read.delim("data/other_papers/ENCFF966JZT_bed_Snyder_41peaks.bed",header=TRUE) %>% 
+  GRanges()
+
+
 raodah_fullpeaks <- readRDS( "data/Final_four_data/All_Raodahpeaks.RDS") %>%
   GRanges %>% 
   GenomeInfoDb::keepStandardChromosomes(., pruning.mode = "coarse") %>% 
   dplyr::filter(seqnames!="chrM") %>% 
   dplyr::filter(seqnames!="chrY")
   
-  
-
+# rtracklayer::export.bed(raodah_fullpeaks,con= "data/Final_four_data/H3K27ac_files/H3k27ac.bed")
+   
 overlap_ac <- join_overlap_intersect((new_peaks_gr %>%  dplyr::filter(seqnames !="chrY")),raodah_fullpeaks) %>% as.data.frame()
-# overlap_ac %>% 
-#   distinct(peakid)
+overlap_ac %>%
+  distinct(Geneid)
 # saveRDS(overlap_ac, "data/Final_four_data/overlapping_ac_atac_peaks.RDS")
+
+# H3K27ac_NG_df <- read.delim("data/Final_four_data/H3K27ac_files/H3k27ac.bed", header = FALSE) 
+
+H3K27ac_NG_df <- read.delim("data/Final_four_data/H3K27ac_files/H3K27ac_NG_df.bed")
+```
+
+```{r H3K27ac neargene file, eval=FALSE, include=FALSE}
+assigned_H3K27ac_TSS <- readGeneric("data/Final_four_data/H3K27ac_files/H3K27ac_NG_byTSS.bed", keep.all.metadata = TRUE) %>% as.data.frame()
+
+H3K27ac_NG_df <- assigned_H3K27ac_TSS %>%
+#  NOTE FOR MYSELF  (are we base 0 or base 1!!!!!)  
+# The peak file names do not match the bed file names due to the 0/1 issue.  This means to match up MRC categories by name, I need to alter the first start position by +1! 
+  mutate(start = start+1) %>% 
+  unite("Geneid",seqnames:end, sep = ".", remove= FALSE) %>% 
+  dplyr::rename("NG_chr"=V7,
+         "NG_start"=V8 ,
+         "NG_end"=V9 ,
+         "ENTREZID"= V10,
+         "ensembl_id"= V11,
+         "SYMBOL"=V12,
+         "dist_to_NG"=V13) %>%
+  dplyr::select(seqnames, start,end, Geneid,NG_chr:dist_to_NG) 
+write_tsv(H3K27ac_NG_df, "data/Final_four_data/H3K27ac_files/H3K27ac_NG_df.bed", col_names = TRUE)
+
 ```
 
 ### abs LFC across clusters
@@ -1435,5 +1631,276 @@ mean_lfc %>%
       face = "bold"
     )
   )
+```
+
+### making median dataframes
+
+```{r RNA correlation using ATAC-k27 peaks}
+
+# Collapsed_H3k27ac_NG <- H3K27ac_NG_df %>% 
+#   group_by(seqnames, start, end, Geneid) %>%
+#     summarise(seqnames=paste(unique(seqnames)),
+#               start=paste(unique(start)),
+#               end=paste(unique(end)),
+#               NG_chr=paste(NG_chr,collapse=":"),
+#               NG_start=paste(NG_start,collapse=":"),
+#               NG_end=paste(NG_end,collapse=":"),
+#               # NG_TSS=paste(NG_TSS,collapse=":"),
+#               ENTREZID = paste(unique(ENTREZID),collapse=","),
+#               ensembl_ID= paste(unique(ensembl_id),collapse = ","),
+#               SYMBOL= paste(unique(SYMBOL),collapse = ",") , 
+#               dist_to_NG =min(dist_to_NG))
+#  write_delim(Collapsed_H3k27ac_NG,"data/Final_four_data/H3K27ac_files/Collapsed_H3k27ac_NG.txt",delim = "\t",col_names = TRUE)
+Collapsed_H3k27ac_NG <- read_delim("data/Final_four_data/H3K27ac_files/Collapsed_H3k27ac_NG.txt",delim = "\t",col_names = TRUE)
+
+RNA_median_3_lfc <- readRDS("data/other_papers/RNA_median_3_lfc.RDS")
+RNA_median_24_lfc <- readRDS("data/other_papers/RNA_median_24_lfc.RDS")
+overlap_df_ggplot <- readRDS("data/Final_four_data/LFC_ATAC_K27ac.RDS")
+AC_median_3_lfc <- read_csv("data/Final_four_data/AC_median_3_lfc.csv")
+AC_median_24_lfc <- read_csv("data/Final_four_data/AC_median_24_lfc.csv")
+
+anti_joined_lfc <- median_24_lfc %>% 
+  dplyr::filter(!peak %in% overlap_df_ggplot$peakid)  %>% 
+  left_join(., (Collapsed_new_peaks %>% dplyr::select(Peakid, NCBI_gene:dist_to_NG)), by = c("peak"="Peakid")) %>% 
+  left_join(.,median_3_lfc,by = c("peak"="peak")) %>% 
+  left_join(., RNA_median_3_lfc ,
+                by=c("SYMBOL"="SYMBOL", "NCBI_gene"="ENTREZID")) %>%
+  left_join(., RNA_median_24_lfc,
+                 by=c("SYMBOL"="SYMBOL", "NCBI_gene"="ENTREZID")) 
+
+  
+
+joined_LFC_df <- overlap_df_ggplot %>%
+  left_join(.,(Collapsed_new_peaks %>%
+                 dplyr::select(Peakid,dist_to_NG, NCBI_gene:SYMBOL)),
+            by=c("peakid"="Peakid")) %>% 
+  left_join(., RNA_median_3_lfc ,
+                # %>%
+                #   dplyr::select(SYMBOL,RNA_3h_lfc)), 
+            by=c("SYMBOL"="SYMBOL", "NCBI_gene"="ENTREZID")) %>%
+  left_join(., RNA_median_24_lfc,# %>%
+                  # dplyr::select(SYMBOL,RNA_24h_lfc)),
+             by=c("SYMBOL"="SYMBOL", "NCBI_gene"="ENTREZID")) 
+
+anti_joined_H3k27ac <-Collapsed_H3k27ac_NG%>% 
+  dplyr::filter(!Geneid %in% overlap_df_ggplot$Geneid) %>% 
+  left_join(.,(RNA_median_24_lfc %>% mutate(ENTREZID=as.numeric(ENTREZID))),by=c("ENTREZID"="ENTREZID","SYMBOL"="SYMBOL")) %>% 
+  left_join(.,(RNA_median_3_lfc %>% mutate(ENTREZID=as.numeric(ENTREZID))),by=c("ENTREZID"="ENTREZID","SYMBOL"="SYMBOL")) %>% 
+  left_join(.,AC_median_24_lfc, by=c("Geneid"="Peakid")) %>% 
+  left_join(.,AC_median_3_lfc, by=c("Geneid"="Peakid")) %>% 
+  dplyr::select(Geneid,ENTREZID:RNA_3h_lfc,AC_24h_lfc,AC_3h_lfc)
+
+
+```
+
+#### Correlations
+
+## Correlation between k27ac/atac shared peak median LFC and RNA median LFC
+```{r correlationsshared 2kb}
+
+joined_LFC_df %>% 
+  dplyr::filter(dist_to_NG>-2000 & dist_to_NG<2000) %>% 
+ggplot(., aes(x=AC_3h_lfc,y=RNA_3h_lfc))+
+   geom_point()+
+   sm_statCorr(corr_method = 'pearson')+
+   ggtitle("Correlation of shared H3K27ac peaks and RNA-NG  at 3 hours")+
+  xlab("H3K27ac peak LFC")+
+   ylab("RNA LFC")
+
+joined_LFC_df %>% 
+  dplyr::filter(dist_to_NG>-2000 & dist_to_NG<2000) %>% 
+ggplot(., aes(x=AC_24h_lfc,y=RNA_24h_lfc))+
+   geom_point()+
+   sm_statCorr(corr_method = 'pearson')+
+   ggtitle("Correlation of shared H3K27ac peaks and RNA-NG  at 24 hours")+
+  xlab("H3K27ac peak LFC")+
+   ylab("RNA LFC")
+
+
+joined_LFC_df %>% 
+  dplyr::filter(dist_to_NG>-2000 & dist_to_NG<2000) %>% 
+ggplot(., aes(x=med_3h_lfc,y=RNA_3h_lfc))+
+   geom_point()+
+   sm_statCorr(corr_method = 'pearson')+
+   ggtitle("Correlation of shared ATAC peaks and RNA-NG  at 3 hours")+
+  xlab("ATAC peak LFC")+
+   ylab("RNA LFC")
+
+joined_LFC_df %>% 
+  dplyr::filter(dist_to_NG>-2000 & dist_to_NG<2000) %>% 
+ggplot(., aes(x=med_24h_lfc,y=RNA_24h_lfc))+
+   geom_point()+
+   sm_statCorr(corr_method = 'pearson')+
+   ggtitle("Correlation of shared ATAC peaks and RNA-NG  at 24 hours")+
+  xlab("ATAC peak LFC")+
+   ylab("RNA LFC")
+
+
+```
+
+### Correlation between atac no- shared peak median LFC and RNA median LFC
+```{r correlations 2kb}
+
+  anti_joined_H3k27ac %>%
+  dplyr::filter(dist_to_NG>-2000 & dist_to_NG<2000) %>%
+ggplot(., aes(x=AC_3h_lfc,y=RNA_3h_lfc))+
+   geom_point()+
+   sm_statCorr(corr_method = 'pearson')+
+   ggtitle("Correlation of H3K27ac peaks not shared by ATAC peaks and RNA-NG  at 3 hours")+
+  xlab("H3K27ac peak LFC")+
+   ylab("RNA LFC")
+# 
+anti_joined_H3k27ac %>%
+  dplyr::filter(dist_to_NG>-2000 & dist_to_NG<2000) %>%
+ggplot(., aes(x=AC_24h_lfc,y=RNA_24h_lfc))+
+   geom_point()+
+   sm_statCorr(corr_method = 'pearson')+
+   ggtitle("Correlation of H3K27ac peaks not shared by ATAC peaks and RNA-NG  at 24 hours")+
+  xlab("H3K27ac peak LFC")+
+   ylab("RNA LFC")
+
+
+anti_joined_lfc %>% 
+  dplyr::filter(dist_to_NG>-2000 & dist_to_NG<2000) %>% 
+ggplot(., aes(x=med_3h_lfc,y=RNA_3h_lfc))+
+   geom_point()+
+   sm_statCorr(corr_method = 'pearson')+
+   ggtitle("Correlation of ATAC peaks not shared with H3K27ac and RNA-NG  at 3 hours")+
+  xlab("ATAC peak LFC")+
+   ylab("RNA LFC")
+
+anti_joined_lfc %>% 
+  dplyr::filter(dist_to_NG>-2000 & dist_to_NG<2000) %>% 
+ggplot(., aes(x=med_24h_lfc,y=RNA_24h_lfc))+
+   geom_point()+
+   sm_statCorr(corr_method = 'pearson')+
+   ggtitle("Correlation of ATAC peaks not shared with H3K27ac and RNA-NG at 24 hours")+
+  xlab("ATAC peak LFC")+
+   ylab("RNA LFC")
+
+fullpeaks_H3k27ac_lfc <- Collapsed_H3k27ac_NG%>% 
+  left_join(.,(RNA_median_24_lfc %>% mutate(ENTREZID=as.numeric(ENTREZID))),by=c("ENTREZID"="ENTREZID","SYMBOL"="SYMBOL")) %>% 
+  left_join(.,(RNA_median_3_lfc %>% mutate(ENTREZID=as.numeric(ENTREZID))),by=c("ENTREZID"="ENTREZID","SYMBOL"="SYMBOL")) %>% 
+  left_join(.,AC_median_24_lfc, by=c("Geneid"="Peakid")) %>% 
+  left_join(.,AC_median_3_lfc, by=c("Geneid"="Peakid")) %>% 
+  dplyr::select(Geneid,ENTREZID:RNA_3h_lfc,AC_24h_lfc,AC_3h_lfc)
+
+```
+
+### Correlations of ATAC peaks within 2kb and RNA 
+
+```{r correlation 2kb filt only data}
+
+fullpeaks_joined_lfc <- median_24_lfc %>% 
+  left_join(., (Collapsed_new_peaks %>% dplyr::select(Peakid, NCBI_gene:dist_to_NG)), by = c("peak"="Peakid")) %>% 
+  left_join(.,median_3_lfc,by = c("peak"="peak")) %>% 
+  left_join(., RNA_median_3_lfc ,
+                by=c("SYMBOL"="SYMBOL", "NCBI_gene"="ENTREZID")) %>%
+  left_join(., RNA_median_24_lfc,
+                 by=c("SYMBOL"="SYMBOL", "NCBI_gene"="ENTREZID")) 
+
+fullpeaks_joined_lfc %>% 
+  dplyr::filter(dist_to_NG>-2000 & dist_to_NG<2000) %>% 
+ggplot(., aes(x=med_3h_lfc,y=RNA_3h_lfc))+
+   geom_point(col="cornflowerblue")+
+   sm_statCorr(corr_method = 'pearson')+
+   ggtitle("Correlation of 2kb ATAC peaks and RNA-NGat 3 hours")+
+  xlab("ATAC peak LFC")+
+   ylab("RNA LFC")
+
+fullpeaks_joined_lfc %>% 
+  dplyr::filter(dist_to_NG>-2000 & dist_to_NG<2000) %>% 
+ggplot(., aes(x=med_24h_lfc,y=RNA_24h_lfc))+
+   geom_point(col="cornflowerblue")+
+   sm_statCorr(corr_method = 'pearson')+
+   ggtitle("Correlation of 2kb ATAC peaks and RNA-NGat 24 hours")+
+  xlab("ATAC peak LFC")+
+   ylab("RNA LFC")
+
+fullpeaks_H3k27ac_lfc <- Collapsed_H3k27ac_NG%>% 
+  left_join(.,(RNA_median_24_lfc %>% mutate(ENTREZID=as.numeric(ENTREZID))),by=c("ENTREZID"="ENTREZID","SYMBOL"="SYMBOL")) %>% 
+  left_join(.,(RNA_median_3_lfc %>% mutate(ENTREZID=as.numeric(ENTREZID))),by=c("ENTREZID"="ENTREZID","SYMBOL"="SYMBOL")) %>% 
+  left_join(.,AC_median_24_lfc, by=c("Geneid"="Peakid")) %>% 
+  left_join(.,AC_median_3_lfc, by=c("Geneid"="Peakid")) %>% 
+  dplyr::select(Geneid,ENTREZID:RNA_3h_lfc,AC_24h_lfc,AC_3h_lfc)
+fullpeaks_H3k27ac_lfc %>% 
+  dplyr::filter(dist_to_NG>-2000 & dist_to_NG<2000) %>% 
+ggplot(., aes(x=AC_3h_lfc,y=RNA_3h_lfc))+
+   geom_point(col="cornflowerblue")+
+   sm_statCorr(corr_method = 'pearson')+
+   ggtitle("Correlation of 2kb H3K27ac peaks and RNA-NG at 3 hours")+
+  xlab("H3K27ac peak LFC")+
+   ylab("RNA LFC")
+
+fullpeaks_H3k27ac_lfc %>% 
+  dplyr::filter(dist_to_NG>-2000 & dist_to_NG<2000) %>% 
+ggplot(., aes(x=AC_24h_lfc,y=RNA_24h_lfc))+
+   geom_point(col="cornflowerblue")+
+   sm_statCorr(corr_method = 'pearson')+
+   ggtitle("Correlation of 2kb H3K27ac peaks and RNA-NG at 24 hours")+
+  xlab("H3K27ac peak LFC")+
+   ylab("RNA LFC")
+```
+
+
+```{r Correlations 20kb}
+joined_LFC_df %>% 
+  dplyr::filter(dist_to_NG>-20000 & dist_to_NG<20000) %>% 
+ggplot(., aes(x=AC_3h_lfc,y=RNA_3h_lfc))+
+   geom_point()+
+   sm_statCorr(corr_method = 'pearson')+
+   ggtitle("Correlation of H3K27ac shared peaks (20kb)  and RNA-NG  at 3 hours")+
+  xlab("H3K27ac peak LFC")+
+   ylab("RNA LFC")
+
+joined_LFC_df %>% 
+  dplyr::filter(dist_to_NG>-20000 & dist_to_NG<20000) %>% 
+ggplot(., aes(x=AC_24h_lfc,y=RNA_24h_lfc))+
+   geom_point()+
+   sm_statCorr(corr_method = 'pearson')+
+   ggtitle("Correlation of H3K27ac shared peaks(20kb) and RNA-NG  at 24 hours")+
+  xlab("H3K27ac peak LFC")+
+   ylab("RNA LFC")
+
+
+joined_LFC_df %>% 
+  dplyr::filter(dist_to_NG>-20000 & dist_to_NG<20000) %>% 
+ggplot(., aes(x=med_3h_lfc,y=RNA_3h_lfc))+
+   geom_point(col="cornflowerblue")+
+   sm_statCorr(corr_method = 'pearson')+
+   ggtitle("Correlation of shared ATAC peaks (20kb) and RNA-NG  at 3 hours")+
+  xlab("ATAC peak LFC")+
+   ylab("RNA LFC")
+
+joined_LFC_df %>% 
+  dplyr::filter(dist_to_NG>-20000 & dist_to_NG<20000) %>% 
+ggplot(., aes(x=med_24h_lfc,y=RNA_24h_lfc))+
+   geom_point(col="cornflowerblue")+
+   sm_statCorr(corr_method = 'pearson')+
+   ggtitle("Correlation of shared ATAC peaks(20kb) and RNA-NG  at 24 hours")+
+  xlab("ATAC peak LFC")+
+   ylab("RNA LFC")
+
+```
+
+
+```{r H3K27 all peaks}
+fullpeaks_H3k27ac_lfc %>% 
+  dplyr::filter(dist_to_NG>-2000 & dist_to_NG<2000) %>% 
+ggplot(., aes(x=AC_3h_lfc,y=RNA_3h_lfc))+
+   geom_point(col="cornflowerblue")+
+   sm_statCorr(corr_method = 'pearson')+
+   ggtitle("Correlation of all H3k27ac peaks(2kb) and RNA-NG  at 3 hours")+
+  xlab("H3K27ac peak LFC")+
+   ylab("RNA LFC")
+
+fullpeaks_H3k27ac_lfc %>% 
+  dplyr::filter(dist_to_NG>-2000 & dist_to_NG<2000) %>% 
+ggplot(., aes(x=AC_24h_lfc,y=RNA_24h_lfc))+
+   geom_point(col="cornflowerblue")+
+   sm_statCorr(corr_method = 'pearson')+
+   ggtitle("Correlation of all H3k27ac peaks(2kb) and RNA-NG  at 24 hours")+
+  xlab("H3K27ac peak LFC")+
+   ylab("RNA LFC")
 ```
 
