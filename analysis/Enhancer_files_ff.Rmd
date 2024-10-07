@@ -9,7 +9,8 @@ output: html_document
 knitr::opts_chunk$set(
 	echo = TRUE,
 	message = FALSE,
-	warning = FALSE
+	warning = FALSE,
+		dev = c("pdf","png")
 	
 )
 ```
@@ -167,6 +168,25 @@ NR_list_all <- TSS_NG_data %>%
     mutate(MRC="NR")%>% 
   distinct(Peakid,.keep_all = TRUE)
 
+
+ESR_C <- readRDS("data/Final_four_data/ESR_C.RDS")
+ESR_D <- readRDS("data/Final_four_data/ESR_D.RDS")
+
+ESRC_list_all <- TSS_NG_data %>%
+    dplyr::filter(Peakid %in% NR$Peakid) %>% 
+    mutate(MRC="ESR_opcl")%>% 
+  distinct(Peakid,.keep_all = TRUE)
+
+ESRD_list_all <- TSS_NG_data %>%
+    dplyr::filter(Peakid %in%ESR_D$Peakid) %>% 
+    mutate(MRC="ESR_clop")%>% 
+  distinct(Peakid,.keep_all = TRUE)
+
+# ESR_opcl <- 
+  
+  
+# ESR_clop <-   
+  
 peak_list_all_mrc <- col_ng_peak %>% 
   mutate(mrc=if_else(Peakid %in% EAR_open$Peakid, "EAR_open",
                       if_else(Peakid %in% EAR_close$Peakid, "EAR_close",
@@ -175,10 +195,20 @@ peak_list_all_mrc <- col_ng_peak %>%
                                               if_else(Peakid %in% ESR_OC$Peakid,"ESR_OC",
                                                       if_else(Peakid %in% LR_open$Peakid,"LR_open",
                                                                       if_else(Peakid %in% LR_close$Peakid,"LR_close",
-                                                                              if_else(Peakid %in% NR$Peakid,"NR","not_mrc"))))))))) 
+                                                                              if_else(Peakid %in% NR$Peakid,"NR","not_mrc"))))))))) %>% 
+  mutate(mrc9=if_else(Peakid %in% EAR_open$Peakid, "EAR_open",
+                      if_else(Peakid %in% EAR_close$Peakid, "EAR_close",
+                              if_else(Peakid %in% ESR_open$Peakid,"ESR_open",
+                                      if_else(Peakid %in% ESR_close$Peakid,"ESR_close",
+                                              if_else(Peakid %in% ESR_C$Peakid,"ESR_opcl",
+                                                      if_else(Peakid %in% LR_open$Peakid,"LR_open",
+                                                                      if_else(Peakid %in% LR_close$Peakid,"LR_close",
+                                                                              if_else(Peakid %in% NR$Peakid,"NR",if_else(Peakid %in% ESR_D$Peakid,"ESR_clop","not_mrc"))))))))) )
   
-
-
+ESR_C <- readRDS("data/Final_four_data/ESR_C.RDS")
+ESR_opcl_gr <- ESR_C %>% GRanges()
+ESR_D <- readRDS("data/Final_four_data/ESR_D.RDS")
+ESR_clop_gr <- ESR_D %>% GRanges()
 EAR_open_NG_2k<-  peak_list_all_mrc %>% 
       dplyr::filter(mrc =="EAR_open") %>% 
     dplyr::filter(dist_to_NG >-2000&dist_to_NG<2000) %>% 
@@ -210,6 +240,23 @@ ESR_OC_NG_2k<-  peak_list_all_mrc %>%
     dplyr::select(Peakid, NCBI_gene:SYMBOL,dist_to_NG, mrc) %>% 
     separate_longer_delim(., cols=NCBI_gene:SYMBOL, delim= ",") %>% 
     distinct(NCBI_gene,SYMBOL)
+ESR_opcl_NG_2k<-  peak_list_all_mrc %>% 
+      dplyr::filter(mrc9 =="ESR_opcl") %>% 
+    dplyr::filter(dist_to_NG >-2000&dist_to_NG<2000) %>% 
+    dplyr::select(Peakid, NCBI_gene:SYMBOL,dist_to_NG, mrc9) %>% 
+  dplyr::rename("mrc"=mrc9) %>% 
+    separate_longer_delim(., cols=NCBI_gene:SYMBOL, delim= ",") %>% 
+    distinct(NCBI_gene,SYMBOL)
+
+
+ESR_clop_NG_2k<-  peak_list_all_mrc %>% 
+      dplyr::filter(mrc9 =="ESR_clop") %>% 
+    dplyr::filter(dist_to_NG >-2000&dist_to_NG<2000) %>% 
+    dplyr::select(Peakid, NCBI_gene:SYMBOL,dist_to_NG, mrc9) %>% 
+  dplyr::rename("mrc"=mrc9) %>% 
+    separate_longer_delim(., cols=NCBI_gene:SYMBOL, delim= ",") %>% 
+    distinct(NCBI_gene,SYMBOL)
+
 
 LR_open_NG_2k<-  peak_list_all_mrc %>% 
       dplyr::filter(mrc =="LR_open") %>% 
@@ -263,6 +310,8 @@ LR_close_cREs <- join_overlap_intersect(LR_close_gr,cREs_HLV_46F)
 ESR_open_cREs <- join_overlap_intersect(ESR_open_gr,cREs_HLV_46F)
 ESR_close_cREs <- join_overlap_intersect(ESR_close_gr,cREs_HLV_46F)
 ESR_OC_cREs <- join_overlap_intersect(ESR_OC_gr,cREs_HLV_46F)
+ESR_opcl_cREs <- join_overlap_intersect(ESR_opcl_gr, cREs_HLV_46F)
+ESR_clop_cREs <- join_overlap_intersect(ESR_clop_gr, cREs_HLV_46F)
 EAR_open_cREs <- join_overlap_intersect(EAR_open_gr,cREs_HLV_46F)
 EAR_close_cREs <- join_overlap_intersect(EAR_close_gr,cREs_HLV_46F)
 ### These unique peaks are cREs that contain all types of cREs such as
@@ -275,6 +324,8 @@ EAR_close_cREs <- join_overlap_intersect(EAR_close_gr,cREs_HLV_46F)
  uni_ESR_open <- ESR_open_cREs%>% as.data.frame() %>% distinct(Peakid)
  uni_ESR_close <- ESR_close_cREs%>% as.data.frame() %>% distinct(Peakid)
  uni_ESR_OC <- ESR_OC_cREs%>% as.data.frame() %>% distinct(Peakid)
+ uni_ESR_opcl <- ESR_opcl_cREs%>% as.data.frame() %>% distinct(Peakid)
+ uni_ESR_clop <- ESR_clop_cREs%>% as.data.frame() %>% distinct(Peakid)
  uni_LR_open <- LR_open_cREs%>% as.data.frame() %>% distinct(Peakid)
  uni_LR_close <- LR_close_cREs%>% as.data.frame() %>% distinct(Peakid)
  uni_NR <- NR_cREs%>% as.data.frame() %>% distinct(Peakid)
@@ -287,9 +338,9 @@ Whole_peaks <- join_overlap_intersect(allpeak_gr, cREs_HLV_46F)
 
 Whole_peaks %>% 
   as.data.frame() %>% 
-  group_by(blockCount, mrc) %>%  tally %>% 
-  pivot_wider(., id_cols = mrc, names_from = blockCount, values_from = n) %>% 
-  dplyr::select(mrc, PLS:'pELS,CTCF-bound') %>% 
+  group_by(blockCount, mrc9) %>%  tally %>% 
+  pivot_wider(., id_cols = mrc9, names_from = blockCount, values_from = n) %>% 
+  dplyr::select(mrc9, PLS:'pELS,CTCF-bound') %>% 
   kable(., caption="Breakdown of peaks overlapping cREs") %>% 
   kable_paper("striped", full_width = TRUE) %>%
   kable_styling(full_width = FALSE, font_size = 14)
@@ -359,7 +410,7 @@ EAR_open_cRE_list %>%
   ggplot(., aes(y=type, x=lfc,group=type))+
   geom_boxplot() +
   scale_fill_discrete()+
-  ggtitle(paste(" 24 hour EAR_open\n n = ",length(unique(EAR_open_cRE_list$Peakid))," out of ",peakAnnoList_ff_8motif$EAR_open@peakNum, " total peaks (",sprintf("%.1f",(length(unique(EAR_open_cRE_list$Peakid))/peakAnnoList_ff_8motif$EAR_open@peakNum*100)),"%)"))#+
+  ggtitle(paste(" 24 hour EAR_open\n n = ",length(unique(EAR_open_cRE_list$Peakid))," out of ",peakAnnoList_ff_8motif$EAR_open@peakNum, " total peaks (",sprintf("%.1f",(length(unique(EAR_open_cRE_list$Peakid))/peakAnnoList_ff_8motif$EAR_open@peakNum*100)),"%)"))+
   # facet_wrap(~direction)+
   theme_bw()#+
   # xlim(-4,4)
@@ -419,9 +470,9 @@ EAR_close_cRE_list %>%
   ggplot(., aes(y=type, x=lfc,group=type))+
   geom_boxplot() +
   scale_fill_discrete()+
-  ggtitle(paste0(" 24 hour EAR_close\n n = ",length(unique(EAR_close_cRE_list$Peakid))," out of ", peakAnnoList_ff_8motif$EAR_close@peakNum, " total peaks (",sprintf("%.1f",length(unique(EAR_close_cRE_list$Peakid))/ peakAnnoList_ff_8motif$EAR_close@peakNum*100),"%)"))#+
+  ggtitle(paste0(" 24 hour EAR_close\n n = ",length(unique(EAR_close_cRE_list$Peakid))," out of ", peakAnnoList_ff_8motif$EAR_close@peakNum, " total peaks (",sprintf("%.1f",length(unique(EAR_close_cRE_list$Peakid))/ peakAnnoList_ff_8motif$EAR_close@peakNum*100),"%)"))+
   # facet_wrap(~direction)+
-  # theme_bw()+
+  theme_bw()
   # xlim(-4,4)
 
 EAR_close_complete_list <- EAR_close_cRE_list %>% 
@@ -479,9 +530,9 @@ ESR_close_cRE_list %>%
   ggplot(., aes(y=type, x=lfc,group=type))+
   geom_boxplot() +
   scale_fill_discrete()+
-  ggtitle(paste0(" 24 hour ESR_close\n n = ",length(unique(ESR_close_cRE_list$Peakid))," out of ",  peakAnnoList_ff_8motif$ESR_close@peakNum, " total peaks (",sprintf("%.1f",length(unique(ESR_close_cRE_list$Peakid))/ peakAnnoList_ff_8motif$ESR_close@peakNum*100),"%)"))#+
+  ggtitle(paste0(" 24 hour ESR_close\n n = ",length(unique(ESR_close_cRE_list$Peakid))," out of ",  peakAnnoList_ff_8motif$ESR_close@peakNum, " total peaks (",sprintf("%.1f",length(unique(ESR_close_cRE_list$Peakid))/ peakAnnoList_ff_8motif$ESR_close@peakNum*100),"%)"))+
   # facet_wrap(~direction)+
-  # theme_bw()+
+  theme_bw()
   # xlim(-4,4)
 
 ESR_close_complete_list <- ESR_close_cRE_list %>% 
@@ -540,9 +591,9 @@ ESR_open_cRE_list %>%
   ggplot(., aes(y=type, x=lfc,group=type))+
   geom_boxplot() +
   scale_fill_discrete()+
-  ggtitle(paste0(" 24 hour ESR_open\n n = ",length(unique(ESR_open_cRE_list$Peakid))," out of ",  peakAnnoList_ff_8motif$ESR_open@peakNum, " total peaks (",sprintf("%.1f",length(unique(ESR_open_cRE_list$Peakid))/ peakAnnoList_ff_8motif$ESR_open@peakNum*100),"%)"))#+
+  ggtitle(paste0(" 24 hour ESR_open\n n = ",length(unique(ESR_open_cRE_list$Peakid))," out of ",  peakAnnoList_ff_8motif$ESR_open@peakNum, " total peaks (",sprintf("%.1f",length(unique(ESR_open_cRE_list$Peakid))/ peakAnnoList_ff_8motif$ESR_open@peakNum*100),"%)"))+
   # facet_wrap(~direction)+
-  # theme_bw()+
+  theme_bw()
   # xlim(-4,4)
 
 ESR_open_complete_list <- ESR_open_cRE_list %>% 
@@ -556,6 +607,7 @@ ESR_open_complete_list <- ESR_open_cRE_list %>%
 all_ESR_OC_list <- 
   peak_list_all_mrc %>% 
   dplyr::filter(mrc=="ESR_OC") %>% 
+  # mutate(mrc=mrc9) %>% 
   mutate(type="all_ESR_OC") %>% 
    dplyr::select(Peakid,mrc,type) %>% 
   left_join(.,(median_24_lfc %>% ungroup%>% 
@@ -611,6 +663,135 @@ ESR_OC_complete_list <- ESR_OC_cRE_list %>%
 
 ```
 
+
+#### ESR open/close
+```{r  ESR cRE opcl 3 and 24 hours}
+all_ESR_opcl_list <- 
+  peak_list_all_mrc %>% 
+  dplyr::filter(mrc9=="ESR_opcl") %>% 
+  mutate(mrc=mrc9) %>%
+  mutate(type="all_ESR_opcl") %>% 
+   dplyr::select(Peakid,mrc,type) %>% 
+  left_join(.,(median_24_lfc %>% ungroup%>% 
+                 dplyr::select(peak,med_24h_lfc)),by = c("Peakid"="peak")) %>% 
+  left_join(.,(median_3_lfc %>%ungroup %>% 
+                 dplyr::select(peak,med_3h_lfc)),by = c("Peakid"="peak")) %>% 
+    pivot_longer(cols = c("med_24h_lfc","med_3h_lfc"), names_to = "time", values_to = "lfc") 
+  
+notCRE_ESR_opcl_list <- peak_list_all_mrc %>% 
+  dplyr::filter(mrc9=="ESR_opcl") %>% 
+  mutate(mrc=mrc9) %>%
+  dplyr::filter(!Peakid %in% uni_ESR_opcl$Peakid) %>% 
+  mutate(type="not_cRE_peaks") %>% 
+  dplyr::select(Peakid,mrc,type) %>% 
+  left_join(.,(median_24_lfc %>% ungroup%>% 
+                 dplyr::select(peak,med_24h_lfc)),by = c("Peakid"="peak")) %>% 
+  left_join(.,(median_3_lfc %>%ungroup %>% 
+                 dplyr::select(peak,med_3h_lfc)),by = c("Peakid"="peak")) %>% 
+  pivot_longer(cols = c("med_24h_lfc","med_3h_lfc"), names_to = "time", values_to = "lfc") 
+
+ESR_opcl_cRE_list <- ESR_opcl_cREs %>%
+  as.data.frame() %>%
+  dplyr::filter(blockCount=="CTCF-only,CTCF-bound"|
+                  blockCount =="PLS"|
+                  blockCount =="PLS,CTCF-bound"|
+                  blockCount =="dELS"|
+                  blockCount =="dELS,CTCF-bound"|
+                  blockCount =="pELS"|
+                  blockCount =="pELS,CTCF-bound") %>% 
+  mutate(type=if_else(blockCount=="CTCF-only,CTCF-bound","CTCF-only", if_else(grepl("PLS",blockCount),"Promoter-like",                       if_else(grepl("pELS",blockCount),"Proximal enhancer-like", "Distal enhancer-like"),blockCount))) %>%
+  dplyr::select(Peakid,type) %>% 
+    mutate(mrc="ESR_opcl") %>% 
+  left_join(.,(median_24_lfc %>% ungroup%>% 
+                 dplyr::select(peak,med_24h_lfc)),by = c("Peakid"="peak")) %>% 
+  left_join(.,(median_3_lfc %>%ungroup %>% 
+                 dplyr::select(peak,med_3h_lfc)),by = c("Peakid"="peak")) %>% 
+  pivot_longer(cols = c("med_24h_lfc","med_3h_lfc"), names_to = "time", values_to = "lfc") 
+
+
+ESR_opcl_cRE_list %>% 
+  rbind(notCRE_ESR_opcl_list) %>% 
+  rbind(all_ESR_opcl_list) %>% 
+  ggplot(., aes(y=type, x=lfc,group=type))+
+  geom_boxplot() +
+  scale_fill_discrete()+
+  ggtitle(paste0(" 24 hour ESR_opcl\n n = ",length(unique(ESR_opcl_cRE_list$Peakid))," out of ",  length(ESR_C$Peakid), " total peaks (",sprintf("%.1f",length(unique(ESR_opcl_cRE_list$Peakid))/  length(ESR_C$Peakid)*100),"%)"))+
+  # facet_wrap(~direction)+
+  theme_bw()
+  # xlim(-4,4)
+
+ESR_opcl_complete_list <- ESR_opcl_cRE_list %>% 
+  rbind(notCRE_ESR_opcl_list) %>% 
+  rbind(all_ESR_opcl_list)
+
+
+```
+
+
+
+#### ESR close/open
+```{r  ESR cRE clop 3 and 24 hours}
+all_ESR_clop_list <- 
+  peak_list_all_mrc %>% 
+  dplyr::filter(mrc9=="ESR_clop") %>% 
+  mutate(mrc=mrc9) %>%
+  mutate(type="all_ESR_clop") %>% 
+   dplyr::select(Peakid,mrc,type) %>% 
+  left_join(.,(median_24_lfc %>% ungroup%>% 
+                 dplyr::select(peak,med_24h_lfc)),by = c("Peakid"="peak")) %>% 
+  left_join(.,(median_3_lfc %>%ungroup %>% 
+                 dplyr::select(peak,med_3h_lfc)),by = c("Peakid"="peak")) %>% 
+    pivot_longer(cols = c("med_24h_lfc","med_3h_lfc"), names_to = "time", values_to = "lfc") 
+  
+notCRE_ESR_clop_list <- peak_list_all_mrc %>% 
+  dplyr::filter(mrc9=="ESR_clop") %>% 
+  mutate(mrc=mrc9) %>%
+  dplyr::filter(!Peakid %in% uni_ESR_clop$Peakid) %>% 
+  mutate(type="not_cRE_peaks") %>% 
+  dplyr::select(Peakid,mrc,type) %>% 
+  left_join(.,(median_24_lfc %>% ungroup%>% 
+                 dplyr::select(peak,med_24h_lfc)),by = c("Peakid"="peak")) %>% 
+  left_join(.,(median_3_lfc %>%ungroup %>% 
+                 dplyr::select(peak,med_3h_lfc)),by = c("Peakid"="peak")) %>% 
+  pivot_longer(cols = c("med_24h_lfc","med_3h_lfc"), names_to = "time", values_to = "lfc") 
+
+ESR_clop_cRE_list <- ESR_clop_cREs %>%
+  as.data.frame() %>%
+  dplyr::filter(blockCount=="CTCF-only,CTCF-bound"|
+                  blockCount =="PLS"|
+                  blockCount =="PLS,CTCF-bound"|
+                  blockCount =="dELS"|
+                  blockCount =="dELS,CTCF-bound"|
+                  blockCount =="pELS"|
+                  blockCount =="pELS,CTCF-bound") %>% 
+  mutate(type=if_else(blockCount=="CTCF-only,CTCF-bound","CTCF-only", if_else(grepl("PLS",blockCount),"Promoter-like",                       if_else(grepl("pELS",blockCount),"Proximal enhancer-like", "Distal enhancer-like"),blockCount))) %>%
+  dplyr::select(Peakid,type) %>% 
+    mutate(mrc="ESR_clop") %>% 
+  left_join(.,(median_24_lfc %>% ungroup%>% 
+                 dplyr::select(peak,med_24h_lfc)),by = c("Peakid"="peak")) %>% 
+  left_join(.,(median_3_lfc %>%ungroup %>% 
+                 dplyr::select(peak,med_3h_lfc)),by = c("Peakid"="peak")) %>% 
+  pivot_longer(cols = c("med_24h_lfc","med_3h_lfc"), names_to = "time", values_to = "lfc") 
+
+
+ESR_clop_cRE_list %>% 
+  rbind(notCRE_ESR_clop_list) %>% 
+  rbind(all_ESR_clop_list) %>% 
+  ggplot(., aes(y=type, x=lfc,group=type))+
+  geom_boxplot() +
+  scale_fill_discrete()+
+  ggtitle(paste0(" 24 hour ESR_clop\n n = ",length(unique(ESR_clop_cRE_list$Peakid))," out of ",  length(ESR_C$Peakid), " total peaks (",sprintf("%.1f",length(unique(ESR_clop_cRE_list$Peakid))/  length(ESR_C$Peakid)*100),"%)"))+
+  # facet_wrap(~direction)+
+  theme_bw()
+  # xlim(-4,4)
+
+ESR_clop_complete_list <- ESR_clop_cRE_list %>% 
+  rbind(notCRE_ESR_clop_list) %>% 
+  rbind(all_ESR_clop_list)
+
+```
+
+
 #### LR open
 ```{r  LR cRE open 3 and 24 hours}
 all_LR_open_list <- 
@@ -660,15 +841,15 @@ LR_open_cRE_list %>%
   ggplot(., aes(y=type, x=lfc,group=type))+
   geom_boxplot() +
   scale_fill_discrete()+
- ggtitle(paste0(" 24 hour LR_open\n n = ",length(unique(LR_open_cRE_list$Peakid))," out of ",  peakAnnoList_ff_8motif$LR_open@peakNum, " total peaks (",sprintf("%.1f",length(unique(LR_open_cRE_list$Peakid))/ peakAnnoList_ff_8motif$LR_open@peakNum*100),"%)"))#+
+ ggtitle(paste0(" 24 hour LR_open\n n = ",length(unique(LR_open_cRE_list$Peakid))," out of ",  peakAnnoList_ff_8motif$LR_open@peakNum, " total peaks (",sprintf("%.1f",length(unique(LR_open_cRE_list$Peakid))/ peakAnnoList_ff_8motif$LR_open@peakNum*100),"%)"))+
   # facet_wrap(~direction)+
-  # theme_bw()+
+  theme_bw()
   # xlim(-4,4)
 
 LR_open_complete_list <- LR_open_cRE_list %>% 
   rbind(notCRE_LR_open_list) %>% 
   rbind(all_LR_open_list)
-LR_open
+# LR_open
 ```
 
 #### LR close
@@ -721,9 +902,9 @@ LR_close_cRE_list %>%
   ggplot(., aes(y=type, x=lfc,group=type))+
   geom_boxplot() +
   scale_fill_discrete()+
-  ggtitle(paste0(" 24 hour LR_close\n n = ",length(unique(LR_close_cRE_list$Peakid))," out of ",  peakAnnoList_ff_8motif$LR_close@peakNum, " total peaks (",sprintf("%.1f",length(unique(LR_close_cRE_list$Peakid))/ peakAnnoList_ff_8motif$LR_close@peakNum*100),"%)"))#+
+  ggtitle(paste0(" 24 hour LR_close\n n = ",length(unique(LR_close_cRE_list$Peakid))," out of ",  peakAnnoList_ff_8motif$LR_close@peakNum, " total peaks (",sprintf("%.1f",length(unique(LR_close_cRE_list$Peakid))/ peakAnnoList_ff_8motif$LR_close@peakNum*100),"%)"))+
   # facet_wrap(~direction)+
-  # theme_bw()+
+  theme_bw()
   # xlim(-4,4)
 
 LR_close_complete_list <- LR_close_cRE_list %>% 
@@ -782,9 +963,9 @@ NR_cRE_list %>%
   ggplot(., aes(y=type, x=lfc,group=type))+
   geom_boxplot() +
   scale_fill_discrete()+
-  ggtitle(paste0(" 24 hour NR\n n = ",length(unique(NR_cRE_list$Peakid))," out of ",  peakAnnoList_ff_8motif$NR@peakNum, " total peaks (",sprintf("%.1f",length(unique(NR_cRE_list$Peakid))/ peakAnnoList_ff_8motif$NR@peakNum*100),"%)"))#+
+  ggtitle(paste0(" 24 hour NR\n n = ",length(unique(NR_cRE_list$Peakid))," out of ",  peakAnnoList_ff_8motif$NR@peakNum, " total peaks (",sprintf("%.1f",length(unique(NR_cRE_list$Peakid))/ peakAnnoList_ff_8motif$NR@peakNum*100),"%)"))+
   # facet_wrap(~direction)+
-  # theme_bw()+
+  theme_bw()
   # xlim(-4,4)
 
 
@@ -842,7 +1023,7 @@ NR_NG <- NR_list_all %>%
 scale_fill_mrc <-  function(...){
   ggplot2:::manual_scale(
     'fill', 
-    values = setNames(c("#F8766D","#f6483c","#7CAE00","#587b00","#6a9500",  "#00BFC4","#008d91", "#C77CFF"), c("EAR_open","EAR_close","ESR_open","ESR_close","ESR_OC","LR_open","LR_close","NR")), 
+    values = setNames(c("#F8766D","#f6483c","#7CAE00","#587b00","#6a9500","cornflowerblue","grey60",  "#00BFC4","#008d91", "#C77CFF"), c("EAR_open","EAR_close","ESR_open","ESR_close", "ESR_OC","ESR_opcl","ESR_clop","LR_open","LR_close","NR")), 
     ...
   )
 }
@@ -878,6 +1059,270 @@ ggplot_combo_df %>%
 
 ```
 
+
+```{r comboplots2, fig.width=12, fig.height=8}
+ggplot_combo_df_9 <-
+  rbind(EAR_open_complete_list,
+                         EAR_close_complete_list,
+                         ESR_open_complete_list,
+                          ESR_close_complete_list,
+                          ESR_opcl_complete_list,
+                          ESR_clop_complete_list,
+                          LR_open_complete_list,
+                          LR_close_complete_list,
+                          NR_complete_list) 
+ggplot_combo_df_9 %>% 
+  mutate(time=factor(time, levels= c("med_3h_lfc", "med_24h_lfc"), labels=c("3 hours","24 hours"))) %>%
+     mutate(type= if_else(type=="Promoter-like",type,
+                          if_else(type =="Proximal enhancer-like",type,if_else(type=="Distal enhancer-like", type,if_else(type=="CTCF-only",type,if_else(type=="not_cRE_peaks", type, "all")))))) %>%
+  mutate(type=factor(type, levels = c("Promoter-like","Proximal enhancer-like","Distal enhancer-like","CTCF-only","not_cRE_peaks","all"))) %>% 
+  
+  ggplot(., aes(y=type, x=lfc, fill=mrc))+
+    geom_boxplot()+
+  # geom_pointrange(aes(xmin=min_val, xmax=max_val),position=position_dodge(width =.7),  width=.3,size=0.5,shape=15, fatten=8)+
+  geom_vline(xintercept = 0, linetype=2)+
+  facet_wrap(~time) + 
+  theme_classic()+
+  scale_fill_mrc()
+
+```
+
+
+```{r 9 group dataframe and chisquare}
+keep_cRE_names <- c("CTCF-only,CTCF-bound" ,"PLS,CTCF-bound","PLS","dELS,CTCF-bound", "pELS","pELS,CTCF-bound","dELS")
+is_cRE <- Whole_peaks %>% 
+  as.data.frame() %>% 
+  dplyr::filter(blockCount %in% keep_cRE_names) %>% 
+  distinct(Peakid,blockCount) 
+
+is_CTCF <- Whole_peaks %>% 
+  as.data.frame() %>% 
+  dplyr::filter(blockCount == "CTCF-only,CTCF-bound") %>% 
+  distinct(Peakid,blockCount) 
+
+is_dELS <- Whole_peaks %>% 
+  as.data.frame() %>% 
+  dplyr::filter(blockCount == "dELS,CTCF-bound"|blockCount == "dELS") %>% 
+  distinct(Peakid,blockCount) 
+is_pELS <- Whole_peaks %>% 
+  as.data.frame() %>% 
+  dplyr::filter(blockCount == "pELS,CTCF-bound"|blockCount == "pELS") %>% 
+  distinct(Peakid,blockCount) 
+is_PLS <- Whole_peaks %>% 
+  as.data.frame() %>% 
+  dplyr::filter(blockCount == "PLS,CTCF-bound"|blockCount == "PLS") %>% 
+  distinct(Peakid,blockCount) 
+  
+ CRE_summary <- col_ng_peak %>% 
+   mutate(cRE_status=if_else(Peakid %in% is_cRE$Peakid,"cRE_peak","not_cRE_peak")) %>% 
+   mutate(CTCF_status=if_else(Peakid %in% is_CTCF$Peakid,"CTCF_peak","not_CTCF_peak")) %>% 
+    mutate(dELS_status=if_else(Peakid %in% is_dELS$Peakid,"dELS_peak","not_dELS_peak")) %>% 
+    mutate(pELS_status=if_else(Peakid %in% is_pELS$Peakid,"pELS_peak","not_pELS_peak")) %>% 
+    mutate(PLS_status=if_else(Peakid %in% is_PLS$Peakid,"PLS_peak","not_PLS_peak")) %>% 
+   mutate(mrc=if_else(Peakid %in% EAR_open$Peakid, "EAR_open",
+                      if_else(Peakid %in% EAR_close$Peakid, "EAR_close",
+                              if_else(Peakid %in% ESR_open$Peakid,"ESR_open",
+                                      if_else(Peakid %in% ESR_close$Peakid,"ESR_close",
+                                              if_else(Peakid %in% ESR_C$Peakid,"ESR_opcl",
+                                                      if_else(Peakid %in% LR_open$Peakid,"LR_open",
+                                                                      if_else(Peakid %in% LR_close$Peakid,"LR_close",
+                                                                              if_else(Peakid %in% NR$Peakid,"NR",if_else(Peakid %in% ESR_D$Peakid,"ESR_clop","not_mrc"))))))))) )
+
+
+cRE_mat<- CRE_summary %>% 
+ dplyr::filter(mrc != "not_mrc") %>% 
+  group_by(cRE_status, mrc) %>% 
+  tally %>% 
+  mutate(mrc= factor(mrc, levels = c("EAR_open","EAR_close","ESR_open", "ESR_close", "ESR_opcl", "ESR_clop","LR_open","LR_close","NR"))) %>% 
+  pivot_wider(id_cols = mrc, names_from = cRE_status,values_from = n) %>% 
+  column_to_rownames("mrc") %>% 
+  na.omit(.) %>% 
+  as.matrix(.)
+
+CTCF_mat<- CRE_summary %>% 
+ dplyr::filter(mrc != "not_mrc") %>% 
+  group_by(CTCF_status, mrc) %>% 
+  tally %>% 
+  mutate(mrc= factor(mrc, levels = c("EAR_open","EAR_close","ESR_open", "ESR_close", "ESR_opcl", "ESR_clop","LR_open","LR_close","NR"))) %>% 
+  pivot_wider(id_cols = mrc, names_from = CTCF_status,values_from = n) %>% 
+  column_to_rownames("mrc") %>% 
+  na.omit(.) %>% 
+  as.matrix(.)
+
+dELS_mat<- CRE_summary %>% 
+ dplyr::filter(mrc != "not_mrc") %>% 
+  group_by(dELS_status, mrc) %>% 
+  tally %>% 
+  mutate(mrc= factor(mrc, levels = c("EAR_open","EAR_close","ESR_open", "ESR_close", "ESR_opcl", "ESR_clop","LR_open","LR_close","NR"))) %>% 
+  pivot_wider(id_cols = mrc, names_from = dELS_status,values_from = n) %>% 
+  column_to_rownames("mrc") %>% 
+  na.omit(.) %>% 
+  as.matrix(.)
+
+pELS_mat<- CRE_summary %>% 
+ dplyr::filter(mrc != "not_mrc") %>% 
+  group_by(pELS_status, mrc) %>% 
+  tally %>% 
+  mutate(mrc= factor(mrc, levels = c("EAR_open","EAR_close","ESR_open", "ESR_close", "ESR_opcl", "ESR_clop","LR_open","LR_close","NR"))) %>% 
+  pivot_wider(id_cols = mrc, names_from = pELS_status,values_from = n) %>% 
+  column_to_rownames("mrc") %>% 
+  na.omit(.) %>% 
+  as.matrix(.)
+
+PLS_mat<- CRE_summary %>% 
+ dplyr::filter(mrc != "not_mrc") %>% 
+  group_by(PLS_status, mrc) %>% 
+  tally %>% 
+  mutate(mrc= factor(mrc, levels = c("EAR_open","EAR_close","ESR_open", "ESR_close", "ESR_opcl", "ESR_clop","LR_open","LR_close","NR"))) %>% 
+  pivot_wider(id_cols = mrc, names_from = PLS_status,values_from = n) %>% 
+  column_to_rownames("mrc") %>% 
+  na.omit(.) %>% 
+  as.matrix(.)
+
+
+
+
+```
+
+
+### chi square results
+```{r testing the matrix}
+matrix_list_cre <- list("PLS"=PLS_mat, "dELS"=dELS_mat, "pELS"=pELS_mat,"CTCF"= CTCF_mat,"All cREs"= cRE_mat)
+results_cre <- data.frame(Matrix_Name = character(),
+                      Row_Compared = character(),
+                      Chi_Square_Statistic = numeric(),
+                      P_Value = numeric(),
+                      stringsAsFactors = FALSE)
+names_list_cre <- names(matrix_list_cre)
+# Loop through each matrix in the list
+for (matrix_name in names_list_cre) {
+  current_matrix <- matrix_list_cre[[matrix_name]]
+  n_rows <- nrow(current_matrix)
+  
+  # Print matrix details for debugging
+  cat("Processing Matrix:", matrix_name, "\n")
+  print(current_matrix)
+  
+  # Loop through each row of the current matrix (except the last row)
+  for (i in 1:(n_rows - 1)) {
+    # Print row details for debugging
+    cat("Comparing row", i, "with last row:\n")
+    print(current_matrix[i, ])
+    print(current_matrix[n_rows, ])
+    
+    # Perform chi-square test between row i and the last row
+    test_result <- tryCatch({
+      chisq.test(rbind(current_matrix[i, ], current_matrix[n_rows, ]))
+    }, error = function(e) {
+      cat("Error in chi-square test:", e$message, "\n")
+      return(NULL)
+    })
+    
+    # Only store the result if test_result is valid (i.e., not NULL)
+    if (!is.null(test_result)) {
+      results_cre <- rbind(results_cre, data.frame(Matrix_Name = matrix_name,
+                                           Row_Compared = rownames(current_matrix)[i],
+                                           Chi_Square_Statistic = test_result$statistic,
+                                           P_Value = test_result$p.value))
+    }
+  }
+}
+# Print the resulting dataframe
+print(results_cre)
+
+
+```
+### odds ratio results
+```{r odds ratio test}
+
+results_or_cre <- data.frame(Matrix_Name = character(),
+                      Row_Compared = character(),
+                      Odds_Ratio = numeric(),
+                      Lower_CI = numeric(),
+                      Upper_CI = numeric(),
+                      P_Value = numeric(),
+                      stringsAsFactors = FALSE)
+
+# Loop through each matrix in the list
+for (matrix_name in names(matrix_list_cre)) {
+  current_matrix <- matrix_list_cre[[matrix_name]]
+  n_rows <- nrow(current_matrix)
+  
+  # Loop through each row of the current matrix (except the last row)
+  for (i in 1:(n_rows - 1)) {
+    # Perform odds ratio test between row i and the last row using epitools
+    test_result <- tryCatch({
+      contingency_table <- rbind(current_matrix[i, ], current_matrix[n_rows, ])
+      
+      # Check if any row in the contingency table contains only zeros
+      if (any(rowSums(contingency_table) == 0)) {
+        stop("Contingency table contains empty rows.")
+      }
+      
+      oddsratio_result <- oddsratio(contingency_table)
+       # Ensure the oddsratio result has at least 2 rows
+      if (nrow(oddsratio_result$measure) < 2) {
+        stop("oddsratio result does not have enough data.")
+      }
+      
+     
+      
+      list(oddsratio = oddsratio_result, p.value = oddsratio_result$p.value[2,"chi.square"])
+      
+    }, error = function(e) {
+      cat("Error in odds ratio test for row", i, "in matrix", matrix_name, ":", e$message, "\n")
+      return(NULL)
+    })
+    
+    # Only store the result if test_result is valid (i.e., not NULL)
+    if (!is.null(test_result)) {
+      or_value <- test_result$oddsratio$measure[2, "estimate"]
+      lower_ci <- test_result$oddsratio$measure[2, "lower"]
+      upper_ci <- test_result$oddsratio$measure[2, "upper"]
+      p_value <- test_result$oddsratio$p.value[2,"chi.square"]
+      
+      # Check if the values are numeric and valid (not NA)
+      if (!is.na(or_value) && !is.na(lower_ci) && !is.na(upper_ci) && !is.na(p_value)) {
+        # Store the results in the dataframe
+        results_or_cre <- rbind(results_or_cre, data.frame(Matrix_Name = matrix_name,
+                                             Row_Compared = rownames(current_matrix)[i],
+                                             Odds_Ratio = or_value,
+                                             Lower_CI = lower_ci,
+                                             Upper_CI = upper_ci,
+                                             P_Value = p_value))
+      }
+    }
+  }
+}
+
+# Print the resulting dataframe
+print(results_or_cre)
+library(circlize)
+col_fun_cre = colorRamp2(c(0,6), c("white", "purple3"))
+sig_mat_cre <- results_or_cre %>% 
+  as.data.frame() %>% 
+  dplyr::select( Matrix_Name,Row_Compared,P_Value) %>% 
+  pivot_wider(., id_cols = Matrix_Name, names_from = Row_Compared, values_from = P_Value) %>% 
+  column_to_rownames("Matrix_Name") %>% 
+  as.matrix() 
+
+
+results_or_cre %>% 
+  as.data.frame() %>% 
+  dplyr::select( Matrix_Name,Row_Compared,Odds_Ratio) %>% 
+  pivot_wider(., id_cols = Matrix_Name, names_from = Row_Compared, values_from = Odds_Ratio) %>% 
+  column_to_rownames("Matrix_Name") %>% 
+  as.matrix() %>% 
+  ComplexHeatmap::Heatmap(. ,col = col_fun_cre, 
+                          cluster_rows=FALSE, 
+                          cluster_columns=FALSE, 
+                          column_names_side = "top", 
+                          column_names_rot = 45,
+                          cell_fun = function(j, i, x, y, width, height, fill) {if (!is.na(sig_mat_cre[i, j]) && sig_mat_cre[i, j] < 0.05)
+            grid.text("*", x, y, gp = gpar(fontsize = 20))})
+
+        
+```
 
 
 
