@@ -9,7 +9,8 @@ output: html_document
 knitr::opts_chunk$set(
 	echo = TRUE,
 	message = FALSE,
-	warning = FALSE
+	warning = FALSE,
+		dev = c("pdf","png")
 )
 ```
 
@@ -51,6 +52,7 @@ library(genomation)
 library(ggsignif)
 library(plyranges)
 library(ggrepel)
+library(epitools)
 
 
 ```
@@ -2428,6 +2430,7 @@ h.genome_df <- repeatmasker %>%
 
 Eight_group_TE %>%
   dplyr::filter(mrc != "not_mrc") %>%
+ 
   # dplyr::filter(per_ol>per_cov) %>% 
   rbind(subsetall_df) %>%
   mutate(mrc=factor(mrc, levels = c("EAR_open","EAR_close","ESR_open", "ESR_close","ESR_OC", "LR_open","LR_close","NR","all_peaks"))) %>%
@@ -2890,7 +2893,7 @@ eight_sines %>%
   tally %>% 
   pivot_wider(., id_cols = mrc, names_from = repFamily, values_from = n) %>% 
   rowwise() %>% 
- mutate(total= sum(c_across(1:6),na.rm =TRUE)) %>% 
+ mutate(total_sines= sum(c_across(1:6),na.rm =TRUE)) %>% 
   kable(., caption="Breakdown of SINE counts by Family") %>% 
 kable_paper("striped", full_width = TRUE) %>%
   kable_styling(full_width = FALSE, font_size = 14)%>% 
@@ -3392,6 +3395,9 @@ Collapsed_peaks %>%
   # dplyr::select(Peakid:mrc,)
   left_join(., (SNPanno %>% dplyr::select(!mrc)), by=c("Peakid"="Peakid")) %>% 
   distinct()
+
+
+
 ###CHECKING NUMBERS
    Col_TSS_data_gr %>% 
   as.data.frame %>% 
@@ -3421,3 +3427,256 @@ Collapsed_peaks %>%
 
 
 ```
+
+### odds ratio matrix
+
+```{r oddratio matrix Allte}
+## full peak set as all peaks
+subsetall_df
+### makeing of nine set
+Nine_te_df <- Eight_group_TE %>% 
+  mutate(mrc=if_else(Peakid %in% ESR_C$Peakid,"ESR_opcl",                 if_else(Peakid %in% ESR_D$Peakid,"ESR_clop",mrc)))
+TE_mat<- Nine_te_df %>% 
+ dplyr::filter(mrc != "not_mrc") %>% 
+  group_by(TEstatus, mrc) %>% 
+  tally %>% 
+  mutate(mrc= factor(mrc, levels = c("EAR_open","EAR_close","ESR_open", "ESR_close", "ESR_opcl", "ESR_clop","LR_open","LR_close","NR"))) %>% 
+  pivot_wider(id_cols = mrc, names_from = TEstatus,values_from = n) %>% 
+  column_to_rownames("mrc") %>% 
+  as.matrix(.)
+  
+
+```
+
+```{r oddratio matrix Sine}
+
+### makeing of nine set
+Nine_class_status_df <-
+Class_status_df %>% 
+  mutate(mrc=if_else(Peakid %in% ESR_C$Peakid,"ESR_opcl",                 if_else(Peakid %in% ESR_D$Peakid,"ESR_clop",mrc)))
+
+Sine_mat<- Nine_class_status_df %>% 
+ dplyr::filter(mrc != "not_mrc") %>% 
+  group_by(Sine_status, mrc) %>% 
+  tally %>% 
+  mutate(mrc= factor(mrc, levels = c("EAR_open","EAR_close","ESR_open", "ESR_close", "ESR_opcl", "ESR_clop","LR_open","LR_close","NR"))) %>% 
+  pivot_wider(id_cols = mrc, names_from = Sine_status,values_from = n) %>% 
+  column_to_rownames("mrc") %>% 
+  na.omit(.) %>% 
+  as.matrix(.)
+
+Line_mat<- Nine_class_status_df %>% 
+ dplyr::filter(mrc != "not_mrc") %>% 
+  group_by(Line_status, mrc) %>% 
+  tally %>% 
+  mutate(mrc= factor(mrc, levels = c("EAR_open","EAR_close","ESR_open", "ESR_close", "ESR_opcl", "ESR_clop","LR_open","LR_close","NR"))) %>% 
+  pivot_wider(id_cols = mrc, names_from = Line_status,values_from = n) %>% 
+  column_to_rownames("mrc") %>% 
+  na.omit(.) %>% 
+  as.matrix(.)
+
+LTR_mat<- Nine_class_status_df %>% 
+ dplyr::filter(mrc != "not_mrc") %>% 
+  group_by(LTR_status, mrc) %>% 
+  tally %>% 
+  mutate(mrc= factor(mrc, levels = c("EAR_open","EAR_close","ESR_open", "ESR_close", "ESR_opcl", "ESR_clop","LR_open","LR_close","NR"))) %>% 
+  pivot_wider(id_cols = mrc, names_from = LTR_status,values_from = n) %>% 
+  column_to_rownames("mrc") %>% 
+  na.omit(.) %>% 
+  as.matrix(.)
+
+Retro_mat<- Nine_class_status_df %>% 
+ dplyr::filter(mrc != "not_mrc") %>% 
+  group_by(Retro_status, mrc) %>% 
+  tally %>% 
+  mutate(mrc= factor(mrc, levels = c("EAR_open","EAR_close","ESR_open", "ESR_close", "ESR_opcl", "ESR_clop","LR_open","LR_close","NR"))) %>% 
+  pivot_wider(id_cols = mrc, names_from = Retro_status,values_from = n) %>% 
+  column_to_rownames("mrc") %>%
+  na.omit(.) %>% 
+  as.matrix(.)
+
+DNA_mat<- Nine_class_status_df %>% 
+ dplyr::filter(mrc != "not_mrc") %>% 
+  group_by(DNA_status, mrc) %>% 
+  tally %>% 
+  mutate(mrc= factor(mrc, levels = c("EAR_open","EAR_close","ESR_open", "ESR_close", "ESR_opcl", "ESR_clop","LR_open","LR_close","NR"))) %>% 
+  pivot_wider(id_cols = mrc, names_from = DNA_status,values_from = n) %>% 
+  column_to_rownames("mrc") %>% 
+  na.omit(.) %>% 
+  as.matrix(.)
+
+
+CUG_mat <- CUG_mrc_nine_list %>% 
+  distinct(Peakid,.keep_all = TRUE) %>%
+  dplyr::filter(mrc != "not_mrc") %>% 
+  mutate(mrc=if_else(Peakid %in% ESR_C$Peakid,"ESR_opcl",                 if_else(Peakid %in% ESR_D$Peakid,"ESR_clop",mrc))) %>% 
+    mutate(mrc= factor(mrc, levels = c("EAR_open","EAR_close","ESR_open", "ESR_close", "ESR_opcl", "ESR_clop","LR_open","LR_close","NR"))) %>% 
+  group_by(cugstatus, mrc) %>% 
+  tally  %>% 
+  pivot_wider(id_cols = mrc, names_from = cugstatus,values_from = n) %>% 
+  column_to_rownames("mrc") %>% 
+  na.omit() %>% 
+  as.matrix(.)
+
+TSS_mat <-
+Col_TSS_data_gr %>% 
+  as.data.frame() %>% 
+  dplyr::select(Peakid,dist_to_NG) %>% 
+  mutate(TSS_status= if_else(dist_to_NG <100& dist_to_NG>-100,"TSS_peak","not_TSS_peak")) %>% 
+   mutate(mrc=if_else(Peakid %in% EAR_open$Peakid, "EAR_open",
+                      if_else(Peakid %in% EAR_close$Peakid, "EAR_close",
+                              if_else(Peakid %in% ESR_open$Peakid,"ESR_open",
+                                      if_else(Peakid %in% ESR_close$Peakid,"ESR_close",
+                                              if_else(Peakid %in% ESR_C$Peakid,"ESR_opcl",
+                                                      if_else(Peakid %in% LR_open$Peakid,"LR_open",
+                                                                      if_else(Peakid %in% LR_close$Peakid,"LR_close",
+                                                                              if_else(Peakid %in% NR_df$Peakid,"NR",if_else(Peakid %in% ESR_D,"ESR_clop","not_mrc"))))))))) ) %>% 
+  group_by(TSS_status, mrc) %>% 
+  dplyr::filter(mrc !="not_mrc") %>% 
+  tally  %>% 
+  pivot_wider(id_cols = mrc, names_from = TSS_status,values_from = n) %>% 
+  column_to_rownames("mrc") %>%
+  na.omit(.) %>% 
+  as.matrix(.)
+
+
+```
+### chi square results
+```{r testing the matrix}
+matrix_list <- list("TE"=TE_mat, "Sines"=Sine_mat, "Lines"=Line_mat,"DNA"= DNA_mat,"Retro"= Retro_mat,"LTR"= LTR_mat,"CGI"=CUG_mat,"TSS"=TSS_mat)
+results <- data.frame(Matrix_Name = character(),
+                      Row_Compared = character(),
+                      Chi_Square_Statistic = numeric(),
+                      P_Value = numeric(),
+                      stringsAsFactors = FALSE)
+names_list <- names(matrix_list)
+# Loop through each matrix in the list
+for (matrix_name in names_list) {
+  current_matrix <- matrix_list[[matrix_name]]
+  n_rows <- nrow(current_matrix)
+  
+  # Print matrix details for debugging
+  cat("Processing Matrix:", matrix_name, "\n")
+  print(current_matrix)
+  
+  # Loop through each row of the current matrix (except the last row)
+  for (i in 1:(n_rows - 1)) {
+    # Print row details for debugging
+    cat("Comparing row", i, "with last row:\n")
+    print(current_matrix[i, ])
+    print(current_matrix[n_rows, ])
+    
+    # Perform chi-square test between row i and the last row
+    test_result <- tryCatch({
+      chisq.test(rbind(current_matrix[i, ], current_matrix[n_rows, ]))
+    }, error = function(e) {
+      cat("Error in chi-square test:", e$message, "\n")
+      return(NULL)
+    })
+    
+    # Only store the result if test_result is valid (i.e., not NULL)
+    if (!is.null(test_result)) {
+      results <- rbind(results, data.frame(Matrix_Name = matrix_name,
+                                           Row_Compared = rownames(current_matrix)[i],
+                                           Chi_Square_Statistic = test_result$statistic,
+                                           P_Value = test_result$p.value))
+    }
+  }
+}
+# Print the resulting dataframe
+print(results)
+
+
+```
+### odds ratio results
+```{r odds ratio test}
+
+results_or <- data.frame(Matrix_Name = character(),
+                      Row_Compared = character(),
+                      Odds_Ratio = numeric(),
+                      Lower_CI = numeric(),
+                      Upper_CI = numeric(),
+                      P_Value = numeric(),
+                      stringsAsFactors = FALSE)
+
+# Loop through each matrix in the list
+for (matrix_name in names(matrix_list)) {
+  current_matrix <- matrix_list[[matrix_name]]
+  n_rows <- nrow(current_matrix)
+  
+  # Loop through each row of the current matrix (except the last row)
+  for (i in 1:(n_rows - 1)) {
+    # Perform odds ratio test between row i and the last row using epitools
+    test_result <- tryCatch({
+      contingency_table <- rbind(current_matrix[i, ], current_matrix[n_rows, ])
+      
+      # Check if any row in the contingency table contains only zeros
+      if (any(rowSums(contingency_table) == 0)) {
+        stop("Contingency table contains empty rows.")
+      }
+      
+      oddsratio_result <- oddsratio(contingency_table)
+       # Ensure the oddsratio result has at least 2 rows
+      if (nrow(oddsratio_result$measure) < 2) {
+        stop("oddsratio result does not have enough data.")
+      }
+      
+     
+      
+      list(oddsratio = oddsratio_result, p.value = oddsratio_result$p.value[2,"chi.square"])
+      
+    }, error = function(e) {
+      cat("Error in odds ratio test for row", i, "in matrix", matrix_name, ":", e$message, "\n")
+      return(NULL)
+    })
+    
+    # Only store the result if test_result is valid (i.e., not NULL)
+    if (!is.null(test_result)) {
+      or_value <- test_result$oddsratio$measure[2, "estimate"]
+      lower_ci <- test_result$oddsratio$measure[2, "lower"]
+      upper_ci <- test_result$oddsratio$measure[2, "upper"]
+      p_value <- test_result$oddsratio$p.value[2,"chi.square"]
+      
+      # Check if the values are numeric and valid (not NA)
+      if (!is.na(or_value) && !is.na(lower_ci) && !is.na(upper_ci) && !is.na(p_value)) {
+        # Store the results in the dataframe
+        results_or <- rbind(results_or, data.frame(Matrix_Name = matrix_name,
+                                             Row_Compared = rownames(current_matrix)[i],
+                                             Odds_Ratio = or_value,
+                                             Lower_CI = lower_ci,
+                                             Upper_CI = upper_ci,
+                                             P_Value = p_value))
+      }
+    }
+  }
+}
+
+# Print the resulting dataframe
+print(results_or)
+library(circlize)
+col_fun_OR = colorRamp2(c(0,6), c("white", "purple3"))
+sig_mat_OR <- results_or %>% 
+  as.data.frame() %>% 
+  dplyr::select( Matrix_Name,Row_Compared,P_Value) %>% 
+  pivot_wider(., id_cols = Matrix_Name, names_from = Row_Compared, values_from = P_Value) %>% 
+  column_to_rownames("Matrix_Name") %>% 
+  as.matrix() 
+
+
+results_or %>% 
+  as.data.frame() %>% 
+  dplyr::select( Matrix_Name,Row_Compared,Odds_Ratio) %>% 
+  pivot_wider(., id_cols = Matrix_Name, names_from = Row_Compared, values_from = Odds_Ratio) %>% 
+  column_to_rownames("Matrix_Name") %>% 
+  as.matrix() %>% 
+  ComplexHeatmap::Heatmap(. ,col = col_fun_OR, 
+                          cluster_rows=FALSE, 
+                          cluster_columns=FALSE, 
+                          column_names_side = "top", 
+                          column_names_rot = 45,
+                          cell_fun = function(j, i, x, y, width, height, fill) {if (!is.na(sig_mat_OR[i, j]) && sig_mat_OR[i, j] < 0.05)
+            grid.text("*", x, y, gp = gpar(fontsize = 20))})
+
+        
+```
+
