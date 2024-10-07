@@ -9,7 +9,8 @@ output: html_document
 knitr::opts_chunk$set(
 	echo = TRUE,
 	message = FALSE,
-	warning = FALSE
+	warning = FALSE,
+		dev = c("pdf","png")
 )
 ```
 
@@ -414,8 +415,8 @@ pca_H3_anno_23s %>%
 efit_raodah_23s <- readRDS("data/Final_four_data/efit4_raodah_23s.RDS")
 # efit_raodah_24s <- readRDS("data/Final_four_data/efit4_raodah_24s.RDS")
 results = decideTests(efit_raodah_23s)
-summary(results)
 
+summary(results)
 
 
 
@@ -842,13 +843,140 @@ overlap_atac_ac_peaks <- readRDS( "data/Final_four_data/overlapping_ac_atac_peak
    ggtitle("Correlation of H3K27ac peaks and ATAC peaks that overlap at 24 hours")+
   xlab("H3K27ac peak LFC")+
    ylab("ATAC peak LFC")
+ 
+ # saveRDS(overlap_df_ggplot,"data/Final_four_data/LFC_ATAC_K27ac.RDS")
 
 ```
 
+```{r corr heatmaps}
+
+efit4 <- readRDS("data/Final_four_data/efit4_filt_bl.RDS")
+
+ATAC.DNR_3.top_ff= topTable(efit4, coef=1, adjust.method="BH", number=Inf, sort.by="p") %>% rownames_to_column("peak")
+ATAC.DOX_3.top_ff= topTable(efit4, coef=2, adjust.method="BH", number=Inf, sort.by="p")%>% rownames_to_column("peak")
+ATAC.EPI_3.top_ff= topTable(efit4, coef=3, adjust.method="BH", number=Inf, sort.by="p")%>% rownames_to_column("peak")
+ATAC.MTX_3.top_ff= topTable(efit4, coef=4, adjust.method="BH", number=Inf, sort.by="p")%>% rownames_to_column("peak")
+
+ATAC.DNR_24.top_ff= topTable(efit4, coef=6, adjust.method="BH", number=Inf, sort.by="p")%>% rownames_to_column("peak")
+ATAC.DOX_24.top_ff= topTable(efit4, coef=7, adjust.method="BH", number=Inf, sort.by="p")%>% rownames_to_column("peak")
+ATAC.EPI_24.top_ff= topTable(efit4, coef=8, adjust.method="BH", number=Inf, sort.by="p")%>% rownames_to_column("peak")
+ATAC.MTX_24.top_ff= topTable(efit4, coef=9, adjust.method="BH", number=Inf, sort.by="p")%>% rownames_to_column("peak")
+ATAC_LFC_data<- ATAC.DNR_3.top_ff %>% 
+  dplyr::select(peak,logFC) %>% 
+  dplyr::rename("ATAC_DNR_3"=logFC) %>% 
+  left_join(., (ATAC.DOX_3.top_ff %>% select(peak,logFC) %>%
+                  dplyr::rename("ATAC_DOX_3"=logFC)), by=c("peak"="peak")) %>% 
+  left_join(., (ATAC.EPI_3.top_ff %>% select(peak,logFC) %>%
+                  dplyr::rename("ATAC_EPI_3"=logFC)), by=c("peak"="peak")) %>%
+  left_join(., (ATAC.MTX_3.top_ff %>% select(peak,logFC) %>%
+                  dplyr::rename("ATAC_MTX_3"=logFC)), by=c("peak"="peak")) %>%
+  left_join(., (ATAC.DNR_24.top_ff %>% select(peak,logFC) %>%
+                  dplyr::rename("ATAC_DNR_24"=logFC)), by=c("peak"="peak")) %>%
+  left_join(., (ATAC.DOX_24.top_ff %>% select(peak,logFC) %>%
+                  dplyr::rename("ATAC_DOX_24"=logFC)), by=c("peak"="peak")) %>%
+  left_join(., (ATAC.EPI_24.top_ff %>% select(peak,logFC) %>%
+                  dplyr::rename("ATAC_EPI_24"=logFC)), by=c("peak"="peak")) %>%
+  left_join(., (ATAC.MTX_24.top_ff %>% select(peak,logFC) %>%
+                  dplyr::rename("ATAC_MTX_24"=logFC)), by=c("peak"="peak")) 
 
 
+AC_LFC_data <- AC.DNR_3.top %>% 
+  rownames_to_column("Geneid") %>% 
+  dplyr::select(Geneid,logFC) %>% 
+  dplyr::rename("AC_DNR_3"=logFC) %>% 
+  left_join(., (AC.DOX_3.top %>%
+                  rownames_to_column("Geneid") %>% 
+                  select(Geneid,logFC) %>%
+                  dplyr::rename("AC_DOX_3"=logFC)), by=c("Geneid"="Geneid")) %>% 
+  left_join(., (AC.EPI_3.top %>% 
+                  rownames_to_column("Geneid") %>% 
+                  select(Geneid,logFC) %>%
+                  dplyr::rename("AC_EPI_3"=logFC)), by=c("Geneid"="Geneid")) %>%
+  left_join(., (AC.MTX_3.top %>% 
+                  rownames_to_column("Geneid") %>% 
+                  select(Geneid,logFC) %>%
+                  dplyr::rename("AC_MTX_3"=logFC)), by=c("Geneid"="Geneid")) %>%
+  left_join(., (AC.DNR_24.top %>% 
+                  rownames_to_column("Geneid") %>% 
+                  select(Geneid,logFC) %>%
+                  dplyr::rename("AC_DNR_24"=logFC)), by=c("Geneid"="Geneid")) %>%
+  left_join(., (AC.DOX_24.top %>% 
+                  rownames_to_column("Geneid") %>% 
+                  select(Geneid,logFC) %>%
+                  dplyr::rename("AC_DOX_24"=logFC)), by=c("Geneid"="Geneid")) %>%
+  left_join(., (AC.EPI_24.top %>% 
+                  rownames_to_column("Geneid") %>% 
+                  select(Geneid,logFC) %>%
+                  dplyr::rename("AC_EPI_24"=logFC)), by=c("Geneid"="Geneid")) %>%
+  left_join(., (AC.MTX_24.top %>% 
+                  rownames_to_column("Geneid") %>% 
+                  select(Geneid,logFC) %>%
+                  dplyr::rename("AC_MTX_24"=logFC)), by=c("Geneid"="Geneid")) 
+
+LFC_corr <- overlap_df_ggplot %>% 
+  select(peakid,Geneid) %>% 
+  left_join(., ATAC_LFC_data, by = c("peakid"="peak")) %>% 
+  left_join(., AC_LFC_data, by = c ("Geneid"="Geneid")) %>% 
+  unite("name",peakid:Geneid) %>% 
+  column_to_rownames("name") %>% 
+  cor()
+  
+ComplexHeatmap::Heatmap(LFC_corr)
+ 
+# filmat_groupmat_col <- data.frame(timeset = colnames(LFC_corr))
+# 
+# counts_corr_mat <-  filmat_groupmat_col %>% 
+#  # mutate(sample = timeset) %>% 
+#   separate(timeset, into = c("indv","trt","time"), sep= "_") %>% 
+#   mutate(time = factor(time, levels = c("3", "24"), labels= c("3 hours","24 hours"))) %>% 
+#   mutate(trt = factor(trt, levels = c("DOX","EPI", "DNR", "MTX","VEH"))) %>% 
+#   mutate(class = if_else(trt == "DNR", "AC", if_else(
+#     trt == "DOX", "AC", if_else(trt == "EPI", "AC", "nAC")
+#   ))) %>%
+#   mutate(TOP2i = if_else(trt == "DNR", "yes", if_else(
+#     trt == "DOX", "yes", if_else(trt == "EPI", "yes", if_else(trt == "MTX", "yes", "no"))))) %>% 
+#   mutate(indv=factor(indv, levels = c("A","B","C"))) 
+#                          
+#  mat_colors <- list( 
+#    trt= c("#F1B72B","#8B006D","#DF707E","#3386DD","#41B333"),
+#    # indv=c("#1B9E77", "#D95F02" ,"#7570B3", "#E7298A" ,"#66A61E", "#E6AB02"),
+#   indv=c(A="#1B9E77",B= "#D95F02" ,C="#7570B3"),
+#    time=c("pink", "chocolate4"),
+#    class=c("yellow1","darkorange1"), 
+#    TOP2i =c("darkgreen","lightgreen"))                        
+#                          
+# names(mat_colors$trt)   <- unique(counts_corr_mat$trt)                      
+# names(mat_colors$indv) <- unique(counts_corr_mat$indv)
+# names(mat_colors$time) <- unique(counts_corr_mat$time)
+# names(mat_colors$class) <- unique(counts_corr_mat$class)
+# names(mat_colors$TOP2i) <- unique(counts_corr_mat$TOP2i)
+# 
+# htanno <-  ComplexHeatmap::HeatmapAnnotation(df = counts_corr_mat, col = mat_colors)
+# ComplexHeatmap::Heatmap(Frag_cor, top_annotation = htanno)
+
+```
+
+```{r corr of log2cpm}
+ATAC_Full_raw_counts<- readRDS("data/Final_four_data/ATAC_filtered_raw_counts_allsamples.RDS")
+ATAC_lcpm_specific <- ATAC_Full_raw_counts %>% as.data.frame() %>% 
+  dplyr::select(Ind2_87DA24h:Ind2_87M3h,Ind2_87V24h:Ind3_77M3h,Ind3_77V24h:Ind3_77V3h,Ind6_71DA24h:Ind6_71M3h,Ind6_71V24h,Ind6_71V3h) %>% 
+  cpm(., log=TRUE) 
 
 
+K27_ac_lcpm <- filt_H3_matrix_lcpm_23s
+ 
+counts_corr <-
+  overlap_df_ggplot %>% 
+  select(peakid,Geneid) %>% 
+  left_join(., (ATAC_lcpm_specific %>% as.data.frame() %>% 
+                  rownames_to_column("peak")), by = c("peakid"="peak")) %>% 
+  left_join(., (K27_ac_lcpm %>% as.data.frame() %>% 
+                  rownames_to_column("Geneid")), by = c ("Geneid"="Geneid"))%>% 
+  unite("name",peakid:Geneid) %>% 
+  column_to_rownames("name") %>% 
+  cor()
+ComplexHeatmap::Heatmap(counts_corr)
+```
 
 
 
