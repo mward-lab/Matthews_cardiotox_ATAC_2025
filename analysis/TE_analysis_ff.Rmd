@@ -10,7 +10,7 @@ knitr::opts_chunk$set(
 	echo = TRUE,
 	message = FALSE,
 	warning = FALSE,
-		dev = c("pdf","png")
+		dev = c("png","pdf")
 )
 ```
 
@@ -53,7 +53,7 @@ library(ggsignif)
 library(plyranges)
 library(ggrepel)
 library(epitools)
-
+library(circlize)
 
 ```
 ##### loading data
@@ -2067,8 +2067,8 @@ Here I break up the categories using median LFC
 - EAR_close = median 3 hour LFC < 0
 - ESR_A = median 3 hour > 0 and median 24 hour >0
 - ESR_B = median 3 hour < 0 and median 24 hour <0
-- ESR_C = median 3 hour > 0 and median 24 hour <0
-- ESR_D = median 3 hour < 0 and median 24 hour >0
+- ESR_opcl [C] = median 3 hour > 0 and median 24 hour <0
+- ESR_clop [D] = median 3 hour < 0 and median 24 hour >0
 - LR_open = median 24 hour LFC > 0  
 - LR_close = median 24 hour LFC < 0  
 - NR = all NR classified peaks  
@@ -2145,10 +2145,10 @@ ESR_close_gr <- ESR_close %>% GRanges()
 
 ESR_C <- ESR_df %>% 
   dplyr::filter(Peakid %in% medC$peak) 
-
+ESR_opcl <- ESR_C
 ESR_D <- ESR_df %>% 
   dplyr::filter(Peakid %in% medD$peak) 
-
+ESR_clop <- ESR_D
 
 ESR_OC <- ESR_C %>% 
   rbind(ESR_D)
@@ -2693,6 +2693,9 @@ Class_status_df %>%
   kable_paper("striped", full_width = TRUE) %>%
   kable_styling(full_width = FALSE, font_size = 14) 
 
+Class_status_df %>% 
+  dplyr::filter(Peakid =="chr2.178547784.178549172")
+
 ```
 
 ##### This code is for Chi analysis
@@ -3176,10 +3179,22 @@ CUG_mrc_nine_list %>%
      
   
 ```
+##### making of DCM SNP df
+```{r}
+
+# saveRDS(DCM_gwas,"data/other_papers/DCM_gwas.RDS")
+gwas_DCM <- readRDS("data/other_papers/DCM_gwas.RDS")
+# DCM_gwas %>%
+#   dplyr::select(CHR_ID,CHR_POS,SNPS) %>%
+#   na.omit() %>%
+#   distinct()
+
+```
 
 ### SNP
 ```{r SNPnPeaknTE}
-
+Knowles_eQTL <- readRDS("data/Knowles_5.RDS")
+Knowles_beQTL <- readRDS("data/Knowles_4.RDS")
 gwas_ACtox <- readRDS("data/gwas_1_dataframe.RDS")  
 gwas_ARR <- readRDS("data/gwas_2_dataframe.RDS")
 gwas_ACresp <- readRDS("data/gwas_3_dataframe.RDS")
@@ -3187,6 +3202,7 @@ gwas_HD <- readRDS("data/gwas_4_dataframe.RDS")
 gwas_HF <- readRDS("data/gwas_5_dataframe.RDS")
 gwas_CAD <- readRDS( "data/CAD_gwas_dataframe.RDS")
 gwas_MI <- readRDS("data/MI_gwas.RDS")
+gwas_DCM <- readRDS("data/other_papers/DCM_gwas.RDS")
 
 gwas_snp_list <- gwas_ACtox %>%
   distinct(SNPS,.keep_all = TRUE) %>% 
@@ -3216,17 +3232,43 @@ gwas_snp_list <- gwas_ACtox %>%
           distinct(SNPS,.keep_all = TRUE) %>%
           dplyr::select(CHR_ID, CHR_POS,SNPS) %>% 
           mutate(gwas="MI")) %>% 
-  separate_longer_delim(.,col= c(CHR_ID,CHR_POS,SNPS), delim= ";")  
+  rbind(gwas_DCM %>% 
+          distinct(SNPS,.keep_all = TRUE) %>%
+          dplyr::select(CHR_ID, CHR_POS,SNPS) %>% 
+          mutate(gwas="DCM")) %>% 
+  rbind(Knowles_eQTL %>% 
+          distinct(RSID,.keep_all = TRUE) %>%
+          mutate(CHR_ID=(gsub("chr","",chr))) %>% 
+          dplyr::rename("SNPS"=RSID,"CHR_POS"=pos) %>% 
+          dplyr::select(CHR_ID, CHR_POS,SNPS) %>% 
+          mutate(gwas="eQTL")) %>% 
+  rbind(Knowles_beQTL %>% 
+          distinct(RSID,.keep_all = TRUE) %>%
+          mutate(CHR_ID=(gsub("chr","",chr))) %>% 
+          dplyr::rename("SNPS"=RSID,"CHR_POS"=pos) %>% 
+          dplyr::select(CHR_ID, CHR_POS,SNPS) %>% 
+          mutate(gwas="beQTL")) %>% 
+  separate_longer_delim(.,col= c(CHR_ID,CHR_POS,SNPS), delim= ";")
+```
 
-gwas_snp_gr <- gwas_snp_list %>% 
+
+```{r SNPnpeak 5K plus}
+
+gwas_snp_gr <-  gwas_snp_list %>% 
    mutate(CHR_ID=as.numeric(CHR_ID), CHR_POS=as.numeric(CHR_POS)) %>% 
-  na.omit() %>% 
+  na.omit() %>%
    mutate(start=CHR_POS, end=CHR_POS, chr=paste0("chr",CHR_ID)) %>% 
   GRanges()
-
 # rtracklayer::export.bed(gwas_snp_gr,con="data/full_bedfiles/GWAS_SNP.bed",format="bed")
 
-findOverlaps(gwas_snp_gr, all_TEs_gr)
+gwas_snp_5k_gr <- gwas_snp_list %>% 
+   mutate(CHR_ID=as.numeric(CHR_ID), CHR_POS=as.numeric(CHR_POS)) %>% 
+  na.omit() %>%
+   mutate(start=CHR_POS-5000, end=CHR_POS+5000, chr=paste0("chr",CHR_ID)) %>% 
+  GRanges()
+
+# 
+# findOverlaps(gwas_snp_gr, all_TEs_gr)
 test <- join_overlap_intersect(gwas_snp_gr, all_TEs_gr) %>% GRanges
 ##3413- (#3432 after separate)
 
@@ -3249,6 +3291,8 @@ Col_fullDF_overlap %>%
   join_overlap_intersect(.,gwas_snp_gr)
 
 test2 <- join_overlap_intersect(peaks, gwas_snp_gr) 
+
+test2_5k <- join_overlap_intersect(peaks, gwas_snp_5k_gr) 
   
 test2 %>% 
    join_overlap_intersect(., all_TEs_gr) %>% 
@@ -3258,10 +3302,10 @@ test2 %>%
                       if_else(Peakid %in% EAR_close$Peakid, "EAR_close",
                               if_else(Peakid %in% ESR_open$Peakid,"ESR_open",
                                       if_else(Peakid %in% ESR_close$Peakid,"ESR_close",
-                                              if_else(Peakid %in% ESR_OC$Peakid,"ESR_OC",
+                                              if_else(Peakid %in% ESR_opcl$Peakid,"ESR_opcl",
                                                       if_else(Peakid %in% LR_open$Peakid,"LR_open",
                                                                       if_else(Peakid %in% LR_close$Peakid,"LR_close",
-                                                                              if_else(Peakid %in% NR_df$Peakid,"NR","not_mrc"))))))))) %>%
+                                                                              if_else(Peakid %in% NR_df$Peakid,"NR",if_else(Peakid %in% ESR_clop$Peakid,"ESR_clop","not_mrc")))))))))) %>%
   # distinct(Peakid, .keep_all = TRUE) %>% 
   group_by(gwas,mrc) %>% 
   tally
@@ -3270,14 +3314,14 @@ SNP_df <- test2 %>%
    join_overlap_intersect(., all_TEs_gr) %>% 
   as.data.frame %>% 
   dplyr::select(seqnames:gwas,repName:repFamily) %>% 
-  mutate(mrc=if_else(Peakid %in% EAR_open$Peakid, "EAR_open",
+   mutate(mrc=if_else(Peakid %in% EAR_open$Peakid, "EAR_open",
                       if_else(Peakid %in% EAR_close$Peakid, "EAR_close",
                               if_else(Peakid %in% ESR_open$Peakid,"ESR_open",
                                       if_else(Peakid %in% ESR_close$Peakid,"ESR_close",
-                                              if_else(Peakid %in% ESR_OC$Peakid,"ESR_OC",
+                                              if_else(Peakid %in% ESR_opcl$Peakid,"ESR_opcl",
                                                       if_else(Peakid %in% LR_open$Peakid,"LR_open",
                                                                       if_else(Peakid %in% LR_close$Peakid,"LR_close",
-                                                                              if_else(Peakid %in% NR_df$Peakid,"NR","not_mrc"))))))))) 
+                                                                              if_else(Peakid %in% NR_df$Peakid,"NR",if_else(Peakid %in% ESR_clop$Peakid,"ESR_clop","not_mrc")))))))))) 
 
 SNP_df %>%  group_by(Peakid) %>%
     summarise(snp_id=paste(unique(SNPS), collapse = ","),
@@ -3330,10 +3374,10 @@ SNPanno <-
                       if_else(Peakid %in% EAR_close$Peakid, "EAR_close",
                               if_else(Peakid %in% ESR_open$Peakid,"ESR_open",
                                       if_else(Peakid %in% ESR_close$Peakid,"ESR_close",
-                                              if_else(Peakid %in% ESR_OC$Peakid,"ESR_OC",
+                                              if_else(Peakid %in% ESR_C$Peakid,"ESR_opcl",
                                                       if_else(Peakid %in% LR_open$Peakid,"LR_open",
                                                                       if_else(Peakid %in% LR_close$Peakid,"LR_close",
-                                                                              if_else(Peakid %in% NR_df$Peakid,"NR","not_mrc"))))))))) %>%
+                                                                              if_else(Peakid %in% NR_df$Peakid,"NR",if_else(Peakid %in% ESR_D$Peakid,"ESR_clop","not_mrc")))))))))) %>%
   left_join(Col_fullDF_cug_overlap) %>% 
   mutate(has_cpg= if_else(is.na(name),"not_CpGi","CpGi")) %>% 
   dplyr::select(Peakid:mrc,has_cpg,name,per_ol) %>% 
@@ -3367,6 +3411,567 @@ SNPanno %>%
   scroll_box(height = "500px")
   
 ```
+
+##### SNP enrichment tests
+
+```{r Snptype df}
+ # making data frames
+
+GWAS_HD_peak <- test2 %>% 
+  as.data.frame(.) %>% 
+  dplyr::filter(gwas=="HD") %>% 
+  distinct(Peakid)
+
+GWAS_ARR_peak <- test2 %>% 
+  as.data.frame(.) %>% 
+  dplyr::filter(gwas=="ARR") %>% 
+  distinct(Peakid)
+
+GWAS_ACresp_peak <-  test2 %>% 
+  as.data.frame(.) %>% 
+  dplyr::filter(gwas=="ACresp") %>%
+  distinct(Peakid)
+
+GWAS_ACtox_peak <-  test2 %>% 
+  as.data.frame(.) %>% 
+  dplyr::filter(gwas=="ACtox") %>%
+  distinct(Peakid)
+
+GWAS_CAD_peak <-  test2 %>% 
+  as.data.frame(.) %>% 
+  dplyr::filter(gwas=="CAD") %>%
+  distinct(Peakid)
+
+GWAS_HF_peak <-  test2 %>% 
+  as.data.frame(.) %>% 
+  dplyr::filter(gwas=="HF") %>%
+  distinct(Peakid)
+
+GWAS_MI_peak <-  test2 %>% 
+  as.data.frame(.) %>% 
+  dplyr::filter(gwas=="MI") %>%
+  distinct(Peakid)
+
+GWAS_DCM_peak <-  test2 %>% 
+  as.data.frame(.) %>% 
+  dplyr::filter(gwas=="DCM") %>%
+  distinct(Peakid)
+
+GWAS_eQTL_peak <-  test2 %>% 
+  as.data.frame(.) %>% 
+  dplyr::filter(gwas=="eQTL") %>%
+  distinct(Peakid)
+
+GWAS_beQTL_peak <-  test2 %>% 
+  as.data.frame(.) %>% 
+  dplyr::filter(gwas=="beQTL") %>%
+  distinct(Peakid)
+
+
+
+SNP_status_list <- Eight_group_TE %>% 
+  mutate(mrc=if_else(Peakid %in% ESR_C$Peakid,"ESR_opcl",                 if_else(Peakid %in% ESR_D$Peakid,"ESR_clop",mrc))) %>% 
+  distinct(Peakid,mrc) %>% 
+  mutate(SNP_status =if_else(Peakid %in% GWAS_HD_peak$Peakid,"SNP_peak",
+                             if_else(Peakid %in% GWAS_ACresp_peak$Peakid,"SNP_peak",
+                                     if_else(Peakid %in% GWAS_ACtox_peak$Peakid,"SNP_peak",
+                                             if_else(Peakid %in% GWAS_DCM_peak$Peakid,"SNP_peak",
+                                             if_else(Peakid %in% GWAS_ARR_peak$Peakid,"SNP_peak",
+                                                     if_else(Peakid %in% GWAS_MI_peak$Peakid,"SNP_peak",
+                                                             if_else(Peakid %in% GWAS_CAD_peak$Peakid,"SNP_peak",
+                                                                     if_else(Peakid %in% GWAS_HD_peak$Peakid,"SNP_peak",
+                                                                             if_else(Peakid %in% GWAS_HF_peak$Peakid,"SNP_peak","not_SNP_peak")))))))))) %>% 
+  mutate(HD_status =if_else(Peakid %in% GWAS_HD_peak$Peakid, "SNP_peak", "not_SNP_peak")) %>%
+  mutate(ACresp_status= if_else(Peakid %in% GWAS_ACresp_peak$Peakid,"SNP_peak","not_SNP_peak")) %>% 
+  mutate(ACtox_status=if_else(Peakid %in% GWAS_ACtox_peak$Peakid,"SNP_peak","not_SNP_peak")) %>% 
+  mutate(ARR_status=if_else(Peakid %in% GWAS_ARR_peak$Peakid,"SNP_peak","not_SNP_peak")) %>% 
+  mutate(MI_status=if_else(Peakid %in% GWAS_MI_peak$Peakid,"SNP_peak","not_SNP_peak")) %>% 
+  mutate(CAD_status=if_else(Peakid %in% GWAS_CAD_peak$Peakid,"SNP_peak","not_SNP_peak")) %>% 
+  mutate(HD_status=if_else(Peakid %in% GWAS_HD_peak$Peakid,"SNP_peak","not_SNP_peak")) %>% 
+  mutate(HF_status=if_else(Peakid %in% GWAS_HF_peak$Peakid,"SNP_peak","not_SNP_peak")) %>% 
+  mutate(DCM_status=if_else(Peakid %in% GWAS_DCM_peak$Peakid,"SNP_peak","not_SNP_peak")) %>% 
+   mutate(eQTL_status=if_else(Peakid %in% GWAS_eQTL_peak$Peakid,"eQTL_peak","not_eQTL_peak")) %>% 
+  mutate(beQTL_status=if_else(Peakid %in% GWAS_beQTL_peak$Peakid,"eQTL_peak","not_eQTL_peak"))
+
+SNP_mat <- SNP_status_list %>% 
+distinct(Peakid,.keep_all = TRUE) %>%
+  dplyr::filter(mrc != "not_mrc") %>% 
+  mutate(mrc= factor(mrc, levels = c("EAR_open","EAR_close","ESR_open", "ESR_close", "ESR_opcl", "ESR_clop","LR_open","LR_close","NR"))) %>% 
+  group_by(SNP_status, mrc) %>% 
+  tally  %>% 
+  pivot_wider(id_cols = mrc, names_from = SNP_status,values_from = n) %>% 
+  column_to_rownames("mrc") %>% 
+  na.omit() %>% 
+  as.matrix(.)
+
+ACresp_mat <- SNP_status_list %>% 
+distinct(Peakid,.keep_all = TRUE) %>%
+  dplyr::filter(mrc != "not_mrc") %>% 
+  mutate(mrc= factor(mrc, levels = c("EAR_open","EAR_close","ESR_open", "ESR_close", "ESR_opcl", "ESR_clop","LR_open","LR_close","NR"))) %>% 
+  group_by(ACresp_status, mrc) %>% 
+  tally  %>% 
+  pivot_wider(id_cols = mrc, names_from = ACresp_status,values_from = n) %>% 
+  column_to_rownames("mrc") %>% 
+  na.omit() %>% 
+  as.matrix(.)
+
+ACtox_mat <- SNP_status_list %>% 
+distinct(Peakid,.keep_all = TRUE) %>%
+  dplyr::filter(mrc != "not_mrc") %>% 
+  mutate(mrc= factor(mrc, levels = c("EAR_open","EAR_close","ESR_open", "ESR_close", "ESR_opcl", "ESR_clop","LR_open","LR_close","NR"))) %>% 
+  group_by(ACtox_status, mrc) %>% 
+  tally  %>% 
+  pivot_wider(id_cols = mrc, names_from = ACtox_status,values_from = n) %>% 
+  column_to_rownames("mrc") %>% 
+  na.omit() %>% 
+  as.matrix(.)
+
+ARR_mat <- SNP_status_list %>% 
+distinct(Peakid,.keep_all = TRUE) %>%
+  dplyr::filter(mrc != "not_mrc") %>% 
+  mutate(mrc= factor(mrc, levels = c("EAR_open","EAR_close","ESR_open", "ESR_close", "ESR_opcl", "ESR_clop","LR_open","LR_close","NR"))) %>% 
+  group_by(ARR_status, mrc) %>% 
+  tally  %>% 
+  pivot_wider(id_cols = mrc, names_from = ARR_status,values_from = n) %>% 
+  column_to_rownames("mrc") %>% 
+  na.omit() %>% 
+  as.matrix(.)
+
+CAD_mat <- SNP_status_list %>% 
+distinct(Peakid,.keep_all = TRUE) %>%
+  dplyr::filter(mrc != "not_mrc") %>% 
+  mutate(mrc= factor(mrc, levels = c("EAR_open","EAR_close","ESR_open", "ESR_close", "ESR_opcl", "ESR_clop","LR_open","LR_close","NR"))) %>% 
+  group_by(CAD_status, mrc) %>% 
+  tally  %>% 
+  pivot_wider(id_cols = mrc, names_from = CAD_status,values_from = n) %>% 
+  column_to_rownames("mrc") %>% 
+  na.omit() %>% 
+  as.matrix(.)
+
+HD_mat <- SNP_status_list %>% 
+distinct(Peakid,.keep_all = TRUE) %>%
+  dplyr::filter(mrc != "not_mrc") %>% 
+  mutate(mrc= factor(mrc, levels = c("EAR_open","EAR_close","ESR_open", "ESR_close", "ESR_opcl", "ESR_clop","LR_open","LR_close","NR"))) %>% 
+  group_by(HD_status, mrc) %>% 
+  tally  %>% 
+  pivot_wider(id_cols = mrc, names_from = HD_status,values_from = n) %>% 
+  column_to_rownames("mrc") %>% 
+  na.omit() %>% 
+  as.matrix(.)
+
+HF_mat <- SNP_status_list %>% 
+distinct(Peakid,.keep_all = TRUE) %>%
+  dplyr::filter(mrc != "not_mrc") %>% 
+  mutate(mrc= factor(mrc, levels = c("EAR_open","EAR_close","ESR_open", "ESR_close", "ESR_opcl", "ESR_clop","LR_open","LR_close","NR"))) %>% 
+  group_by(HF_status, mrc) %>% 
+  tally  %>% 
+  pivot_wider(id_cols = mrc, names_from = HF_status,values_from = n) %>% 
+  column_to_rownames("mrc") %>% 
+  na.omit() %>% 
+  as.matrix(.)
+
+MI_mat <- SNP_status_list %>% 
+distinct(Peakid,.keep_all = TRUE) %>%
+  dplyr::filter(mrc != "not_mrc") %>% 
+  mutate(mrc= factor(mrc, levels = c("EAR_open","EAR_close","ESR_open", "ESR_close", "ESR_opcl", "ESR_clop","LR_open","LR_close","NR"))) %>% 
+  group_by(MI_status, mrc) %>% 
+  tally  %>% 
+  pivot_wider(id_cols = mrc, names_from = MI_status,values_from = n) %>% 
+  column_to_rownames("mrc") %>% 
+  na.omit() %>% 
+  as.matrix(.)
+
+DCM_mat <- SNP_status_list %>% 
+distinct(Peakid,.keep_all = TRUE) %>%
+  dplyr::filter(mrc != "not_mrc") %>% 
+  mutate(mrc= factor(mrc, levels = c("EAR_open","EAR_close","ESR_open", "ESR_close", "ESR_opcl", "ESR_clop","LR_open","LR_close","NR"))) %>% 
+  group_by(DCM_status, mrc) %>% 
+  tally  %>% 
+  pivot_wider(id_cols = mrc, names_from = DCM_status,values_from = n) %>% 
+  column_to_rownames("mrc") %>% 
+  na.omit() %>% 
+  as.matrix(.)
+
+eQTL_mat <- SNP_status_list %>% 
+distinct(Peakid,.keep_all = TRUE) %>%
+  dplyr::filter(mrc != "not_mrc") %>% 
+  mutate(mrc= factor(mrc, levels = c("EAR_open","EAR_close","ESR_open", "ESR_close", "ESR_opcl", "ESR_clop","LR_open","LR_close","NR"))) %>% 
+  group_by(eQTL_status, mrc) %>% 
+  tally  %>% 
+  pivot_wider(id_cols = mrc, names_from = eQTL_status,values_from = n) %>% 
+  column_to_rownames("mrc") %>% 
+  na.omit() %>% 
+  as.matrix(.)
+
+base_eQTL_mat <- SNP_status_list %>% 
+distinct(Peakid,.keep_all = TRUE) %>%
+  dplyr::filter(mrc != "not_mrc") %>% 
+  mutate(mrc= factor(mrc, levels = c("EAR_open","EAR_close","ESR_open", "ESR_close", "ESR_opcl", "ESR_clop","LR_open","LR_close","NR"))) %>% 
+  group_by(beQTL_status, mrc) %>% 
+  tally  %>% 
+  pivot_wider(id_cols = mrc, names_from = beQTL_status,values_from = n) %>% 
+  column_to_rownames("mrc") %>% 
+  na.omit() %>% 
+  as.matrix(.)
+
+
+```
+
+```{r Snptype5k df}
+ # making data frames
+
+GWAS_HD_peak_5k <- test2_5k %>% 
+  as.data.frame(.) %>% 
+  dplyr::filter(gwas=="HD") %>% 
+  distinct(Peakid)
+
+GWAS_ARR_peak_5k <- test2_5k %>% 
+  as.data.frame(.) %>% 
+  dplyr::filter(gwas=="ARR") %>% 
+  distinct(Peakid)
+
+GWAS_ACresp_peak_5k <-  test2_5k %>% 
+  as.data.frame(.) %>% 
+  dplyr::filter(gwas=="ACresp") %>%
+  distinct(Peakid)
+
+GWAS_ACtox_peak_5k <-  test2_5k %>% 
+  as.data.frame(.) %>% 
+  dplyr::filter(gwas=="ACtox") %>%
+  distinct(Peakid)
+
+GWAS_CAD_peak_5k <-  test2_5k %>% 
+  as.data.frame(.) %>% 
+  dplyr::filter(gwas=="CAD") %>%
+  distinct(Peakid)
+
+GWAS_HF_peak_5k <-  test2_5k %>% 
+  as.data.frame(.) %>% 
+  dplyr::filter(gwas=="HF") %>%
+  distinct(Peakid)
+
+GWAS_MI_peak_5k <-  test2_5k %>% 
+  as.data.frame(.) %>% 
+  dplyr::filter(gwas=="MI") %>%
+  distinct(Peakid)
+
+GWAS_eQTL_peak_5k <-  test2_5k %>% 
+  as.data.frame(.) %>% 
+  dplyr::filter(gwas=="eQTL") %>%
+  distinct(Peakid)
+
+GWAS_beQTL_peak_5k <-  test2_5k %>% 
+  as.data.frame(.) %>% 
+  dplyr::filter(gwas=="beQTL") %>%
+  distinct(Peakid)
+
+GWAS_DCM_peak_5k <-  test2_5k %>% 
+  as.data.frame(.) %>% 
+  dplyr::filter(gwas=="DCM") %>%
+  distinct(Peakid)
+
+SNP_status_list_5k <- Eight_group_TE %>% 
+  mutate(mrc=if_else(Peakid %in% ESR_C$Peakid,"ESR_opcl",                 if_else(Peakid %in% ESR_D$Peakid,"ESR_clop",mrc))) %>% 
+  distinct(Peakid,mrc) %>% 
+  mutate(SNP_status =if_else(Peakid %in% GWAS_HD_peak_5k$Peakid,"SNP_peak",
+                             if_else(Peakid %in% GWAS_ACresp_peak_5k$Peakid,"SNP_peak",
+                                     if_else(Peakid %in% GWAS_ACtox_peak_5k$Peakid,"SNP_peak",
+                                             if_else(Peakid %in% GWAS_ARR_peak_5k$Peakid,"SNP_peak",
+                                                     if_else(Peakid %in% GWAS_DCM_peak_5k$Peakid,"SNP_peak",
+                                                     if_else(Peakid %in% GWAS_MI_peak_5k$Peakid,"SNP_peak",
+                                                             if_else(Peakid %in% GWAS_CAD_peak_5k$Peakid,"SNP_peak",
+                                                                     if_else(Peakid %in% GWAS_HD_peak_5k$Peakid,"SNP_peak",
+                                                                             if_else(Peakid %in% GWAS_HF_peak_5k$Peakid,"SNP_peak","not_SNP_peak")))))))))) %>% 
+  mutate(HD_status =if_else(Peakid %in% GWAS_HD_peak_5k$Peakid, "SNP_peak", "not_SNP_peak")) %>%
+  mutate(ACresp_status= if_else(Peakid %in% GWAS_ACresp_peak_5k$Peakid,"SNP_peak","not_SNP_peak")) %>% 
+  mutate(ACtox_status=if_else(Peakid %in% GWAS_ACtox_peak_5k$Peakid,"SNP_peak","not_SNP_peak")) %>% 
+  mutate(ARR_status=if_else(Peakid %in% GWAS_ARR_peak_5k$Peakid,"SNP_peak","not_SNP_peak")) %>% 
+  mutate(MI_status=if_else(Peakid %in% GWAS_MI_peak_5k$Peakid,"SNP_peak","not_SNP_peak")) %>% 
+  mutate(CAD_status=if_else(Peakid %in% GWAS_CAD_peak_5k$Peakid,"SNP_peak","not_SNP_peak")) %>% 
+  mutate(HD_status=if_else(Peakid %in% GWAS_HD_peak_5k$Peakid,"SNP_peak","not_SNP_peak")) %>% 
+  mutate(HF_status=if_else(Peakid %in% GWAS_HF_peak_5k$Peakid,"SNP_peak","not_SNP_peak")) %>% 
+    mutate(DCM_status=if_else(Peakid %in% GWAS_DCM_peak_5k$Peakid,"SNP_peak","not_SNP_peak")) %>% 
+   mutate(eQTL_status=if_else(Peakid %in% GWAS_eQTL_peak_5k$Peakid,"eQTL_peak","not_eQTL_peak")) %>% 
+  mutate(beQTL_status=if_else(Peakid %in% GWAS_beQTL_peak_5k$Peakid,"eQTL_peak","not_eQTL_peak"))
+
+SNP_mat_5k <- SNP_status_list_5k %>% 
+distinct(Peakid,.keep_all = TRUE) %>%
+  dplyr::filter(mrc != "not_mrc") %>% 
+  mutate(mrc= factor(mrc, levels = c("EAR_open","EAR_close","ESR_open", "ESR_close", "ESR_opcl", "ESR_clop","LR_open","LR_close","NR"))) %>% 
+  group_by(SNP_status, mrc) %>% 
+  tally  %>% 
+  pivot_wider(id_cols = mrc, names_from = SNP_status,values_from = n) %>% 
+  column_to_rownames("mrc") %>% 
+  na.omit() %>% 
+  as.matrix(.)
+
+ACresp_mat_5k <- SNP_status_list_5k %>% 
+distinct(Peakid,.keep_all = TRUE) %>%
+  dplyr::filter(mrc != "not_mrc") %>% 
+  mutate(mrc= factor(mrc, levels = c("EAR_open","EAR_close","ESR_open", "ESR_close", "ESR_opcl", "ESR_clop","LR_open","LR_close","NR"))) %>% 
+  group_by(ACresp_status, mrc) %>% 
+  tally  %>% 
+  pivot_wider(id_cols = mrc, names_from = ACresp_status,values_from = n) %>% 
+  column_to_rownames("mrc") %>% 
+  na.omit() %>% 
+  as.matrix(.)
+
+ACtox_mat_5k <- SNP_status_list_5k %>% 
+distinct(Peakid,.keep_all = TRUE) %>%
+  dplyr::filter(mrc != "not_mrc") %>% 
+  mutate(mrc= factor(mrc, levels = c("EAR_open","EAR_close","ESR_open", "ESR_close", "ESR_opcl", "ESR_clop","LR_open","LR_close","NR"))) %>% 
+  group_by(ACtox_status, mrc) %>% 
+  tally  %>% 
+  pivot_wider(id_cols = mrc, names_from = ACtox_status,values_from = n) %>% 
+  column_to_rownames("mrc") %>% 
+  na.omit() %>% 
+  as.matrix(.)
+
+ARR_mat_5k <- SNP_status_list_5k %>% 
+distinct(Peakid,.keep_all = TRUE) %>%
+  dplyr::filter(mrc != "not_mrc") %>% 
+  mutate(mrc= factor(mrc, levels = c("EAR_open","EAR_close","ESR_open", "ESR_close", "ESR_opcl", "ESR_clop","LR_open","LR_close","NR"))) %>% 
+  group_by(ARR_status, mrc) %>% 
+  tally  %>% 
+  pivot_wider(id_cols = mrc, names_from = ARR_status,values_from = n) %>% 
+  column_to_rownames("mrc") %>% 
+  na.omit() %>% 
+  as.matrix(.)
+
+CAD_mat_5k <- SNP_status_list_5k %>% 
+distinct(Peakid,.keep_all = TRUE) %>%
+  dplyr::filter(mrc != "not_mrc") %>% 
+  mutate(mrc= factor(mrc, levels = c("EAR_open","EAR_close","ESR_open", "ESR_close", "ESR_opcl", "ESR_clop","LR_open","LR_close","NR"))) %>% 
+  group_by(CAD_status, mrc) %>% 
+  tally  %>% 
+  pivot_wider(id_cols = mrc, names_from = CAD_status,values_from = n) %>% 
+  column_to_rownames("mrc") %>% 
+  na.omit() %>% 
+  as.matrix(.)
+
+HD_mat_5k <- SNP_status_list_5k %>% 
+distinct(Peakid,.keep_all = TRUE) %>%
+  dplyr::filter(mrc != "not_mrc") %>% 
+  mutate(mrc= factor(mrc, levels = c("EAR_open","EAR_close","ESR_open", "ESR_close", "ESR_opcl", "ESR_clop","LR_open","LR_close","NR"))) %>% 
+  group_by(HD_status, mrc) %>% 
+  tally  %>% 
+  pivot_wider(id_cols = mrc, names_from = HD_status,values_from = n) %>% 
+  column_to_rownames("mrc") %>% 
+  na.omit() %>% 
+  as.matrix(.)
+
+HF_mat_5k <- SNP_status_list_5k %>% 
+distinct(Peakid,.keep_all = TRUE) %>%
+  dplyr::filter(mrc != "not_mrc") %>% 
+  mutate(mrc= factor(mrc, levels = c("EAR_open","EAR_close","ESR_open", "ESR_close", "ESR_opcl", "ESR_clop","LR_open","LR_close","NR"))) %>% 
+  group_by(HF_status, mrc) %>% 
+  tally  %>% 
+  pivot_wider(id_cols = mrc, names_from = HF_status,values_from = n) %>% 
+  column_to_rownames("mrc") %>% 
+  na.omit() %>% 
+  as.matrix(.)
+
+MI_mat_5k <- SNP_status_list_5k %>% 
+distinct(Peakid,.keep_all = TRUE) %>%
+  dplyr::filter(mrc != "not_mrc") %>% 
+  mutate(mrc= factor(mrc, levels = c("EAR_open","EAR_close","ESR_open", "ESR_close", "ESR_opcl", "ESR_clop","LR_open","LR_close","NR"))) %>% 
+  group_by(MI_status, mrc) %>% 
+  tally  %>% 
+  pivot_wider(id_cols = mrc, names_from = MI_status,values_from = n) %>% 
+  column_to_rownames("mrc") %>% 
+  na.omit() %>% 
+  as.matrix(.)
+
+DCM_mat_5k <- SNP_status_list_5k %>% 
+distinct(Peakid,.keep_all = TRUE) %>%
+  dplyr::filter(mrc != "not_mrc") %>% 
+  mutate(mrc= factor(mrc, levels = c("EAR_open","EAR_close","ESR_open", "ESR_close", "ESR_opcl", "ESR_clop","LR_open","LR_close","NR"))) %>% 
+  group_by(DCM_status, mrc) %>% 
+  tally  %>% 
+  pivot_wider(id_cols = mrc, names_from = DCM_status,values_from = n) %>% 
+  column_to_rownames("mrc") %>% 
+  na.omit() %>% 
+  as.matrix(.)
+
+eQTL_mat_5k <- SNP_status_list_5k %>% 
+distinct(Peakid,.keep_all = TRUE) %>%
+  dplyr::filter(mrc != "not_mrc") %>% 
+  mutate(mrc= factor(mrc, levels = c("EAR_open","EAR_close","ESR_open", "ESR_close", "ESR_opcl", "ESR_clop","LR_open","LR_close","NR"))) %>% 
+  group_by(eQTL_status, mrc) %>% 
+  tally  %>% 
+  pivot_wider(id_cols = mrc, names_from = eQTL_status,values_from = n) %>% 
+  column_to_rownames("mrc") %>% 
+  na.omit() %>% 
+  as.matrix(.)
+
+base_eQTL_mat_5k <- SNP_status_list_5k %>% 
+distinct(Peakid,.keep_all = TRUE) %>%
+  dplyr::filter(mrc != "not_mrc") %>% 
+  mutate(mrc= factor(mrc, levels = c("EAR_open","EAR_close","ESR_open", "ESR_close", "ESR_opcl", "ESR_clop","LR_open","LR_close","NR"))) %>% 
+  group_by(beQTL_status, mrc) %>% 
+  tally  %>% 
+  pivot_wider(id_cols = mrc, names_from = beQTL_status,values_from = n) %>% 
+  column_to_rownames("mrc") %>% 
+  na.omit() %>% 
+  as.matrix(.)
+
+
+```
+
+
+
+### SNP chi square results
+```{r SNP chissquare}
+matrix_list_SNP <- list("SNP"=SNP_mat, "ARR"=ARR_mat,"CAD"= CAD_mat,"HD"= HD_mat,"HF"=HF_mat,"MI"=MI_mat,"DCM"=DCM_mat,"base eQTL_mat"=base_eQTL_mat ,"DOXres eQTL"=eQTL_mat,"SNP_5k"=SNP_mat_5k, "ARR_5k"=ARR_mat_5k,"CAD_5k"= CAD_mat_5k,"HD_5k"= HD_mat_5k,"HF_5k"=HF_mat_5k,"MI_5k"=MI_mat_5k,"DCM_5k"=DCM_mat_5k, "base eQTL_mat_5k"=base_eQTL_mat_5k ,"DOXres eQTL_5k"=eQTL_mat_5k)
+
+results_SNP <- data.frame(Matrix_Name = character(),
+                      Row_Compared = character(),
+                      Chi_Square_Statistic = numeric(),
+                      P_Value = numeric(),
+                      stringsAsFactors = FALSE)
+
+names_list <- names(matrix_list_SNP)
+# Loop through each matrix in the list
+for (matrix_name in names_list) {
+  current_matrix <- matrix_list_SNP[[matrix_name]]
+  n_rows <- nrow(current_matrix)
+  
+  # Print matrix details for debugging
+  cat("Processing Matrix:", matrix_name, "\n")
+  print(current_matrix)
+  
+  # Loop through each row of the current matrix (except the last row)
+  for (i in 1:(n_rows - 1)) {
+    # Print row details for debugging
+    cat("Comparing row", i, "with last row:\n")
+    print(current_matrix[i, ])
+    print(current_matrix[n_rows, ])
+    
+    # Perform chi-square test between row i and the last row
+    test_result <- tryCatch({
+      chisq.test(rbind(current_matrix[i, ], current_matrix[n_rows, ]))
+    }, error = function(e) {
+      cat("Error in chi-square test:", e$message, "\n")
+      return(NULL)
+    })
+    
+    # Only store the result if test_result is valid (i.e., not NULL)
+    if (!is.null(test_result)) {
+      results_SNP <- rbind(results_SNP, data.frame(Matrix_Name = matrix_name,
+                                           Row_Compared = rownames(current_matrix)[i],
+                                           Chi_Square_Statistic = test_result$statistic,
+                                           P_Value = test_result$p.value))
+    }
+  }
+}
+# Print the resulting dataframe
+print(results_SNP) %>% 
+   kable(., caption = " Chi squre results and significance values of SNP enrichment compared to No response group") %>% 
+  kable_paper("striped", full_width = TRUE) %>%
+  kable_styling(full_width = FALSE, font_size = 14) %>% 
+  scroll_box(width = "100%", height = "400px")
+
+
+```
+### odds ratio results
+```{r SNP Oddsratio, fig.height=8}
+
+results_SNP_or <- data.frame(Matrix_Name = character(),
+                      Row_Compared = character(),
+                      Odds_Ratio = numeric(),
+                      Lower_CI = numeric(),
+                      Upper_CI = numeric(),
+                      P_Value = numeric(),
+                      stringsAsFactors = FALSE)
+
+# Loop through each matrix in the list
+for (matrix_name in names(matrix_list_SNP)) {
+  current_matrix <- matrix_list_SNP[[matrix_name]]
+  n_rows <- nrow(current_matrix)
+  
+  # Loop through each row of the current matrix (except the last row)
+  for (i in 1:(n_rows - 1)) {
+    # Perform odds ratio test between row i and the last row using epitools
+    test_result <- tryCatch({
+      contingency_table <- rbind(current_matrix[i, ], current_matrix[n_rows, ])
+      
+      # Check if any row in the contingency table contains only zeros
+      if (any(rowSums(contingency_table) == 0)) {
+        stop("Contingency table contains empty rows.")
+      }
+      
+      oddsratio_result <- oddsratio(contingency_table)
+       # Ensure the oddsratio result has at least 2 rows
+      if (nrow(oddsratio_result$measure) < 2) {
+        stop("oddsratio result does not have enough data.")
+      }
+      
+     
+      
+      list(oddsratio = oddsratio_result, p.value = oddsratio_result$p.value[2,"chi.square"])
+      
+    }, error = function(e) {
+      cat("Error in odds ratio test for row", i, "in matrix", matrix_name, ":", e$message, "\n")
+      return(NULL)
+    })
+    
+    # Only store the result if test_result is valid (i.e., not NULL)
+    if (!is.null(test_result)) {
+      or_value <- test_result$oddsratio$measure[2, "estimate"]
+      lower_ci <- test_result$oddsratio$measure[2, "lower"]
+      upper_ci <- test_result$oddsratio$measure[2, "upper"]
+      p_value <- test_result$oddsratio$p.value[2,"chi.square"]
+      
+      # Check if the values are numeric and valid (not NA)
+      if (!is.na(or_value) && !is.na(lower_ci) && !is.na(upper_ci) && !is.na(p_value)) {
+        # Store the results in the dataframe
+        results_SNP_or <- rbind(results_SNP_or, data.frame(Matrix_Name = matrix_name,
+                                             Row_Compared = rownames(current_matrix)[i],
+                                             Odds_Ratio = or_value,
+                                             Lower_CI = lower_ci,
+                                             Upper_CI = upper_ci,
+                                             P_Value = p_value))
+      }
+    }
+  }
+}
+
+# Print the resulting dataframe
+print(results_SNP_or) %>% 
+  kable(., caption = "Odd ratio results and significance values of SNP enrichment compared to No response group") %>% 
+  kable_paper("striped", full_width = TRUE) %>%
+  kable_styling(full_width = FALSE, font_size = 14) %>% 
+  scroll_box(width = "100%", height = "400px")
+  
+
+col_fun_SNP = colorRamp2(c(0,1,1.5,5), c("blueviolet","white","lightgreen","green3" ))
+sig_mat_SNP <- results_SNP_or %>% 
+  as.data.frame() %>% 
+  dplyr::select( Matrix_Name,Row_Compared,P_Value) %>% 
+  pivot_wider(., id_cols = Matrix_Name, names_from = Row_Compared, values_from = P_Value) %>% 
+  column_to_rownames("Matrix_Name") %>% 
+  as.matrix() 
+
+
+results_SNP_or %>% 
+  as.data.frame() %>% 
+  dplyr::select( Matrix_Name,Row_Compared,Odds_Ratio) %>% 
+  pivot_wider(., id_cols = Matrix_Name, names_from = Row_Compared, values_from = Odds_Ratio) %>% 
+  column_to_rownames("Matrix_Name") %>% 
+  as.matrix() %>% 
+  ComplexHeatmap::Heatmap(. ,col = col_fun_SNP, 
+                          cluster_rows=FALSE, 
+                          cluster_columns=FALSE, 
+                          column_names_side = "top", 
+                          column_names_rot = 45,
+                          na_col = "grey60",
+                          cell_fun = function(j, i, x, y, width, height, fill) {if (!is.na(sig_mat_SNP[i, j]) && sig_mat_SNP[i, j] < 0.05)
+            grid.text("*", x, y, gp = gpar(fontsize = 20))})
+
+        
+```
+
+
 
 
 ##### Peak annotation file
@@ -3430,6 +4035,7 @@ Collapsed_peaks %>%
 
 ### odds ratio matrix
 
+
 ```{r oddratio matrix Allte}
 ## full peak set as all peaks
 subsetall_df
@@ -3437,6 +4043,7 @@ subsetall_df
 Nine_te_df <- Eight_group_TE %>% 
   mutate(mrc=if_else(Peakid %in% ESR_C$Peakid,"ESR_opcl",                 if_else(Peakid %in% ESR_D$Peakid,"ESR_clop",mrc)))
 TE_mat<- Nine_te_df %>% 
+  mutate(mrc= factor(mrc, levels = c("EAR_open","EAR_close","ESR_open", "ESR_close", "ESR_opcl", "ESR_clop","LR_open","LR_close","NR"))) %>% 
  dplyr::filter(mrc != "not_mrc") %>% 
   group_by(TEstatus, mrc) %>% 
   tally %>% 
@@ -3457,9 +4064,10 @@ Class_status_df %>%
 
 Sine_mat<- Nine_class_status_df %>% 
  dplyr::filter(mrc != "not_mrc") %>% 
+  mutate(mrc= factor(mrc, levels = c("EAR_open","EAR_close","ESR_open", "ESR_close", "ESR_opcl", "ESR_clop","LR_open","LR_close","NR"))) %>% 
   group_by(Sine_status, mrc) %>% 
   tally %>% 
-  mutate(mrc= factor(mrc, levels = c("EAR_open","EAR_close","ESR_open", "ESR_close", "ESR_opcl", "ESR_clop","LR_open","LR_close","NR"))) %>% 
+  
   pivot_wider(id_cols = mrc, names_from = Sine_status,values_from = n) %>% 
   column_to_rownames("mrc") %>% 
   na.omit(.) %>% 
@@ -3541,6 +4149,7 @@ Col_TSS_data_gr %>%
 
 
 ```
+
 ### chi square results
 ```{r testing the matrix}
 matrix_list <- list("TE"=TE_mat, "Sines"=Sine_mat, "Lines"=Line_mat,"DNA"= DNA_mat,"Retro"= Retro_mat,"LTR"= LTR_mat,"CGI"=CUG_mat,"TSS"=TSS_mat)
@@ -3584,7 +4193,11 @@ for (matrix_name in names_list) {
   }
 }
 # Print the resulting dataframe
-print(results)
+print(results) %>% 
+   kable(., caption = " Chi squre results and significance values of TE enrichment compared to No response group") %>% 
+  kable_paper("striped", full_width = TRUE) %>%
+  kable_styling(full_width = FALSE, font_size = 14) %>% 
+  scroll_box(width = "100%", height = "400px")
 
 
 ```
@@ -3652,9 +4265,20 @@ for (matrix_name in names(matrix_list)) {
 }
 
 # Print the resulting dataframe
-print(results_or)
-library(circlize)
-col_fun_OR = colorRamp2(c(0,6), c("white", "purple3"))
+print(results_or) %>% 
+  kable(., caption = "Odd ratio results and significance values of TE enrichment compared to No response group") %>% 
+  kable_paper("striped", full_width = TRUE) %>%
+  kable_styling(full_width = FALSE, font_size = 14) %>% 
+  scroll_box(width = "100%", height = "400px")
+
+# breaks <- seq(0, 5, length.out = 12)
+# # Create a color palette with 12 colors from "purple3" to "green3", passing through "white"
+# colors <- colorRampPalette(c("purple3", "white", "green3"))(12)
+# 
+# # Create the color function with 12 bins
+# col_fun_OR <- colorRamp2(breaks, colors)
+
+col_fun_OR = colorRamp2(c(0,1,1.5,5), c("blueviolet","white","lightgreen","green3" ))
 sig_mat_OR <- results_or %>% 
   as.data.frame() %>% 
   dplyr::select( Matrix_Name,Row_Compared,P_Value) %>% 
@@ -3674,9 +4298,55 @@ results_or %>%
                           cluster_columns=FALSE, 
                           column_names_side = "top", 
                           column_names_rot = 45,
+                          # na_col = "black",
                           cell_fun = function(j, i, x, y, width, height, fill) {if (!is.na(sig_mat_OR[i, j]) && sig_mat_OR[i, j] < 0.05)
             grid.text("*", x, y, gp = gpar(fontsize = 20))})
 
         
+```
+##### data mining Renee corner
+
+pay no attention to the output here
+```{r looking at ESRopcl, eval=FALSE, include=FALSE}
+Peaksofinterest <- data.frame(Peakid=c("chr2.178547784.178549172","chr1.236688731.236689166","chr12.106865628.106866040","chr16.719886.721785","chr22.46417011.46418228","chr3.14232390.14233136"))
+SNP_status_list %>% 
+  dplyr::filter(ARR_status=="SNP_peak") %>% 
+  left_join(.,(Collapsed_peaks %>% dplyr::select(Peakid,NG_TSS:dist_to_NG)), by=c("Peakid"="Peakid")) %>% 
+  dplyr::filter(mrc=="ESR_opcl") 
+
+SNP_status_list_5k %>% as.data.frame() %>% 
+  dplyr::filter(Peakid %in% Peaksofinterest$Peakid)
+  
+SNP_status_list %>% 
+  dplyr::filter(HF_status=="SNP_peak") %>% 
+  left_join(.,(Collapsed_peaks ), by=c("Peakid"="Peakid")) %>% 
+  dplyr::filter(mrc=="LR_close") 
+library(readxl)
+Reheat_data <- read_excel("data/other_papers/jah36123-sup-0002-tables2.xlsx")
+
+
+
+  fun_list <- join_overlap_intersect(peaks, gwas_snp_gr)
+  
+  fun_list %>% as.data.frame %>% 
+    dplyr::filter(Peakid %in% Peaksofinterest$Peakid)  %>% 
+    dplyr::select(Peakid,SNPS,gwas) %>% 
+    left_join(., Collapsed_peaks, by= c("Peakid"="Peakid") ) %>% 
+    dplyr::filter(SYMBOL %in% Reheat_data$gene) %>% 
+    left_join(., Reheat_data, by=c("SYMBOL"="gene")) %>% 
+    dplyr::select(Peakid, SNPS, SYMBOL, gwas, fisher_pvalue:mean_lfc,dist_to_NG) %>% 
+    kable(., caption="Just the LR_close and ESR_opcl peaks and SNPS") %>% 
+  kable_paper("striped", full_width = TRUE) %>%
+  kable_styling(full_width = FALSE, font_size = 14) %>% 
+  scroll_box(height = "500px")
+    
+ fun_list %>% 
+   dplyr::filter(gwas=="ACresp"|gwas=="ACtox") %>% 
+   as.data.frame() %>% 
+   dplyr::select(Peakid,SNPS,gwas) %>% 
+    left_join(., Collapsed_peaks, by= c("Peakid"="Peakid") ) %>% 
+    dplyr::filter(SYMBOL %in% Reheat_data$gene) %>% 
+    left_join(., Reheat_data, by=c("SYMBOL"="gene")) %>% 
+    dplyr::select(Peakid, SNPS, SYMBOL, gwas, fisher_pvalue:mean_lfc,dist_to_NG)
 ```
 
