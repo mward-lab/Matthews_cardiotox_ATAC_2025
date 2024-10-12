@@ -10,7 +10,7 @@ knitr::opts_chunk$set(
 	echo = TRUE,
 	message = FALSE,
 	warning = FALSE,
-	dev=c("pdf","png")
+		dev = c("png","pdf")
 )
 ```
 
@@ -27,21 +27,13 @@ pre[class] {
 ##### packages
 ```{r  package loading}
 library(tidyverse)
-# library(ggsignif)
 library(cowplot)
-# library(ggpubr)
-
-# library(sjmisc)
 library(kableExtra)
 library(broom)
-# library(biomaRt)
 library(RColorBrewer)
-# library(gprofiler2)
-# library(qvalue)
 library(ChIPseeker)
 library("TxDb.Hsapiens.UCSC.hg38.knownGene")
 library("org.Hs.eg.db")
-# library(ATACseqQC)
 library(rtracklayer)
 library(edgeR)
 library(ggfortify)
@@ -51,13 +43,10 @@ library(BiocGenerics)
 library(gridExtra)
 library(VennDiagram)
 library(scales)
-# library(ggVennDiagram)
 library(Cormotif)
 library(BiocParallel)
 library(ggpubr)
 library(devtools)
-# install_github('davetang/bedr')
-# library(bedr)
 library(JASPAR2022)
 library(TFBSTools)
 library(MotifDb)
@@ -70,9 +59,9 @@ library(data.table)
 ```{r dataframe loading}
 
 # 
-# xstreme_ESR_clop200 <- read_delim("~/ATAC_meme_data/200bp/ESR_D_200xstreme/xstreme.tsv",
-#     delim = "\t", escape_double = FALSE,
-#     trim_ws = TRUE)
+xstreme_ESR_clop200 <- read_delim("~/ATAC_meme_data/200bp/ESR_D_200xstreme/xstreme.tsv",
+    delim = "\t", escape_double = FALSE,
+    trim_ws = TRUE)
 
 # saveRDS(xstreme_EAR_close200,"data/Final_four_data/xstreme/xstreme_EAR_close200.RDS")
 # saveRDS(xstreme_EAR_open200,"data/Final_four_data/xstreme/xstreme_EAR_open200.RDS")
@@ -80,7 +69,7 @@ library(data.table)
 # saveRDS(xstreme_ESR_close200,"data/Final_four_data/xstreme/xstreme_ESR_close200.RDS")
 # saveRDS(ESR_OC_xstreme,"data/Final_four_data/xstreme/ESR_OC_xstreme.RDS")
 # saveRDS(ESR_C_xstreme,"data/Final_four_data/xstreme/ESR_OC_xstreme.RDS")
-# saveRDS(ESR_D_xstreme,"data/Final_four_data/xstreme/ESR_OC_xstreme.RDS")
+# saveRDS(xstreme_ESR_clop200,"data/Final_four_data/xstreme/xstreme_ESR_clop200.RDS")
 # saveRDS(xstreme_LR_close200,"data/Final_four_data/xstreme/xstreme_LR_close200.RDS")
 # saveRDS(xstreme_LR_open200,"data/Final_four_data/xstreme/xstreme_LR_open200.RDS")
 # saveRDS(LR_open_10h_xstreme,"data/Final_four_data/xstreme/LR_open_10h_xstreme.RDS")
@@ -105,7 +94,9 @@ ESR_OC_xstreme <-
 ESR_opcl_xstreme <- 
   readRDS("data/Final_four_data/xstreme/xstreme_ESR_opcl200.RDS")%>%
   slice_head(n = length(.$ID)-3)
-
+ESR_clop_xstreme <- 
+  readRDS("data/Final_four_data/xstreme/xstreme_ESR_clop200.RDS")%>%
+  slice_head(n = length(.$ID)-3)
 
 
 LR_close_xstreme <-
@@ -117,9 +108,6 @@ LR_open_xstreme <-
 LR_open_10h_xstreme <-
   readRDS("data/Final_four_data/xstreme/LR_open_10h_xstreme.RDS")%>%
   slice_head(n = length(.$ID)-3)
-
-
-
 
 EAR_close_200xstreme <-
   readRDS("data/Final_four_data/xstreme/xstreme_EAR_close200.RDS")%>%
@@ -164,10 +152,10 @@ sea_LR_open <- readRDS("data/Final_four_data/xstreme/sea_LR_open_10h.RDS")%>%
 
 
 ### sea out 200 bp sequences
-# sea_ESR_opcl200 <- read_delim("~/ATAC_meme_data/200bp/ESR_C_200xstreme/sea_out/sea.tsv",
+# sea_ESR_clop200 <- read_delim("~/ATAC_meme_data/200bp/ESR_D_200xstreme/sea_out/sea.tsv",
 #     delim = "\t", escape_double = FALSE,
 #     trim_ws = TRUE)
-# saveRDS(sea_ESR_opcl200,"data/Final_four_data/xstreme/sea_ESR_opcl_200.RDS")
+# saveRDS(sea_ESR_clop200,"data/Final_four_data/xstreme/sea_ESR_clop_200.RDS")
 
 ### sea part2!
 
@@ -182,6 +170,9 @@ sea_ESR_open_200 <- readRDS("data/Final_four_data/xstreme/sea_ESR_open_200.RDS")
 sea_ESR_opcl_200 <- readRDS("data/Final_four_data/xstreme/sea_ESR_opcl_200.RDS")%>%
   slice_head(n = length(.$ID)-3)
 
+sea_ESR_clop_200 <- readRDS("data/Final_four_data/xstreme/sea_ESR_clop_200.RDS")%>%
+  slice_head(n = length(.$ID)-3)
+
 sea_LR_open_200 <- readRDS("data/Final_four_data/xstreme/sea_LR_open_200.RDS")%>%
   slice_head(n = length(.$ID)-3)
 sea_LR_close_200 <- readRDS("data/Final_four_data/xstreme/sea_LR_close_200.RDS")%>%
@@ -189,10 +180,10 @@ sea_LR_close_200 <- readRDS("data/Final_four_data/xstreme/sea_LR_close_200.RDS")
 
 
 ### sea part2!  This is for missing merged data in sea_disc_out 
-# sea_ESR_opcl_p2 <- read_delim("~/ATAC_meme_data/200bp/ESR_C_200xstreme/sea_disc_out/sea.tsv",
+# sea_ESR_clop_p2 <- read_delim("~/ATAC_meme_data/200bp/ESR_D_200xstreme/sea_disc_out/sea.tsv",
 #     delim = "\t", escape_double = FALSE,
 #     trim_ws = TRUE)
-# saveRDS(sea_ESR_opcl_p2,"data/Final_four_data/xstreme/sea_ESR_opcl_200_p2.RDS")
+# saveRDS(sea_ESR_clop_p2,"data/Final_four_data/xstreme/sea_ESR_clop_200_p2.RDS")
 
 
 sea_EAR_open_200_p2 <- readRDS("data/Final_four_data/xstreme/sea_EAR_open_200_p2.RDS")%>%
@@ -204,6 +195,8 @@ sea_ESR_close_200_p2 <- readRDS("data/Final_four_data/xstreme/sea_ESR_close_200_
 sea_ESR_open_200_p2 <- readRDS("data/Final_four_data/xstreme/sea_ESR_open_200_p2.RDS")%>%
   slice_head(n = length(.$ID)-3)
 sea_ESR_opcl_200_p2 <- readRDS("data/Final_four_data/xstreme/sea_ESR_opcl_200_p2.RDS")%>%
+  slice_head(n = length(.$ID)-3)
+sea_ESR_clop_200_p2 <- readRDS("data/Final_four_data/xstreme/sea_ESR_clop_200_p2.RDS")%>%
   slice_head(n = length(.$ID)-3)
 
 sea_LR_open_200_p2 <- readRDS("data/Final_four_data/xstreme/sea_LR_open_200_p2.RDS")%>%
@@ -354,7 +347,18 @@ ESR_opcl_xstreme %>%
    dplyr::mutate_if(is.numeric, funs(as.character(signif(., 3)))) %>%
   # separate(SIM_MOTIF, into= c("SIM_MOTIF", "NAME"), sep= " ") %>% 
   # dplyr::filter(., EVALUE<0.05) %>% 
-  kable(., caption = "Enriched motifs  in ESR OC") %>%
+  kable(., caption = "Enriched motifs  in ESR opcl") %>%
+  kable_paper("striped", full_width = TRUE) %>%
+  kable_styling(full_width = FALSE, font_size = 16) %>%
+  scroll_box(height = "800px")
+
+ESR_clop_xstreme %>% 
+  dplyr::select(SIM_MOTIF,ALT_ID, ID,SEA_PVALUE,EVALUE) %>% 
+  arrange(.,EVALUE) %>%
+   dplyr::mutate_if(is.numeric, funs(as.character(signif(., 3)))) %>%
+  # separate(SIM_MOTIF, into= c("SIM_MOTIF", "NAME"), sep= " ") %>% 
+  # dplyr::filter(., EVALUE<0.05) %>% 
+  kable(., caption = "Enriched motifs  in ESR clop") %>%
   kable_paper("striped", full_width = TRUE) %>%
   kable_styling(full_width = FALSE, font_size = 16) %>%
   scroll_box(height = "800px")
@@ -572,7 +576,23 @@ spd_ESRopcl_200<-ESR_opcl_xstreme%>%
   mutate(motif_name= gsub("[()]","",NAME), mrc="ESR_opcl") %>%
   mutate(motif_name=
            if_else(is.na(motif_name)&str_detect(SIM_MOTIF,"^M"),ALT_ID,
+           if_else(is.na(motif_name),ID,motif_name)))
+
+#### break for clop!
+
+spd_ESRclop_200<-ESR_clop_xstreme%>% 
+   mutate(CONSENSUS=gsub('[[:digit:]]+-', '', CONSENSUS)) %>% 
+  dplyr::filter(EVALUE<0.05) %>% 
+  left_join(., (sea_ESR_clop_200_p2 %>%
+                  anti_join(.,sea_ESR_clop_200, by = c("ID"="ID","ALT_ID"="ALT_ID")) %>%
+  rbind(sea_ESR_clop_200) %>% 
+  dplyr::select(DB:LOG_QVALUE)), by= c( "ALT_ID"="ALT_ID", "CONSENSUS"="CONSENSUS","ID"="ID"))%>% 
+  separate(SIM_MOTIF, into= c("SIM_MOTIF", "NAME"), sep= " ") %>% 
+  mutate(motif_name= gsub("[()]","",NAME), mrc="ESR_clop") %>%
+  mutate(motif_name=
+           if_else(is.na(motif_name)&str_detect(SIM_MOTIF,"^M"),ALT_ID,
            if_else(is.na(motif_name),ID,motif_name))) 
+#opcl
 
 ###rbind break#####
 spd_LRo <-LR_open_xstreme%>%
@@ -639,6 +659,7 @@ spec_dataframe_200 <- spd_EARo_200 %>%
   rbind(spd_ESRo_200) %>%
    rbind(spd_ESRc_200) %>%
   rbind(spd_ESRopcl_200) %>% 
+  rbind(spd_ESRclop_200) %>% 
    rbind(spd_LRo_200) %>% 
    rbind(spd_LRc_200)
 
@@ -1197,26 +1218,7 @@ spec_dataframe_200 %>%
 
 spec_dataframe_200 %>% 
   dplyr::filter(mrc==mrc_type) %>% 
-  dplyr::filter(ENR_RATIO>ER_rat) %>% 
-  dplyr::select(RANK,CLUSTER, SITES,SIM_MOTIF,ALT_ID, ID,EVALUE.x, TP:'FP%', motif_name)%>%
-  arrange(.,EVALUE.x) %>%
-  mutate(log10Evalue= log(EVALUE.x, base = 10)*(-1)) %>% 
-  mutate(motif_name=if_else(motif_name=="KLF9",paste(motif_name, RANK, sep="_"),             if_else(motif_name=="^ZN*",paste(motif_name, RANK, sep="_"), if_else(motif_name=="ZSCAN4",paste(motif_name, RANK,sep="_"),motif_name))))%>%
-  distinct(CLUSTER,.keep_all = TRUE) %>% 
-  slice_head(n=10) %>% 
-  ggplot(., aes (y= reorder(motif_name,log10Evalue))) +
-  geom_col(aes(x=log10Evalue),fill=mrc_palette[mrc_type]) +
-   geom_point(aes(x=`TP%`*1.2), size =4)+
-   # geom_line(aes(x=`TP%`,y= motif_name, group=log10Evalue))+
-  scale_x_continuous(expand=c (0,.25),sec.axis = sec_axis(transform= ~./1.2,name="Percent of peaks with motif"))+
-  # geom_text(aes())
-  theme_classic()+
-  ylab("Enriched TF motif")+
-  ggtitle(paste( mrc_type,"response peaks 200bp Enrichment ratio:",ER_rat," merged motif clusters"))
-
-spec_dataframe_200 %>% 
-  dplyr::filter(mrc==mrc_type) %>% 
-  dplyr::filter(ENR_RATIO>(ER_rat+.1)) %>% 
+  dplyr::filter(ENR_RATIO>(ER_rat)) %>% 
   dplyr::select(RANK,CLUSTER, SITES,SIM_MOTIF,ALT_ID, ID,EVALUE.x, TP:'FP%', motif_name)%>%
   arrange(.,EVALUE.x) %>%
   mutate(log10Evalue= log(EVALUE.x, base = 10)*(-1)) %>% 
@@ -1228,6 +1230,54 @@ spec_dataframe_200 %>%
    geom_point(aes(x=`TP%`/3), size =4)+
    # geom_line(aes(x=`TP%`,y= motif_name, group=log10Evalue))+
   scale_x_continuous(expand=c (0,.25),sec.axis = sec_axis(transform= ~.*3,name="Percent of peaks with motif"))+
+  # geom_text(aes())
+  theme_classic()+
+  ylab("Enriched TF motif")+
+  ggtitle(paste( mrc_type,"response peaks 200bp Enrichment ratio:",ER_rat," merged motif clusters"))
+
+```
+
+
+
+
+
+##### ESR_clop {D}
+
+```{r enriched motifs ESR_clop_200, fig.height=8}
+ER_rat <- 1.5
+mrc_type <- "ESR_clop"
+spec_dataframe_200 %>% 
+  dplyr::filter(mrc==mrc_type) %>% 
+  dplyr::filter(ENR_RATIO>ER_rat) %>% 
+  dplyr::select(RANK,CLUSTER, SITES,SIM_MOTIF,ALT_ID, ID,EVALUE.x, TP:'FP%', motif_name)%>%
+  arrange(.,EVALUE.x) %>%
+  mutate(log10Evalue= log(EVALUE.x, base = 10)*(-1)) %>% 
+  mutate(motif_name=if_else(motif_name=="KLF9",paste(motif_name, RANK, sep="_"),             if_else(motif_name=="^ZN*",paste(motif_name, RANK, sep="_"), if_else(motif_name=="ZSCAN4",paste(motif_name, RANK,sep="_"),motif_name))))%>%
+  slice_head(n=40) %>% 
+  ggplot(., aes (y= reorder(motif_name,log10Evalue))) +
+  geom_col(aes(x=log10Evalue),fill=mrc_palette[mrc_type]) +
+  geom_point(aes(x=`TP%`*1.25), size =4)+
+  scale_x_continuous(expand=c (0,.125),sec.axis = sec_axis(transform= ~./1.25,name="Percent of peaks with motif"))+
+  theme_classic()+
+  ylab("Enriched TF motif")+
+ ggtitle(paste( mrc_type,"response peaks 200bp Enrichment ratio:",ER_rat))
+
+
+
+spec_dataframe_200 %>% 
+  dplyr::filter(mrc==mrc_type) %>% 
+  dplyr::filter(ENR_RATIO>(ER_rat)) %>% 
+  dplyr::select(RANK,CLUSTER, SITES,SIM_MOTIF,ALT_ID, ID,EVALUE.x, TP:'FP%', motif_name)%>%
+  arrange(.,EVALUE.x) %>%
+  mutate(log10Evalue= log(EVALUE.x, base = 10)*(-1)) %>% 
+  mutate(motif_name=if_else(motif_name=="KLF9",paste(motif_name, RANK, sep="_"),             if_else(motif_name=="^ZN*",paste(motif_name, RANK, sep="_"), if_else(motif_name=="ZSCAN4",paste(motif_name, RANK,sep="_"),motif_name))))%>%
+  distinct(CLUSTER,.keep_all = TRUE) %>% 
+  slice_head(n=5) %>% 
+  ggplot(., aes (y= reorder(motif_name,log10Evalue))) +
+  geom_col(aes(x=log10Evalue),fill=mrc_palette[mrc_type]) +
+   geom_point(aes(x=`TP%`*2.3), size =4)+
+   # geom_line(aes(x=`TP%`,y= motif_name, group=log10Evalue))+
+  scale_x_continuous(expand=c (0,.25),sec.axis = sec_axis(transform= ~./2.3,name="Percent of peaks with motif"))+
   # geom_text(aes())
   theme_classic()+
   ylab("Enriched TF motif")+
@@ -1330,10 +1380,7 @@ spec_dataframe_200 %>%
   ylab("Enriched TF motif")+
   ggtitle(paste( mrc_type,"response peaks 200 bp Enrichment ratio:",ER_rat," merged motif clusters"))
 
-# spec_dataframe %>% 
-#   dplyr::filter(mrc==mrc_type) %>% 
-#   dplyr::filter(ENR_RATIO>ER_rat) #%>% 
-#   dplyr::select(RANK,CLUSTER, SITES,SIM_MOTIF,ALT_ID, ID,EVALUE, TP:'FP%', motif_name)
+
 ```
 
 ##### LR_close
@@ -1378,10 +1425,6 @@ spec_dataframe %>%
   ylab("Enriched TF motif")+
   ggtitle(paste( mrc_type,"response peaks Enrichment ratio:",ER_rat," merged motif clusters"))
 
-# spec_dataframe %>% 
-#   dplyr::filter(mrc==mrc_type) %>% 
-#   dplyr::filter(ENR_RATIO>ER_rat) #%>% 
-#   dplyr::select(RANK,CLUSTER, SITES,SIM_MOTIF,ALT_ID, ID,EVALUE, TP:'FP%', motif_name)
 ```
 
 
@@ -1474,14 +1517,14 @@ ESR_OC_resized <- resize(ESR_OC_gr, width = 400,fix='center')
 # seq_all_200
 
 # saveRDS(seq_all_cd_200, "data/Final_four_data/sequencing_cd_200_object8_motif.RDS")
-seq_all_200 <- readRDS("data/Final_four_data/sequencing_R200_object8_motif.RDS")
+# seq_all_200 <- readRDS("data/Final_four_data/sequencing_R200_object8_motif.RDS")
 seq_all_cd_200 <- readRDS("data/Final_four_data/sequencing_cd_200_object8_motif.RDS")
 ```
 
 
 #### NRF1
 
-not redone yet
+
 ```{r NRF1}
 # 
 # motifs_NRF1 = query(query(MotifDb, 'Hsapiens'), 'NRF1')
@@ -1492,7 +1535,7 @@ not redone yet
 #     ID = 'NRF1',
 #     profileMatrix = NRF1_motif)
 # 
-# list_nrf1 = lapply(unlist(seq_all) , FUN=searchSeq, x=NRF1_pwm, min.score="80%", strand="*")
+# list_nrf1 = lapply(unlist(seq_all_cd_200) , FUN=searchSeq, x=NRF1_pwm, min.score="80%", strand="*")
 # 
 # nrf1storage <- map_dfr(list_nrf1, ~as.data.frame(.x), .id="id")
 
@@ -1500,9 +1543,9 @@ not redone yet
 nrf1_motif_8group <- readRDS("data/Final_four_data/nrf1_motif_8group.RDS")
 nrf1_motif_8group %>%
   mutate(id= gsub("_resized","",id)) %>% 
-  dplyr::filter(id =="EAR_open"|id == "NR") %>%
+  dplyr::filter(id =="EAR_open"|id == "NR"|id =="ESR_close") %>%
    dplyr::filter(relScore>.90) %>%
-  mutate(position=start-500) %>% 
+  mutate(position=start-200) %>% 
   ggplot(.,aes(position, color = id))+
   geom_density(trim = FALSE,size=1.5) +
   theme_bw() +
@@ -1511,8 +1554,8 @@ nrf1_motif_8group %>%
 spec_dataframe_200 %>% 
   # dplyr::filter(mrc=="LR_close")
   # dplyr::filter(is.na(ENR_RATIO))
-  dplyr::filter(stringr::str_detect(motif_name,"Nrf"))#%>%
-  # dplyr::select(RANK ,CLUSTER,mrc,motif_name,ID:CONSENSUS,EVALUE,ENR_RATIO,`TP%`)
+  dplyr::filter(stringr::str_detect(motif_name,"Nrf"))%>%
+  dplyr::select(RANK ,CLUSTER,mrc,motif_name,ID:CONSENSUS,EVALUE.x,ENR_RATIO,`TP%`)
 ```
 
 #### BACH2
@@ -1561,7 +1604,7 @@ spec_dataframe %>%
 
 #### ZNF384
 not redone yet
-```{r ZNF384}
+```{r ZNF384, eval=FALSE, include=FALSE}
 
 # motifs_ZNF384 = query(query(MotifDb, 'Hsapiens'), 'ZNF384')
 # ZNF384_motif <- motifs_ZNF384$`Hsapiens-jaspar2022-ZNF384-MA1125.1`
@@ -1592,18 +1635,18 @@ znf384_motif_8group <- readRDS("data/Final_four_data/znf384_motif_8group.RDS")
 znf384_motif_8group %>%
   mutate(id= gsub("_resized","",id)) %>% 
   # dplyr::filter(id =="EAR_open"|id == "NR"|id=="EAR_close") %>% 
-  dplyr::filter(relScore>0.9) %>%
+  # dplyr::filter(relScore>0.9) %>%
   mutate(position=start-500) %>% 
   ggplot(.,aes(position, color = id))+
   geom_density(trim = FALSE,size=1.5) +
   theme_bw() +
   scale_color_manual(values=mrc_palette)+
   ggtitle("ZNF384 motif")
-spec_dataframe %>% 
+spec_dataframe_200 %>% 
   # dplyr::filter(mrc=="LR_close")
   # dplyr::filter(is.na(ENR_RATIO))
   dplyr::filter(stringr::str_detect( motif_name,"ZNF384")) %>% 
-  dplyr::select(RANK ,CLUSTER,mrc,motif_name,ID:CONSENSUS,EVALUE,ENR_RATIO,`TP%`)
+  dplyr::select(RANK ,CLUSTER,mrc,motif_name,ID:CONSENSUS,EVALUE.x,ENR_RATIO,`TP%`)
 
 ```
 
@@ -1663,17 +1706,17 @@ spec_dataframe %>%
 Atf3_motif_8group <- readRDS("data/Final_four_data/Atf3_motif_8group.RDS")
 Atf3_motif_8group %>%
   mutate(id= gsub("_resized","",id)) %>% 
-  # dplyr::filter(id =="EAR_open"|id == "NR"|id=="EAR_close") %>%
-  dplyr::filter(relScore>0.90) %>%
-  mutate(position=start-500) %>% 
+  dplyr::filter(id =="ESR_open"|id == "NR"|id=="EAR_close"|id =="LR_open"|id =="ESR_D") %>%
+  # dplyr::filter(relScore>0.90) %>%
+  mutate(position=start-200) %>% 
   ggplot(.,aes(position, color = id))+
   geom_density(trim = FALSE,size=1.5) +
   theme_bw() +
   scale_color_manual(values=mrc_palette)+
   ggtitle("Atf3 motif")
-spec_dataframe %>% 
+spec_dataframe_200 %>% 
   dplyr::filter(stringr::str_detect( motif_name,"Atf^*")) %>% 
-  dplyr::select(RANK ,CLUSTER,mrc,motif_name,ID:CONSENSUS,EVALUE,ENR_RATIO,`TP%`)
+  dplyr::select(RANK ,CLUSTER,mrc,motif_name,ID:CONSENSUS,EVALUE.x,ENR_RATIO,`TP%`)
 ```
 
 #### TP53
@@ -1704,9 +1747,9 @@ TP53_motif_8group %>%
   theme_bw() +
   scale_color_manual(values=mrc_palette)+
   ggtitle("TP53 motif")
-spec_dataframe %>% 
+spec_dataframe_200 %>% 
   dplyr::filter(stringr::str_detect( motif_name,"TP^*")) %>% 
-  dplyr::select(RANK ,CLUSTER,mrc,motif_name,ID:CONSENSUS,EVALUE,ENR_RATIO,`TP%`)
+  dplyr::select(RANK ,CLUSTER,mrc,motif_name,ID:CONSENSUS,EVALUE.x,ENR_RATIO,`TP%`)
 ```
 
 #### TP73
@@ -1738,9 +1781,9 @@ TP73_motif_8group %>%
   theme_bw() +
   scale_color_manual(values=mrc_palette)+
   ggtitle("TP73 motif")
-spec_dataframe %>% 
+spec_dataframe_200 %>% 
   dplyr::filter(stringr::str_detect( motif_name,"TP73^*")) %>% 
-  dplyr::select(RANK ,CLUSTER,mrc,motif_name,ID:CONSENSUS,EVALUE,ENR_RATIO,`TP%`)
+  dplyr::select(RANK ,CLUSTER,mrc,motif_name,ID:CONSENSUS,EVALUE.x,ENR_RATIO,`TP%`)
 ```
 
 
@@ -1764,7 +1807,7 @@ JUNB_motif_8group <- readRDS("data/Final_four_data/JUNB_motif_8group200_cd.RDS")
 
 JUNB_motif_8group %>%
   mutate(id= gsub("_resized","",id)) %>% 
-   dplyr::filter(id =="LR_open"|id == "NR"|id=="ESR_open") %>%
+   dplyr::filter(id =="LR_open"|id == "NR"|id=="ESR_open"|id =="EAR_close"|id=="ESR_clop") %>%
   # dplyr::filter(relScore>0.90) %>%
   # dplyr::filter(id != "ESR_OC") %>% 
   mutate(position=start-200) %>%
@@ -1773,9 +1816,9 @@ JUNB_motif_8group %>%
   theme_bw() +
   scale_color_manual(values=mrc_palette)+
   ggtitle("JUNB motif")
-spec_dataframe %>% 
+spec_dataframe_200 %>% 
   dplyr::filter(stringr::str_detect( motif_name,"JUNB^*")) %>% 
-  dplyr::select(RANK ,CLUSTER,mrc,motif_name,ID:CONSENSUS,EVALUE,ENR_RATIO,`TP%`)
+  dplyr::select(RANK ,CLUSTER,mrc,motif_name,ID:CONSENSUS,EVALUE.x,ENR_RATIO,`TP%`)
 ```
 
 
@@ -1798,8 +1841,8 @@ MEIS2_motif_8group <- readRDS("data/Final_four_data/MEIS2_motif_8group200_cd.RDS
 
 MEIS2_motif_8group %>%
   mutate(id= gsub("_resized","",id)) %>% 
-  dplyr::filter(id =="LR_close"|id == "NR"|id=="ESR_close"|id=="EAR_close") %>%
-  # dplyr::filter(relScore>0.90) %>%
+  dplyr::filter(id =="LR_close"|id == "NR"|id=="ESR_close"|id=="EAR_close"|id=="ESR_D") %>%
+  dplyr::filter(relScore>0.90) %>%
   # dplyr::filter(id != "ESR_OC") %>% 
   mutate(position=start-200) %>%
   ggplot(.,aes(position, color = id))+
@@ -1807,6 +1850,7 @@ MEIS2_motif_8group %>%
   theme_bw() +
   scale_color_manual(values=mrc_palette)+
   ggtitle("MEIS2 motif")
+
 spec_dataframe_200 %>% 
   dplyr::filter(stringr::str_detect( motif_name,"MEIS2^*")) %>% 
   dplyr::select(RANK ,CLUSTER,mrc,motif_name,ID:CONSENSUS,EVALUE.x,ENR_RATIO,`TP%`)
