@@ -840,6 +840,81 @@ ggretroposon_df <-retroposon_repeats %>%
                                     if_else(is.na(repClass_org), repClass_org,"Other"))))))) %>% 
     rbind(Nine_group_TE %>% dplyr::filter(repClass=="Retroposon") %>% mutate(mrc="all_peaks") %>% mutate(repClass_org=repClass)) 
 ```
+#### Examine SVA retroposon breakdown
+
+```{r  SVA examine, fig.width=7}
+
+ggretroposon_df
+Nine_group_TE %>% 
+  dplyr::filter(repClass=="Retroposon")
+
+nine_retro <- Nine_group_TE %>% 
+  dplyr::filter(repClass=="Retroposon") %>% 
+  dplyr::filter(mrc != "not_mrc") %>% 
+  rbind(., ggretroposon_df) %>% 
+  mutate(repName=factor(repName)) %>% 
+mutate(mrc=factor(mrc, levels = c("EAR_open","ESR_open",  "LR_open","ESR_opcl","EAR_close","ESR_close","LR_close","ESR_clop","NR","all_peaks","h.genome"))) #%>%
+  # dplyr::filter(mrc != "h.genome") 
+
+nine_retro %>% 
+  ggplot(., aes(x=mrc, fill= repName))+
+  geom_bar(position="fill", col="black")+
+  theme_classic()+
+  ggtitle(paste("Retroposon breakdown by nine clusters and Family",per_cov))+
+  scale_fill_retroposons()
+
+nine_retro %>% 
+   group_by(mrc,repName) %>% 
+  tally %>% 
+  pivot_wider(., id_cols = mrc, names_from = repName, values_from = n) %>% 
+  rowwise() %>% 
+ mutate(total= sum(c_across(1:6),na.rm =TRUE)) %>%
+  mutate(SVA_D_perc= SVA_D/sum(c_across(1:6),na.rm =TRUE)) %>% 
+  kable(., caption="Breakdown of Retroposon counts by Name") %>% 
+kable_paper("striped", full_width = TRUE) %>%
+  kable_styling(full_width = FALSE, font_size = 14)%>% 
+  scroll_box(height = "500px")
+
+nine_retro %>% 
+   group_by(mrc,repName) %>% 
+  tally %>% 
+  pivot_wider(., id_cols = mrc, names_from = repName, values_from = n) %>% 
+  rowwise() %>% 
+ mutate(total= sum(c_across(1:6),na.rm =TRUE)) %>%
+   mutate(SVA_D_perc = round((SVA_D / total) * 100, 2)) %>% 
+  # mutate(SVA_D_perc=sprintf("%.2f",SVA_D_perc))
+  dplyr::select(mrc, SVA_D, total, SVA_D_perc) %>% 
+  pivot_longer(., cols = SVA_D:SVA_D_perc, names_to = "sum_col",values_to = "values") %>% 
+  pivot_wider(., id_cols = sum_col, names_from = mrc, values_from = values) %>% 
+  kable(., caption="Breakdown of Retroposon SVA_D counts") %>% 
+kable_paper("striped", full_width = TRUE) %>%
+  kable_styling(full_width = TRUE, font_size = 14)%>% 
+  scroll_box(height = "500px")
+  
+SVA_EAR_open <- nine_retro %>% 
+  dplyr::filter(mrc =="EAR_open") %>% 
+  dplyr::select(Peakid, Peakid) %>% 
+  separate_wider_delim( Peakid,names= c("seqnames","start","end"),".", cols_remove=FALSE) # 
+  
+SVA_EAR_open %>% 
+GRanges() %>% 
+  write_bed("data/Final_four_data/meme_bed/SVA_EAR_open.bed")
+EAR_open %>% 
+  dplyr::select(seqnames:Peakid) %>% 
+  dplyr::filter(!Peakid %in% SVA_EAR_open$Peakid) %>% 
+  GRanges() %>% 
+  write_bed("data/Final_four_data/meme_bed/not_SVA_EAR_open.bed")
+not_SVA_EAR_open_gr <- import("data/Final_four_data/meme_bed/not_SVA_EAR_open.bed")
+SVA_EAR_open_gr <- import("data/Final_four_data/meme_bed/SVA_EAR_open.bed")
+ 
+not_SVA_EAR_open_resized <- resize(not_SVA_EAR_open_gr, width = 400,fix='center')
+not_SVA_EAR_open_resized %>% 
+  write_bed("data/Final_four_data/meme_bed/not_SVA_EAR_open_resized.bed")
+SVA_EAR_open_resized <- resize(SVA_EAR_open_gr, width = 400,fix='center')
+SVA_EAR_open_resized%>% 
+  write_bed("data/Final_four_data/meme_bed/SVA_EAR_open_resized.bed")
+```
+
 
 ### CG islands! 
 ```{r cgisland load}
@@ -2097,7 +2172,7 @@ for (matrix_name in names(matrix_list)) {
     }
   }
 }
-saveRDS(results_or,"data/Final_four_data/OR_results_TE_df_1bp.RDS")
+# saveRDS(results_or,"data/Final_four_data/OR_results_TE_df_1bp.RDS")
 # Print the resulting dataframe
 print(results_or) %>% 
   kable(., caption = "Odd ratio results and significance values of TE enrichment compared to No response group") %>% 
@@ -2187,5 +2262,13 @@ Reheat_data <- read_excel("data/other_papers/jah36123-sup-0002-tables2.xlsx")
     dplyr::filter(SYMBOL %in% Reheat_data$gene) %>% 
     left_join(., Reheat_data, by=c("SYMBOL"="gene")) %>% 
     dplyr::select(Peakid, SNPS, SYMBOL, gwas, fisher_pvalue:mean_lfc,dist_to_NG)
+```
+
+```{r spec200}
+spec_dataframe_200 <- readRDS("data/Final_four_data/spec_dataframe_200.RDS")
+
+spec_dataframe_200 %>% 
+  dplyr::filter(mrc=="LR_close") %>% 
+  dplyr::filter(stringr::str_detect( CONSENSUS,"GG^*"))  
 ```
 
