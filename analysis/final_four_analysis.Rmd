@@ -827,7 +827,7 @@ write_csv(median_24_lfc, "data/Final_four_data/median_24_lfc.csv")
 
 
 #### Correlation of LFC
-```{r LFC correlation, fig.height=8}
+```{r LFC correlation, fig.height=6}
 FCmatrix_ff <- subset(efit4$coefficients)
 
 colnames(FCmatrix_ff) <-
@@ -1584,19 +1584,24 @@ ESR_OC <- ESR_C %>%
 ESR_OC_gr <- ESR_OC %>% GRanges()
 
 # mylist_new <- list(EAR_open_gr, EAR_close_gr,ESR_open_gr, ESR_close_gr,ESR_C_gr,ESR_D_gr, LR_open_gr, LR_close_gr,NR_gr, background_gr)
-# names(mylist_new) <- c("EAR_open", "EAR_close","ESR_open", "ESR_close","ESR_opcl","ESR_clop" "LR_open", "LR_close","NR","background")
+# names(mylist_new) <- c("EAR_open", "EAR_close","ESR_open", "ESR_close","ESR_opcl","ESR_clop", "LR_open", "LR_close","NR","background")
 # saveRDS(ESR_D,"data/Final_four_data/ESR_D.RDS")
 # peakAnnoList<- lapply(mylist_new, annotatePeak, tssRegion =c(-2000,2000), TxDb= txdb)
-# names(peakAnnoList) <- c("EAR_open", "EAR_close","ESR_open", "ESR_close","ESR_OC", "LR_open", "LR_close","NR","background")
-# saveRDS(peakAnnoList, "data/Final_four_data/peakAnnoList_ff_8motif.RDS")
+# names(peakAnnoList) <- c("EAR_open", "EAR_close","ESR_open", "ESR_close","ESR_opcl","ESR_clop", "LR_open", "LR_close","NR","background")
+# saveRDS(peakAnnoList, "data/Final_four_data/peakAnnoList_ff_9motif.RDS")
 peakAnnoList_8_motif <- readRDS("data/Final_four_data/peakAnnoList_ff_8motif.RDS")
-plotAnnoBar(peakAnnoList_8_motif[c(8,1:7)])+
+peakAnnoList_9_motif <- readRDS("data/Final_four_data/peakAnnoList_ff_9motif.RDS")
+plotAnnoBar(peakAnnoList_8_motif[c(8,1,3,5,6,2,4,7)])+
+  ggtitle ("Genomic Feature Distribution, eight groups")
+
+plotAnnoBar(peakAnnoList_9_motif[c(9,1,3,7,5,2,4,8,6)])+
   ggtitle ("Genomic Feature Distribution, eight groups")
 
 ```
 
 #### Distrib. of Peak length by class
-```{r Peakwidth distribution by class}
+```{r Peakwidth distribution by class, fig.width=8}
+
 mrc_palette <- c(
     "EAR_open" = "#F8766D",
     "EAR_close" = "#f6483c",
@@ -1615,22 +1620,34 @@ peak_length_df <- new_peaks_gr %>%
   as.data.frame %>% 
   dplyr::select(peakid,width) 
 peak_length_df %>% 
-  mutate(mrc=if_else(peakid %in% EAR_open$Peakid, "EAR_open",
-            if_else(peakid %in% EAR_close$Peakid, "EAR_close",
-            if_else(peakid %in% ESR_open$Peakid,"ESR_open",
-            if_else(peakid %in% ESR_close$Peakid,"ESR_close",
-            if_else(peakid %in% ESR_C$Peakid,"ESR_opcl",
-            if_else(peakid %in% LR_open$Peakid,"LR_open",
-            if_else(peakid %in% LR_close$Peakid,"LR_close",
-            if_else(peakid %in% NR_ff$Peakid,"NR",
-            if_else(peakid %in% ESR_D$Peakid,"ESR_clop","not_mrc")))))))))) %>% 
+  mutate(mrc = case_when(
+    peakid %in% EAR_open$Peakid ~ "EAR_open",
+    peakid %in% EAR_close$Peakid ~ "EAR_close",
+    peakid %in% ESR_open$Peakid ~ "ESR_open",
+    peakid %in% ESR_close$Peakid ~ "ESR_close",
+    peakid %in% ESR_C$Peakid ~ "ESR_opcl",
+    peakid %in% LR_open$Peakid ~ "LR_open",
+    peakid %in% LR_close$Peakid ~ "LR_close",
+    peakid %in% NR_ff$Peakid ~ "NR",
+    peakid %in% ESR_D$Peakid ~ "ESR_clop",
+    TRUE ~ "not_mrc"
+  )) %>%  
   dplyr::filter(mrc!="not_mrc") %>% 
   ggplot(., aes(x=mrc, y=width, fill = mrc))+
   geom_boxplot()+
+  ggpubr::stat_compare_means(method = "wilcox.test",label= "p.format",step.increase= 0.1,comparisons = list(c("EAR_close","NR"),
+                                        c("EAR_open", "NR"),
+                                        c("ESR_close","NR"),
+                                        c("ESR_open", "NR"),
+                                        c("LR_close","NR"),
+                                        c("LR_open","NR"),
+                                        c("ESR_opcl","NR"),
+                                        c("ESR_clop","NR")))+
   scale_fill_manual(values = mrc_palette)+
   theme_classic()
   
-
+  
+  
 
 ```
 
