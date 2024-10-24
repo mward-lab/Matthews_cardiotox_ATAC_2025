@@ -731,6 +731,22 @@ Class_status_df %>%
 #### Retroposon status  
 
 ```{r status plots Retroposons}
+mrc_palette <- c(
+    "EAR_open" = "#F8766D",
+    "EAR_close" = "#f6483c",
+    "ESR_open" = "#7CAE00",
+    "ESR_close" = "#587b00",
+    "ESR_C"="grey40",
+     "ESR_opcl"="grey40",
+    "ESR_D"="tan",
+     "ESR_clop"="tan",
+     "ESR_OC" = "#6a9500",
+     "LR_open" = "#00BFC4",
+     "LR_close" = "#008d91",
+     "NR" = "#C77CFF",
+    "all_peaks"= "lightpink"
+  )
+
 Class_status_df %>% 
   distinct(Peakid, mrc, Retro_status) %>% 
   ggplot(., aes(x=mrc, fill= Retro_status))+
@@ -738,12 +754,12 @@ Class_status_df %>%
   theme_classic()+
   ggtitle("Retroposon status")
 
-Class_status_df %>% 
-  distinct(Peakid, mrc, Retro_status) %>% 
-  group_by(mrc,Retro_status) %>% 
-  tally %>% 
-  pivot_wider(., id_cols = mrc, names_from = Retro_status, values_from = n) %>% 
-  mutate(Per_peak = Retro_peak/(not_Retro+Retro_peak)*100) %>% 
+Class_status_df %>%
+  distinct(Peakid, mrc, Retro_status) %>%
+  group_by(mrc,Retro_status) %>%
+  tally %>%
+  pivot_wider(., id_cols = mrc, names_from = Retro_status, values_from = n) %>%
+  mutate(Per_peak = Retro_peak/(not_Retro+Retro_peak)*100) %>%
   kable(., caption= "Retro status of unique Peaks") %>% 
   kable_paper("striped", full_width = TRUE) %>%
   kable_styling(full_width = FALSE, font_size = 14) 
@@ -751,6 +767,46 @@ Class_status_df %>%
 Class_status_df %>% 
   dplyr::filter(Peakid =="chr2.178547784.178549172")
 
+
+
+Class_status_df %>%
+  distinct(Peakid, mrc, Retro_status) %>%
+  rbind(Nine_group_TE %>% 
+  mutate(Retro_status = if_else(is.na(repClass)&is.na(per_ol),"not_Retro",
+                                if_else(repClass=="Retroposon","Retro_peak", "not_Retro"))) %>% 
+    dplyr::select(Peakid,Retro_status) %>% 
+    mutate(mrc="all_peaks")) %>% 
+  group_by(mrc,Retro_status) %>%
+  tally %>%
+  pivot_wider(., id_cols = mrc, names_from = Retro_status, values_from = n) %>%
+  mutate(Per_peak = Retro_peak/(not_Retro+Retro_peak)*100) %>% 
+  dplyr::select(mrc, Per_peak) %>%
+ 
+  ggplot(., aes(x=mrc,y=Per_peak)) + 
+  geom_col(aes(fill=mrc))+
+  scale_fill_manual(values=mrc_palette)+
+  theme_bw()
+# Class_status_df %>% 
+#   group_by(Retro_status) %>% 
+#   distinct(Peakid,.keep_all = TRUE) %>% 
+#   tally
+
+subsetall_df %>% 
+  mutate(Retro_status = if_else(is.na(repClass)&is.na(per_ol),"not_Retro",
+                                if_else(repClass=="Retroposon","Retro_peak", "not_Retro"))) %>% 
+  group_by(Retro_status,mrc) %>% 
+  distinct(Peakid,.keep_all = TRUE) %>% 
+  tally
+
+# Class_status_df %>% distinct(Peakid) %>% tally
+# subsetall_df%>% distinct(Peakid) %>% tally
+summary <- Nine_group_TE%>% mutate(Retro_status = if_else(is.na(repClass)&is.na(per_ol),"not_Retro",
+                                if_else(repClass=="Retroposon","Retro_peak", "not_Retro"))) %>% dplyr::select(Peakid,Retro_status) %>%
+  group_by(Peakid) %>% 
+    summarise(Retro_status=paste(unique(Retro_status), collapse = ","))
+summary %>% 
+  # distinct(Peakid,Retro_status) %>%
+  group_by(Retro_status) %>% tally
 ```
 
 
