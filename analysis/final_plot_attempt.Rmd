@@ -340,7 +340,8 @@ ATAC_counts %>%
 ```
 ### IGSFB9
 ```{r IGSFB9}
-IGSF9B_peak <- data.frame(peak="chr11.133681701.133682451", RNA="IGSF9B", ENTREZID=22997)
+
+IGSF9B_peak <- data.frame(peak="chr11.133816825.133817041", RNA="IGSFB9", ENTREZID=22997)
 
 RNA_counts %>% 
   column_to_rownames("ENTREZID") %>% 
@@ -390,18 +391,17 @@ ATAC_counts %>%
 
 schneider_df
 ```
-### POLR3A rs7094302
+### rs12051934 ALPK2
 
-```{r POLR3A}
-schneider_df %>% dplyr::filter(RSID=="rs7094302")
-POLR3A_peak <- data.frame(peak="chr10.77970939.77971849", RNA="POLR3A", ENTREZID=11128)
+```{r ALPK2}
 
+ALPK2_peak <- data.frame(peak="chr18.58336709.58336869", RNA="ALPK2", ENTREZID=115701)
 
 RNA_counts %>% 
   column_to_rownames("ENTREZID") %>% 
   cpm(., log = TRUE) %>% 
   as.data.frame() %>% 
-  dplyr::filter(row.names(.) %in% POLR3A_peak$ENTREZID) %>% 
+  dplyr::filter(row.names(.) %in% ALPK2_peak$ENTREZID) %>% 
   mutate(ENTREZID = row.names(.)) %>% 
   pivot_longer(cols = !ENTREZID, names_to = "sample", values_to = "counts") %>% 
   separate("sample", into = c("trt","ind","time")) %>% 
@@ -409,7 +409,7 @@ RNA_counts %>%
   mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
   ggplot(., aes (x = time, y=counts))+
   geom_boxplot(aes(fill=trt))+
-  ggtitle("POLR3A RNA expression")+
+  ggtitle("ALPK2 RNA expression")+
   scale_fill_manual(values = drug_pal)+
   theme_bw()+
   ylab("log2 cpm RNA")
@@ -430,7 +430,7 @@ ATAC_counts %>%
   rename_with(.,~gsub( "V" ,'VEH',.)) %>%
   rename_with(.,~gsub("24h","_24h",.)) %>%
   rename_with(.,~gsub("3h","_3h",.)) %>% 
-  dplyr::filter(row.names(.) %in% POLR3A_peak$peak) %>% 
+  dplyr::filter(row.names(.) %in% ALPK2_peak$peak) %>% 
   mutate(Peakid = row.names(.)) %>% 
   pivot_longer(cols = !Peakid, names_to = "sample", values_to = "counts") %>% 
   separate("sample", into = c("ind","trt","time")) %>% 
@@ -438,18 +438,16 @@ ATAC_counts %>%
   mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
   ggplot(., aes (x = time, y=counts))+
   geom_boxplot(aes(fill=trt))+
-  ggtitle("POLR3A ATAC accessibility")+
+  ggtitle("ALPK2 ATAC accessibility")+
   scale_fill_manual(values = drug_pal)+
   theme_bw()+
   ylab("log2 cpm ATAC")
 
 ```
-### PRDX6 rs4916358
+### rs4916358 PRDX6 
 ```{r PRDX6}
-
-schneider_df %>% dplyr::filter(RSID=="rs4916358")
-PRDX6_peak <- data.frame(peak="chr1.173420196.173420594", RNA="PRDX6", ENTREZID=9588)
-
+schneider_df %>% dplyr::filter(SYMBOL.x=="PRDX6")
+PRDX6_peak <- data.frame(peak="chr1.173473597.173473889", RNA="PRDX6", ENTREZID=9588)
 
 RNA_counts %>% 
   column_to_rownames("ENTREZID") %>% 
@@ -503,18 +501,16 @@ plotpanelATAC %>%
 ```
 
 
-### SPPL3 rs16950058
-```{r SPPL3-1}
-
-schneider_df %>% dplyr::filter(RSID=="rs16950058")
-SPPL3_peak <- data.frame(peak="chr12.120751440.120751702", RNA="SPPL3", ENTREZID=121665)
-
+### MSANTD2-AS1 rs7111513
+```{r MSANTD2-AS1-1}
+schneider_df %>% dplyr::filter(RSID=="rs7111513")
+MSANTD2_AS1_peak <- data.frame(peak="chr11.124863016.124863456",RNA="MSANTD2-AS1", ENTREZID=100507283)
 
 RNA_counts %>% 
   column_to_rownames("ENTREZID") %>% 
   cpm(., log = TRUE) %>% 
   as.data.frame() %>% 
-  dplyr::filter(row.names(.) %in% SPPL3_peak$ENTREZID) %>% 
+  dplyr::filter(row.names(.) %in% MSANTD2_AS1_peak$ENTREZID) %>% 
   mutate(ENTREZID = row.names(.)) %>% 
   pivot_longer(cols = !ENTREZID, names_to = "sample", values_to = "counts") %>% 
   separate("sample", into = c("trt","ind","time")) %>% 
@@ -522,7 +518,7 @@ RNA_counts %>%
   mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
   ggplot(., aes (x = time, y=counts))+
   geom_boxplot(aes(fill=trt))+
-  ggtitle(paste(SPPL3_peak$RNA," RNA expression"))+
+  ggtitle(paste(MSANTD2_AS1_peak$RNA," RNA expression"))+
   scale_fill_manual(values = drug_pal)+
   theme_bw()+
   ylab("log2 cpm RNA")
@@ -546,7 +542,7 @@ plotpanelATAC <- ATAC_counts %>%
   rename_with(.,~gsub("3h","_3h",.)) 
 
 plotpanelATAC %>% 
-  dplyr::filter(row.names(.) %in% SPPL3_peak$peak) %>% 
+  dplyr::filter(row.names(.) %in% MSANTD2_AS1_peak$peak) %>% 
   mutate(Peakid = row.names(.)) %>% 
   pivot_longer(cols = !Peakid, names_to = "sample", values_to = "counts") %>% 
   separate("sample", into = c("ind","trt","time")) %>% 
@@ -554,7 +550,7 @@ plotpanelATAC %>%
   mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
    ggplot(., aes (x = time, y=counts))+
   geom_boxplot(aes(fill=trt))+
-  ggtitle(paste(SPPL3_peak$RNA," gene and \n",SPPL3_peak$peak," ATAC accessibility"))+
+  ggtitle(paste(MSANTD2_AS1_peak$RNA," gene and \n",MSANTD2_AS1_peak$peak," ATAC accessibility"))+
   scale_fill_manual(values = drug_pal)+
   theme_bw()+
   ylab("log2 cpm ATAC")
@@ -562,19 +558,17 @@ plotpanelATAC %>%
 ```
 
 
-
-### SPPL3-2 rs2238161
-```{r SPPL3}
-
-schneider_df %>% dplyr::filter(RSID=="rs2238161")
-SPPL3_peak <- data.frame(peak="chr12.120799289.120799823", RNA="SPPL3", ENTREZID=121665)
-
+### MSANTD2-AS1 rs7111513
+```{r MSANTD2-AS1-1_2}
+schneider_df %>% dplyr::filter(RSID=="rs5017048")
+MSANTD2_AS1_peak <- data.frame(peak="chr11.124863016.124863456", RNA="MSANTD2-AS1", ENTREZID=	
+100507283)
 
 RNA_counts %>% 
   column_to_rownames("ENTREZID") %>% 
   cpm(., log = TRUE) %>% 
   as.data.frame() %>% 
-  dplyr::filter(row.names(.) %in% SPPL3_peak$ENTREZID) %>% 
+  dplyr::filter(row.names(.) %in% MSANTD2_AS1_peak$ENTREZID) %>% 
   mutate(ENTREZID = row.names(.)) %>% 
   pivot_longer(cols = !ENTREZID, names_to = "sample", values_to = "counts") %>% 
   separate("sample", into = c("trt","ind","time")) %>% 
@@ -582,7 +576,7 @@ RNA_counts %>%
   mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
   ggplot(., aes (x = time, y=counts))+
   geom_boxplot(aes(fill=trt))+
-  ggtitle(paste(SPPL3_peak$RNA," RNA expression"))+
+  ggtitle(paste(MSANTD2_AS1_peak$RNA," RNA expression"))+
   scale_fill_manual(values = drug_pal)+
   theme_bw()+
   ylab("log2 cpm RNA")
@@ -606,7 +600,7 @@ plotpanelATAC <- ATAC_counts %>%
   rename_with(.,~gsub("3h","_3h",.)) 
 
 plotpanelATAC %>% 
-  dplyr::filter(row.names(.) %in% SPPL3_peak$peak) %>% 
+  dplyr::filter(row.names(.) %in% MSANTD2_AS1_peak$peak) %>% 
   mutate(Peakid = row.names(.)) %>% 
   pivot_longer(cols = !Peakid, names_to = "sample", values_to = "counts") %>% 
   separate("sample", into = c("ind","trt","time")) %>% 
@@ -614,7 +608,7 @@ plotpanelATAC %>%
   mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
    ggplot(., aes (x = time, y=counts))+
   geom_boxplot(aes(fill=trt))+
-  ggtitle(paste(SPPL3_peak$RNA," gene and \n",SPPL3_peak$peak," ATAC accessibility"))+
+  ggtitle(paste(MSANTD2_AS1_peak$RNA," gene and \n",MSANTD2_AS1_peak$peak," ATAC accessibility"))+
   scale_fill_manual(values = drug_pal)+
   theme_bw()+
   ylab("log2 cpm ATAC")
@@ -623,18 +617,79 @@ plotpanelATAC %>%
 
 
 
-### GRAMD4 rs4253763
-```{r GRAMD4}
+### SLC8A1 rs6746423
+```{r SLC8A1}
+
+schneider_df %>% dplyr::filter(RSID=="rs6746423")
+SLC8A1_peak <- data.frame(peak="chr2.41038390.41038934", RNA="SLC8A1", ENTREZID=6546)
+
+
+RNA_counts %>% 
+  column_to_rownames("ENTREZID") %>% 
+  cpm(., log = TRUE) %>% 
+  as.data.frame() %>% 
+  dplyr::filter(row.names(.) %in% SLC8A1_peak$ENTREZID) %>% 
+  mutate(ENTREZID = row.names(.)) %>% 
+  pivot_longer(cols = !ENTREZID, names_to = "sample", values_to = "counts") %>% 
+  separate("sample", into = c("trt","ind","time")) %>% 
+  mutate(time=factor(time, levels = c("3h","24h"))) %>% 
+  mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
+  ggplot(., aes (x = time, y=counts))+
+  geom_boxplot(aes(fill=trt))+
+  ggtitle(paste(SLC8A1_peak$RNA," RNA expression"))+
+  scale_fill_manual(values = drug_pal)+
+  theme_bw()+
+  ylab("log2 cpm RNA")
+
+
+
+plotpanelATAC <- ATAC_counts %>% 
+  cpm(., log = TRUE) %>% 
+   as.data.frame() %>%
+  rename_with(.,~gsub(pattern = "Ind1_75", replacement = "1_",.)) %>%
+  rename_with(.,~gsub(pattern = "Ind2_87", replacement = "2_",.)) %>%
+  rename_with(.,~gsub(pattern = "Ind3_77", replacement = "3_",.)) %>%
+  rename_with(.,~gsub(pattern = "Ind6_71", replacement = "6_",.)) %>%
+  rename_with(.,~gsub( "DX" ,'DOX',.)) %>%
+  rename_with(.,~gsub( "DA" ,'DNR',.)) %>%
+  rename_with(.,~gsub( "E" ,'EPI',.)) %>%
+  rename_with(.,~gsub( "T" ,'TRZ',.)) %>%
+  rename_with(.,~gsub( "M" ,'MTX',.)) %>%
+  rename_with(.,~gsub( "V" ,'VEH',.)) %>%
+  rename_with(.,~gsub("24h","_24h",.)) %>%
+  rename_with(.,~gsub("3h","_3h",.)) 
+
+plotpanelATAC %>% 
+  dplyr::filter(row.names(.) %in% SLC8A1_peak$peak) %>% 
+  mutate(Peakid = row.names(.)) %>% 
+  pivot_longer(cols = !Peakid, names_to = "sample", values_to = "counts") %>% 
+  separate("sample", into = c("ind","trt","time")) %>% 
+  mutate(time=factor(time, levels = c("3h","24h"))) %>% 
+  mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
+   ggplot(., aes (x = time, y=counts))+
+  geom_boxplot(aes(fill=trt))+
+  ggtitle(paste(SLC8A1_peak$RNA," gene and \n",SLC8A1_peak$peak," ATAC accessibility"))+
+  scale_fill_manual(values = drug_pal)+
+  theme_bw()+
+  ylab("log2 cpm ATAC")
+
+```
+
+
+
+### CDPF1 rs4253763; rs11090819
+```{r CDPF1}
 
 schneider_df %>% dplyr::filter(RSID=="rs4253763")
-GRAMD4_peak <- data.frame(peak="chr22.46617259.46617993", RNA="GRAMD4", ENTREZID=23151)
+CDPF1_peak <- data.frame(peak="chr22.46225398.46226192", RNA="CDPF1", ENTREZID=	
+150383)
 
 
 RNA_counts %>% 
   column_to_rownames("ENTREZID") %>% 
   cpm(., log = TRUE) %>% 
   as.data.frame() %>% 
-  dplyr::filter(row.names(.) %in% GRAMD4_peak$ENTREZID) %>% 
+  dplyr::filter(row.names(.) %in% CDPF1_peak$ENTREZID) %>% 
   mutate(ENTREZID = row.names(.)) %>% 
   pivot_longer(cols = !ENTREZID, names_to = "sample", values_to = "counts") %>% 
   separate("sample", into = c("trt","ind","time")) %>% 
@@ -642,7 +697,7 @@ RNA_counts %>%
   mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
   ggplot(., aes (x = time, y=counts))+
   geom_boxplot(aes(fill=trt))+
-  ggtitle(paste(GRAMD4_peak$RNA," RNA expression"))+
+  ggtitle(paste(CDPF1_peak$RNA," RNA expression"))+
   scale_fill_manual(values = drug_pal)+
   theme_bw()+
   ylab("log2 cpm RNA")
@@ -666,7 +721,7 @@ plotpanelATAC <- ATAC_counts %>%
   rename_with(.,~gsub("3h","_3h",.)) 
 
 plotpanelATAC %>% 
-  dplyr::filter(row.names(.) %in% GRAMD4_peak$peak) %>% 
+  dplyr::filter(row.names(.) %in% CDPF1_peak$peak) %>% 
   mutate(Peakid = row.names(.)) %>% 
   pivot_longer(cols = !Peakid, names_to = "sample", values_to = "counts") %>% 
   separate("sample", into = c("ind","trt","time")) %>% 
@@ -674,10 +729,299 @@ plotpanelATAC %>%
   mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
    ggplot(., aes (x = time, y=counts))+
   geom_boxplot(aes(fill=trt))+
-  ggtitle(paste(GRAMD4_peak$RNA," gene and \n",GRAMD4_peak$peak," ATAC accessibility"))+
+  ggtitle(paste(CDPF1_peak$RNA," gene and \n",CDPF1_peak$peak," ATAC accessibility"))+
   scale_fill_manual(values = drug_pal)+
   theme_bw()+
   ylab("log2 cpm ATAC")
 
 ```
+
+
+### GIN1 rs6860588; rs3776874; rs11952361
+```{r GIN1}
+schneider_df %>% dplyr::filter(RSID=="rs11952361")
+GIN1_peak <- data.frame(peak="chr5.102947036.102947471", RNA="GIN1", ENTREZID=	54826)
+
+RNA_counts %>% 
+  column_to_rownames("ENTREZID") %>% 
+  cpm(., log = TRUE) %>% 
+  as.data.frame() %>% 
+  dplyr::filter(row.names(.) %in% GIN1_peak$ENTREZID) %>% 
+  mutate(ENTREZID = row.names(.)) %>% 
+  pivot_longer(cols = !ENTREZID, names_to = "sample", values_to = "counts") %>% 
+  separate("sample", into = c("trt","ind","time")) %>% 
+  mutate(time=factor(time, levels = c("3h","24h"))) %>% 
+  mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
+  ggplot(., aes (x = time, y=counts))+
+  geom_boxplot(aes(fill=trt))+
+  ggtitle(paste(GIN1_peak$RNA," RNA expression"))+
+  scale_fill_manual(values = drug_pal)+
+  theme_bw()+
+  ylab("log2 cpm RNA")
+
+
+
+plotpanelATAC <- ATAC_counts %>% 
+  cpm(., log = TRUE) %>% 
+   as.data.frame() %>%
+  rename_with(.,~gsub(pattern = "Ind1_75", replacement = "1_",.)) %>%
+  rename_with(.,~gsub(pattern = "Ind2_87", replacement = "2_",.)) %>%
+  rename_with(.,~gsub(pattern = "Ind3_77", replacement = "3_",.)) %>%
+  rename_with(.,~gsub(pattern = "Ind6_71", replacement = "6_",.)) %>%
+  rename_with(.,~gsub( "DX" ,'DOX',.)) %>%
+  rename_with(.,~gsub( "DA" ,'DNR',.)) %>%
+  rename_with(.,~gsub( "E" ,'EPI',.)) %>%
+  rename_with(.,~gsub( "T" ,'TRZ',.)) %>%
+  rename_with(.,~gsub( "M" ,'MTX',.)) %>%
+  rename_with(.,~gsub( "V" ,'VEH',.)) %>%
+  rename_with(.,~gsub("24h","_24h",.)) %>%
+  rename_with(.,~gsub("3h","_3h",.)) 
+
+plotpanelATAC %>% 
+  dplyr::filter(row.names(.) %in% GIN1_peak$peak) %>% 
+  mutate(Peakid = row.names(.)) %>% 
+  pivot_longer(cols = !Peakid, names_to = "sample", values_to = "counts") %>% 
+  separate("sample", into = c("ind","trt","time")) %>% 
+  mutate(time=factor(time, levels = c("3h","24h"))) %>% 
+  mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
+   ggplot(., aes (x = time, y=counts))+
+  geom_boxplot(aes(fill=trt))+
+  ggtitle(paste(GIN1_peak$RNA," gene and \n",GIN1_peak$peak," ATAC accessibility"))+
+  scale_fill_manual(values = drug_pal)+
+  theme_bw()+
+  ylab("log2 cpm ATAC")
+
+```
+
+
+### OGFRL1 rs1204328
+```{r OGFRL1}
+schneider_df %>% dplyr::filter(RSID=="rs1204328")
+OGFRL1_peak <- data.frame(peak="chr6.71712533.71713167", RNA="OGFRL1", ENTREZID=		79627)
+
+RNA_counts %>% 
+  column_to_rownames("ENTREZID") %>% 
+  cpm(., log = TRUE) %>% 
+  as.data.frame() %>% 
+  dplyr::filter(row.names(.) %in% OGFRL1_peak$ENTREZID) %>% 
+  mutate(ENTREZID = row.names(.)) %>% 
+  pivot_longer(cols = !ENTREZID, names_to = "sample", values_to = "counts") %>% 
+  separate("sample", into = c("trt","ind","time")) %>% 
+  mutate(time=factor(time, levels = c("3h","24h"))) %>% 
+  mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
+  ggplot(., aes (x = time, y=counts))+
+  geom_boxplot(aes(fill=trt))+
+  ggtitle(paste(OGFRL1_peak$RNA," RNA expression"))+
+  scale_fill_manual(values = drug_pal)+
+  theme_bw()+
+  ylab("log2 cpm RNA")
+
+
+
+plotpanelATAC <- ATAC_counts %>% 
+  cpm(., log = TRUE) %>% 
+   as.data.frame() %>%
+  rename_with(.,~gsub(pattern = "Ind1_75", replacement = "1_",.)) %>%
+  rename_with(.,~gsub(pattern = "Ind2_87", replacement = "2_",.)) %>%
+  rename_with(.,~gsub(pattern = "Ind3_77", replacement = "3_",.)) %>%
+  rename_with(.,~gsub(pattern = "Ind6_71", replacement = "6_",.)) %>%
+  rename_with(.,~gsub( "DX" ,'DOX',.)) %>%
+  rename_with(.,~gsub( "DA" ,'DNR',.)) %>%
+  rename_with(.,~gsub( "E" ,'EPI',.)) %>%
+  rename_with(.,~gsub( "T" ,'TRZ',.)) %>%
+  rename_with(.,~gsub( "M" ,'MTX',.)) %>%
+  rename_with(.,~gsub( "V" ,'VEH',.)) %>%
+  rename_with(.,~gsub("24h","_24h",.)) %>%
+  rename_with(.,~gsub("3h","_3h",.)) 
+
+plotpanelATAC %>% 
+  dplyr::filter(row.names(.) %in% OGFRL1_peak$peak) %>% 
+  mutate(Peakid = row.names(.)) %>% 
+  pivot_longer(cols = !Peakid, names_to = "sample", values_to = "counts") %>% 
+  separate("sample", into = c("ind","trt","time")) %>% 
+  mutate(time=factor(time, levels = c("3h","24h"))) %>% 
+  mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
+   ggplot(., aes (x = time, y=counts))+
+  geom_boxplot(aes(fill=trt))+
+  ggtitle(paste(OGFRL1_peak$RNA," gene and \n",OGFRL1_peak$peak," ATAC accessibility"))+
+  scale_fill_manual(values = drug_pal)+
+  theme_bw()+
+  ylab("log2 cpm ATAC")
+
+```
+
+
+
+### ATP6V1B2 rs12548222
+```{r ATP6V1B2}
+schneider_df %>% dplyr::filter(RSID=="rs12548222")
+ATP6V1B2_peak <- data.frame(peak="chr8.20115130.20115538", RNA="ATP6V1B2", ENTREZID=	526)
+
+RNA_counts %>% 
+  column_to_rownames("ENTREZID") %>% 
+  cpm(., log = TRUE) %>% 
+  as.data.frame() %>% 
+  dplyr::filter(row.names(.) %in% ATP6V1B2_peak$ENTREZID) %>% 
+  mutate(ENTREZID = row.names(.)) %>% 
+  pivot_longer(cols = !ENTREZID, names_to = "sample", values_to = "counts") %>% 
+  separate("sample", into = c("trt","ind","time")) %>% 
+  mutate(time=factor(time, levels = c("3h","24h"))) %>% 
+  mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
+  ggplot(., aes (x = time, y=counts))+
+  geom_boxplot(aes(fill=trt))+
+  ggtitle(paste(ATP6V1B2_peak$RNA," RNA expression"))+
+  scale_fill_manual(values = drug_pal)+
+  theme_bw()+
+  ylab("log2 cpm RNA")
+
+
+
+plotpanelATAC <- ATAC_counts %>% 
+  cpm(., log = TRUE) %>% 
+   as.data.frame() %>%
+  rename_with(.,~gsub(pattern = "Ind1_75", replacement = "1_",.)) %>%
+  rename_with(.,~gsub(pattern = "Ind2_87", replacement = "2_",.)) %>%
+  rename_with(.,~gsub(pattern = "Ind3_77", replacement = "3_",.)) %>%
+  rename_with(.,~gsub(pattern = "Ind6_71", replacement = "6_",.)) %>%
+  rename_with(.,~gsub( "DX" ,'DOX',.)) %>%
+  rename_with(.,~gsub( "DA" ,'DNR',.)) %>%
+  rename_with(.,~gsub( "E" ,'EPI',.)) %>%
+  rename_with(.,~gsub( "T" ,'TRZ',.)) %>%
+  rename_with(.,~gsub( "M" ,'MTX',.)) %>%
+  rename_with(.,~gsub( "V" ,'VEH',.)) %>%
+  rename_with(.,~gsub("24h","_24h",.)) %>%
+  rename_with(.,~gsub("3h","_3h",.)) 
+
+plotpanelATAC %>% 
+  dplyr::filter(row.names(.) %in% ATP6V1B2_peak$peak) %>% 
+  mutate(Peakid = row.names(.)) %>% 
+  pivot_longer(cols = !Peakid, names_to = "sample", values_to = "counts") %>% 
+  separate("sample", into = c("ind","trt","time")) %>% 
+  mutate(time=factor(time, levels = c("3h","24h"))) %>% 
+  mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
+   ggplot(., aes (x = time, y=counts))+
+  geom_boxplot(aes(fill=trt))+
+  ggtitle(paste(ATP6V1B2_peak$RNA," gene and \n",ATP6V1B2_peak$peak," ATAC accessibility"))+
+  scale_fill_manual(values = drug_pal)+
+  theme_bw()+
+  ylab("log2 cpm ATAC")
+
+```
+
+
+
+### ARFGEF1 rs7820882;rs11779485
+```{r ARFGEF1}
+schneider_df %>% dplyr::filter(RSID=="rs7820882")
+ARFGEF1_peak <- data.frame(peak="chr8.67481465.67482210", RNA="ARFGEF1", ENTREZID=	10565)
+
+RNA_counts %>% 
+  column_to_rownames("ENTREZID") %>% 
+  cpm(., log = TRUE) %>% 
+  as.data.frame() %>% 
+  dplyr::filter(row.names(.) %in% ARFGEF1_peak$ENTREZID) %>% 
+  mutate(ENTREZID = row.names(.)) %>% 
+  pivot_longer(cols = !ENTREZID, names_to = "sample", values_to = "counts") %>% 
+  separate("sample", into = c("trt","ind","time")) %>% 
+  mutate(time=factor(time, levels = c("3h","24h"))) %>% 
+  mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
+  ggplot(., aes (x = time, y=counts))+
+  geom_boxplot(aes(fill=trt))+
+  ggtitle(paste(ARFGEF1_peak$RNA," RNA expression"))+
+  scale_fill_manual(values = drug_pal)+
+  theme_bw()+
+  ylab("log2 cpm RNA")
+
+
+
+plotpanelATAC <- ATAC_counts %>% 
+  cpm(., log = TRUE) %>% 
+   as.data.frame() %>%
+  rename_with(.,~gsub(pattern = "Ind1_75", replacement = "1_",.)) %>%
+  rename_with(.,~gsub(pattern = "Ind2_87", replacement = "2_",.)) %>%
+  rename_with(.,~gsub(pattern = "Ind3_77", replacement = "3_",.)) %>%
+  rename_with(.,~gsub(pattern = "Ind6_71", replacement = "6_",.)) %>%
+  rename_with(.,~gsub( "DX" ,'DOX',.)) %>%
+  rename_with(.,~gsub( "DA" ,'DNR',.)) %>%
+  rename_with(.,~gsub( "E" ,'EPI',.)) %>%
+  rename_with(.,~gsub( "T" ,'TRZ',.)) %>%
+  rename_with(.,~gsub( "M" ,'MTX',.)) %>%
+  rename_with(.,~gsub( "V" ,'VEH',.)) %>%
+  rename_with(.,~gsub("24h","_24h",.)) %>%
+  rename_with(.,~gsub("3h","_3h",.)) 
+
+plotpanelATAC %>% 
+  dplyr::filter(row.names(.) %in% ARFGEF1_peak$peak) %>% 
+  mutate(Peakid = row.names(.)) %>% 
+  pivot_longer(cols = !Peakid, names_to = "sample", values_to = "counts") %>% 
+  separate("sample", into = c("ind","trt","time")) %>% 
+  mutate(time=factor(time, levels = c("3h","24h"))) %>% 
+  mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
+   ggplot(., aes (x = time, y=counts))+
+  geom_boxplot(aes(fill=trt))+
+  ggtitle(paste(ARFGEF1_peak$RNA," gene and \n",ARFGEF1_peak$peak," ATAC accessibility"))+
+  scale_fill_manual(values = drug_pal)+
+  theme_bw()+
+  ylab("log2 cpm ATAC")
+
+```
+
+
+
+### ARFGEF1 rs4737838
+```{r ARFGEF1_2}
+schneider_df %>% dplyr::filter(RSID=="rs4737838")
+ARFGEF1_peak <- data.frame(peak="chr8.67503991.67504420", RNA="ARFGEF1", ENTREZID=	10565)
+
+RNA_counts %>% 
+  column_to_rownames("ENTREZID") %>% 
+  cpm(., log = TRUE) %>% 
+  as.data.frame() %>% 
+  dplyr::filter(row.names(.) %in% ARFGEF1_peak$ENTREZID) %>% 
+  mutate(ENTREZID = row.names(.)) %>% 
+  pivot_longer(cols = !ENTREZID, names_to = "sample", values_to = "counts") %>% 
+  separate("sample", into = c("trt","ind","time")) %>% 
+  mutate(time=factor(time, levels = c("3h","24h"))) %>% 
+  mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
+  ggplot(., aes (x = time, y=counts))+
+  geom_boxplot(aes(fill=trt))+
+  ggtitle(paste(ARFGEF1_peak$RNA," RNA expression"))+
+  scale_fill_manual(values = drug_pal)+
+  theme_bw()+
+  ylab("log2 cpm RNA")
+
+
+
+plotpanelATAC <- ATAC_counts %>% 
+  cpm(., log = TRUE) %>% 
+   as.data.frame() %>%
+  rename_with(.,~gsub(pattern = "Ind1_75", replacement = "1_",.)) %>%
+  rename_with(.,~gsub(pattern = "Ind2_87", replacement = "2_",.)) %>%
+  rename_with(.,~gsub(pattern = "Ind3_77", replacement = "3_",.)) %>%
+  rename_with(.,~gsub(pattern = "Ind6_71", replacement = "6_",.)) %>%
+  rename_with(.,~gsub( "DX" ,'DOX',.)) %>%
+  rename_with(.,~gsub( "DA" ,'DNR',.)) %>%
+  rename_with(.,~gsub( "E" ,'EPI',.)) %>%
+  rename_with(.,~gsub( "T" ,'TRZ',.)) %>%
+  rename_with(.,~gsub( "M" ,'MTX',.)) %>%
+  rename_with(.,~gsub( "V" ,'VEH',.)) %>%
+  rename_with(.,~gsub("24h","_24h",.)) %>%
+  rename_with(.,~gsub("3h","_3h",.)) 
+
+plotpanelATAC %>% 
+  dplyr::filter(row.names(.) %in% ARFGEF1_peak$peak) %>% 
+  mutate(Peakid = row.names(.)) %>% 
+  pivot_longer(cols = !Peakid, names_to = "sample", values_to = "counts") %>% 
+  separate("sample", into = c("ind","trt","time")) %>% 
+  mutate(time=factor(time, levels = c("3h","24h"))) %>% 
+  mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
+   ggplot(., aes (x = time, y=counts))+
+  geom_boxplot(aes(fill=trt))+
+  ggtitle(paste(ARFGEF1_peak$RNA," gene and \n",ARFGEF1_peak$peak," ATAC accessibility"))+
+  scale_fill_manual(values = drug_pal)+
+  theme_bw()+
+  ylab("log2 cpm ATAC")
+
+```
+
 
