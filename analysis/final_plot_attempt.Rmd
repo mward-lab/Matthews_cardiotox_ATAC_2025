@@ -83,18 +83,48 @@ joined_LFC_df <- overlap_df_ggplot %>%
   left_join(., RNA_median_24_lfc,# %>%
                   # dplyr::select(SYMBOL,RNA_24h_lfc)),
              by=c("SYMBOL"="SYMBOL", "NCBI_gene"="ENTREZID")) 
-schneider_closest_output <- readRDS("data/other_papers/Schneider_closestgene_SNP_file.RDS")
-schneider_gr <- schneider_closest_output %>% 
-  GRanges()
-schneider_gr %>% write_bed(.,"data/Final_four_data/meme_bed/Schnieder_SNPs.bed")
 
-schneider_10k_gr <- schneider_closest_output %>% 
-  mutate(start=(start-5000),stop=(stop+4999), width=10000) %>% 
-  GRanges()
+lt1<- readRDS("data/Final_four_data/updated_RNA_gene_lookuptable")
+
+checklist <- lt1 %>% 
+  separate_longer_delim(.,col= ENTREZID, delim= ":") %>% 
+separate_longer_delim(.,col= SYMBOL, delim= ":") %>% 
+  dplyr::select(ENTREZID,SYMBOL) %>% 
+  mutate(ENTREZID=as.numeric(ENTREZID)) %>% 
+  distinct()
+
+# schneider_closest_output <- readRDS("data/other_papers/Schneider_closestgene_SNP_file.RDS") %>% 
+#   left_join(., checklist, by=c("ENTREZID"="ENTREZID"))
+
+# schneider_gr <- schneider_closest_output %>% 
+#   dplyr::select(chrom,start,stop,RSID,ENTREZID) %>% 
+#   left_join(., (checklist %>% mutate(ENTREZID=as.numeric(ENTREZID))) , by=c("ENTREZID"="ENTREZID")) %>% 
+#   GRanges()
+# 
+# schneider_10k_gr <- schneider_closest_output %>% 
+#   mutate(start=(start-5000),stop=(stop+4999), width=10000) %>% 
+#   dplyr::select(chrom,start,stop,RSID,ENTREZID) %>% 
+#   left_join(., checklist , by=c("ENTREZID"="ENTREZID")) %>% 
+#   GRanges()
+# SNP_peak_check <- join_overlap_intersect(TSS_assigned_NG_gr,schneider_gr) %>% 
+#   as.data.frame()
+# 
+# SNP_peak_check_10k <- join_overlap_intersect(TSS_assigned_NG_gr,schneider_10k_gr) %>% 
+#   as.data.frame()
+
+new_SNP_peak_check_10k <- readRDS("data/Final_four_data/new_SNP_peak_check_10k.RDS")
+  
+new_SNP_peak_check <-   readRDS("data/Final_four_data/new_SNP_peak_check.RDS")
+point_only <- new_SNP_peak_check
+
+new_SNP_peak_check_10k %>% dplyr::filter(ENTREZID.x !=ENTREZID.y)
+# schneider_gr %>% write_bed(.,"data/Final_four_data/meme_bed/Schnieder_SNPs.bed")
+
+
 ATAC_peaks_gr <- Collapsed_new_peaks %>% GRanges()
 
-point_only <- join_overlap_intersect(schneider_gr,ATAC_peaks_gr)
-expand_schneider <- join_overlap_intersect(ATAC_peaks_gr,schneider_10k_gr)
+# point_only <- join_overlap_intersect(schneider_gr,ATAC_peaks_gr)
+# expand_schneider <- join_overlap_intersect(ATAC_peaks_gr,schneider_10k_gr)
 library(readxl)
 Reheat_data <- read_excel("data/other_papers/jah36123-sup-0002-tables2.xlsx")
 top_reheat <- Reheat_data %>% 
@@ -150,25 +180,41 @@ match <- Nine_te_df %>% distinct(Peakid,TEstatus,mrc,.keep_all = TRUE)
 # LR_close <- LR_df %>% dplyr::select(Peakid) %>% dplyr::filter(Peakid %in% open_24med$peak)
 # ESR_opcl <- ESR_df %>% dplyr::select(Peakid) %>% dplyr::filter(Peakid %in% medC$peak)
 # ESR_clop <- ESR_df %>% dplyr::select(Peakid) %>% dplyr::filter(Peakid %in% medD$peak)
+# expand_schneider %>% as.data.frame() %>% 
+#   dplyr::select(Peakid,RSID,NCBI_gene:SYMBOL.y) %>% dplyr::filter(grepl("rs425*", RSID))
+
 ```
 
 
 ```{r, fig.height=9, fig.width=6}
-schneider_df <- expand_schneider %>% as.data.frame() %>% 
-  dplyr::select(Peakid,RSID,NCBI_gene:SYMBOL) %>% 
-  distinct() %>% 
-  left_join(., joined_LFC_df,by = c("Peakid"="peakid", "NCBI_gene"="NCBI_gene","ensembl_ID"="ensembl_ID","SYMBOL"="SYMBOL")) %>% 
-  dplyr::select(Peakid:Geneid, AC_3h_lfc, AC_24h_lfc) %>% 
+schneider_df <-
+new_SNP_peak_check_10k%>% as.data.frame() %>% 
+  dplyr::select(Peakid,RSID,ENTREZID.x:dist_to_NG,ENTREZID.y:SYMBOL.y, dist_SNP_NG_TSS) %>% 
+  mutate(SYMBOL=if_else(is.na(SYMBOL.y),SYMBOL.x,SYMBOL.y)) %>% 
+mutate(ENTREZID=if_else(is.na(ENTREZID.y),ENTREZID.x,ENTREZID.y))%>% 
+ dplyr::select(Peakid, RSID, ENTREZID, SYMBOL) %>% 
+  distinct(Peakid,RSID,.keep_all = TRUE) %>% 
+  # left_join(., joined_LFC_df,by = c("Peakid"="peakid", "ENTREZID"="NCBI_gene","SYMBOL"="SYMBOL")) #%>% 
+  # dplyr::select(Peakid:Geneid, AC_3h_lfc, AC_24h_lfc) %>% 
   left_join(., (ATAC_3_lfc %>% dplyr::select(peak,med_3h_lfc)),by=c("Peakid"="peak")) %>% 
-  left_join(., (ATAC_24_lfc %>% dplyr::select(peak,med_24h_lfc)),by=c("Peakid"="peak")) %>% 
-  left_join(., RNA_median_3_lfc,by =c("NCBI_gene"="ENTREZID")) %>% 
-  left_join(., RNA_median_24_lfc,by =c("NCBI_gene"="ENTREZID", "SYMBOL.y"="SYMBOL")) %>% 
+  left_join(., (ATAC_24_lfc %>% dplyr::select(peak,med_24h_lfc)),by=c("Peakid"="peak"))%>% 
+### peaks left out here were chopped due to low counts (row_means<0) %>% 
+  mutate(ENTREZID= if_else(RSID=="rs36022097","8970",ENTREZID),
+         SYMBOL=if_else(RSID=="rs36022097","H2BC11",SYMBOL)) %>% 
+dplyr::filter(!is.na(med_24h_lfc)) %>% 
+  left_join(., RNA_median_3_lfc,by =c("ENTREZID"="ENTREZID")) %>% 
+  left_join(., RNA_median_24_lfc,by =c("ENTREZID"="ENTREZID", "SYMBOL.y"="SYMBOL")) %>% 
   mutate(reheat=if_else(SYMBOL.x %in% Reheat_data$gene,"reheat_gene","not_reheat_gene")) %>% 
   dplyr::filter(!is.na(med_3h_lfc)) %>% 
   distinct(RSID,.keep_all = TRUE) %>% 
-  dplyr::select(RSID,Peakid,med_3h_lfc,med_24h_lfc,AC_3h_lfc,AC_24h_lfc,RNA_3h_lfc,RNA_24h_lfc, NCBI_gene,SYMBOL.x,reheat) %>% 
+  dplyr::select(RSID,Peakid,med_3h_lfc,med_24h_lfc,,RNA_3h_lfc,RNA_24h_lfc, ENTREZID,SYMBOL.x,reheat) %>% #AC_3h_lfc,AC_24h_lfc) %>% 
   tidyr::unite(name,RSID,SYMBOL.x,sep ="_",remove=FALSE) %>% 
-  left_join(.,match ,by = c("Peakid"="Peakid")) %>% 
+  left_join(.,(match %>% 
+                 group_by(Peakid) %>%
+                 filter(!(TEstatus=="not_TE_peak" & any (TEstatus == "TE_peak"))) %>% 
+                 ungroup() %>%
+                 distinct(TEstatus,Peakid,.keep_all = TRUE)),
+            by = c("Peakid"="Peakid")) %>% 
   group_by(Peakid) %>% 
  summarize(name=unique(name),
            RSID=unique(RSID),
