@@ -273,6 +273,9 @@ FF_bound %>%
                                         color = "black", linewidth = 1),
         panel.spacing = unit(1, 'points'),
         axis.text.x=element_text(angle = 90, vjust = 0.5, hjust=1))
+
+
+# saveRDS(FF_bound,"data/Final_four_data/ATAC_seq_counts.RDS")
 ```
 
 
@@ -502,10 +505,10 @@ pca_plot(PCA4_info_anno, col_var='trt', shape_var = 'indv')+ggtitle("PCA of raw 
 
 FCmatrix_full <-   PCA4mat %>%
   as.data.frame() %>% 
-  rename_with(.,~gsub(pattern = "Ind1_75", replacement = "1_",.)) %>% 
-  rename_with(.,~gsub(pattern = "Ind2_87", replacement = "2_",.)) %>% 
-  rename_with(.,~gsub(pattern = "Ind3_77", replacement = "3_",.)) %>% 
-  rename_with(.,~gsub(pattern = "Ind6_71", replacement = "6_",.)) %>% 
+  rename_with(.,~gsub(pattern = "Ind1_75", replacement = "D_",.)) %>% 
+  rename_with(.,~gsub(pattern = "Ind2_87", replacement = "A_",.)) %>% 
+  rename_with(.,~gsub(pattern = "Ind3_77", replacement = "B_",.)) %>% 
+  rename_with(.,~gsub(pattern = "Ind6_71", replacement = "C_",.)) %>% 
   rename_with(.,~gsub( "DX" ,'DOX',.)) %>% 
   rename_with(.,~gsub( "DA" ,'DNR',.)) %>% 
   rename_with(.,~gsub( "E" ,'EPI',.)) %>% 
@@ -704,12 +707,48 @@ number of peaks in old set that do not overlap new set: `r length(b.c)` \
 Snyder_41peaks <- read.delim("data/other_papers/ENCFF966JZT_bed_Snyder_41peaks.bed",header=TRUE) %>% 
   GRanges()
 
-heart_overlap <- join_overlap_intersect(new_peaks_gr,Snyder_41peaks)
+heart_overlap <- join_overlap_intersect(Snyder_41peaks,new_peaks_gr)
 ol_count <- heart_overlap %>% 
   as.data.frame %>% 
   distinct(peakid) %>% tally
+s_ol_count <- heart_overlap %>% 
+  as.data.frame %>% 
+  distinct(name) %>% tally
+
+my_peaks <- new_peaks_list
+snyder_peaks <- Snyder_41peaks %>% as.data.frame()
+heart_overlap_snyder <- heart_overlap %>% as.data.frame() %>% distinct(name)
+heart_overlap_me <- heart_overlap %>% as.data.frame() %>% distinct(peakid)
+Snyder_41peaks %>% as.data.frame() %>% dplyr::filter(!name %in% heart_overlap_snyder$name)
+
+library(eulerr)
+
+fit <- euler(c("This study" = 155560 - 66927,        
+               "Snyder study" = 218982 - 137976,        # Unique to B
+               "This study&Snyder study" = min(66927, 137976)))
+plot(fit, fills = list(fill = c("skyblue", "lightcoral"), alpha = 0.6),
+     labels = FALSE, edges = TRUE, quantities = TRUE,
+     main = "Euler diagram between this study and Snyder's study")
+# text(x = 0, y = -0.5, 
+#      labels = paste("Overlap in this study:", 66927, "\nOverlap in Snyder study:", 137976), 
+#      cex = 0.8, pos = 3)
+grid::grid.text(label = paste("Overlap in this study:", 66927, "\nOverlap in Snyder study::",137976),
+                x = unit(0.5, "npc"), y = unit(0.1, "npc"), gp = grid::gpar(cex = 0.8))
 
 
+fit2 <- euler(c("This study" = 1-.43,        
+               "Snyder study" = 1-.63,        # Unique to B
+               "This study&Snyder study" = min(.43, .63)))
+
+plot(fit2, fills = list(fill = c("skyblue", "lightcoral"), alpha = 0.6),
+     labels = FALSE, edges = TRUE, quantities = TRUE,
+     main = "Euler diagram between this study and Snyder's study")
+grid::grid.text(label = paste("Overlap in this study:", 66927, "\nOverlap in Snyder study::",137976),
+                x = unit(0.5, "npc"), y = unit(0.1, "npc"), gp = grid::gpar(cex = 0.8))
+
+
+ggVennDiagram::ggVennDiagram(list(heart_overlap_snyder$name,snyder_peaks$name))
+  ggVennDiagram::ggVennDiagram(list(heart_overlap_me$peakid,snyder_peaks$name))
 ```
 number of peaks in Snyder heart ATAC set: `r length(Snyder_41peaks)`\
 number of peaks in my data set: `r length(new_peaks_gr)`\
@@ -910,10 +949,13 @@ ATAC_LFC_df <- hr3_ATAC %>%
   
 
 
-RNA_ATAC_mat <- Collapsed_new_peaks %>% 
+RNA_ATAC_mat <-   Collapsed_new_peaks %>%
   dplyr::select(Peakid, NCBI_gene,SYMBOL) %>% 
+     # dplyr::filter(grepl(",",SYMBOL)|grepl(":",SYMBOL))
   separate_longer_delim(c(NCBI_gene), delim = ",") %>% 
+ separate_longer_delim(c(NCBI_gene), delim = ":") %>% 
   separate_longer_delim(c(SYMBOL), delim = ",") %>% 
+     separate_longer_delim(c(SYMBOL), delim = ":") %>%
   left_join(.,ATAC_LFC_df,by=c("Peakid"="peak")) %>% 
   left_join(.,RNA_LFC_df,by=c("NCBI_gene"="ENTREZID","SYMBOL"="SYMBOL")) %>% 
   distinct(SYMBOL,NCBI_gene,.keep_all = TRUE) %>% 
@@ -1436,7 +1478,6 @@ plotAnnoBar(peakAnnoList_motif[c(4,1:3)])+
 ```
 
 ```{r ASsigning expressed NGs by TSS, eval=FALSE, include=TRUE}
-
 #### HOw I assigned expressed NG TSS to new peak file
 ### export new peak file as .bed file
 a4gr <- all_four_filt_counts %>% 
@@ -1445,16 +1486,27 @@ a4gr <- all_four_filt_counts %>%
   GRanges()
  
 # write_delim((as.data.frame(a4gr)),delim = "\t",file = "data/Final_four_data/all_four_filt.bed", col_name=FALSE)## write tab delim datafile without column headers
-
+expressed_Genes <- S13Table_Matthews2024 %>% dplyr::select(ENTREZID,SYMBOL)
 ###Do the same with TSS file
-#  ensembl <- useEnsembl(biomart = "genes", dataset = "hsapiens_gene_ensembl")
-# my_attributes <- c('chromosome_name', 'start_position', 'end_position','entrezgene_id', 'ensembl_gene_id', 'hgnc_symbol')
+ ensembl <- useEnsembl(biomart = "genes", dataset = "hsapiens_gene_ensembl")
+my_attributes <- c('chromosome_name', 'start_position', 'end_position','entrezgene_id', 'hgnc_symbol')
 # searchAttributes(mart = ensembl, pattern = "refseq")
 # searchDatasets(mart=ensembl,pattern="NCBI")
-# gene_list <- getBM(attributes=my_attributes,
-#       filters = "hgnc_symbol",
-#         values = S13Table$SYMBOL,
-#       mart = ensembl)
+gene_list <- getBM(attributes=my_attributes,
+      filters = "hgnc_symbol",
+        values = expressed_Genes$SYMBOL,
+      mart = ensembl)
+gene_list_Final <- gene_list %>% 
+  dplyr::filter(!is.na(entrezgene_id)) %>%
+  mutate(chr = if_else(chromosome_name == "X", "chrX",
+      if_else(chromosome_name == "Y", "chrY", paste0("chr",chromosome_name)))) %>% 
+  mutate(chromosome_name=as.numeric(chromosome_name)) %>% 
+  mutate(chromosome_name=if_else(!is.na(chromosome_name),chr,
+   if_else(nchar(chr)<5,chr,"NA_character"))) %>% 
+  dplyr::filter(chromosome_name!="NA_character")
+  
+# saveRDS(gene_list_Final,"data/other_papers/RNA_expressed_gene_list_final.RDS")
+
 # write.csv(gene_ref,"data/gene_ref.csv")
 # listFilters(ensembl)
 ####
@@ -1466,10 +1518,24 @@ a4gr <- all_four_filt_counts %>%
 #   dplyr::select(chromosome_name,start_position,end_position,entrezgene_id,ensembl_gene_id)
 ### I performed the bedtools using cli. I moved the files to the correct directory on my hardrive to do this.
 # bedtools closest -a all_four_filt.bed -b All_TSS_NGs.bed -D b >assigned_newNGbyTSS.bed
-#### This file only has the tss, I had to link the geneIDs and symbols and names using the lookup_table (contains TSS, Start and end, ENTREZID, ensembl_id,and SYBOL)
- lookup_table <- read.csv("data/Final_four_data/expressedgene_lookuptable.csv", row.names = 1)
-NG_assigned_table <- read_delim("data/Final_four_data/assigned_newNGbyTSS.bed", col_names = FALSE)
+#### This file only has the tss, I had to link the geneIDs and symbols and names using the lookup_table (contains TSS, Start and end, ENTREZID, ensembl_id,and SYMBOL)
 
+
+ lookup_table <- read.csv("data/Final_four_data/expressedgene_lookuptable.csv", row.names = 1)
+ # saveRDS(lt1,"data/Final_four_data/updated_RNA_gene_lookuptable")
+lt1<- readRDS("data/Final_four_data/updated_RNA_gene_lookuptable")
+ # lt1 <- gene_list_Final %>%
+ #   group_by(chromosome_name,start_position) %>%
+ # summarise(NG_end=paste(min(end_position)),
+ #            ENTREZID=paste(unique(entrezgene_id),collapse=":"),
+ #            SYMBOL=paste(unique(hgnc_symbol),collapse=":"),.groups="drop") %>%  #add_row(chromosome_name="chr11",start_position=1995165,NG_end="2004552",ENTREZID="283120",SYMBOL="H19") %>%
+ #   add_row(chromosome_name="chr16",start_position=18571161,NG_end="18571162",ENTREZID="653190",SYMBOL="ABCC6P1") %>%
+ #   add_row(chromosome_name="chr1",start_position=69217759,NG_end="69217760",ENTREZID="64946",SYMBOL="CENPH")
+
+NG_assigned_table <- read_delim("data/Final_four_data/assigned_newNGbyTSS.bed", col_names = FALSE)
+lt1_gr <- lt1 %>% 
+  dplyr::rename("seqnames"="chromosome_name", "start"="start_position", "end"= "NG_end") %>% GRanges()
+                
 TSS_NG_table <- NG_assigned_table %>% 
   dplyr::rename("chr"=X1,
          "start"=X2,
@@ -1479,10 +1545,58 @@ TSS_NG_table <- NG_assigned_table %>%
          "NG_start"=X8 ,
          "NG_end"=X9 ,
          "dist_to_NG"=X13) %>% 
-  dplyr::select(chr:end,Peakid:NG_end,dist_to_NG) %>%
-  left_join(., lookup_table, by= c("NG_chr"="NG_chr","NG_end"="NG_start")) %>% 
-  dplyr::rename("NG_end"="NG_end.y", "NG_TSS"=NG_end) %>% 
-  dplyr::select(chr:NG_start,NG_end,NG_TSS,ENTREZID:SYMBOL,dist_to_NG) #%>%
+  ##dropping the other columns
+    dplyr::select(chr:end,Peakid:NG_end,dist_to_NG) %>% 
+  ###removing a doubling of a Peakid and choosing the row with the smallest distance
+  group_by(Peakid) %>% 
+   slice_min(dist_to_NG)
+
+# anti_table <- lookup_table %>% ###56 ENTREZGENEIDS
+#   mutate(ENTREZID=as.numeric(ENTREZID)) %>% 
+#   dplyr::filter(!ENTREZID %in%gene_list_Final$entrezgene_id)
+  # anti_join(gene_list_Final, by=c("NG_chr"="chromosome_name", "NG_start"="start_position", 'NG_end'= "end_position", "ENTREZID"="entrezgene_id")) #%>% 
+  # dplyr::select(NG_chr:SYMBOL)
+     # dplyr::filter(ENTREZID!=entrezgene_id)
+ # rbind(lookup_table %>% mutate(ENTREZID=as.numeric(ENTREZID)) %>% 
+  # anti_join(gene_list_Final, by=c("NG_chr"="chromosome_name", "NG_start"="start_position", 'NG_end'= "end_position", "ENTREZID"="entrezgene_id")))
+  
+  
+  
+collapsed_lookup_table <-   lookup_table %>% group_by(NG_chr,NG_start,SYMBOL) %>% 
+     summarize(NG_end=min(NG_end),
+               ENTREZID=paste(unique(ENTREZID),collapse=":"),
+                 SYMBOL=paste(unique(SYMBOL),collapse=":"), .groups="drop") 
+  
+
+not_matched <- TSS_NG_table %>% 
+  GRanges()
+    # left_join(., lt1, by= c("NG_chr"="chromosome_name","NG_end"="start_position")) %>% 
+    # dplyr::filter(is.na(SYMBOL))  
+   
+ retest <- join_overlap_intersect(not_matched,lt1_gr)
+# lookup_table_match <- 
+  test <- not_matched %>% 
+   dplyr::select(chr:dist_to_NG) %>%
+    ungroup() %>% 
+      # dplyr::filter(NG_start %in% lt1$start_position) %>% 
+       left_join(., collapsed_lookup_table, by=c("NG_chr"="NG_chr","NG_start"="NG_start"))
+  
+  retest %>% 
+    as.data.frame  %>% 
+    group_by(Peakid) %>% 
+    tally %>% 
+    filter(n>1)
+  
+
+matched_up <- TSS_NG_table %>% 
+    left_join(., lt1, by= c("NG_chr"="chromosome_name","NG_end"="start_position")) %>% 
+  left_join(., collapsed_lookup_table,by=c("NG_chr"="NG_chr", "NG_start"="NG_end"))
+    
+TSS_NG_table <- matched_up %>% 
+  dplyr::rename("NG_end"="NG_end.y", "NG_TSS"=NG_end) %>% ungroup() %>% 
+  mutate(SYMBOL= if_else(!is.na(SYMBOL.x)&!is.na(SYMBOL.y),paste0(SYMBOL.x,":",SYMBOL.y), if_else(!is.na(SYMBOL.x) & is.na(SYMBOL.y),SYMBOL.x,if_else(is.na(SYMBOL.x)&!is.na(SYMBOL.y),SYMBOL.x,SYMBOL.y)))) %>% 
+  mutate(ENTREZID= if_else(!is.na(ENTREZID.x)&!is.na(ENTREZID.y),paste0(ENTREZID.x,":",ENTREZID.y), if_else(!is.na(ENTREZID.x) & is.na(ENTREZID.y),ENTREZID.x,if_else(is.na(ENTREZID.x)&!is.na(ENTREZID.y),ENTREZID.x,ENTREZID.y)))) %>% 
+  dplyr::select(chr:NG_start,NG_end,NG_TSS,ENTREZID,SYMBOL,dist_to_NG) #%>%
   # write_delim(.,"data/Final_four_data/TSS_assigned_NG.txt",delim = "\t",col_names = TRUE)
 
 Collapsed_new_peaks <- TSS_NG_table %>% 
@@ -1495,10 +1609,10 @@ Collapsed_new_peaks <- TSS_NG_table %>%
               NG_end=paste(NG_end,collapse=":"),
               NG_TSS=paste(NG_TSS,collapse=":"),
               NCBI_gene = paste(unique(ENTREZID),collapse=","),
-              ensembl_ID= paste(unique(ensembl_id),collapse = ","),
+              # ensembl_ID= paste(unique(ensembl_id),collapse = ","),
               SYMBOL= paste(unique(SYMBOL),collapse = ",") , 
               dist_to_NG =min(dist_to_NG))
- # write_delim(Collapsed_new_peaks,"data/Final_four_data/collapsed_new_peaks.txt",delim = "\t",col_names = TRUE)
+ write_delim(Collapsed_new_peaks,"data/Final_four_data/collapsed_new_peaks.txt",delim = "\t",col_names = TRUE)
 ```
 ### Eight group peak characteristics
 
