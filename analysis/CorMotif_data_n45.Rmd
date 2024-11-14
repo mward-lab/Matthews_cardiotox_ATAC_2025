@@ -445,23 +445,56 @@ TSS = getBioRegion(TxDb=txdb, upstream=2000, downstream=2000, by = "gene",
 # NR_n45_gr <- bed_to_granges("data/n45_bedfiles/NR_n45.bed")
 # unclassified_n45_gr <- bed_to_granges("data/n45_bedfiles/unclassified_n45.bed")
 # background_n45_gr <- bed_to_granges("data/n45_bedfiles/background_n45.bed")
+# EAR_n45_gr <- bed_to_granges("data/n45_bedfiles/EAR_n45.bed")
+# ESR_n45_gr <- bed_to_granges("data/n45_bedfiles/ESR_n45.bed")
+# LR_n45_gr <- bed_to_granges("data/n45_bedfiles/LR_n45.bed")
+# NR_n45_gr <- bed_to_granges("data/n45_bedfiles/NR_n45.bed")
+# unclassified_n45_gr <- bed_to_granges("data/n45_bedfiles/unclassified_n45.bed")
+# background_n45_gr <- bed_to_granges("data/n45_bedfiles/background_n45.bed")
 
-### ~made these granges filies into a list to annotate and do future analysis
-
-# mylist <- list(EAR_n45_gr,ESR_n45_gr,LR_n45_gr,NR_n45_gr,unclassified_n45_gr,background_n45_gr)
+### ~made these granges files into a list to annotate and do future analysis
+# background_gr <- background %>% as.GRanges()
+# 
+# mylist <- list(EAR_df_gr,ESR_df_gr,LR_df_gr,NR_df_gr,background_gr)
 # peakAnnoList<- lapply(mylist, annotatePeak, tssRegion =c(-2000,2000), TxDb= txdb)
-# names(peakAnnoList) <- c("EAR_n45_gr","ESR_n45_gr","LR_n45_gr","NR_n45_gr","unclassified_gr","background_gr")
+# names(peakAnnoList) <- c("EAR_n45_gr","ESR_n45_gr","LR_n45_gr","NR_n45_gr","background_gr")
 # saveRDS(peakAnnoList, "data/peakAnnoList_n45_motif.RDS")
 
 
- 
-
+# Eight_group_list <- readRDS("data/TE_info/Eight_group_list.RDS")
+# peakAnnoList_Eight<- lapply(Eight_group_list, annotatePeak, tssRegion =c(-2000,2000), TxDb= txdb)
+# names(peakAnnoList_Eight) <- c("EAR_hyper","EAR_hypo", "ESR_A", "ESR_B", "ESR_CD", "LR_hyper","LR_hypo","NR")
+# 
+# saveRDS(peakAnnoList_Eight, "data/peakAnnoList_Eight.RDS")
+peakAnnoList_Eight <- readRDS("data/peakAnnoList_Eight.RDS")
+plotAnnoBar(peakAnnoList_Eight[c(8,1:7)], main = "Genomic Feature Distribution, CorMotif")+
+  ggtitle ("Genomic Feature Distribution, Eight groups")
 
 peakAnnoList_n45_motif <- readRDS("data/peakAnnoList_n45_motif.RDS")
 plotAnnoBar(peakAnnoList_n45_motif[c(4,1:3)], main = "Genomic Feature Distribution, CorMotif")+
-  ggtitle ("Distribution of peaks within genomic regions")
+  ggtitle ("Genomic Feature Distribution, CorMotif")
 
+# Nine_group_TE <- readRDS("data/TE_info/Nine_group_TE_full.RDS")
 
+ # Nine_group_TE %>%
+ #   left_join(.,(peakAnnoList_n45_motif$EAR %>%
+ #                   as.data.frame %>%
+ #                   dplyr::select(id,annotation)), by=c("peakid"="id")) %>%
+ #   left_join(.,(peakAnnoList_n45_motif$ESR %>%
+ #                   as.data.frame %>%
+ #                   dplyr::select(id,annotation)), by=c("peakid"="id")) %>%
+ #   left_join(.,(peakAnnoList_n45_motif$LR %>%
+ #                   as.data.frame %>%
+ #                   dplyr::select(id,annotation)), by=c("peakid"="id")) %>%
+ #   left_join(.,(peakAnnoList_n45_motif$NR %>%
+ #                   as.data.frame %>%
+ #                   dplyr::select(id,annotation)), by=c("peakid"="id")) %>%
+ #   dplyr::filter(mrc != "not_mrc") %>%
+ #   mutate(annotation= if_else(!is.na(annotation.x),annotation.x,if_else(!is.na(annotation.y),annotation.y,if_else(!is.na(annotation.x.x),annotation.x.x,if_else(!is.na(annotation.y.y),annotation.y.y,"aaaa"))))) %>%
+ #   mutate(annotation=factor(annotation)) %>%
+ #   dplyr::select(peakid,annotation, mrc) %>%
+ #   distinct(annotation)
+             
 ```
 
 ### EAR examples of top 3 peaks

@@ -599,10 +599,10 @@ peak_overlap_50unique <- testingol_col2 %>%
   as.data.frame() %>%
   distinct(peakid) 
   
-Col_fullDF_overlap %>%
-  as.data.frame() %>% 
-   mutate(per_ol= width/TE_width) %>% 
-  dplyr::filter(per_ol>0.5)
+# Col_fullDF_overlap %>%
+#   as.data.frame() %>% 
+#    mutate(per_ol= width/TE_width) %>% 
+#   dplyr::filter(per_ol>0.5)
 
 ```
 Note that the counts of peaks total to more than the total number of peaks that overlap a TE because many peaks overlap multiple elements (generally the very small TEs).
@@ -2359,8 +2359,8 @@ Nine_group_TE <- Col_TSS_data_gr %>%
                       if_else(peakid %in% EAR_hypo$id, "EAR_hypo",
                               if_else(peakid %in% ESR_A$id,"ESR_A",
                                       if_else(peakid %in% ESR_B$id,"ESR_B",
-                                              if_else(peakid %in% ESR_C$id,"ESR_C",
-                                                      if_else(peakid %in% ESR_D$id, "ESR_D",
+                                              if_else(peakid %in% ESR_C$id,"ESR_CD",
+                                                      if_else(peakid %in% ESR_D$id, "ESR_CD",
                                                               if_else(peakid %in% LR_hyper$id, "LR_hyper",
                                                                       if_else(peakid %in% LR_hypo$id, "LR_hypo",
                                      if_else(peakid %in% NR_df$id, "NR", "not_mrc")))))))))) %>%  
@@ -2385,7 +2385,8 @@ Nine_group_TE <- Col_TSS_data_gr %>%
 Nine_group_TE %>% distinct(peakid,.keep_all = TRUE) %>% 
   group_by(mrc, TEstatus) %>% 
   dplyr::filter(is.na(per_ol)|per_ol>per_cov) %>% 
-  dplyr::filter(is.na(repClass)|repClass != "Other")
+  # dplyr::filter(is.na(repClass)|repClass != "Other") %>% 
+  tally
 ```
 
 
@@ -2693,10 +2694,29 @@ Nine_group_TE %>%
   ggtitle(paste("Repeat breakdown across eight clusters without 'Other'", per_cov))+
   scale_fill_repeat()
 
+Nine_group_TE %>% 
+   mutate(repClass_org = repClass) %>% 
+   # dplyr::filter(!repClass %in% notinterested_list) %>% 
+  mutate(mrc= if_else(mrc=="ESR_C","ESR_CD",
+                      if_else(mrc=="ESR_D", "ESR_CD",mrc))) %>% 
+  dplyr::select(peakid,repName,repClass,repFamily,width,TEstatus, mrc, per_ol) %>%
+  distinct(peakid, .keep_all = TRUE) %>% 
+  rbind(Lines_Etc) %>% 
+  # dplyr::filter(is.na(repClass)|repClass != "Other") %>% 
+  dplyr::filter(per_ol>per_cov|is.na(per_ol)) %>% 
+  mutate(repClass=factor(repClass)) %>% 
+  mutate(TEstatus=factor(TEstatus, levels = c("TE_peak","not_TE_peak")))%>% 
+  dplyr::filter(mrc != "not_mrc") %>% 
+  mutate(mrc=factor(mrc, levels = c("EAR_hyper","EAR_hypo","ESR_A","ESR_B","ESR_CD", "LR_hyper","LR_hypo", "NR","all_peaks"))) %>% 
+  ggplot(., aes(x=mrc, fill= TEstatus))+
+  geom_bar(position="fill", col="black")+
+  theme_classic()+
+  ggtitle(paste("TE status for eight MRCs and Family > 50 %"))
 
 Nine_group_TE %>% 
    mutate(repClass_org = repClass) %>% 
-   dplyr::filter(!repClass %in% notinterested_list) %>% 
+   # dplyr::filter(!repClass %in% notinterested_list) %>%
+  dplyr::filter(is.na(repClass)|repClass !="Other") %>%
   mutate(mrc= if_else(mrc=="ESR_C","ESR_CD",
                       if_else(mrc=="ESR_D", "ESR_CD",mrc))) %>% 
   dplyr::select(peakid,repName,repClass,repFamily,width,TEstatus, mrc, per_ol) %>%
@@ -2715,13 +2735,15 @@ Nine_group_TE %>%
 
 Nine_group_TE %>% 
   mutate(repClass_org = repClass) %>% 
-  dplyr::filter(!repClass %in% notinterested_list) %>% 
+  # dplyr::filter(!repClass %in% notinterested_list) %>% 
+  # dplyr::filter(is.na(repClass)|repClass !="Other") %>%
   mutate(mrc= if_else(mrc=="ESR_C","ESR_CD",
                       if_else(mrc=="ESR_D", "ESR_CD",mrc))) %>%
   dplyr::filter(is.na(repClass)|repClass != "Other") %>%
   dplyr::select(peakid,repName,repClass,repFamily,width,TEstatus, mrc, per_ol) %>%
   distinct(peakid, .keep_all = TRUE) %>%
   rbind(Lines_Etc) %>% 
+  dplyr::filter(is.na(repClass)|repClass !="Other") %>%
   dplyr::filter(per_ol>per_cov|is.na(per_ol)) %>% 
   dplyr::filter(mrc != "not_mrc") %>% 
   group_by(TEstatus, mrc) %>% 
@@ -2775,6 +2797,8 @@ Nine_group_TE %>%
 ####### LOoKing at the results from TE counts across clusters##### with cutoff
 
 chi_TE_nine <- Nine_group_TE %>% 
+  mutate(mrc= if_else(mrc=="ESR_C","ESR_CD",
+                      if_else(mrc=="ESR_D", "ESR_CD",mrc))) %>% 
   dplyr::filter(is.na(per_ol)|per_ol>.5) %>% 
   dplyr::select(peakid,TEstatus, mrc)%>% 
   distinct(peakid, .keep_all = TRUE) %>% 
@@ -2786,28 +2810,26 @@ chi_TE_nine <- Nine_group_TE %>%
 
 chi_TE_nine_mat <- chi_TE_nine %>% as.matrix
 
-EARhypervNR <- matrix(c(chi_TE_nine_mat[1,1],chi_TE_nine_mat[1,2],chi_TE_nine_mat[9,1],chi_TE_nine_mat[9,2]),ncol=2, byrow=TRUE)%>% chisq.test(.)
+EARhypervNR <- matrix(c(chi_TE_nine_mat[1,1],chi_TE_nine_mat[1,2],chi_TE_nine_mat[8,1],chi_TE_nine_mat[8,2]),ncol=2, byrow=TRUE)%>% chisq.test(.)
 
-EARhypovNR <- matrix(c(chi_TE_nine_mat[2,1],chi_TE_nine_mat[2,2],chi_TE_nine_mat[9,1],chi_TE_nine_mat[9,2]),ncol=2, byrow=TRUE)%>% chisq.test(.)
+EARhypovNR <- matrix(c(chi_TE_nine_mat[2,1],chi_TE_nine_mat[2,2],chi_TE_nine_mat[8,1],chi_TE_nine_mat[8,2]),ncol=2, byrow=TRUE)%>% chisq.test(.)
 
-ESRAvNR <- matrix(c(chi_TE_nine_mat[3,1],chi_TE_nine_mat[3,2],chi_TE_nine_mat[9,1],chi_TE_nine_mat[9,2]),ncol=2, byrow=TRUE)%>% chisq.test(.)
+ESRAvNR <- matrix(c(chi_TE_nine_mat[3,1],chi_TE_nine_mat[3,2],chi_TE_nine_mat[8,1],chi_TE_nine_mat[8,2]),ncol=2, byrow=TRUE)%>% chisq.test(.)
 
-ESRBrvNR <- matrix(c(chi_TE_nine_mat[4,1],chi_TE_nine_mat[4,2],chi_TE_nine_mat[9,1],chi_TE_nine_mat[9,2]),ncol=2, byrow=TRUE)%>% chisq.test(.)
+ESRBrvNR <- matrix(c(chi_TE_nine_mat[4,1],chi_TE_nine_mat[4,2],chi_TE_nine_mat[8,1],chi_TE_nine_mat[8,2]),ncol=2, byrow=TRUE)%>% chisq.test(.)
 
-ESRCvNR <- matrix(c(chi_TE_nine_mat[5,1],chi_TE_nine_mat[5,2],chi_TE_nine_mat[9,1],chi_TE_nine_mat[9,2]),ncol=2, byrow=TRUE)%>% chisq.test(.)
+ESRCDvNR <- matrix(c(chi_TE_nine_mat[5,1],chi_TE_nine_mat[5,2],chi_TE_nine_mat[8,1],chi_TE_nine_mat[8,2]),ncol=2, byrow=TRUE)%>% chisq.test(.)
 
-ESRDvNR <- matrix(c(chi_TE_nine_mat[6,1],chi_TE_nine_mat[6,2],chi_TE_nine_mat[9,1],chi_TE_nine_mat[9,2]),ncol=2, byrow=TRUE)%>% chisq.test(.)
 
-LRhypervNR <- matrix(c(chi_TE_nine_mat[7,1],chi_TE_nine_mat[7,2],chi_TE_nine_mat[9,1],chi_TE_nine_mat[9,2]),ncol=2, byrow=TRUE) %>% chisq.test(.)
+LRhypervNR <- matrix(c(chi_TE_nine_mat[6,1],chi_TE_nine_mat[6,2],chi_TE_nine_mat[8,1],chi_TE_nine_mat[8,2]),ncol=2, byrow=TRUE) %>% chisq.test(.)
 
-LRhyp0vNR <- matrix(c(chi_TE_nine_mat[8,1],chi_TE_nine_mat[8,2],chi_TE_nine_mat[9,1],chi_TE_nine_mat[9,2]),ncol=2, byrow=TRUE)%>% chisq.test(.)
+LRhyp0vNR <- matrix(c(chi_TE_nine_mat[7,1],chi_TE_nine_mat[7,2],chi_TE_nine_mat[8,1],chi_TE_nine_mat[8,2]),ncol=2, byrow=TRUE)%>% chisq.test(.)
 
 pvalue <- c(EARhypervNR$p.value,
                         EARhypovNR$p.value, 
                         ESRAvNR$p.value,
                         ESRBrvNR$p.value,
-                        ESRCvNR$p.value,
-                        ESRDvNR$p.value,
+                        ESRCDvNR$p.value,
                         LRhypervNR$p.value, 
                         LRhyp0vNR$p.value,
                         "na",
@@ -2817,10 +2839,65 @@ chi_TE_nine %>%
   cbind(pvalue) %>% 
   mutate(pvalue= as.numeric(pvalue)) %>% 
   mutate(signif=if_else(pvalue<0.005,"***",if_else(pvalue<0.01,"**",if_else(pvalue<0.05,"*","ns")))) %>% 
-  kable(., caption = "Unique Peak TE status with all TEs for each MRC") %>% 
+  mutate(per_TE=TE_peak/(TE_peak+not_TE_peak)*100) %>% 
+  mutate(per_TE=sprintf("%.2f%% ",per_TE)) %>% 
+    kable(., caption = "Unique Peak TE status with all TEs for each MRC") %>% 
    kable_paper("striped", full_width = TRUE) %>%
   kable_styling(full_width = FALSE, font_size = 14) 
 
+```
+```{r chi filtered}
+chi_TE_nine_filt <- Nine_group_TE %>% 
+  
+  dplyr::filter(is.na(repClass)|repClass !="Other") %>%distinct(peakid, .keep_all = TRUE) %>% 
+  # dplyr::filter(!repClass %in% notinterested_list) %>% 
+  mutate(mrc= if_else(mrc=="ESR_C","ESR_CD",
+                      if_else(mrc=="ESR_D", "ESR_CD",mrc))) %>% 
+  dplyr::filter(is.na(per_ol)|per_ol>.5) %>% 
+  dplyr::select(peakid,TEstatus, mrc)%>% 
+  
+  group_by(mrc,TEstatus) %>% 
+  tally %>% 
+  ungroup() %>% 
+  pivot_wider(., id_cols = mrc, names_from = TEstatus, values_from = n) %>% 
+  column_to_rownames("mrc") 
+
+chi_TE_nine_mat_filt <- chi_TE_nine_filt %>% as.matrix
+
+EARhypervNR_filt <- matrix(c(chi_TE_nine_mat_filt[1,1],chi_TE_nine_mat_filt[1,2],chi_TE_nine_mat_filt[8,1],chi_TE_nine_mat_filt[8,2]),ncol=2, byrow=TRUE)%>% chisq.test(.)
+
+EARhypovNR_filt <- matrix(c(chi_TE_nine_mat_filt[2,1],chi_TE_nine_mat_filt[2,2],chi_TE_nine_mat_filt[8,1],chi_TE_nine_mat_filt[8,2]),ncol=2, byrow=TRUE)%>% chisq.test(.)
+
+ESRAvNR_filt <- matrix(c(chi_TE_nine_mat_filt[3,1],chi_TE_nine_mat_filt[3,2],chi_TE_nine_mat_filt[8,1],chi_TE_nine_mat_filt[8,2]),ncol=2, byrow=TRUE)%>% chisq.test(.)
+
+ESRBrvNR_filt <- matrix(c(chi_TE_nine_mat_filt[4,1],chi_TE_nine_mat_filt[4,2],chi_TE_nine_mat_filt[8,1],chi_TE_nine_mat_filt[8,2]),ncol=2, byrow=TRUE)%>% chisq.test(.)
+
+ESRCDvNR_filt <- matrix(c(chi_TE_nine_mat_filt[5,1],chi_TE_nine_mat_filt[5,2],chi_TE_nine_mat_filt[8,1],chi_TE_nine_mat_filt[8,2]),ncol=2, byrow=TRUE)%>% chisq.test(.)
+
+
+LRhypervNR_filt <- matrix(c(chi_TE_nine_mat_filt[6,1],chi_TE_nine_mat_filt[6,2],chi_TE_nine_mat_filt[8,1],chi_TE_nine_mat_filt[8,2]),ncol=2, byrow=TRUE) %>% chisq.test(.)
+
+LRhyp0vNR_filt <- matrix(c(chi_TE_nine_mat_filt[7,1],chi_TE_nine_mat_filt[7,2],chi_TE_nine_mat_filt[8,1],chi_TE_nine_mat_filt[8,2]),ncol=2, byrow=TRUE)%>% chisq.test(.)
+
+pvalue_filt <- c(EARhypervNR_filt$p.value,
+                        EARhypovNR_filt$p.value, 
+                        ESRAvNR_filt$p.value,
+                        ESRBrvNR_filt$p.value,
+                        ESRCDvNR_filt$p.value,
+                        LRhypervNR_filt$p.value, 
+                        LRhyp0vNR_filt$p.value,
+                        "na",
+                        "not checked")
+
+chi_TE_nine_filt %>% 
+  cbind(pvalue_filt) %>% 
+  mutate(pvalue_filt= as.numeric(pvalue_filt)) %>% 
+  mutate(signif=if_else(pvalue_filt<0.005,"***",if_else(pvalue_filt<0.01,"**",if_else(pvalue_filt<0.05,"*","ns")))) %>% 
+  mutate(per_TE=TE_peak/(TE_peak+not_TE_peak)*100) %>% 
+  mutate(per_TE=sprintf("%.2f%% ",per_TE)) %>% 
+    kable(., caption = "Unique Peak TE status with filtered TEs for each MRC") %>% 
+   kable_paper("striped", full_width = TRUE) %>%
+  kable_styling(full_width = FALSE, font_size = 14) 
 ```
 
 ### sub-Class breakdown
@@ -2905,7 +2982,7 @@ Nine_group_TE %>%
   dplyr::filter(mrc != "not_mrc") %>% 
   rbind(., ggline_df) %>% 
   mutate(repFamily=factor(repFamily)) %>% 
-  mutate(mrc=factor(mrc, levels = c("EAR_hyper","EAR_hypo","ESR_A","ESR_B","ESR_C","ESR_D", "LR_hyper","LR_hypo", "NR","all_peaks","h.genome"))) %>% 
+  mutate(mrc=factor(mrc, levels = c("EAR_hyper","EAR_hypo","ESR_A","ESR_B","ESR_CD", "LR_hyper","LR_hypo", "NR","all_peaks","h.genome"))) %>% 
   dplyr::filter(mrc != "h.genome") %>% 
   ggplot(., aes(x=mrc, fill= repFamily))+
   geom_bar(position="fill", col="black")+
@@ -2919,7 +2996,7 @@ Nine_group_TE %>%
   dplyr::filter(mrc != "not_mrc") %>% 
    rbind(., ggsine_df) %>% 
   mutate(repFamily=factor(repFamily)) %>% 
- mutate(mrc=factor(mrc, levels = c("EAR_hyper","EAR_hypo","ESR_A","ESR_B","ESR_C","ESR_D", "LR_hyper","LR_hypo", "NR","all_peaks","h.genome"))) %>% 
+ mutate(mrc=factor(mrc, levels = c("EAR_hyper","EAR_hypo","ESR_A","ESR_B","ESR_CD", "LR_hyper","LR_hypo", "NR","all_peaks","h.genome"))) %>% 
   dplyr::filter(mrc != "h.genome") %>% 
   ggplot(., aes(x=mrc, fill= repFamily))+
   geom_bar(position="fill", col="black")+
@@ -2932,7 +3009,7 @@ Nine_group_TE %>%
   dplyr::filter(mrc != "not_mrc") %>% 
    rbind(., ggLTR_df) %>% 
   mutate(repFamily=factor(repFamily)) %>% 
- mutate(mrc=factor(mrc, levels = c("EAR_hyper","EAR_hypo","ESR_A","ESR_B","ESR_C","ESR_D", "LR_hyper","LR_hypo", "NR","all_peaks","h.genome"))) %>% 
+ mutate(mrc=factor(mrc, levels = c("EAR_hyper","EAR_hypo","ESR_A","ESR_B","ESR_CD", "LR_hyper","LR_hypo", "NR","all_peaks","h.genome"))) %>% 
   dplyr::filter(mrc != "h.genome") %>% 
   ggplot(., aes(x=mrc, fill= repFamily))+
   geom_bar(position="fill", col="black")+
@@ -2946,7 +3023,7 @@ Nine_group_TE %>%
   dplyr::filter(mrc != "not_mrc") %>% 
    rbind(., ggDNA_df) %>% 
   mutate(repFamily=factor(repFamily)) %>% 
- mutate(mrc=factor(mrc, levels = c("EAR_hyper","EAR_hypo","ESR_A","ESR_B","ESR_C","ESR_D", "LR_hyper","LR_hypo", "NR","all_peaks","h.genome"))) %>% 
+ mutate(mrc=factor(mrc, levels = c("EAR_hyper","EAR_hypo","ESR_A","ESR_B","ESR_CD", "LR_hyper","LR_hypo", "NR","all_peaks","h.genome"))) %>% 
   dplyr::filter(mrc != "h.genome") %>% 
   ggplot(., aes(x=mrc, fill= repFamily))+
   geom_bar(position="fill", col="black")+
@@ -2960,7 +3037,7 @@ Nine_group_TE %>%
   dplyr::filter(mrc != "not_mrc") %>% 
    rbind(., ggretroposon_df) %>% 
   mutate(repName=factor(repName)) %>% 
- mutate(mrc=factor(mrc, levels = c("EAR_hyper","EAR_hypo","ESR_A","ESR_B","ESR_C","ESR_D", "LR_hyper","LR_hypo", "NR","all_peaks","h.genome"))) %>% 
+ mutate(mrc=factor(mrc, levels = c("EAR_hyper","EAR_hypo","ESR_A","ESR_B","ESR_CD", "LR_hyper","LR_hypo", "NR","all_peaks","h.genome"))) %>% 
   dplyr::filter(mrc != "h.genome") %>% 
   ggplot(., aes(x=mrc, fill= repName))+
   geom_bar(position="fill", col="black")+
@@ -3528,7 +3605,33 @@ Collapsed_peaks %>%
   # dplyr::select(peakid:mrc,)
   left_join(., (SNPanno %>% dplyr::select(!mrc)), by=c("peakid"="peakid")) %>% 
   distinct()
+###CHECKING NUMBERS
+   Col_TSS_data_gr %>% 
+  as.data.frame %>% 
+  dplyr::select(peakid) %>% 
+  left_join(.,(Col_fullDF_overlap %>% 
+                 as.data.frame)) %>% 
+   mutate(TEstatus=if_else(is.na(repClass),"not_TE_peak","TE_peak")) %>% 
+   mutate(mrc=if_else(peakid %in% EAR_hyper$id, "EAR_hyper",
+                      if_else(peakid %in% EAR_hypo$id, "EAR_hypo",
+                              if_else(peakid %in% ESR_A$id,"ESR_A",
+                                      if_else(peakid %in% ESR_B$id,"ESR_B",
+                                              if_else(peakid %in% ESR_C$id,"ESR_C",
+                                                      if_else(peakid %in% ESR_D$id, "ESR_D",
+                                                              if_else(peakid %in% LR_hyper$id, "LR_hyper",
+                                                                      if_else(peakid %in% LR_hypo$id, "LR_hypo",
+                                     if_else(peakid %in% NR_df$id, "NR", "not_mrc")))))))))) %>%  
+                                       mutate(per_ol= width/TE_width) %>% 
+  mutate(repClass_org=repClass) %>% 
+  mutate(repClass=factor(repClass)) %>%
+  mutate(repClass=if_else(##relable repClass with other
+    repClass_org=="LINE", repClass_org,
+    if_else(repClass_org=="SINE",repClass_org,
+            if_else(repClass_org=="LTR", repClass_org, 
+                    if_else(repClass_org=="DNA", repClass_org,
+                            if_else(repClass_org=="Retroposon",repClass_org,
+                                    if_else(is.na(repClass_org), repClass_org, "Other"))))))) %>% 
+  dplyr::select(peakid, repName,repClass,repClass_org, repFamily, width, TEstatus, mrc, per_ol)
 
-  
 
 ```

@@ -116,7 +116,7 @@ new_SNP_peak_check_10k <- readRDS("data/Final_four_data/new_SNP_peak_check_10k.R
   
 new_SNP_peak_check <-   readRDS("data/Final_four_data/new_SNP_peak_check.RDS")
 point_only <- new_SNP_peak_check
-
+# new_SNP_pc_gr <- new_SNP_peak_check_10k
 new_SNP_peak_check_10k %>% dplyr::filter(ENTREZID.x !=ENTREZID.y)
 # schneider_gr %>% write_bed(.,"data/Final_four_data/meme_bed/Schnieder_SNPs.bed")
 
@@ -183,6 +183,94 @@ match <- Nine_te_df %>% distinct(Peakid,TEstatus,mrc,.keep_all = TRUE)
 # expand_schneider %>% as.data.frame() %>% 
 #   dplyr::select(Peakid,RSID,NCBI_gene:SYMBOL.y) %>% dplyr::filter(grepl("rs425*", RSID))
 
+
+Knowles_dox_eQTL <- readRDS("data/Knowles_5.RDS")
+Knowles_mar_eQTL <- readRDS("data/Knowles_4.RDS")
+
+dox_eQTL_gr <- Knowles_dox_eQTL %>% 
+  distinct(RSID,.keep_all = TRUE) %>%
+  mutate(CHR_ID=(gsub("chr","",chr))) %>% 
+  dplyr::rename("SNPS"=RSID,"CHR_POS"=pos) %>% 
+  dplyr::select(CHR_ID, CHR_POS,SNPS) %>% 
+  mutate(CHR_ID=as.numeric(CHR_ID), CHR_POS=as.numeric(CHR_POS)) %>%
+  na.omit() %>%
+  mutate(gwas="eQTL") %>% 
+  mutate(start=CHR_POS, end=CHR_POS, chr=paste0("chr",CHR_ID)) %>% 
+  GRanges()
+          
+ 
+mar_eQTL_gr <- Knowles_mar_eQTL %>% 
+  distinct(RSID,.keep_all = TRUE) %>%
+  mutate(CHR_ID=(gsub("chr","",chr))) %>% 
+  dplyr::rename("SNPS"=RSID,"CHR_POS"=pos) %>% 
+  dplyr::select(CHR_ID, CHR_POS,SNPS) %>% 
+  mutate(gwas="beQTL") %>% 
+  mutate(CHR_ID=as.numeric(CHR_ID), CHR_POS=as.numeric(CHR_POS)) %>%
+  na.omit() %>%
+  mutate(start=CHR_POS, end=CHR_POS, chr=paste0("chr",CHR_ID)) %>% 
+  GRanges()
+base_eqtl_SNPS <-
+  join_overlap_intersect(ATAC_peaks_gr,mar_eQTL_gr) %>% 
+  as.data.frame() 
+
+eqtl_SNPs <-
+  join_overlap_intersect(ATAC_peaks_gr,eQTL_gr) %>%
+  as.data.frame() 
+
+test <- eqtl_SNPs %>% 
+  dplyr::filter(Peakid %in% new_SNP_peak_check_10k$Peakid)
+
+join_overlap_intersect((new_SNP_peak_check_10k %>% GRanges() ),beQTL_gr) %>%
+  as.data.frame() 
+```
+
+```{r mast}
+####adding in MAST matches
+# "~/ATAC_meme_data/200bp/EAR_close_hits.txt"
+mast_test_results <- xmlParse("~/ATAC_meme_data/200bp/mast_output/EAR_close/mast.xml")
+
+# Function to extract hit details within each sequence
+motifs <- xpathApply(mast_test_results, "//sequence", function(sequence_node) {
+  # Get sequence metadata
+  seqname <- xmlGetAttr(sequence_node, "name")
+  seq_db <- xmlGetAttr(sequence_node, "db")
+  seq_length <- as.numeric(xmlGetAttr(sequence_node, "length"))
+
+  # Extract each `hit` node from nested `seg` nodes
+  hits <- xpathApply(sequence_node, ".//hit", function(hit_node) {
+    list(
+      seqname = seqname,
+      db = seq_db,
+      length = seq_length,
+      pos = as.numeric(xmlGetAttr(hit_node, "pos")),
+      idx = as.numeric(xmlGetAttr(hit_node, "idx")),
+      rc = xmlGetAttr(hit_node, "rc"),  # reverse-complement flag
+      pvalue = as.numeric(xmlGetAttr(hit_node, "pvalue"))
+    )
+  })
+
+  # Convert each hit to a data frame
+  do.call(rbind, lapply(hits, as.data.frame))
+})
+motifs_df <- do.call(rbind, motifs)
+# mast_gr <- GRanges(seqnames = Rle(motifs_df$seqname),
+#                    ranges = IRanges(start = motifs_df$start, width = 1),
+#                    # adjust width if needed
+#                    strand = Rle(motifs_df$strand),
+#                    motif_id = motifs_df$motif_id)
+
+print(head(motifs_df))
+
+mast_gr <- GRanges(
+  seqnames = Rle(motifs_df$seqname),
+  ranges = IRanges(start = motifs_df$pos, width = 1),  # adjust width if needed
+  strand = Rle(ifelse(motifs_df$rc == "y", "-", "+")),
+  pvalue = motifs_df$pvalue,
+  idx = motifs_df$idx
+)
+mast_gr
+
+join_overlap_intersect(new_SNP_peak_check)
 ```
 
 
@@ -208,7 +296,7 @@ dplyr::filter(!is.na(med_24h_lfc)) %>%
   dplyr::filter(!is.na(med_3h_lfc)) %>% 
   distinct(RSID,.keep_all = TRUE) %>% 
   dplyr::select(RSID,Peakid,med_3h_lfc,med_24h_lfc,,RNA_3h_lfc,RNA_24h_lfc, ENTREZID,SYMBOL.x,reheat) %>% #AC_3h_lfc,AC_24h_lfc) %>% 
-  tidyr::unite(name,RSID,SYMBOL.x,sep ="_",remove=FALSE) %>% 
+  tidyr::unite(name,RSID,SYMBOL.x,Peakid,sep ="_",remove=FALSE) %>% 
   left_join(.,(match %>% 
                  group_by(Peakid) %>%
                  filter(!(TEstatus=="not_TE_peak" & any (TEstatus == "TE_peak"))) %>% 
@@ -229,7 +317,8 @@ dplyr::filter(!is.na(med_24h_lfc)) %>%
           SYMBOL.x=paste(unique(SYMBOL.x),collapse=";"),
            reheat=paste(unique(reheat),collapse=";"),
           mrc=unique(mrc)) %>% 
-  mutate(point_ol=if_else(RSID %in% point_only$RSID,"yes","no"))
+  mutate(point_ol=if_else(RSID %in% point_only$RSID,"yes","no")) %>% 
+  mutate(eQTL=if_else(RSID %in% eqtl_SNPs$SNPS,"yes",if_else(Peakid %in% eqtl_SNPs$Peakid,"yes","no")))
 
 schneider_mat <- schneider_df %>% 
   ungroup() %>% 
@@ -261,6 +350,9 @@ ComplexHeatmap::Heatmap(schneider_mat,
                         left_annotation = row_anno,
                         show_row_names = TRUE,
                         show_column_names = TRUE,cluster_rows = FALSE,cluster_columns = FALSE)
+
+
+
 ```
 #### GWAS SNP overlap log2cpm
 
@@ -1023,5 +1115,7 @@ plotpanelATAC %>%
   ylab("log2 cpm ATAC")
 
 ```
+
+
 
 

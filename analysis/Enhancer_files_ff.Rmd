@@ -10,7 +10,7 @@ knitr::opts_chunk$set(
 	echo = TRUE,
 	message = FALSE,
 	warning = FALSE,
-		dev = c("pdf","png")
+			dev = c("png","pdf")
 	
 )
 ```
@@ -1024,7 +1024,7 @@ NR_NG <- NR_list_all %>%
 scale_fill_mrc <-  function(...){
   ggplot2:::manual_scale(
     'fill', 
-    values = setNames(c("#F8766D","#f6483c","#7CAE00","#587b00","#6a9500","cornflowerblue","grey60",  "#00BFC4","#008d91", "#C77CFF"), c("EAR_open","EAR_close","ESR_open","ESR_close", "ESR_OC","ESR_opcl","ESR_clop","LR_open","LR_close","NR")), 
+    values = setNames(c("#F8766D","#f6483c","#7CAE00","#587b00","#6a9500","tan","grey40",  "#00BFC4","#008d91", "#C77CFF"), c("EAR_open","EAR_close","ESR_open","ESR_close", "ESR_OC","ESR_opcl","ESR_clop","LR_open","LR_close","NR")), 
     ...
   )
 }
@@ -1229,7 +1229,13 @@ for (matrix_name in names_list_cre) {
   }
 }
 # Print the resulting dataframe
-print(results_cre)
+# saveRDS(results_cre,"data/Final_four_data/Chisquare_cREs_results.RDS")
+print(results_cre) %>% 
+  kable(., caption = " Chi squre results and significance values of cRE enrichment compared to No response group") %>% 
+  kable_paper("striped", full_width = TRUE) %>%
+  kable_styling(full_width = FALSE, font_size = 14) %>% 
+  scroll_box(width = "100%", height = "400px")
+
 
 
 ```
@@ -1295,11 +1301,17 @@ for (matrix_name in names(matrix_list_cre)) {
     }
   }
 }
-
+saveRDS(results_or_cre,"data/Final_four_data/OR_results_cRE_df.RDS")
 # Print the resulting dataframe
-print(results_or_cre)
+print(results_or_cre) %>% 
+  kable(., caption = " Odds ratio results and significance values of cRE enrichment compared to No response group") %>% 
+  kable_paper("striped", full_width = TRUE) %>%
+  kable_styling(full_width = FALSE, font_size = 14) %>% 
+  scroll_box(width = "100%", height = "400px")
+
 library(circlize)
-col_fun_cre = colorRamp2(c(0,6), c("white", "purple3"))
+# col_fun_cre = colorRamp2(c(0,6), c("white", "purple3"))
+col_fun_cre = colorRamp2(c(0,1,3), c("blueviolet","white","green3" ))
 sig_mat_cre <- results_or_cre %>% 
   as.data.frame() %>% 
   dplyr::select( Matrix_Name,Row_Compared,P_Value) %>% 

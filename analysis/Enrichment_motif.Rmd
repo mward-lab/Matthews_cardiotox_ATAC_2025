@@ -9,7 +9,8 @@ output: html_document
 knitr::opts_chunk$set(
 	echo = TRUE,
 	message = FALSE,
-	warning = FALSE
+	warning = FALSE,
+		dev = c("pdf","png")
 )
 ```
 
@@ -65,9 +66,9 @@ library(genomation)
 Knowles_4<- readRDS("data/Knowles_4.RDS")
 Knowles_5 <- readRDS("data/Knowles_5.RDS")
 Knowles_6 <- readRDS("data/Knowles_6.RDS")
-SNP_supp_schneider <- readRDS("data/SNP_supp_schneider.RDS")
-peakAnnoList_n45_motif <- readRDS("data/peakAnnoList_n45_motif.RDS")
-list2env(peakAnnoList_n45_motif, envir = .GlobalEnv)
+# SNP_supp_schneider <- readRDS("data/SNP_supp_schneider.RDS")
+peakAnnoList_ff_8motif <- readRDS("data/Final_four_data/peakAnnoList_ff_8motif.RDS")
+list2env(peakAnnoList_ff_8motif, envir = .GlobalEnv)
 ###How I made the granges files for overlaps
 Knowles_4_noext <- Knowles_4 %>%
   na.omit() %>%
@@ -109,54 +110,53 @@ Knowles_6_noext <- Knowles_6 %>%
   GRanges()
  
  
-SNP_supp_schneider <-  SNP_supp_schneider %>%
-    na.omit() %>%
-     rename(X1="chr",X2= "pos",X4="RSID") %>%
-    # rename("chr"=X1, "pos" =X2,"RSID" =X4) %>%
-    mutate(start=pos-500, end=pos+500) %>%
-   dplyr::select(chr, start,end, RSID,pos) %>%
-    GRanges()
+# SNP_supp_schneider <-  SNP_supp_schneider %>%
+#     na.omit() %>%
+#      rename(X1="chr",X2= "pos",X4="RSID") %>%
+#     # rename("chr"=X1, "pos" =X2,"RSID" =X4) %>%
+#     mutate(start=pos-500, end=pos+500) %>%
+#    dplyr::select(chr, start,end, RSID,pos) %>%
+#     GRanges()
 
 ##split into granges objects
 ###make dataframe of each EAR,ESR,LR,NR promoters
 # background_df <- as.data.frame(background_gr)
 # background_Gr <- GRanges(background_df)
 #  rtracklayer::export.bed(background_Gr, con="data/n45_bedfiles/background_n45.bed", format="bed")
-EAR_df <- as.data.frame(peakAnnoList_n45_motif$EAR_n45_gr)
-# EAR_promotor <- EAR_df %>% 
-#   dplyr::filter(annotation=="Promoter (<=1kb)")
-EAR_df_gr <-  as.GRanges(peakAnnoList_n45_motif$EAR_n45_gr)
+EAR_open_df <- as.data.frame(EAR_open)
+EAR_open_gr <-  as.GRanges(EAR_open)
+EAR_close_df <- as.data.frame(EAR_close)
+EAR_close_gr <-  as.GRanges(EAR_close)
 
-# rtracklayer::export.bed(EAR_promo_gr, con="data/n45_bedfiles/EAR_promo.bed", format="bed", ignore.strand = FALSE)
-ESR_df <- as.data.frame(peakAnnoList_n45_motif$ESR_n45_gr)
-# ESR_promotor <- ESR_df %>% 
-#   dplyr::filter(annotation=="Promoter (<=1kb)")
-ESR_df_gr <-  as.GRanges(peakAnnoList_n45_motif$ESR_n45_gr)
- # rtracklayer::export.bed(ESR_promo_gr, con="data/n45_bedfiles/ESR_promo.bed", format="bed", ignore.strand = FALSE)
- 
-LR_df <- as.data.frame(peakAnnoList_n45_motif$LR_n45_gr)
-# LR_promotor <- LR_df %>% 
-#   dplyr::filter(annotation=="Promoter (<=1kb)")
-LR_df_gr <-  as.GRanges(peakAnnoList_n45_motif$LR_n45_gr)
- # rtracklayer::export.bed(LR_promo_gr, con="data/n45_bedfiles/LR_promo.bed", format="bed", ignore.strand = FALSE)
- # LR_promotor %>% 
- #   dplyr::filter(geneChr==6)
+ESR_open_df <- as.data.frame(ESR_open)
+ESR_open_gr <-  as.GRanges(ESR_open)
+ESR_close_df <- as.data.frame(ESR_close)
+ESR_close_gr <-  as.GRanges(ESR_close)
+ESR_OC_df <- as.data.frame(ESR_OC)
+ESR_OC_gr <-  as.GRanges(ESR_OC)
+ESR_C_df <- readRDS("data/Final_four_data/ESR_C.RDS")
+ESR_opcl_gr <- ESR_C_df %>% as.GRanges()
+ESR_D_df <- readRDS("data/Final_four_data/ESR_D.RDS")
+ESR_clop_gr <- ESR_D_df %>% as.GRanges()
+LR_open_df <- as.data.frame(LR_open)
+LR_open_gr <-  as.GRanges(LR_open)
+LR_close_df <- as.data.frame(LR_close)
+LR_close_gr <-  as.GRanges(LR_close)
 
-NR_df <- as.data.frame(peakAnnoList_n45_motif$NR_n45_gr)
-# NR_promotor <- NR_df %>% 
-#   dplyr::filter(annotation=="Promoter (<=1kb)")
- NR_df_gr <-  as.GRanges(peakAnnoList_n45_motif$NR_n45_gr)
+
+NR_df <- as.data.frame(NR)
+NR_gr <-  as.GRanges(NR)
  
- ENCFF134HBK <- read_delim("data/n45_bedfiles/ENCFF134HBK.bed", 
-     delim = "\t", escape_double = FALSE, 
-     col_names = FALSE, trim_ws = TRUE)
- ZNF384_chip <- ENCFF134HBK %>% 
-   rename(X1="chr",
-         X2="start",
-         X3="end",
-         X10="length") %>%
-   GRanges()
- 
+ # ENCFF134HBK <- read_delim("data/n45_bedfiles/ENCFF134HBK.bed", 
+ #     delim = "\t", escape_double = FALSE, 
+ #     col_names = FALSE, trim_ws = TRUE)
+ # ZNF384_chip <- ENCFF134HBK %>% 
+ #   rename(X1="chr",
+ #         X2="start",
+ #         X3="end",
+ #         X10="length") %>%
+ #   GRanges()
+ # 
  
 ```
 
@@ -164,46 +164,46 @@ NR_df <- as.data.frame(peakAnnoList_n45_motif$NR_n45_gr)
 
 I have made 500 bp +/- files for each of the data sets using the eQTL or SNP location. I also made a 1bp no extension file for each of the data sets using the eQTL or SNP location as start and end as +1.
 
-```{r overlaps, include=FALSE}
-findOverlaps(EAR_df_gr, Knowles_4)
-findOverlaps(ESR_df_gr, Knowles_4)
-findOverlaps(LR_df_gr, Knowles_4)
-findOverlaps(NR_df_gr, Knowles_4)
+```{r overlaps, include=FALSE, eval=FALSE}
+findOverlaps(EAR_open_gr, Knowles_4)
+findOverlaps(ESR_open_gr, Knowles_4)
+findOverlaps(LR_open_gr, Knowles_4)
+findOverlaps(NR_gr, Knowles_4)
 
-findOverlaps(EAR_df_gr, Knowles_5)
-findOverlaps(ESR_df_gr, Knowles_5)
-findOverlaps(LR_df_gr, Knowles_5)
-findOverlaps(NR_df_gr, Knowles_5)
-
-
-findOverlaps(EAR_df_gr, Knowles_6)
-findOverlaps(ESR_df_gr, Knowles_6)
-findOverlaps(LR_df_gr, Knowles_6)
-findOverlaps(NR_df_gr, Knowles_6)
-
-findOverlaps(EAR_df_gr, SNP_supp_schneider)
-findOverlaps(ESR_df_gr, SNP_supp_schneider)
-findOverlaps(LR_df_gr, SNP_supp_schneider)
-findOverlaps(NR_df_gr, SNP_supp_schneider)
-
-subsetByOverlaps(LR_df_gr, SNP_supp_schneider)
+findOverlaps(EAR_open_gr, Knowles_5)
+findOverlaps(ESR_open_gr, Knowles_5)
+findOverlaps(LR_open_gr, Knowles_5)
+findOverlaps(NR_gr, Knowles_5)
 
 
-findOverlaps(EAR_df_gr, Knowles_4_noext)
-findOverlaps(ESR_df_gr, Knowles_4_noext)
-findOverlaps(LR_df_gr, Knowles_4_noext)
-findOverlaps(NR_df_gr, Knowles_4_noext)
+findOverlaps(EAR_open_gr, Knowles_6)
+findOverlaps(ESR_open_gr, Knowles_6)
+findOverlaps(LR_open_gr, Knowles_6)
+findOverlaps(NR_gr, Knowles_6)
 
-findOverlaps(EAR_df_gr, Knowles_5_noext)
-findOverlaps(ESR_df_gr, Knowles_5_noext)
-findOverlaps(LR_df_gr, Knowles_5_noext)
-findOverlaps(NR_df_gr, Knowles_5_noext)
+findOverlaps(EAR_open_gr, SNP_supp_schneider)
+findOverlaps(ESR_open_gr, SNP_supp_schneider)
+findOverlaps(LR_open_gr, SNP_supp_schneider)
+findOverlaps(NR_gr, SNP_supp_schneider)
+
+subsetByOverlaps(LR_open_gr, SNP_supp_schneider)
 
 
-findOverlaps(EAR_df_gr, Knowles_6_noext)
-findOverlaps(ESR_df_gr, Knowles_6_noext)
-findOverlaps(LR_df_gr, Knowles_6_noext)
-findOverlaps(NR_df_gr, Knowles_6_noext)
+findOverlaps(EAR_open_gr, Knowles_4_noext)
+findOverlaps(ESR_open_gr, Knowles_4_noext)
+findOverlaps(LR_open_gr, Knowles_4_noext)
+findOverlaps(NR_gr, Knowles_4_noext)
+
+findOverlaps(EAR_open_gr, Knowles_5_noext)
+findOverlaps(ESR_open_gr, Knowles_5_noext)
+findOverlaps(LR_open_gr, Knowles_5_noext)
+findOverlaps(NR_gr, Knowles_5_noext)
+
+
+findOverlaps(EAR_open_gr, Knowles_6_noext)
+findOverlaps(ESR_open_gr, Knowles_6_noext)
+findOverlaps(LR_open_gr, Knowles_6_noext)
+findOverlaps(NR_gr, Knowles_6_noext)
 
 
 
@@ -211,23 +211,31 @@ findOverlaps(NR_df_gr, Knowles_6_noext)
 
 report:
 
-| motif       | K_4(500)                                       | K_5(359)                                       | K_6(447)                                       | schn_g(112)                                             |
-|---------------|---------------|---------------|---------------|---------------|
-| EAR (7321)  | `r length(findOverlaps(EAR_df_gr, Knowles_4))` | `r length(findOverlaps(EAR_df_gr, Knowles_5))` | `r length(findOverlaps(EAR_df_gr, Knowles_6))` | `r length(findOverlaps(EAR_df_gr, SNP_supp_schneider))` |
-| ESR (15665) | `r length(findOverlaps(ESR_df_gr, Knowles_4))` | `r length(findOverlaps(ESR_df_gr, Knowles_5))` | `r length(findOverlaps(ESR_df_gr, Knowles_6))` | `r length(findOverlaps(ESR_df_gr, SNP_supp_schneider))` |
-| LR (41759)  | `r length(findOverlaps(LR_df_gr, Knowles_4))`  | `r length(findOverlaps(LR_df_gr, Knowles_5))`  | `r length(findOverlaps(LR_df_gr, Knowles_6))`  | `r length(findOverlaps(LR_df_gr, SNP_supp_schneider))`  |
-| NR (83658)  | `r length(findOverlaps(NR_df_gr, Knowles_4))`  | `r length(findOverlaps(NR_df_gr, Knowles_5))`  | `r length(findOverlaps(NR_df_gr, Knowles_6))`  | `r length(findOverlaps(NR_df_gr, SNP_supp_schneider))`  |
+| motif                                         | K_4(500)                                          | K_5(359)                                          | K_6(447)                                          |
+|------------------|------------------|------------------|------------------|
+| EAR_open ( `r length(EAR_open_df$seqnames)`)  | `r length(findOverlaps(EAR_open_gr, Knowles_4))`  | `r length(findOverlaps(EAR_open_gr, Knowles_5))`  | `r length(findOverlaps(EAR_open_gr, Knowles_6))`  |
+| EAR_close (`r length(EAR_close_df$seqnames)`) | `r length(findOverlaps(EAR_close_gr, Knowles_4))` | `r length(findOverlaps(EAR_close_gr, Knowles_5))` | `r length(findOverlaps(EAR_close_gr, Knowles_6))` |
+| ESR_open (`r length(ESR_open_df$seqnames)`)   | `r length(findOverlaps(ESR_open_gr, Knowles_4))`  | `r length(findOverlaps(ESR_open_gr, Knowles_5))`  | `r length(findOverlaps(ESR_open_gr, Knowles_6))`  |
+| ESR_close (`r length(ESR_close_df$seqnames)`) | `r length(findOverlaps(ESR_close_gr, Knowles_4))` | `r length(findOverlaps(ESR_close_gr, Knowles_5))` | `r length(findOverlaps(ESR_close_gr, Knowles_6))` |
+| ESR_OC (`r length(ESR_OC_df$seqnames)`)       | `r length(findOverlaps(ESR_OC_gr, Knowles_4))`    | `r length(findOverlaps(ESR_OC_gr, Knowles_5))`    | `r length(findOverlaps(ESR_OC_gr, Knowles_6))`    |
+| LR_open (`r length(LR_open_df$seqnames)`)     | `r length(findOverlaps(LR_open_gr, Knowles_4))`   | `r length(findOverlaps(LR_open_gr, Knowles_5))`   | `r length(findOverlaps(LR_open_gr, Knowles_6))`   |
+| LR_close (`r length(LR_close_df$seqnames)`)   | `r length(findOverlaps(LR_close_gr, Knowles_4))`  | `r length(findOverlaps(LR_close_gr, Knowles_5))`  | `r length(findOverlaps(LR_close_gr, Knowles_6))`  |
+| NR (`r length(NR_df$seqnames)`)               | `r length(findOverlaps(NR_gr, Knowles_4))`     | `r length(findOverlaps(NR_gr, Knowles_5))`     | `r length(findOverlaps(NR_gr, Knowles_6))`     |
 
 : number of intersections between groups with 500 =/- bp around SNP
 
 report:
 
-| motif       | K_4(500) | K_5(359) | K_6(447) |
-|-------------|----------|----------|----------|
-| EAR (7321)  | 0        | 1        | 0        |
-| ESR (15665) | 3        | 2        | 2        |
-| LR (41759)  | 13       | 9        | 8        |
-| NR (83658)  | 30       | 15       | 19       |
+| motif                                         | K_4(500)                                                | K_5(359)                                                | K_6(447)                                                |
+|------------------|------------------|------------------|------------------|
+| EAR_open (`r length(EAR_open_df$seqnames)`)   | `r length(findOverlaps(EAR_open_gr, Knowles_4_noext))`  | `r length(findOverlaps(EAR_open_gr, Knowles_5_noext))`  | `r length(findOverlaps(EAR_open_gr, Knowles_6_noext))`  |
+| EAR_close (`r length(EAR_close_df$seqnames)`) | `r length(findOverlaps(EAR_close_gr, Knowles_4_noext))` | `r length(findOverlaps(EAR_close_gr, Knowles_5_noext))` | `r length(findOverlaps(EAR_close_gr, Knowles_6_noext))` |
+| ESR_open (`r length(ESR_open_df$seqnames)`)   | `r length(findOverlaps(ESR_open_gr, Knowles_4_noext))`  | `r length(findOverlaps(ESR_open_gr, Knowles_5_noext))`  | `r length(findOverlaps(ESR_open_gr, Knowles_6_noext))`  |
+| ESR_close (`r length(ESR_close_df$seqnames)`) | `r length(findOverlaps(ESR_close_gr, Knowles_4_noext))` | `r length(findOverlaps(ESR_close_gr, Knowles_5_noext))` | `r length(findOverlaps(ESR_close_gr, Knowles_6_noext))` |
+| ESR_OC (`r length(ESR_OC_df$seqnames)`)       | `r length(findOverlaps(ESR_OC_gr, Knowles_4_noext))`    | `r length(findOverlaps(ESR_OC_gr, Knowles_5_noext))`    | `r length(findOverlaps(ESR_OC_gr, Knowles_6_noext))`    |
+| LR_open (`r length(LR_open_df$seqnames)`)     | `r length(findOverlaps(LR_open_gr, Knowles_4_noext))`   | `r length(findOverlaps(LR_open_gr, Knowles_5_noext))`   | `r length(findOverlaps(LR_open_gr, Knowles_6_noext))`   |
+| LR_close (`r length(LR_close_df$seqnames)`)   | `r length(findOverlaps(LR_close_gr, Knowles_4_noext))`  | `r length(findOverlaps(LR_close_gr, Knowles_5_noext))`  | `r length(findOverlaps(LR_close_gr, Knowles_6_noext))`  |
+| NR (`r length(NR_df$seqnames)`)               | `r length(findOverlaps(NR_gr, Knowles_4_noext))`     | `r length(findOverlaps(NR_gr, Knowles_5_noext))`     | `r length(findOverlaps(NR_gr, Knowles_6_noext))`     |
 
 : number of intersections between groups without extension
 
@@ -237,17 +245,9 @@ These numbers are different than the original lists from which they derived. Thi
 
 I downloaded 5 different trait associated lists from the GWAS catalog
 
-trait 1, 10 associations with trait **cardiotoxicity**
-(from 10 rows)
-trait 2, 661 associations with trait **cardiac arrhythmia**
-(from 1068 rows)
+trait 1, 10 associations with trait **cardiotoxicity** (from 10 rows) trait 2, 661 associations with trait **cardiac arrhythmia** (from 1068 rows)
 
-trait 3, 37 associations with trait **response to anthracycline-based chemotherapy**
-(from 40 rows)
-trait 4, 4068 associations with trait **heart disease**
-(from 6139 rows)
-trait 5, 398 associations with trait **heart failure**
-(from (335 rows))
+trait 3, 37 associations with trait **response to anthracycline-based chemotherapy** (from 40 rows) trait 4, 4068 associations with trait **heart disease** (from 6139 rows) trait 5, 398 associations with trait **heart failure** (from (335 rows))
 
 ```{r GWAS info, message=FALSE, warning=FALSE}
 
@@ -464,80 +464,177 @@ gwas_5_gr_noext <- gwas_5 %>%
 
 #### GWAS overlap findings
 
-```{r gwas overlaps, include=FALSE}
+```{r gwas overlaps, include=FALSE, eval=FALSE}
 
-EAR_g1_ol <- findOverlaps(EAR_df_gr, gwas_1_gr_noext)
-ESR_g1_ol <-findOverlaps(ESR_df_gr, gwas_1_gr_noext)
-LR_g1_ol <-findOverlaps(LR_df_gr, gwas_1_gr_noext)
-NR_g1_ol <-findOverlaps(NR_df_gr, gwas_1_gr_noext)
+EAR_g1_ol <- findOverlaps(EAR_open_gr, gwas_1_gr_noext)
+ESR_g1_ol <-findOverlaps(ESR_open_gr, gwas_1_gr_noext)
+LR_g1_ol <-findOverlaps(LR_open_gr, gwas_1_gr_noext)
+NR_g1_ol <-findOverlaps(NR_gr, gwas_1_gr_noext)
 
-EAR_g2_ol <-findOverlaps(EAR_df_gr, gwas_2_gr_noext)
-ESR_g2_ol <-findOverlaps(ESR_df_gr, gwas_2_gr_noext)
-LR_g2_ol <-findOverlaps(LR_df_gr,  gwas_2_gr_noext)
-NR_g2_ol <-findOverlaps(NR_df_gr, gwas_2_gr_noext)
+EAR_g2_ol <-findOverlaps(EAR_open_gr, gwas_2_gr_noext)
+ESR_g2_ol <-findOverlaps(ESR_open_gr, gwas_2_gr_noext)
+LR_g2_ol <-findOverlaps(LR_open_gr,  gwas_2_gr_noext)
+NR_g2_ol <-findOverlaps(NR_gr, gwas_2_gr_noext)
 
 
-EAR_g3_ol <-findOverlaps(EAR_df_gr, gwas_3_gr_noext)
-ESR_g3_ol <-findOverlaps(ESR_df_gr, gwas_3_gr_noext)
-LR_g3_ol <-findOverlaps(LR_df_gr, gwas_3_gr_noext)
-NR_g3_ol <-findOverlaps(NR_df_gr, gwas_3_gr_noext)
+EAR_g3_ol <-findOverlaps(EAR_open_gr, gwas_3_gr_noext)
+ESR_g3_ol <-findOverlaps(ESR_open_gr, gwas_3_gr_noext)
+LR_g3_ol <-findOverlaps(LR_open_gr, gwas_3_gr_noext)
+NR_g3_ol <-findOverlaps(NR_gr, gwas_3_gr_noext)
 
-EAR_g4_ol <-findOverlaps(EAR_df_gr, gwas_4_gr_noext)
-ESR_g4_ol <-findOverlaps(ESR_df_gr, gwas_4_gr_noext)
-LR_g4_ol <-findOverlaps(LR_df_gr, gwas_4_gr_noext)
-NR_g4_ol <-findOverlaps(NR_df_gr, gwas_4_gr_noext)
+EAR_g4_ol <-findOverlaps(EAR_open_gr, gwas_4_gr_noext)
+ESR_g4_ol <-findOverlaps(ESR_open_gr, gwas_4_gr_noext)
+LR_g4_ol <-findOverlaps(LR_open_gr, gwas_4_gr_noext)
+NR_g4_ol <-findOverlaps(NR_gr, gwas_4_gr_noext)
 
-EAR_g5_ol <-findOverlaps(EAR_df_gr, gwas_5_gr_noext)
-ESR_g5_ol <-findOverlaps(ESR_df_gr, gwas_5_gr_noext)
-LR_g5_ol <-findOverlaps(LR_df_gr, gwas_5_gr_noext)
-NR_g5_ol <-findOverlaps(NR_df_gr, gwas_5_gr_noext)
+EAR_g5_ol <-findOverlaps(EAR_open_gr, gwas_5_gr_noext)
+ESR_g5_ol <-findOverlaps(ESR_open_gr, gwas_5_gr_noext)
+LR_g5_ol <-findOverlaps(LR_open_gr, gwas_5_gr_noext)
+NR_g5_ol <-findOverlaps(NR_gr, gwas_5_gr_noext)
 
-EAR_CAD_ol <-findOverlaps(EAR_df_gr, CAD_gwas_gr_noext)
-ESR_CAD_ol <-findOverlaps(ESR_df_gr,  CAD_gwas_gr_noext)
-LR_CAD_ol <-findOverlaps(LR_df_gr,  CAD_gwas_gr_noext)
-NR_CAD_ol <-findOverlaps(NR_df_gr,  CAD_gwas_gr_noext)
+EAR_CAD_ol <-findOverlaps(EAR_open_gr, CAD_gwas_gr_noext)
+ESR_CAD_ol <-findOverlaps(ESR_open_gr,  CAD_gwas_gr_noext)
+LR_CAD_ol <-findOverlaps(LR_open_gr,  CAD_gwas_gr_noext)
+NR_CAD_ol <-findOverlaps(NR_gr,  CAD_gwas_gr_noext)
 
-findOverlaps(EAR_df_gr, MI_gwas_gr_noext)
-findOverlaps(ESR_df_gr,  MI_gwas_gr_noext)
-findOverlaps(LR_df_gr,  MI_gwas_gr_noext)
-findOverlaps(NR_df_gr,  MI_gwas_gr_noext)
+findOverlaps(EAR_open_gr, MI_gwas_gr_noext)
+findOverlaps(ESR_open_gr,  MI_gwas_gr_noext)
+findOverlaps(LR_open_gr,  MI_gwas_gr_noext)
+findOverlaps(NR_gr,  MI_gwas_gr_noext)
 
 
 ```
 
-| motif       | gwas_1 (`r length(gwas_1_gr)`)                     | ARR-gwas_2 (`r length(gwas_2_gr)`)                     | gwas_3 (`r length(gwas_3_gr)`)                     | gwas_4 (`r length(gwas_4_gr)`)                     | Heart Failure (`r length(gwas_5_gr)`)               | CAD_gwas (`r length(CAD_gwas_gr)`)                   |
+| motif                                         | gwas_1 (`r length(gwas_1_gr)`)                        | ARR-gwas_2 (`r length(gwas_2_gr)`)                    | gwas_3 (`r length(gwas_3_gr)`)                        | gwas_4 (`r length(gwas_4_gr)`)                        | Heart Failure (`r length(gwas_5_gr)`)                  | CAD_gwas (`r length(CAD_gwas_gr)`)                      |
 |-----------|-----------|-----------|-----------|-----------|-----------|-----------|
-| EAR (7321)  | `r length(findOverlaps(EAR_df_gr, gwas_1_gr_ten))` | `r length(findOverlaps(EAR_df_gr, gwas_2_gr_ten))` | `r length(findOverlaps(EAR_df_gr, gwas_3_gr_ten))` | `r length(findOverlaps(EAR_df_gr, gwas_4_gr_ten))` | `r  length(findOverlaps(EAR_df_gr, gwas_5_gr_ten))` | `r length(findOverlaps(EAR_df_gr, CAD_gwas_gr_ten))` |
-| ESR (15665) | `r length(findOverlaps(ESR_df_gr, gwas_1_gr_ten))` | `r length(findOverlaps(ESR_df_gr, gwas_2_gr_ten))` | `r length(findOverlaps(ESR_df_gr, gwas_3_gr_ten))` | `r length(findOverlaps(ESR_df_gr, gwas_4_gr_ten))` | `r length(findOverlaps(ESR_df_gr, gwas_5_gr_ten))`  | `r length(findOverlaps(ESR_df_gr, CAD_gwas_gr_ten))` |
-| LR (41759)  | `r length(findOverlaps(LR_df_gr, gwas_1_gr_ten))`  | `r length(findOverlaps(LR_df_gr, gwas_2_gr_ten))`  | `r length(findOverlaps(LR_df_gr, gwas_3_gr_ten))`  | `r length(findOverlaps(LR_df_gr, gwas_4_gr_ten))`  | `r length(findOverlaps(LR_df_gr, gwas_5_gr_ten))`   | `r length(findOverlaps(LR_df_gr, CAD_gwas_gr_ten))`  |
-| NR (83658)  | `r length(findOverlaps(NR_df_gr, gwas_1_gr_ten))`  | `r length(findOverlaps(NR_df_gr, gwas_2_gr_ten))`  | `r length(findOverlaps(NR_df_gr, gwas_3_gr_ten))`  | `r length(findOverlaps(NR_df_gr, gwas_4_gr_ten))`  | `r length(findOverlaps(NR_df_gr, gwas_5_gr_ten))`   | `r length(findOverlaps(NR_df_gr, CAD_gwas_gr_ten))`  |
+| EAR_open (`r length(EAR_open_df$seqnames)`)   | `r length(findOverlaps(EAR_open_gr, gwas_1_gr_ten))`  | `r length(findOverlaps(EAR_open_gr, gwas_2_gr_ten))`  | `r length(findOverlaps(EAR_open_gr, gwas_3_gr_ten))`  | `r length(findOverlaps(EAR_open_gr, gwas_4_gr_ten))`  | `r  length(findOverlaps(EAR_open_gr, gwas_5_gr_ten))`  | `r length(findOverlaps(EAR_open_gr, CAD_gwas_gr_ten))`  |
+| EAR_close (`r length(EAR_close_df$seqnames)`) | `r length(findOverlaps(EAR_close_gr, gwas_1_gr_ten))`    | `r length(findOverlaps(EAR_close_gr, gwas_2_gr_ten))` | `r length(findOverlaps(EAR_close_gr, gwas_3_gr_ten))` | `r length(findOverlaps(EAR_close_gr, gwas_4_gr_ten))` | `r  length(findOverlaps(EAR_close_gr, gwas_5_gr_ten))` | `r length(findOverlaps(EAR_close_gr, CAD_gwas_gr_ten))` |
+| ESR_open (`r length(ESR_open_df$seqnames)`)   | `r length(findOverlaps(ESR_open_gr, gwas_1_gr_ten))`  | `r length(findOverlaps(ESR_open_gr, gwas_2_gr_ten))`  | `r length(findOverlaps(ESR_open_gr, gwas_3_gr_ten))`  | `r length(findOverlaps(ESR_open_gr, gwas_4_gr_ten))`  | `r length(findOverlaps(ESR_open_gr, gwas_5_gr_ten))`  | `r length(findOverlaps(ESR_open_gr, CAD_gwas_gr_ten))`  |
+| ESR_close (`r length(ESR_close_df$seqnames)`) | `r length(findOverlaps(ESR_close_gr, gwas_1_gr_ten))` | `r length(findOverlaps(ESR_close_gr, gwas_2_gr_ten))` | `r length(findOverlaps(ESR_close_gr, gwas_3_gr_ten))` | `r length(findOverlaps(ESR_close_gr, gwas_4_gr_ten))` | `r length(findOverlaps(ESR_close_gr, gwas_5_gr_ten))`  | `r length(findOverlaps(ESR_close_gr, CAD_gwas_gr_ten))` |
+| ESR_OC (`r length(ESR_OC_df$seqnames)`)        | `r length(findOverlaps(ESR_OC_gr, gwas_1_gr_ten))`    | `r length(findOverlaps(ESR_OC_gr, gwas_2_gr_ten))`    | `r length(findOverlaps(ESR_OC_gr, gwas_3_gr_ten))`    | `r length(findOverlaps(ESR_OC_gr, gwas_4_gr_ten))`    | `r length(findOverlaps(ESR_OC_gr, gwas_5_gr_ten))`     | `r length(findOverlaps(ESR_OC_gr, CAD_gwas_gr_ten))`    |
+| LR_open (`r length(LR_open_df$seqnames)`)     | `r length(findOverlaps(LR_open_gr, gwas_1_gr_ten))`   | `r length(findOverlaps(LR_open_gr, gwas_2_gr_ten))`   | `r length(findOverlaps(LR_open_gr, gwas_3_gr_ten))`   | `r length(findOverlaps(LR_open_gr, gwas_4_gr_ten))`   | `r length(findOverlaps(LR_open_gr, gwas_5_gr_ten))`    | `r length(findOverlaps(LR_open_gr, CAD_gwas_gr_ten))`   |
+| LR_close (`r length(LR_close_df$seqnames)`)   | `r length(findOverlaps(LR_close_gr, gwas_1_gr_ten))`  | `r length(findOverlaps(LR_close_gr, gwas_2_gr_ten))`  | `r length(findOverlaps(LR_close_gr, gwas_3_gr_ten))`  | `r length(findOverlaps(LR_close_gr, gwas_4_gr_ten))`  | `r length(findOverlaps(LR_close_gr, gwas_5_gr_ten))`   | `r length(findOverlaps(LR_close_gr, CAD_gwas_gr_ten))`  |
+| NR (83658)                                    | `r length(findOverlaps(NR_gr, gwas_1_gr_ten))`        | `r length(findOverlaps(NR_gr, gwas_2_gr_ten))`        | `r length(findOverlaps(NR_gr, gwas_3_gr_ten))`        | `r length(findOverlaps(NR_gr, gwas_4_gr_ten))`        | `r length(findOverlaps(NR_gr, gwas_5_gr_ten))`         | `r length(findOverlaps(NR_gr, CAD_gwas_gr_ten))`        |
 
 : gwas trait enrichment with extensions of 5,000 bp +/- SNP location
 
-| motif       | gwas_1 (`r length(gwas_1_gr)`)                 | ARR-gwas_2 (`r length(gwas_2_gr)`)                 | gwas_3 (`r length(gwas_3_gr)`)                 | gwas_4 (`r length(gwas_4_gr)`)                 | Heart Failure (`r length(gwas_5_gr)`)          | CAD_gwas (`r length(CAD_gwas_gr)`)               |
+| motif                                         | gwas_1 (`r length(gwas_1_gr)`)                    | ARR-gwas_2 (`r length(gwas_2_gr)`)                | gwas_3 (`r length(gwas_3_gr)`)                    | gwas_4 (`r length(gwas_4_gr)`)                    | Heart Failure (`r length(gwas_5_gr)`)              | CAD_gwas (`r length(CAD_gwas_gr)`)                  |
 |-----------|-----------|-----------|-----------|-----------|-----------|-----------|
-| EAR (7321)  | `r length(findOverlaps(EAR_df_gr, gwas_1_gr))` | `r length(findOverlaps(EAR_df_gr, gwas_2_gr))` | `r length(findOverlaps(EAR_df_gr, gwas_3_gr))` | `r length(findOverlaps(EAR_df_gr, gwas_4_gr))` | `r length(findOverlaps(EAR_df_gr, gwas_5_gr))` | `r length(findOverlaps(EAR_df_gr, CAD_gwas_gr))` |
-| ESR (15665) | `r length(findOverlaps(ESR_df_gr, gwas_1_gr))` | `r length(findOverlaps(ESR_df_gr, gwas_2_gr))` | `r length(findOverlaps(ESR_df_gr, gwas_3_gr))` | `r length(findOverlaps(ESR_df_gr, gwas_4_gr))` | `r length(findOverlaps(ESR_df_gr, gwas_5_gr))` | `r length(findOverlaps(ESR_df_gr, CAD_gwas_gr))` |
-| LR (41759)  | `r length(findOverlaps(LR_df_gr, gwas_1_gr))`  | `r length(findOverlaps(LR_df_gr, gwas_2_gr))`  | `r length(findOverlaps(LR_df_gr, gwas_3_gr))`  | `r length(findOverlaps(LR_df_gr, gwas_4_gr))`  | `r length(findOverlaps(LR_df_gr, gwas_5_gr))`  | `r length(findOverlaps(LR_df_gr, CAD_gwas_gr))`  |
-| NR (83658)  | `r length(findOverlaps(NR_df_gr, gwas_1_gr))`  | `r length(findOverlaps(NR_df_gr, gwas_2_gr))`  | `r length(findOverlaps(NR_df_gr, gwas_3_gr))`  | `r length(findOverlaps(NR_df_gr, gwas_4_gr))`  | `r length(findOverlaps(NR_df_gr, gwas_5_gr))`  | `r length(findOverlaps(NR_df_gr, CAD_gwas_gr))`  |
+| EAR_open (`r length(EAR_open_df$seqnames)`)   | `r length(findOverlaps(EAR_open_gr, gwas_1_gr))`  | `r length(findOverlaps(EAR_open_gr, gwas_2_gr))`  | `r length(findOverlaps(EAR_open_gr, gwas_3_gr))`  | `r length(findOverlaps(EAR_open_gr, gwas_4_gr))`  | `r  length(findOverlaps(EAR_open_gr, gwas_5_gr))`  | `r length(findOverlaps(EAR_open_gr, CAD_gwas_gr))`  |
+| EAR_close (`r length(EAR_close_df$seqnames)`) | `r length(findOverlaps(EAR_close_gr, gwas_1_gr))`    | `r length(findOverlaps(EAR_close_gr, gwas_2_gr))` | `r length(findOverlaps(EAR_close_gr, gwas_3_gr))` | `r length(findOverlaps(EAR_close_gr, gwas_4_gr))` | `r  length(findOverlaps(EAR_close_gr, gwas_5_gr))` | `r length(findOverlaps(EAR_close_gr, CAD_gwas_gr))` |
+| ESR_open (`r length(ESR_open_df$seqnames)`)   | `r length(findOverlaps(ESR_open_gr, gwas_1_gr))`  | `r length(findOverlaps(ESR_open_gr, gwas_2_gr))`  | `r length(findOverlaps(ESR_open_gr, gwas_3_gr))`  | `r length(findOverlaps(ESR_open_gr, gwas_4_gr))`  | `r length(findOverlaps(ESR_open_gr, gwas_5_gr))`  | `r length(findOverlaps(ESR_open_gr, CAD_gwas_gr))`  |
+| ESR_close (`r length(ESR_close_df$seqnames)`) | `r length(findOverlaps(ESR_close_gr, gwas_1_gr))` | `r length(findOverlaps(ESR_close_gr, gwas_2_gr))` | `r length(findOverlaps(ESR_close_gr, gwas_3_gr))` | `r length(findOverlaps(ESR_close_gr, gwas_4_gr))` | `r length(findOverlaps(ESR_close_gr, gwas_5_gr))`  | `r length(findOverlaps(ESR_close_gr, CAD_gwas_gr))` |
+| ESR_OC (`r length(ESR_OC_df$seqnames)`)        | `r length(findOverlaps(ESR_OC_gr, gwas_1_gr))`    | `r length(findOverlaps(ESR_OC_gr, gwas_2_gr))`    | `r length(findOverlaps(ESR_OC_gr, gwas_3_gr))`    | `r length(findOverlaps(ESR_OC_gr, gwas_4_gr))`    | `r length(findOverlaps(ESR_OC_gr, gwas_5_gr))`     | `r length(findOverlaps(ESR_OC_gr, CAD_gwas_gr))`    |
+| LR_open (`r length(LR_open_df$seqnames)`)     | `r length(findOverlaps(LR_open_gr, gwas_1_gr))`   | `r length(findOverlaps(LR_open_gr, gwas_2_gr))`   | `r length(findOverlaps(LR_open_gr, gwas_3_gr))`   | `r length(findOverlaps(LR_open_gr, gwas_4_gr))`   | `r length(findOverlaps(LR_open_gr, gwas_5_gr))`    | `r length(findOverlaps(LR_open_gr, CAD_gwas_gr))`   |
+| LR_close (`r length(LR_close_df$seqnames)`)   | `r length(findOverlaps(LR_close_gr, gwas_1_gr))`  | `r length(findOverlaps(LR_close_gr, gwas_2_gr))`  | `r length(findOverlaps(LR_close_gr, gwas_3_gr))`  | `r length(findOverlaps(LR_close_gr, gwas_4_gr))`  | `r length(findOverlaps(LR_close_gr, gwas_5_gr))`   | `r length(findOverlaps(LR_close_gr, CAD_gwas_gr))`  |
+| NR (83658)                                    | `r length(findOverlaps(NR_gr, gwas_1_gr))`        | `r length(findOverlaps(NR_gr, gwas_2_gr))`        | `r length(findOverlaps(NR_gr, gwas_3_gr))`        | `r length(findOverlaps(NR_gr, gwas_4_gr))`        | `r length(findOverlaps(NR_gr, gwas_5_gr))`         | `r length(findOverlaps(NR_gr, CAD_gwas_gr))`        |
 
 : gwas trait enrichment with extensions of 500 bp +/- SNP location
 
-| motif       | gwas_1 (`r length(gwas_1_gr)`)                                        | ARR-gwas_2 (`r length(gwas_2_gr)`)                                      | gwas_3 (`r length(gwas_3_gr)`)                                        | gwas_4 (`r length(gwas_4_gr)`)                                      | Heart Failure (`r length(gwas_5_gr)`)                                        | CAD_gwas (`r length(CAD_gwas_gr)`)                                      | MI_gwas (`r length(MI_gwas_gr)`)
-|--------|--------|--------|--------|--------|--------|--------|--------|--------|
-| EAR (7321)  | `r length(findOverlaps(EAR_df_gr, gwas_1_gr))` | `r length(findOverlaps(EAR_df_gr, gwas_2_gr_noext))` | `r length(findOverlaps(EAR_df_gr, gwas_3_gr_noext))` | `r length(findOverlaps(EAR_df_gr, gwas_4_gr_noext))` | `r length(findOverlaps(EAR_df_gr, gwas_5_gr_noext))` | `r length(findOverlaps(EAR_df_gr, CAD_gwas_gr))` |`r length(findOverlaps(EAR_df_gr, MI_gwas_gr_noext))`|
-| ESR (15665) | `r length(findOverlaps(ESR_df_gr, gwas_1_gr_noext))` | `r length(findOverlaps(ESR_df_gr, gwas_2_gr_noext))` | `r length(findOverlaps(ESR_df_gr, gwas_3_gr_noext))` | `r length(findOverlaps(ESR_df_gr, gwas_4_gr_noext))` | `r length(findOverlaps(ESR_df_gr, gwas_5_gr_noext))` | `r length(findOverlaps(ESR_df_gr, CAD_gwas_gr_noext))` |`r length(findOverlaps(ESR_df_gr, MI_gwas_gr_noext))`|
-| LR (41759)  | `r length(findOverlaps(LR_df_gr, gwas_1_gr_noext))`  | `r length(findOverlaps(LR_df_gr, gwas_2_gr_noext))`  | `r length(findOverlaps(LR_df_gr, gwas_3_gr_noext))`  | `r length(findOverlaps(LR_df_gr, gwas_4_gr_noext))`  | `r length(findOverlaps(LR_df_gr, gwas_5_gr_noext))`  | `r length(findOverlaps(LR_df_gr, CAD_gwas_gr_noext))`  |`r length(findOverlaps(LR_df_gr, MI_gwas_gr_noext))`|
-| NR (83658)  | `r length(findOverlaps(NR_df_gr, gwas_1_gr_noext))`  | `r length(findOverlaps(NR_df_gr, gwas_2_gr_noext))`  | `r length(findOverlaps(NR_df_gr, gwas_3_gr_noext))`  | `r length(findOverlaps(NR_df_gr, gwas_4_gr_noext))`  | `r length(findOverlaps(NR_df_gr, gwas_5_gr_noext))`  | `r length(findOverlaps(NR_df_gr, CAD_gwas_gr_noext))`  |`r length(findOverlaps(NR_df_gr, MI_gwas_gr_noext))`|
+| motif                                         | gwas_1 (`r length(gwas_1_gr)`)                          | ARR-gwas_2 (`r length(gwas_2_gr)`)                      | gwas_3 (`r length(gwas_3_gr)`)                          | gwas_4 (`r length(gwas_4_gr)`)                          | Heart Failure (`r length(gwas_5_gr)`)                    | CAD_gwas (`r length(CAD_gwas_gr)`)                        |
+|-----------|-----------|-----------|-----------|-----------|-----------|-----------|
+| EAR_open (`r length(EAR_open_df$seqnames)`)   | `r length(findOverlaps(EAR_open_gr, gwas_1_gr_noext))`  | `r length(findOverlaps(EAR_open_gr, gwas_2_gr_noext))`  | `r length(findOverlaps(EAR_open_gr, gwas_3_gr_noext))`  | `r length(findOverlaps(EAR_open_gr, gwas_4_gr_noext))`  | `r  length(findOverlaps(EAR_open_gr, gwas_5_gr_noext))`  | `r length(findOverlaps(EAR_open_gr, CAD_gwas_gr_noext))`  |
+| EAR_close (`r length(EAR_close_df$seqnames)`) | `r length(findOverlaps(EAR_close_gr, gwas_1_gr_noext))`    | `r length(findOverlaps(EAR_close_gr, gwas_2_gr_noext))` | `r length(findOverlaps(EAR_close_gr, gwas_3_gr_noext))` | `r length(findOverlaps(EAR_close_gr, gwas_4_gr_noext))` | `r  length(findOverlaps(EAR_close_gr, gwas_5_gr_noext))` | `r length(findOverlaps(EAR_close_gr, CAD_gwas_gr_noext))` |
+| ESR_open (`r length(ESR_open_df$seqnames)`)   | `r length(findOverlaps(ESR_open_gr, gwas_1_gr_noext))`  | `r length(findOverlaps(ESR_open_gr, gwas_2_gr_noext))`  | `r length(findOverlaps(ESR_open_gr, gwas_3_gr_noext))`  | `r length(findOverlaps(ESR_open_gr, gwas_4_gr_noext))`  | `r length(findOverlaps(ESR_open_gr, gwas_5_gr_noext))`  | `r length(findOverlaps(ESR_open_gr, CAD_gwas_gr_noext))`  |
+| ESR_close (`r length(ESR_close_df$seqnames)`) | `r length(findOverlaps(ESR_close_gr, gwas_1_gr_noext))` | `r length(findOverlaps(ESR_close_gr, gwas_2_gr_noext))` | `r length(findOverlaps(ESR_close_gr, gwas_3_gr_noext))` | `r length(findOverlaps(ESR_close_gr, gwas_4_gr_noext))` | `r length(findOverlaps(ESR_close_gr, gwas_5_gr_noext))`  | `r length(findOverlaps(ESR_close_gr, CAD_gwas_gr_noext))` |
+| ESR_OC (`r length(ESR_OC_df$seqnames)`)        | `r length(findOverlaps(ESR_OC_gr, gwas_1_gr_noext))`    | `r length(findOverlaps(ESR_OC_gr, gwas_2_gr_noext))`    | `r length(findOverlaps(ESR_OC_gr, gwas_3_gr_noext))`    | `r length(findOverlaps(ESR_OC_gr, gwas_4_gr_noext))`    | `r length(findOverlaps(ESR_OC_gr, gwas_5_gr_noext))`     | `r length(findOverlaps(ESR_OC_gr, CAD_gwas_gr_noext))`    |
+| LR_open (`r length(LR_open_df$seqnames)`)     | `r length(findOverlaps(LR_open_gr, gwas_1_gr_noext))`   | `r length(findOverlaps(LR_open_gr, gwas_2_gr_noext))`   | `r length(findOverlaps(LR_open_gr, gwas_3_gr_noext))`   | `r length(findOverlaps(LR_open_gr, gwas_4_gr_noext))`   | `r length(findOverlaps(LR_open_gr, gwas_5_gr_noext))`    | `r length(findOverlaps(LR_open_gr, CAD_gwas_gr_noext))`   |
+| LR_close (`r length(LR_close_df$seqnames)`)   | `r length(findOverlaps(LR_close_gr, gwas_1_gr_noext))`  | `r length(findOverlaps(LR_close_gr, gwas_2_gr_noext))`  | `r length(findOverlaps(LR_close_gr, gwas_3_gr_noext))`  | `r length(findOverlaps(LR_close_gr, gwas_4_gr_noext))`  | `r length(findOverlaps(LR_close_gr, gwas_5_gr_noext))`   | `r length(findOverlaps(LR_close_gr, CAD_gwas_gr_noext))`  |
+| NR (83658)                                    | `r length(findOverlaps(NR_gr, gwas_1_gr_noext))`        | `r length(findOverlaps(NR_gr, gwas_2_gr_noext))`        | `r length(findOverlaps(NR_gr, gwas_3_gr_noext))`        | `r length(findOverlaps(NR_gr, gwas_4_gr_noext))`        | `r length(findOverlaps(NR_gr, gwas_5_gr_noext))`         | `r length(findOverlaps(NR_gr, CAD_gwas_gr_noext))`        |
 
 : gwas trait enrichment with no extension
-
-These numbers are different than the original lists from which they derived. This is normally due to running `na.omit()` for rows missing name and location infromation and adding on the `distinct` function to the data frame before GRanges transformation. This reliably removes repeated SNPs. \#
 
 #### chisquare tests
 
 ```{r chi numbers}
-chitest_gwas2_EAR <- matrix(c(2,7319,48,83610), ncol=2, byrow=TRUE)
+
+SNPanno <- read.csv("data/Final_four_data/annotated_gwas_SNPS.csv", row.names = 1)
+SNPanno 
+```
+
+```{r wait}
+matrixtest <- data.frame(
+  SNP_type= c("Total_peaks","cardiotox","ARR","ACresp","HD","HF","CAD", "MI"),
+  SNP_tot=c(length(as.data.frame(background)$seqnames),
+            length(gwas_1_gr),
+            length(gwas_2_gr),
+            length(gwas_3_gr),
+            length(gwas_4_gr),
+            length(gwas_5_gr),
+            length(CAD_gwas_gr),
+            length(MI_gwas_gr)),
+  EAR_open=c(length(EAR_open_df$seqnames),
+             length(findOverlaps(EAR_open_gr, gwas_1_gr_noext)),
+             length(findOverlaps(EAR_open_gr, gwas_2_gr_noext)),
+             length(findOverlaps(EAR_open_gr, gwas_3_gr_noext)),
+             length(findOverlaps(EAR_open_gr, gwas_4_gr_noext)),
+             length(findOverlaps(EAR_open_gr, gwas_5_gr_noext)),
+             length(findOverlaps(EAR_open_gr, CAD_gwas_gr_noext)),
+             length(findOverlaps(EAR_open_gr, MI_gwas_gr_noext))),
+  EAR_close=c(length(EAR_close_df$seqnames),
+              length(findOverlaps(EAR_close_gr, gwas_1_gr_noext)),
+              length(findOverlaps(EAR_close_gr, gwas_2_gr_noext)),
+              length(findOverlaps(EAR_close_gr, gwas_3_gr_noext)),
+              length(findOverlaps(EAR_close_gr, gwas_4_gr_noext)),
+              length(findOverlaps(EAR_close_gr, gwas_5_gr_noext)),
+              length(findOverlaps(EAR_close_gr, CAD_gwas_gr_noext)),
+              length(findOverlaps(EAR_close_gr, MI_gwas_gr_noext))),
+  ESR_open=c(length(ESR_open_df$seqnames),
+             length(findOverlaps(ESR_open_gr, gwas_1_gr_noext)),
+             length(findOverlaps(ESR_open_gr, gwas_2_gr_noext)),
+             length(findOverlaps(ESR_open_gr, gwas_3_gr_noext)),
+             length(findOverlaps(ESR_open_gr, gwas_4_gr_noext)),
+             length(findOverlaps(ESR_open_gr, gwas_5_gr_noext)),
+             length(findOverlaps(ESR_open_gr, CAD_gwas_gr_noext)),
+             length(findOverlaps(ESR_open_gr, MI_gwas_gr_noext))),
+  ESR_close=c(length(ESR_close_df$seqnames),
+              length(findOverlaps(ESR_close_gr, gwas_1_gr_noext)),
+              length(findOverlaps(ESR_close_gr, gwas_2_gr_noext)),
+              length(findOverlaps(ESR_close_gr, gwas_3_gr_noext)),
+              length(findOverlaps(ESR_close_gr, gwas_4_gr_noext)),
+              length(findOverlaps(ESR_close_gr, gwas_5_gr_noext)),
+              length(findOverlaps(ESR_close_gr, CAD_gwas_gr_noext)),
+              length(findOverlaps(ESR_close_gr, MI_gwas_gr_noext))),
+  ESR_OC=c(length(ESR_OC_df$seqnames),
+             length(findOverlaps(ESR_OC_gr, gwas_1_gr_noext)),
+             length(findOverlaps(ESR_OC_gr, gwas_2_gr_noext)),
+             length(findOverlaps(ESR_OC_gr, gwas_3_gr_noext)),
+             length(findOverlaps(ESR_OC_gr, gwas_4_gr_noext)),
+             length(findOverlaps(ESR_OC_gr, gwas_5_gr_noext)),
+             length(findOverlaps(ESR_OC_gr, CAD_gwas_gr_noext)),
+             length(findOverlaps(ESR_OC_gr, MI_gwas_gr_noext))),
+  LR_open=c(length(LR_open_df$seqnames),
+             length(findOverlaps(LR_open_gr, gwas_1_gr_noext)),
+             length(findOverlaps(LR_open_gr, gwas_2_gr_noext)),
+             length(findOverlaps(LR_open_gr, gwas_3_gr_noext)),
+             length(findOverlaps(LR_open_gr, gwas_4_gr_noext)),
+             length(findOverlaps(LR_open_gr, gwas_5_gr_noext)),
+             length(findOverlaps(LR_open_gr, CAD_gwas_gr_noext)),
+             length(findOverlaps(LR_open_gr, MI_gwas_gr_noext))),
+  LR_close=c(length(LR_close_df$seqnames),
+              length(findOverlaps(LR_close_gr, gwas_1_gr_noext)),
+              length(findOverlaps(LR_close_gr, gwas_2_gr_noext)),
+              length(findOverlaps(LR_close_gr, gwas_3_gr_noext)),
+              length(findOverlaps(LR_close_gr, gwas_4_gr_noext)),
+              length(findOverlaps(LR_close_gr, gwas_5_gr_noext)),
+              length(findOverlaps(LR_close_gr, CAD_gwas_gr_noext)),
+              length(findOverlaps(LR_close_gr, MI_gwas_gr_noext))),
+  NR=c(length(NR_df$seqnames),
+             length(findOverlaps(NR_gr, gwas_1_gr_noext)),
+             length(findOverlaps(NR_gr, gwas_2_gr_noext)),
+             length(findOverlaps(NR_gr, gwas_3_gr_noext)),
+             length(findOverlaps(NR_gr, gwas_4_gr_noext)),
+             length(findOverlaps(NR_gr, gwas_5_gr_noext)),
+             length(findOverlaps(NR_gr, CAD_gwas_gr_noext)),
+             length(findOverlaps(NR_gr, MI_gwas_gr_noext))))
+  
+matrixtest %>% 
+  column_to_rownames("SNP_type")
+```
+
+
+```{r wait, eval=FALSE, include=FALSE}
+chitest_gwas2_EARo <- matrix(c(0,3158,48,83610), ncol=2, byrow=TRUE)
 chitest_gwas2_ESR <- matrix(c(13,15652,48,83610), ncol=2, byrow=TRUE)
 chitest_gwas2_LR <- matrix(c(18,41741,48,83610), ncol=2, byrow=TRUE)
 chisq.test(chitest_gwas2_EAR)
@@ -606,52 +703,52 @@ chisq.test(chitest_ARRresp)
 
 #### subsetting overlaps
 
-```{r subsetoverlap to check for peaks/nearestgene}
+```{r subsetoverlap to check for peaks/nearestgene, eval=FALSE, include=FALSE}
 ##sub-setting  peaks that overlap with at least 1 SNP in gwas2 noext
 
-EAR_g2_sol <- as.data.frame(subsetByOverlaps(EAR_df_gr, gwas_2_gr_noext))
-# subsetByOverlaps(gwas_2_gr_noext, ESR_df_gr)
-ESR_g2_sol <- as.data.frame(subsetByOverlaps(ESR_df_gr, gwas_2_gr_noext))
-LR_g2_sol <- as.data.frame(subsetByOverlaps(LR_df_gr,  gwas_2_gr_noext))
-NR_g2_sol <- as.data.frame(subsetByOverlaps(NR_df_gr, gwas_2_gr_noext))
+EAR_g2_sol <- as.data.frame(subsetByOverlaps(EAR_open_gr, gwas_2_gr_noext))
+# subsetByOverlaps(gwas_2_gr_noext, ESR_open_gr)
+ESR_g2_sol <- as.data.frame(subsetByOverlaps(ESR_open_gr, gwas_2_gr_noext))
+LR_g2_sol <- as.data.frame(subsetByOverlaps(LR_open_gr,  gwas_2_gr_noext))
+NR_g2_sol <- as.data.frame(subsetByOverlaps(NR_gr, gwas_2_gr_noext))
 
-EAR_g4_sol <- as.data.frame(subsetByOverlaps(EAR_df_gr, gwas_4_gr_noext))
-ESR_g4_sol <- as.data.frame(subsetByOverlaps(ESR_df_gr, gwas_4_gr_noext))
-LR_g4_sol <- as.data.frame(subsetByOverlaps(LR_df_gr,  gwas_4_gr_noext))
-NR_g4_sol <- as.data.frame(subsetByOverlaps(NR_df_gr, gwas_4_gr_noext))
+EAR_g4_sol <- as.data.frame(subsetByOverlaps(EAR_open_gr, gwas_4_gr_noext))
+ESR_g4_sol <- as.data.frame(subsetByOverlaps(ESR_open_gr, gwas_4_gr_noext))
+LR_g4_sol <- as.data.frame(subsetByOverlaps(LR_open_gr,  gwas_4_gr_noext))
+NR_g4_sol <- as.data.frame(subsetByOverlaps(NR_gr, gwas_4_gr_noext))
 
-EAR_g1_sol <- as.data.frame(subsetByOverlaps(EAR_df_gr, gwas_1_gr_noext))
-ESR_g1_sol <- as.data.frame(subsetByOverlaps(ESR_df_gr, gwas_1_gr_noext))
-LR_g1_sol <- as.data.frame(subsetByOverlaps(LR_df_gr,  gwas_1_gr_noext))
-NR_g1_sol <- as.data.frame(subsetByOverlaps(NR_df_gr, gwas_1_gr_noext))
+EAR_g1_sol <- as.data.frame(subsetByOverlaps(EAR_open_gr, gwas_1_gr_noext))
+ESR_g1_sol <- as.data.frame(subsetByOverlaps(ESR_open_gr, gwas_1_gr_noext))
+LR_g1_sol <- as.data.frame(subsetByOverlaps(LR_open_gr,  gwas_1_gr_noext))
+NR_g1_sol <- as.data.frame(subsetByOverlaps(NR_gr, gwas_1_gr_noext))
 
 
-EAR_g3_sol <- as.data.frame(subsetByOverlaps(EAR_df_gr, gwas_3_gr_noext))
-ESR_g3_sol <- as.data.frame(subsetByOverlaps(ESR_df_gr, gwas_3_gr_noext))
-LR_g3_sol <- as.data.frame(subsetByOverlaps(LR_df_gr,  gwas_3_gr_noext))
-NR_g3_sol <- as.data.frame(subsetByOverlaps(NR_df_gr, gwas_3_gr_noext))
+EAR_g3_sol <- as.data.frame(subsetByOverlaps(EAR_open_gr, gwas_3_gr_noext))
+ESR_g3_sol <- as.data.frame(subsetByOverlaps(ESR_open_gr, gwas_3_gr_noext))
+LR_g3_sol <- as.data.frame(subsetByOverlaps(LR_open_gr,  gwas_3_gr_noext))
+NR_g3_sol <- as.data.frame(subsetByOverlaps(NR_gr, gwas_3_gr_noext))
 
-EAR_g5_sol <- as.data.frame(subsetByOverlaps(EAR_df_gr, gwas_5_gr_noext))
-ESR_g5_sol <- as.data.frame(subsetByOverlaps(ESR_df_gr, gwas_5_gr_noext))
-LR_g5_sol <- as.data.frame(subsetByOverlaps(LR_df_gr,  gwas_5_gr_noext))
-NR_g5_sol <- as.data.frame(subsetByOverlaps(NR_df_gr, gwas_5_gr_noext))
+EAR_g5_sol <- as.data.frame(subsetByOverlaps(EAR_open_gr, gwas_5_gr_noext))
+ESR_g5_sol <- as.data.frame(subsetByOverlaps(ESR_open_gr, gwas_5_gr_noext))
+LR_g5_sol <- as.data.frame(subsetByOverlaps(LR_open_gr,  gwas_5_gr_noext))
+NR_g5_sol <- as.data.frame(subsetByOverlaps(NR_gr, gwas_5_gr_noext))
 
-EAR_MI_sol <- as.data.frame(subsetByOverlaps(EAR_df_gr, MI_gwas_gr))
-ESR_MI_sol <- as.data.frame(subsetByOverlaps(ESR_df_gr, MI_gwas_gr))
-LR_MI_sol <- as.data.frame(subsetByOverlaps(LR_df_gr,  MI_gwas_gr))
-NR_MI_sol <- as.data.frame(subsetByOverlaps(NR_df_gr, MI_gwas_gr))
+EAR_MI_sol <- as.data.frame(subsetByOverlaps(EAR_open_gr, MI_gwas_gr))
+ESR_MI_sol <- as.data.frame(subsetByOverlaps(ESR_open_gr, MI_gwas_gr))
+LR_MI_sol <- as.data.frame(subsetByOverlaps(LR_open_gr,  MI_gwas_gr))
+NR_MI_sol <- as.data.frame(subsetByOverlaps(NR_gr, MI_gwas_gr))
 
-EAR_CAD_sol <- as.data.frame(subsetByOverlaps(EAR_df_gr, CAD_gwas_gr))
-ESR_CAD_sol <- as.data.frame(subsetByOverlaps(ESR_df_gr, CAD_gwas_gr))
-LR_CAD_sol <- as.data.frame(subsetByOverlaps(LR_df_gr,  CAD_gwas_gr))
-NR_CAD_sol <- as.data.frame(subsetByOverlaps(NR_df_gr, CAD_gwas_gr))
+EAR_CAD_sol <- as.data.frame(subsetByOverlaps(EAR_open_gr, CAD_gwas_gr))
+ESR_CAD_sol <- as.data.frame(subsetByOverlaps(ESR_open_gr, CAD_gwas_gr))
+LR_CAD_sol <- as.data.frame(subsetByOverlaps(LR_open_gr,  CAD_gwas_gr))
+NR_CAD_sol <- as.data.frame(subsetByOverlaps(NR_gr, CAD_gwas_gr))
 
 ###Now I can pull the geneID list and see if genes are DE from RNAseq data
 ```
 
 ### RNA MRC (motif response cluster)
 
-```{r adding in RNA genes, include=FALSE}
+```{r adding in RNA genes, eval=FALSE, include=FALSE}
 toplistall_RNA <- readRDS("data/other_papers/toplistall_RNA.RDS") 
 S13Table <- read.csv( "data/other_papers/S13Table_Matthews2024.csv",row.names = 1)
 ##14021
@@ -791,9 +888,7 @@ RNA_expresed_genes%>%
 
 ```
 
-
-
-```{r MRC and RNAseq}
+```{r MRC and RNAseq, eval=FALSE, include=FALSE}
 drug_pal <- c("#8B006D","#DF707E","#F1B72B", "#3386DD","#707031","#41B333")
 ##Here my focus is to find nearest genes that are MRC and see if they are DEGs
 toplist_n45 <- readRDS("data/toplist_n45.RDS")
@@ -890,7 +985,7 @@ toplist_n45 %>%
 
 ### Pie charts of the SNPs
 
-```{r  piechart noext }
+```{r piechart noext, eval=FALSE, include=FALSE}
 
 Set <- c("EAR", "ESR","LR", "NR")
 gene_num_ARR <- c(2,13,18,48)
@@ -1020,7 +1115,7 @@ pie_chartdata_ACresp %>%
 
 ```
 
-```{r expressionDE chart}
+```{r expressionDE chart, eval=FALSE, include=FALSE}
 
 ### Code to express # of DE vs non DE genes associated with SNPs found in MRCs
 
@@ -1262,7 +1357,7 @@ GWAS_5_DAR_df %>%
 
 ```
 
-```{r CDKn1a log2cpm MRC-RNa}
+```{r CDKn1a log2cpm MRC-RNa, eval=FALSE, include=FALSE}
 my_hc_filtered_counts_n45 <- readRDS("data/my_hc_filt_counts_n45.RDS")
 log_filt_hc_n45 <- cpm(my_hc_filtered_counts_n45, log = TRUE) %>% as.data.frame()
 drug_pal <- c("#8B006D","#DF707E","#F1B72B", "#3386DD","#707031","#41B333")
@@ -1329,7 +1424,7 @@ The next steps involved exporting this file as a .bed file and using `bedtools c
 NOTE FOR MYSELF (are we base 0 or base 1!!!!!)\
 The peak file names do not match the bed file names due to the 0/1 issue. This means to match up MRC categories by name, I need to alter the first start position by +1 to get the "new" names to match the old names!
 
-```{r overlapping closest, eval=FALSE, include=TRUE}
+```{r overlapping closest, eval=FALSE, include=FALSE}
 
 # get RNA gene list:  (14,084)  Can be done using the S13 from my previous data-  i just went to UCSC browser and 
 # followed this post on Biostars:  https://bioinformatics.stackexchange.com/questions/17647/create-bed-file-from-list-with-gene-symbols
@@ -1421,7 +1516,7 @@ write_tsv(Collapsed_peaks,"data/n45_bedfiles/TSS_NG_data_collapsed_peaks.tsv")
 
 ### near-gene and MRC peaks
 
-```{r near-gene MRC peaks distibution}
+```{r near-gene MRC peaks distibution, eval=FALSE, include=FALSE}
 ##Assume file not loaded
 # exp_neargene_table <- read_delim("data/n45_bedfiles/exp_neargene_table.tsv", 
 #     delim = "\t", escape_double = FALSE, 
@@ -1497,7 +1592,7 @@ NR_TSS_peak_list <- TSS_NG_data %>%
 
 #### VENN of peaks
 
-```{r venn of peaks}
+```{r venn of peaks, eval=FALSE, include=FALSE}
 
 ggVennDiagram::ggVennDiagram(list(EAR_df$geneId,ESR_df$geneId,LR_df$geneId, NR_df$geneId),
               category.names = c("EAR","ESR","LR","NR"), label = "count")+
@@ -1553,19 +1648,19 @@ ggVennDiagram::ggVennDiagram(list(NR_TSS_peak_list$ENTREZID,NR_RNA$ENTREZID),
 
 ### ZNF384 ChIP overlaps
 
-```{r ZNF384}
+```{r ZNF384, eval=FALSE, include=FALSE}
 ### files loaded on line ~ 151
 
 
-length(findOverlaps(EAR_df_gr, ZNF384_chip))
-length(findOverlaps(ESR_df_gr,  ZNF384_chip))
-length(findOverlaps(LR_df_gr,  ZNF384_chip))
-length(findOverlaps(NR_df_gr,  ZNF384_chip))
+length(findOverlaps(EAR_open_gr, ZNF384_chip))
+length(findOverlaps(ESR_open_gr,  ZNF384_chip))
+length(findOverlaps(LR_open_gr,  ZNF384_chip))
+length(findOverlaps(NR_gr,  ZNF384_chip))
 
-ZNF_chip_data <- data.frame("CHIP_peak_num"=c(length(findOverlaps(EAR_df_gr, ZNF384_chip)), 
-                            length(findOverlaps(ESR_df_gr,  ZNF384_chip)),
-                            length(findOverlaps(LR_df_gr,  ZNF384_chip)),
-                            length(findOverlaps(NR_df_gr,  ZNF384_chip))),
+ZNF_chip_data <- data.frame("CHIP_peak_num"=c(length(findOverlaps(EAR_open_gr, ZNF384_chip)), 
+                            length(findOverlaps(ESR_open_gr,  ZNF384_chip)),
+                            length(findOverlaps(LR_open_gr,  ZNF384_chip)),
+                            length(findOverlaps(NR_gr,  ZNF384_chip))),
                             "MRC"= c("EAR","ESR","LR","NR"), 
                             "tot_MRC" = c(length(EAR_df$seqnames), 
                                           length(ESR_df$seqnames), 
@@ -1590,16 +1685,15 @@ Because of the occurrence of ZNF384 enrichment in accessibility of ZNF384 motifs
 
 ## SNPs by category
 
-
 ### Cardiotoxicity
 
-```{r CTX SNP by category}
+```{r CTX SNP by category, eval=FALSE, include=FALSE}
 ## Heart failure is gwas #5
 
-EAR_CTX_SNP <- as.data.frame(join_overlap_intersect(EAR_df_gr, gwas_1_gr_noext))
-ESR_CTX_SNP <- as.data.frame(join_overlap_intersect(ESR_df_gr, gwas_1_gr_noext))
-LR_CTX_SNP <- as.data.frame(join_overlap_intersect(LR_df_gr,  gwas_1_gr_noext))
-NR_CTX_SNP <- as.data.frame(join_overlap_intersect(NR_df_gr, gwas_1_gr_noext))
+EAR_CTX_SNP <- as.data.frame(join_overlap_intersect(EAR_open_gr, gwas_1_gr_noext))
+ESR_CTX_SNP <- as.data.frame(join_overlap_intersect(ESR_open_gr, gwas_1_gr_noext))
+LR_CTX_SNP <- as.data.frame(join_overlap_intersect(LR_open_gr,  gwas_1_gr_noext))
+NR_CTX_SNP <- as.data.frame(join_overlap_intersect(NR_gr, gwas_1_gr_noext))
 
 CTX_SNP_table <- EAR_CTX_SNP %>% 
   mutate(MRC="EAR") %>% 
@@ -1628,17 +1722,15 @@ CTX_SNP_table %>%
 
 ```
 
-
-
 ### response to AC-based chemo
 
-```{r ACresp SNP by category}
+```{r ACresp SNP by category, eval=FALSE, include=FALSE}
 ## Heart failure is gwas #5
 
-EAR_ACresp_SNP <- as.data.frame(join_overlap_intersect(EAR_df_gr, gwas_3_gr_noext))
-ESR_ACresp_SNP <- as.data.frame(join_overlap_intersect(ESR_df_gr, gwas_3_gr_noext))
-LR_ACresp_SNP <- as.data.frame(join_overlap_intersect(LR_df_gr,  gwas_3_gr_noext))
-NR_ACresp_SNP <- as.data.frame(join_overlap_intersect(NR_df_gr, gwas_3_gr_noext))
+EAR_ACresp_SNP <- as.data.frame(join_overlap_intersect(EAR_open_gr, gwas_3_gr_noext))
+ESR_ACresp_SNP <- as.data.frame(join_overlap_intersect(ESR_open_gr, gwas_3_gr_noext))
+LR_ACresp_SNP <- as.data.frame(join_overlap_intersect(LR_open_gr,  gwas_3_gr_noext))
+NR_ACresp_SNP <- as.data.frame(join_overlap_intersect(NR_gr, gwas_3_gr_noext))
 
 ACresp_SNP_table <- EAR_ACresp_SNP %>% 
   mutate(MRC="EAR") %>% 
@@ -1667,16 +1759,15 @@ ACresp_SNP_table %>%
 
 ```
 
-
 ### Heart Failure
 
-```{r HF SNP by category}
+```{r HF SNP by category, eval=FALSE, include=FALSE}
 ## Heart failure is gwas #5
 
-EAR_HF_SNP <- as.data.frame(join_overlap_intersect(EAR_df_gr, gwas_5_gr_noext))
-ESR_HF_SNP <- as.data.frame(join_overlap_intersect(ESR_df_gr, gwas_5_gr_noext))
-LR_HF_SNP <- as.data.frame(join_overlap_intersect(LR_df_gr,  gwas_5_gr_noext))
-NR_HF_SNP <- as.data.frame(join_overlap_intersect(NR_df_gr, gwas_5_gr_noext))
+EAR_HF_SNP <- as.data.frame(join_overlap_intersect(EAR_open_gr, gwas_5_gr_noext))
+ESR_HF_SNP <- as.data.frame(join_overlap_intersect(ESR_open_gr, gwas_5_gr_noext))
+LR_HF_SNP <- as.data.frame(join_overlap_intersect(LR_open_gr,  gwas_5_gr_noext))
+NR_HF_SNP <- as.data.frame(join_overlap_intersect(NR_gr, gwas_5_gr_noext))
 
 HF_SNP_table <- EAR_HF_SNP %>% 
   mutate(MRC="EAR") %>% 
@@ -1707,13 +1798,13 @@ HF_SNP_table %>%
 
 ### Arrhythmia
 
-```{r ARR SNP by category}
+```{r ARR SNP by category, eval=FALSE, include=FALSE}
 ## Heart failure is gwas #5
 
-EAR_ARR_SNP <- as.data.frame(join_overlap_intersect(EAR_df_gr, gwas_2_gr_noext))
-ESR_ARR_SNP <- as.data.frame(join_overlap_intersect(ESR_df_gr, gwas_2_gr_noext))
-LR_ARR_SNP <- as.data.frame(join_overlap_intersect(LR_df_gr, gwas_2_gr_noext))
-NR_ARR_SNP <- as.data.frame(join_overlap_intersect(NR_df_gr, gwas_2_gr_noext))
+EAR_ARR_SNP <- as.data.frame(join_overlap_intersect(EAR_open_gr, gwas_2_gr_noext))
+ESR_ARR_SNP <- as.data.frame(join_overlap_intersect(ESR_open_gr, gwas_2_gr_noext))
+LR_ARR_SNP <- as.data.frame(join_overlap_intersect(LR_open_gr, gwas_2_gr_noext))
+NR_ARR_SNP <- as.data.frame(join_overlap_intersect(NR_gr, gwas_2_gr_noext))
 
 ARR_SNP_table <- ESR_ARR_SNP %>% 
   mutate(MRC="ESR") %>% 
@@ -1746,13 +1837,13 @@ ARR_SNP_table %>%
 
 ### Myocardial Infarction
 
-```{r MI SNP by category}
+```{r MI SNP by category, eval=FALSE, include=FALSE}
 ## Heart failure is gwas #5
 
-EAR_MI_SNP <- as.data.frame(join_overlap_intersect(EAR_df_gr,MI_gwas_gr_noext))
-ESR_MI_SNP <- as.data.frame(join_overlap_intersect(ESR_df_gr,MI_gwas_gr_noext))
-LR_MI_SNP <- as.data.frame(join_overlap_intersect(LR_df_gr, MI_gwas_gr_noext))
-NR_MI_SNP <- as.data.frame(join_overlap_intersect(NR_df_gr, MI_gwas_gr_noext))
+EAR_MI_SNP <- as.data.frame(join_overlap_intersect(EAR_open_gr,MI_gwas_gr_noext))
+ESR_MI_SNP <- as.data.frame(join_overlap_intersect(ESR_open_gr,MI_gwas_gr_noext))
+LR_MI_SNP <- as.data.frame(join_overlap_intersect(LR_open_gr, MI_gwas_gr_noext))
+NR_MI_SNP <- as.data.frame(join_overlap_intersect(NR_gr, MI_gwas_gr_noext))
 
 MI_SNP_table <- EAR_MI_SNP %>% 
   mutate(MRC="EAR") %>% 
@@ -1776,13 +1867,13 @@ MI_SNP_table %>%
 
 ### Coronary Artery Disease
 
-```{r CAD SNP by category}
+```{r CAD SNP by category, eval=FALSE, include=FALSE}
 ## Heart failure is gwas #5
 
-EAR_CAD_SNP <- as.data.frame(join_overlap_intersect(EAR_df_gr,CAD_gwas_gr_noext))
-ESR_CAD_SNP <- as.data.frame(join_overlap_intersect(ESR_df_gr,CAD_gwas_gr_noext))
-LR_CAD_SNP <- as.data.frame(join_overlap_intersect(LR_df_gr, CAD_gwas_gr_noext))
-NR_CAD_SNP <- as.data.frame(join_overlap_intersect(NR_df_gr, CAD_gwas_gr_noext))
+EAR_CAD_SNP <- as.data.frame(join_overlap_intersect(EAR_open_gr,CAD_gwas_gr_noext))
+ESR_CAD_SNP <- as.data.frame(join_overlap_intersect(ESR_open_gr,CAD_gwas_gr_noext))
+LR_CAD_SNP <- as.data.frame(join_overlap_intersect(LR_open_gr, CAD_gwas_gr_noext))
+NR_CAD_SNP <- as.data.frame(join_overlap_intersect(NR_gr, CAD_gwas_gr_noext))
 
 CAD_SNP_table <- EAR_CAD_SNP %>% 
   mutate(MRC="EAR") %>% 
@@ -1808,8 +1899,10 @@ CAD_SNP_table %>%
 
 
 ```
+
 ### group all peaks with SNPs together
-```{r SNP peaks}
+
+```{r SNP peaks, eval=FALSE, include=FALSE}
 library(readxl)
 library(smplot2)
 Reheat_data <- read_excel("data/other_papers/jah36123-sup-0002-tables2.xlsx")
@@ -1909,10 +2002,10 @@ SNP_peak_gene_list %>%
   
   
 ```
-Boxplots of  above genes
 
+Boxplots of above genes
 
-```{r SNP gene list}
+```{r SNP gene list, eval=FALSE, include=FALSE}
 
 my_hc_filtered_counts_n45 <- readRDS("data/my_hc_filt_counts_n45.RDS")
 log_filt_hc_n45 <- cpm(my_hc_filtered_counts_n45, log = TRUE) %>% as.data.frame()
@@ -1951,5 +2044,3 @@ dplyr::filter(row.names(.)== goal) %>%
 
 
 ```
-
-

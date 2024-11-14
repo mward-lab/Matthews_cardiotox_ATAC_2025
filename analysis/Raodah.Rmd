@@ -122,9 +122,10 @@ plot_versus_pc <- function(df, pc_num, fac) {
 ```
 
 ```{r fixing the labels renee style}
-
+# saveRDS(cardiotox_highConf_3location, "data/Final_four_data/Raodah_location_counts.RDS")
 # saveRDS(H3K27ac_countstable,"data/Final_four_data/Raodah_counts_fixed.RDS" )
 H3K27ac_countstable<- readRDS("data/Final_four_data/Raodah_counts.RDS")
+cardiotox_highConf_3location <-  readRDS("data/Final_four_data/Raodah_location_counts.RDS")
 
 
  names(H3K27ac_countstable) = gsub(pattern = "*87-1 *", replacement = "2_", x = names(H3K27ac_countstable))
@@ -199,7 +200,7 @@ pca_H3_anno %>%
   geom_point(size= 5)+
   scale_color_manual(values=drug_pal)+
    ggrepel::geom_text_repel(aes(label = indv))+
-   ggtitle(expression("PCA of log"[2]*"(cpm) new filtered peak set"))+
+   ggtitle(expression("PCA of log"[2]*"(cpm) Raodah data, same four individuals"))+
   theme_bw()+
   guides(col="none", size =4)+
   labs(y = "PC 2 ", x ="PC 1 ")+
@@ -211,7 +212,7 @@ pca_H3_anno %>%
   geom_point(size= 5)+
   scale_color_manual(values=drug_pal)+
    ggrepel::geom_text_repel(aes(label = indv))+
-   ggtitle(expression("PCA of log"[2]*"(cpm) new filtered peak set"))+
+   ggtitle(expression("PCA of log"[2]*"(cpm)  Raodah data, same four individuals"))+
   theme_bw()+
   guides(col="none", size =4)+
   labs(y = "PC 4 ", x ="PC 3 ")+
@@ -278,7 +279,7 @@ indv <- for_group$indv
 # 
 # vfit<- contrasts.fit(vfit, contrasts=cm)
 
-efit_raodah_shared <- eBayes(vfit)
+# efit_raodah_shared <- eBayes(vfit)
 
 # saveRDS(efit_raodah_shared,"data/Final_four_data/efit4_raodah_shared.RDS")
 results = decideTests(efit_raodah_shared)
@@ -297,19 +298,21 @@ for_group3 <- data.frame(timeset=colnames(PCA_H3_mat_t)) %>%
 group_3 <- c( 1,2,3,4,7,8,9,10,1,2,3,5,6,8,9,10,1,2,4,5,6,7,8,9,10)
 group_fac_3 <- group_3
 groupid_3 <- as.numeric(group_fac_3)
-
+label <- for_group3$sample
 compid_3 <- data.frame(c1= c(1,3,5,7,2,4,6,8), c2 = c( 9,9,9,9,10,10,10,10))
 
 y_TMM_cpm_3 <- cpm(PCA_H3_mat_t, log = TRUE)
 
-colnames(y_TMM_cpm_3) <- for_group3$sample[1:45]
+colnames(y_TMM_cpm_3) <- label
 
-set.seed(31415)
-cormotif_initial_3 <- cormotiffit(exprs = y_TMM_cpm_3, groupid = groupid_3, compid = compid_3, K=1:8, max.iter = 500, runtype = "logCPM")
-
-saveRDS(cormotif_initial_3,"data/Final_four_data/cormotif_3_raodah_run.RDS")
+# set.seed(31415)
+# cormotif_initial_3 <- cormotiffit(exprs = y_TMM_cpm_3, groupid = groupid_3, compid = compid_3, K=1:8, max.iter = 500, runtype = "logCPM")
+cormotif_initial_3 <- readRDS("data/Final_four_data/cormotif_3_raodah_run.RDS")
+# saveRDS(cormotif_initial_3,"data/Final_four_data/cormotif_3_raodah_run.RDS")
 plotIC(cormotif_initial_3)
 plotMotif(cormotif_initial_3)
-# cormotif_initial_3$bestmotif$clustlike
+# head(cormotif_initial_3$bestmotif)
+
+
 ```
 

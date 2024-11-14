@@ -654,7 +654,7 @@ This increased the number of rows from `r length(Collapsed_peaks$Peakid)` to `r 
 
 ```{r Making of 4group TE dataframe}
 
-per_cov=0.5
+per_cov=0
 TE_mrc_status_list <- Peak_TE_overlapbreakdown %>%
    mutate(repClass=if_else(per_ol>per_cov, repClass,                          if_else(per_ol<per_cov,NA,repClass))) %>%
   mutate(TEstatus=if_else(is.na(repClass),"not_TE_peak","TE_peak")) %>%
@@ -680,7 +680,7 @@ TE_mrc_status_list%>%
   
 ```{r another set of limited plots}
 
-per_cov=0.5
+per_cov=0
  
 TE_mrc_status_list %>% 
    distinct(Peakid,.keep_all = TRUE) %>%
@@ -1627,7 +1627,7 @@ TE_mrc_status_list %>%
 
 #### retroposon
 ```{r retroposon breakdown,fig.height=6}
-per_cov <- 0.5
+per_cov <- 0.0
 
 retroposon_df%>% 
   count(repName) %>% 
@@ -2076,7 +2076,7 @@ Here I break up the categories using median LFC
 
 
 ```{r nine group category making}
-per_cov=0.5
+per_cov=0
 median_24_lfc <- read_csv("data/Final_four_data/median_24_lfc.csv") 
 median_3_lfc <- read_csv("data/Final_four_data/median_3_lfc.csv")
 
@@ -2186,7 +2186,7 @@ Eight_group_TE <-  Col_TSS_data_gr %>%
 Eight_group_TE %>% distinct(Peakid,.keep_all = TRUE) %>% 
   group_by(mrc, TEstatus) %>% 
   tally
-
+# MRC_list(list=Eight_group_TE=Eight_group_TE)
 
 ```
 
@@ -2701,7 +2701,7 @@ Class_status_df %>%
 ##### This code is for Chi analysis
 ```{r peak lists}
 
-
+##### VERY OLD... I learned a better way!
 ####### LOoKing at the results from TE counts across clusters##### with cutoff
 
 chi_TE_Eight <- Eight_group_TE %>% 
@@ -3823,7 +3823,7 @@ distinct(Peakid,.keep_all = TRUE) %>%
 ### SNP chi square results
 ```{r SNP chissquare}
 matrix_list_SNP <- list("SNP"=SNP_mat, "ARR"=ARR_mat,"CAD"= CAD_mat,"HD"= HD_mat,"HF"=HF_mat,"MI"=MI_mat,"DCM"=DCM_mat,"base eQTL_mat"=base_eQTL_mat ,"DOXres eQTL"=eQTL_mat,"SNP_5k"=SNP_mat_5k, "ARR_5k"=ARR_mat_5k,"CAD_5k"= CAD_mat_5k,"HD_5k"= HD_mat_5k,"HF_5k"=HF_mat_5k,"MI_5k"=MI_mat_5k,"DCM_5k"=DCM_mat_5k, "base eQTL_mat_5k"=base_eQTL_mat_5k ,"DOXres eQTL_5k"=eQTL_mat_5k)
-
+# saveRDS(matrix_list_SNP,"data/Final_four_data/matrix_list_SNP.RDS")
 results_SNP <- data.frame(Matrix_Name = character(),
                       Row_Compared = character(),
                       Chi_Square_Statistic = numeric(),
@@ -3865,6 +3865,8 @@ for (matrix_name in names_list) {
   }
 }
 # Print the resulting dataframe
+
+# saveRDS(results_SNP,"data/Final_four_data/SNP_chisquare_results.RDS")
 print(results_SNP) %>% 
    kable(., caption = " Chi squre results and significance values of SNP enrichment compared to No response group") %>% 
   kable_paper("striped", full_width = TRUE) %>%
@@ -3937,6 +3939,8 @@ for (matrix_name in names(matrix_list_SNP)) {
 }
 
 # Print the resulting dataframe
+
+# saveRDS(results_SNP_or,"data/Final_four_data/SNP_oddsratio_results.RDS")
 print(results_SNP_or) %>% 
   kable(., caption = "Odd ratio results and significance values of SNP enrichment compared to No response group") %>% 
   kable_paper("striped", full_width = TRUE) %>%
@@ -4033,12 +4037,12 @@ Collapsed_peaks %>%
 
 ```
 
-### odds ratio matrix
+### TE odds ratio matrix
 
 
 ```{r oddratio matrix Allte}
 ## full peak set as all peaks
-subsetall_df
+# subsetall_df
 ### makeing of nine set
 Nine_te_df <- Eight_group_TE %>% 
   mutate(mrc=if_else(Peakid %in% ESR_C$Peakid,"ESR_opcl",                 if_else(Peakid %in% ESR_D$Peakid,"ESR_clop",mrc)))
@@ -4052,7 +4056,7 @@ TE_mat<- Nine_te_df %>%
   column_to_rownames("mrc") %>% 
   as.matrix(.)
   
-
+# saveRDS(Nine_te_df,"data/Final_four_data/Nine_group_TE_df.RDS")
 ```
 
 ```{r oddratio matrix Sine}
@@ -4193,6 +4197,7 @@ for (matrix_name in names_list) {
   }
 }
 # Print the resulting dataframe
+# saveRDS(results,"data/Final_four_data/chisquare_results_TE_df.RDS")
 print(results) %>% 
    kable(., caption = " Chi squre results and significance values of TE enrichment compared to No response group") %>% 
   kable_paper("striped", full_width = TRUE) %>%
@@ -4234,9 +4239,7 @@ for (matrix_name in names(matrix_list)) {
         stop("oddsratio result does not have enough data.")
       }
       
-     
-      
-      list(oddsratio = oddsratio_result, p.value = oddsratio_result$p.value[2,"chi.square"])
+     list(oddsratio = oddsratio_result, p.value = oddsratio_result$p.value[2,"chi.square"])
       
     }, error = function(e) {
       cat("Error in odds ratio test for row", i, "in matrix", matrix_name, ":", e$message, "\n")
@@ -4263,7 +4266,7 @@ for (matrix_name in names(matrix_list)) {
     }
   }
 }
-
+# saveRDS(results_or,"data/Final_four_data/OR_results_TE_df.RDS")
 # Print the resulting dataframe
 print(results_or) %>% 
   kable(., caption = "Odd ratio results and significance values of TE enrichment compared to No response group") %>% 

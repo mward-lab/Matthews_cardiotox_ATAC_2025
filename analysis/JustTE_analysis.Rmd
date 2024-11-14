@@ -185,10 +185,12 @@ ESR_close_gr <- ESR_close %>% GRanges()
 ESR_C <- ESR_df %>% 
   dplyr::filter(Peakid %in% medC$peak) 
 ESR_opcl <- ESR_C
+ESR_opcl_gr <- ESR_C%>% GRanges()
 
 ESR_D <- ESR_df %>% 
   dplyr::filter(Peakid %in% medD$peak) 
 ESR_clop <- ESR_D
+ESR_clop_gr <- ESR_D%>% GRanges()
 ```
 
 
@@ -931,17 +933,22 @@ kable_paper("striped", full_width = TRUE) %>%
   kable_styling(full_width = FALSE, font_size = 14)%>% 
   scroll_box(height = "500px")
 
+mrc_lookup_table <- data.frame(mrc=c("EAR_open","ESR_open",  "LR_open","ESR_opcl","EAR_close","ESR_close","LR_close","ESR_clop","NR","all_peaks","h.genome"), 
+      peaks = c(3158,5272,28537,99,4296,9349,14072,1061,86331,155560,5974))
+
 nine_retro %>% 
    group_by(mrc,repName) %>% 
   tally %>% 
   pivot_wider(., id_cols = mrc, names_from = repName, values_from = n) %>% 
   rowwise() %>% 
  mutate(total= sum(c_across(1:6),na.rm =TRUE)) %>%
-   mutate(SVA_D_perc = round((SVA_D / total) * 100, 2)) %>% 
+  left_join(., mrc_lookup_table, by = c("mrc"="mrc")) %>% 
+   # mutate(percent_of_total = (total/length(paste0(mrc,"$seqnames"))) * 100) %>% 
   # mutate(SVA_D_perc=sprintf("%.2f",SVA_D_perc))
-  dplyr::select(mrc, SVA_D, total, SVA_D_perc) %>% 
-  pivot_longer(., cols = SVA_D:SVA_D_perc, names_to = "sum_col",values_to = "values") %>% 
-  pivot_wider(., id_cols = sum_col, names_from = mrc, values_from = values) %>% 
+  mutate(percent_of_total= total/peaks *100) %>% 
+  # dplyr::select(mrc, SVA_D, total, SVA_D_perc) %>% 
+  # pivot_longer(., cols = SVA_D:SVA_D_perc, names_to = "sum_col",values_to = "values") %>% 
+  # pivot_wider(., id_cols = sum_col, names_from = mrc, values_from = values) %>% 
   kable(., caption="Breakdown of Retroposon SVA_D counts") %>% 
 kable_paper("striped", full_width = TRUE) %>%
   kable_styling(full_width = TRUE, font_size = 14)%>% 
@@ -1025,7 +1032,7 @@ Col_fullDF_cug_overlap %>%
 
 CUG_mrc_nine_list <-
 Col_TSS_data_gr%>% as.data.frame() %>%
-  left_join(., (Col_fullDF_cug_overlap %>% as.data.frame(.)), by =c("seqnames"="seqnames","start"="start","end"="end","Peakid"="Peakid", "NCBI_gene"="NCBI_gene", "ensembl_ID"="ensembl_ID","dist_to_NG"="dist_to_NG",  "SYMBOL" = "SYMBOL", "peak_width"="peak_width")) %>% 
+  left_join(., (Col_fullDF_cug_overlap %>% as.data.frame(.)), by =c("seqnames"="seqnames","start"="start","end"="end","Peakid"="Peakid", "NCBI_gene"="NCBI_gene", "dist_to_NG"="dist_to_NG",  "SYMBOL" = "SYMBOL", "peak_width"="peak_width")) %>% 
   left_join(., (Peaks_v_cpgpromo %>% dplyr::select(promotor_name,Peakid,peak_width)), by=c("peak_width"="peak_width","Peakid"="Peakid")) %>% 
   dplyr::select(Peakid, name,cpgNum:promotor_name) %>% 
   mutate(cugstatus=if_else(is.na(cpgNum),"not_CGi_peak","CGi_peak")) %>% 
@@ -2274,6 +2281,50 @@ results_or %>%
 
         
 ```
+
+### haQTL  
+
+from https://www.ahajournals.org/doi/10.1161/CIRCRESAHA.120.317254
+using 1680 haQTLs from supp VI table
+
+```{r haQTL data import}
+# library(readxl)
+# haQTL317254 <- read_excel("C:/Users/renee/Downloads/haQTL317254_online_table_vi.xlsx", 
+#     sheet = "Sheet1")
+# saveRDS(haQTL317254,"data/other_papers/haQTL317254.RDS")
+haQTL317254 <- readRDS("data/other_papers/haQTL317254.RDS")
+
+haQTL_gr <- haQTL317254 %>% 
+  dplyr::select(`SNP id`,`H3K27ac coordinate`) %>% 
+  separate_wider_delim(.,`H3K27ac coordinate`,delim=":", names=c("chr","coordinates"), cols_remove = FALSE) %>% 
+  separate_wider_delim(.,coordinates, delim= "-",names=c("start","end")) %>% GRanges()
+
+
+ha_all <- join_overlap_intersect(TSS_assigned_NG_gr,haQTL_gr)
+
+join_overlap_intersect(TSS_assigned_NG_gr,gwas_snp_gr) %>% as.data.frame() %>% group_by(Peakid,SNPS) %>% tally
+
+
+ha_EAR_open <- join_overlap_intersect(EAR_open_gr,haQTL_gr)%>% as.data.frame() %>% distinct(Peakid)
+ha_EAR_close <- join_overlap_intersect(EAR_close_gr,haQTL_gr)%>% as.data.frame() %>% distinct(Peakid)
+
+ha_LR_open <- join_overlap_intersect(LR_open_gr,haQTL_gr)%>% as.data.frame() %>% distinct(Peakid)
+ha_LR_close <- join_overlap_intersect(LR_close_gr,haQTL_gr)%>% as.data.frame() %>% distinct(Peakid)
+
+ha_ESR_open <- join_overlap_intersect(ESR_open_gr,haQTL_gr)%>% as.data.frame() %>% distinct(Peakid)
+ha_ESR_close <- join_overlap_intersect(ESR_close_gr,haQTL_gr)%>% as.data.frame() %>% distinct(Peakid)
+ha_ESR_opcl <- join_overlap_intersect(ESR_opcl_gr,haQTL_gr)%>% as.data.frame() %>% distinct(Peakid)
+ha_ESR_clop <- join_overlap_intersect(ESR_clop_gr,haQTL_gr)%>% as.data.frame() %>% distinct(Peakid)
+
+gwas_snp_list %>% distinct(SNPS)
+`````````
+
+
+
+
+
+
+
 ##### data mining Renee corner
 
 pay no attention to the output here
