@@ -751,3 +751,34 @@ plotMotif<-function(fitted_cormotif,title="")
        labels=floor(fitted_cormotif$bestmotif$motif.p*Ng))
 }
 
+plotMotifnew<-function(fitted_cormotif,title="")
+{
+  layout(matrix(1:2,ncol=2))
+  u<-1:dim(fitted_cormotif$motif.q)[2]
+  v<-1:dim(fitted_cormotif$motif.q)[1]
+  image(u,v,t(fitted_cormotif$motif.q),
+        col=gray(seq(from=1,to=0,by=-0.1)),xlab="Study",yaxt = "n",
+        ylab="Corr. Motifs",main=paste(title,"pattern",sep=" "))
+  axis(2,at=1:length(v))
+  for(i in 1:(length(u)+1))
+  {
+    abline(v=(i-0.5))
+  }
+  for(i in 1:(length(v)+1))
+  {
+    abline(h=(i-0.5))
+  }
+  Ng=10000
+  if(is.null(fitted_cormotif$p.post)!=TRUE)
+    Ng=nrow(fitted_cormotif$p.post)
+  genecount=floor(fitted_cormotif$motif.p*Ng)
+  NK=nrow(fitted_cormotif$motif.q)
+  plot(0,0.7,pch=".",xlim=c(0,1.2),ylim=c(0.75,NK+0.25),
+       frame.plot=FALSE,axes=FALSE,xlab="No. of genes",ylab="", main=paste(title,"frequency",sep=" "))
+  segments(0,0.7,fitted_cormotif$motif.p[1],0.7)
+  rect(0,1:NK-0.3,fitted_cormotif$motif.p,1:NK+0.3,
+       col="dark grey")
+  mtext(1:NK,at=1:NK,side=2,cex=0.8)
+  text(fitted_cormotif$motif.p+0.15,1:NK,
+       labels=floor(fitted_cormotif$motif.p*Ng))
+}

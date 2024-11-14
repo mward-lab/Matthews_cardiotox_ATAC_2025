@@ -54,14 +54,19 @@ library(BSgenome.Hsapiens.UCSC.hg38)
 library(data.table)
 
 ```
+
 #### Data loading
 
 ```{r dataframe loading}
 
 # 
-# xstreme_ESR_clop200 <- read_delim("~/ATAC_meme_data/200bp/ESR_D_200xstreme/xstreme.tsv",
-#     delim = "\t", escape_double = FALSE,
-#     trim_ws = TRUE)
+lala <- read_delim("~/ATAC_meme_data/200bp/ESR_open_200xstreme/xstreme.tsv",
+    delim = "\t", escape_double = FALSE,
+    trim_ws = TRUE)
+
+# saveRDS(xstreme_EAR_openSVA,"data/Final_four_data/xstreme/xstreme_EAR_openSVA.RDS")
+
+
 
 # saveRDS(xstreme_EAR_close200,"data/Final_four_data/xstreme/xstreme_EAR_close200.RDS")
 # saveRDS(xstreme_EAR_open200,"data/Final_four_data/xstreme/xstreme_EAR_open200.RDS")
@@ -665,6 +670,9 @@ spec_dataframe_200 <- spd_EARo_200 %>%
    rbind(spd_LRc_200)
 spec_dataframe_200 %>% 
   dplyr::filter(mrc=="ESR_opcl")
+
+# saveRDS(spec_dataframe_200,"data/Final_four_data/spec_dataframe_200.RDS")
+spec_dataframe_200 <- readRDS("data/Final_four_data/spec_dataframe_200.RDS")
 ```
 
 ### data plots from full sequences
@@ -975,7 +983,16 @@ spec_dataframe_200 %>%
   ylab("Enriched TF motif")+
    ggtitle(paste( mrc_type,"response peaks (200bp) Enrichment ratio: not applied  modified merged clusters"))
 
-
+spec_dataframe_200 %>% 
+  dplyr::filter(mrc==mrc_type) %>% 
+  # dplyr::filter(ENR_RATIO>ER_rat) %>% 
+  dplyr::select(RANK,CLUSTER, SITES,SIM_MOTIF,ALT_ID, ID,EVALUE.x, TP:'FP%', motif_name)%>%
+  # arrange(.,EVALUE.x) %>%
+  mutate(log10Evalue= log(EVALUE.x, base = 10)*(-1)) %>% 
+  # mutate(motif_name=if_else(motif_name=="MEIS1",paste(motif_name, RANK, sep="_"),             if_else(motif_name=="ZNF384",paste(motif_name, RANK, sep="_"), if_else(motif_name=="ZNF257",paste(motif_name, RANK,sep="_"),motif_name))))%>%
+  distinct(CLUSTER,.keep_all = TRUE) %>% 
+  arrange(.,EVALUE.x) %>%
+   slice_head(n=5)
 ```
 
 
@@ -1067,7 +1084,16 @@ spec_dataframe_200 %>%
   theme_classic()+
   ylab("Enriched TF motif")+
   ggtitle(paste(mrc_type,"response peaks 200bp Enrichment ratio:",ER_rat," merged motif clusters"))
-
+spec_dataframe_200 %>% 
+  dplyr::filter(mrc=="ESR_open") %>% 
+  dplyr::filter(ENR_RATIO>ER_rat) %>% 
+  dplyr::select(RANK,CLUSTER, SITES,SIM_MOTIF,ALT_ID, ID,EVALUE.x, TP:'FP%', motif_name)%>%
+  arrange(.,EVALUE.x) %>%
+  mutate(log10Evalue= log(EVALUE.x, base = 10)*(-1)) %>% 
+   mutate(motif_name=
+           if_else(str_starts(motif_name,"JUND"),paste(motif_name, RANK, sep="_"),             if_else(str_starts(motif_name,"^ZN*"),paste(motif_name, RANK, sep="_"),    if_else(motif_name=="ZSCAN4", paste(motif_name, RANK,sep="_"),if_else(motif_name=="KLF9",paste(motif_name,RANK,sep="_"), motif_name)))))%>%
+  distinct(CLUSTER,.keep_all = TRUE) %>% 
+   slice_head(n=5)
 ```
 
 ##### ESR_close
@@ -1240,6 +1266,9 @@ spec_dataframe_200 %>%
   theme_classic()+
   ylab("Enriched TF motif")+
   ggtitle(paste( mrc_type,"response peaks 200bp Enrichment ratio:",ER_rat," merged motif clusters"))
+
+
+
 
 ```
 
@@ -1548,7 +1577,15 @@ seq_all_cd_200 <- readRDS("data/Final_four_data/sequencing_cd_200_object8_motif.
   # distinct(CLUSTER,.keep_all = TRUE)
 # distinct(motif_name)
 
-# importing meme formats:
+spec_dataframe_200 %>% 
+  dplyr::filter(mrc=="ESR_open") %>% 
+  dplyr::filter(ENR_RATIO>(ER_rat)) %>% 
+  dplyr::select(RANK,CLUSTER, SITES,SIM_MOTIF,ALT_ID, ID,EVALUE.x, TP:'FP%', motif_name)%>%
+  arrange(.,EVALUE.x) %>%
+  mutate(log10Evalue= log(EVALUE.x, base = 10)*(-1)) %>% 
+  mutate(motif_name=if_else(motif_name=="KLF9",paste(motif_name, RANK, sep="_"),             if_else(motif_name=="^ZN*",paste(motif_name, RANK, sep="_"), if_else(motif_name=="ZSCAN4",paste(motif_name, RANK,sep="_"),motif_name))))%>%
+  distinct(CLUSTER,.keep_all = TRUE) %>% 
+  slice_head(n=5)
 ```
 
 
@@ -1556,6 +1593,7 @@ seq_all_cd_200 <- readRDS("data/Final_four_data/sequencing_cd_200_object8_motif.
 library(universalmotif)
 library(ggseqlogo)
 library(motifmatchr)
+library(gridExtra)
 meme_motifs_EAR_open <- read_meme("~/ATAC_meme_data/200bp/EAR_open_200xstreme/xstreme.txt")
 meme_motifs_ESR_open <- read_meme("~/ATAC_meme_data/200bp/ESR_open_200xstreme/xstreme.txt")
 meme_motifs_LR_open <- read_meme("~/ATAC_meme_data/200bp/LR_open_200xstreme/xstreme.txt")
@@ -1574,6 +1612,62 @@ holder_EAR_close <- meme_motifs_EAR_close[[2]]
 holder_ESR_close <- meme_motifs_ESR_close[[18]]
 holder_LR_close <- meme_motifs_LR_close[[1]]
 holder_ESR_clop <- meme_motifs_ESR_clop[[1]]
+```
+
+```{r eval=FALSE, fig.height=10, include=FALSE}
+group_of_memes <- list(EAR_open=meme_motifs_EAR_open,
+                    ESR_open=meme_motifs_ESR_open,
+                    LR_open=meme_motifs_LR_open,
+                    EAR_close=meme_motifs_EAR_close,
+                    ESR_close=meme_motifs_ESR_close,
+                    LR_close=meme_motifs_LR_close,
+                    ESR_opcl=meme_motifs_ESR_opcl,
+                    ESR_clop=meme_motifs_ESR_clop)
+name_plot <- c("meme_motifs_EAR_open",
+                  "meme_motifs_ESR_open",
+                    "meme_motifs_LR_open",
+                "meme_motifs_EAR_close",
+                    "meme_motifs_ESR_close",
+                    "meme_motifs_LR_close",
+                    "meme_motifs_ESR_opcl",
+                    "meme_motifs_ESR_clop")
+counter <- 0
+for (meme_frame in group_of_memes ){
+   counter <- counter +1 
+motif_info <- lapply(meme_frame, function(motif) {
+  data.frame(
+    motif_name = ifelse(is.null(motif@name), NA, motif@name),
+    alt_name = ifelse(is.null(motif@altname), NA, motif@altname)  # Handle missing altname
+    # Store the position weight matrix (PWM) in a list
+    
+  )
+})
+# Combine the individual motif data frames into one long data frame
+motif_df <- bind_rows(motif_info)
+
+plots <- lapply(1:nrow(motif_df), function(i) {
+  pwm <-meme_frame[[i]]@motif # Extract PWM for each motif
+  name <- motif_df$motif_name[i]
+  alt_name <- motif_df$alt_name[i]
+  
+  # Check if the PWM is valid and can be plotted
+  if (!is.null(pwm) && is.matrix(pwm)) {
+    ggseqlogo::ggseqlogo(pwm,  method="bits") +
+      ggtitle(paste("Motif:", name, "\n| Altname:", alt_name)) +
+      theme_minimal()
+  } else {
+    message("Invalid PWM for motif:", name)
+    NULL
+  }
+})
+savefile <- paste0("data/Final_four_data/",name_plot[counter],".pdf")
+plots_per_page <- 16 
+multi_page_grobs <- marrangeGrob(plots, nrow = 4, ncol = 4) 
+ggsave(savefile, multi_page_grobs)
+grid.draw(multi_page_grobs)
+}
+
+
 ```
 
 ### EAR open top motif
