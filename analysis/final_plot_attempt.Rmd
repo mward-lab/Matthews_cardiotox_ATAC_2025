@@ -54,7 +54,7 @@ library(smplot2)
 ```
 
 
-```{r}
+```{r loading data}
 # toplistall_RNA <- readRDS("data/other_papers/toplistall_RNA.RDS") 
 # toplistall_RNA <- toplistall_RNA %>% 
 #   mutate(logFC = logFC*(-1))
@@ -209,22 +209,22 @@ mar_eQTL_gr <- Knowles_mar_eQTL %>%
   na.omit() %>%
   mutate(start=CHR_POS, end=CHR_POS, chr=paste0("chr",CHR_ID)) %>% 
   GRanges()
-base_eqtl_SNPS <-
+mar_eqtl_SNPS <-
   join_overlap_intersect(ATAC_peaks_gr,mar_eQTL_gr) %>% 
   as.data.frame() 
 
-eqtl_SNPs <-
-  join_overlap_intersect(ATAC_peaks_gr,eQTL_gr) %>%
+dox_eqtl_SNPs <-
+  join_overlap_intersect(ATAC_peaks_gr,dox_eQTL_gr) %>%
   as.data.frame() 
 
-test <- eqtl_SNPs %>% 
+test <- dox_eqtl_SNPs %>% 
   dplyr::filter(Peakid %in% new_SNP_peak_check_10k$Peakid)
 
-join_overlap_intersect((new_SNP_peak_check_10k %>% GRanges() ),beQTL_gr) %>%
+join_overlap_intersect((new_SNP_peak_check_10k %>% GRanges() ),mar_eQTL_gr) %>%
   as.data.frame() 
 ```
 
-```{r mast}
+```{r mast, eval=FALSE, message=FALSE, warning=FALSE, include=FALSE}
 ####adding in MAST matches
 # "~/ATAC_meme_data/200bp/EAR_close_hits.txt"
 mast_test_results <- xmlParse("~/ATAC_meme_data/200bp/mast_output/EAR_close/mast.xml")
@@ -318,7 +318,7 @@ dplyr::filter(!is.na(med_24h_lfc)) %>%
            reheat=paste(unique(reheat),collapse=";"),
           mrc=unique(mrc)) %>% 
   mutate(point_ol=if_else(RSID %in% point_only$RSID,"yes","no")) %>% 
-  mutate(eQTL=if_else(RSID %in% eqtl_SNPs$SNPS,"yes",if_else(Peakid %in% eqtl_SNPs$Peakid,"yes","no")))
+  mutate(eQTL=if_else(RSID %in% dox_eqtl_SNPs$SNPS,"yes",if_else(Peakid %in% mar_eqtl_SNPS$Peakid,"yes","no")))
 
 schneider_mat <- schneider_df %>% 
   ungroup() %>% 
