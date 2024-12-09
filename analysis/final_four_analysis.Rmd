@@ -1816,10 +1816,13 @@ hour24_lfc_2kb %>%
   
 ### Overlapping peaks with H3K27ac data
 ```{r anno overlap with h3k27ac}
+# ENCSR204PZT- Snyder data set GEO:GSE215477 and processed ENCODE4 v1.9.1 GRCh38 processed data-ENCAN548FHQ Accession ENCFF966JZT
+# )
+
 Snyder_41peaks <- read.delim("data/other_papers/ENCFF966JZT_bed_Snyder_41peaks.bed",header=TRUE) %>% 
   GRanges()
-
-
+overlap_set <- join_overlap_intersect(ATAC_peaks_gr,Snyder_41peaks)
+overlap_set %>% as.data.frame %>% distinct(Peakid)
 raodah_fullpeaks <- readRDS( "data/Final_four_data/All_Raodahpeaks.RDS") %>%
   GRanges %>% 
   GenomeInfoDb::keepStandardChromosomes(., pruning.mode = "coarse") %>% 
@@ -1828,9 +1831,9 @@ raodah_fullpeaks <- readRDS( "data/Final_four_data/All_Raodahpeaks.RDS") %>%
   
 # rtracklayer::export.bed(raodah_fullpeaks,con= "data/Final_four_data/H3K27ac_files/H3k27ac.bed")
    
-overlap_ac <- join_overlap_intersect((new_peaks_gr %>%  dplyr::filter(seqnames !="chrY")),raodah_fullpeaks) %>% as.data.frame()
-overlap_ac %>%
-  distinct(Geneid)
+# overlap_ac <- join_overlap_intersect((new_peaks_gr %>%  dplyr::filter(seqnames !="chrY")),raodah_fullpeaks) %>% as.data.frame()
+# overlap_ac %>%
+#   distinct(Geneid)
 # saveRDS(overlap_ac, "data/Final_four_data/overlapping_ac_atac_peaks.RDS")
 
 # H3K27ac_NG_df <- read.delim("data/Final_four_data/H3K27ac_files/H3k27ac.bed", header = FALSE) 
