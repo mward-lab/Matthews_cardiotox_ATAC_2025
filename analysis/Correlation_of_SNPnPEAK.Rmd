@@ -63,7 +63,8 @@ Collapsed_new_peaks_gr <- Collapsed_new_peaks %>% dplyr::select(chr:Peakid) %>% 
 peak_10kb_neargenes <-
   Collapsed_new_peaks %>% 
     dplyr::filter(dist_to_NG<5000&dist_to_NG>-5000) %>% 
-  distinct(Peakid)
+  distinct(Peakid, .keep_all = TRUE) %>% 
+  dplyr::select(Peakid,NCBI_gene,SYMBOL)
 peak_20kb_neargenes <-
   Collapsed_new_peaks %>% 
     dplyr::filter(dist_to_NG<10000&dist_to_NG>-10000) %>% 
@@ -213,19 +214,18 @@ schneider_50k_list <- SNP_50k_only %>% distinct(RSID,Peakid)%>% dplyr::filter(Pe
   dplyr::filter(SYMBOL!="-") %>% 
  left_join(., RNA_median_3_lfc,by =c("SYMBOL"="SYMBOL")) %>%
   
-  left_join(., RNA_median_24_lfc,by =c("ENTREZID"="ENTREZID", "SYMBOL"="SYMBOL")) %>% 
-   na.omit()
- ATAC_RNA_direct %>% 
-  ggplot(., aes(med_3h_lfc,RNA_3h_lfc)) +
-  geom_point()+
-   sm_statCorr(corr_method = 'pearson')+
-   ggtitle("3 hour using direct overlap")
-  ATAC_RNA_direct %>% 
-  ggplot(., aes(med_24h_lfc,RNA_24h_lfc)) +
-  geom_point()+
-   sm_statCorr(corr_method = 'pearson')+
-   ggtitle("24 hour using direct overlap")
-  
+  left_join(., RNA_median_24_lfc,by =c("ENTREZID"="ENTREZID", "SYMBOL"="SYMBOL")) 
+ # ATAC_RNA_direct %>% 
+ #  ggplot(., aes(med_3h_lfc,RNA_3h_lfc)) +
+ #  geom_point()+
+ #   sm_statCorr(corr_method = 'pearson')+
+ #   ggtitle("3 hour using direct overlap")
+ #  ATAC_RNA_direct %>% 
+ #  ggplot(., aes(med_24h_lfc,RNA_24h_lfc)) +
+ #  geom_point()+
+ #   sm_statCorr(corr_method = 'pearson')+
+ #   ggtitle("24 hour using direct overlap")
+ #  
  
 ATAC_RNA_10kb <- ATAC_LFC %>% 
   dplyr::filter(Peakid %in% SNP_10k_only$Peakid) %>% 
@@ -235,36 +235,36 @@ ATAC_RNA_10kb <- ATAC_LFC %>%
   dplyr::filter(SYMBOL!="-") %>% 
  left_join(., RNA_median_3_lfc,by =c("SYMBOL"="SYMBOL")) %>%
   
-  left_join(., RNA_median_24_lfc,by =c("ENTREZID"="ENTREZID", "SYMBOL"="SYMBOL")) %>% 
-   na.omit() 
-  ATAC_RNA_10kb %>% 
-    ggplot(., aes(med_3h_lfc,RNA_3h_lfc)) +
-  geom_point()+
-   sm_statCorr(corr_method = 'pearson')+
-   ggtitle(" 3 hour correlation Using +/- 5kb")
+  left_join(., RNA_median_24_lfc,by =c("ENTREZID"="ENTREZID", "SYMBOL"="SYMBOL"))  
+#    
+#   ATAC_RNA_10kb %>% 
+#     ggplot(., aes(med_3h_lfc,RNA_3h_lfc)) +
+#   geom_point()+
+#    sm_statCorr(corr_method = 'pearson')+
+#    ggtitle(" 3 hour correlation Using +/- 5kb")
+# 
+# ATAC_RNA_10kb %>%  
+#   # dplyr::filter(Peakid %in% peak_50kb_neargenes$Peakid) %>% 
+#   ggplot(., aes(med_24h_lfc,RNA_24h_lfc)) +
+#   geom_point()+
+#    sm_statCorr(corr_method = 'pearson')+
+#    ggtitle(" 24 hour correlation Using +/- 5kb")
+# 
+# ATAC_RNA_10kb %>%  
+#   dplyr::filter(Peakid %in% peak_10kb_neargenes$Peakid) %>%
+#   ggplot(., aes(med_3h_lfc,RNA_3h_lfc)) +
+#   geom_point()+
+#    sm_statCorr(corr_method = 'pearson')+
+#    ggtitle(" 3 hour correlation Using +/- 5kb\nfiltering peaks that are 5kb +/- away from TSS")
+# 
 
-ATAC_RNA_10kb %>%  
-  # dplyr::filter(Peakid %in% peak_50kb_neargenes$Peakid) %>% 
-  ggplot(., aes(med_24h_lfc,RNA_24h_lfc)) +
-  geom_point()+
-   sm_statCorr(corr_method = 'pearson')+
-   ggtitle(" 24 hour correlation Using +/- 5kb")
 
-ATAC_RNA_10kb %>%  
-  dplyr::filter(Peakid %in% peak_10kb_neargenes$Peakid) %>%
-  ggplot(., aes(med_3h_lfc,RNA_3h_lfc)) +
-  geom_point()+
-   sm_statCorr(corr_method = 'pearson')+
-   ggtitle(" 3 hour correlation Using +/- 5kb\nfiltering peaks that are 5kb +/- away from TSS")
-
-
-
-ATAC_RNA_10kb %>%  
-  dplyr::filter(Peakid %in% peak_10kb_neargenes$Peakid) %>%
-  ggplot(., aes(med_24h_lfc,RNA_24h_lfc)) +
-  geom_point()+
-   sm_statCorr(corr_method = 'pearson')+
-   ggtitle(" 24 hour correlation Using +/- 5kb\nfiltering peaks that are 5kb +/- away from TSS")
+# ATAC_RNA_10kb %>%  
+#   dplyr::filter(Peakid %in% peak_10kb_neargenes$Peakid) %>%
+#   ggplot(., aes(med_24h_lfc,RNA_24h_lfc)) +
+#   geom_point()+
+#    sm_statCorr(corr_method = 'pearson')+
+#    ggtitle(" 24 hour correlation Using +/- 5kb\nfiltering peaks that are 5kb +/- away from TSS")
 
 
 ```
@@ -323,12 +323,14 @@ ATAC_RNA_20kb %>%
 
 
 ```{r Knowles list}
-# Reheat_data <- read_excel("data/other_papers/jah36123-sup-0002-tables2.xlsx")
-# top_reheat <- Reheat_data %>% 
-#   dplyr::filter(fisher_pvalue<0.005)
+Reheat_data <- read_excel("data/other_papers/jah36123-sup-0002-tables2.xlsx")
+top_reheat <- Reheat_data %>%
+  dplyr::filter(fisher_pvalue<0.005)
 Nine_te_df <- readRDS("data/Final_four_data/Nine_group_TE_df.RDS")
-
-match <- Nine_te_df %>% distinct(Peakid,TEstatus,mrc,.keep_all = TRUE) 
+###needed to change TE status to at least 1 bp overlap
+match <- Nine_te_df %>% 
+   mutate(TEstatus=if_else(!is.na(per_ol),"TE_peak","not_TE_peak")) %>% 
+  distinct(Peakid,TEstatus,mrc,.keep_all = TRUE) 
 # Knowles_dox_eQTL <- readRDS("data/Knowles_5.RDS")
 # Knowles_mar_eQTL <- readRDS("data/Knowles_4.RDS")
 
@@ -367,128 +369,23 @@ match <- Nine_te_df %>% distinct(Peakid,TEstatus,mrc,.keep_all = TRUE)
 
 # join_overlap_intersect((new_SNP_peak_check_10k %>% GRanges() ),mar_eQTL_gr) %>%
 #   as.data.frame() 
+Nine_te_df %>% 
+  mutate(TEstatus=if_else(!is.na(per_ol),"TE_peak","not_TE_peak"))
 ```
 
-```{r point-10k-20k-50k overlap fig.height=10, fig.width=7}
-# schneider_df <-
-SNP_peak_check_50k%>% as.data.frame() %>% ##SYMBOL.y is old TSS neargene- now I am integrating another dataframe SNP_closest_genes
-  dplyr::select(Peakid,RSID,ENTREZID.x:dist_to_NG,ENTREZID.y:SYMBOL.y, dist_SNP_NG_TSS) %>% 
-left_join(.,SNP_closest_genes,by=c("RSID"="RSID")) %>% 
-  # mutate(SYMBOLA=if_else(is.na(SYMBOL.y),SYMBOL.x,SYMBOL.y)) %>%
-# mutate(ENTREZID=if_else(is.na(ENTREZID.y),ENTREZID.x,ENTREZID.y))%>%
- # dplyr::select(Peakid, RSID, ENTREZID, SYMBOL)# %>% 
- dplyr::select(Peakid, RSID,  SYMBOL) %>% 
-  separate_longer_delim(SYMBOL,delim=";") %>% 
-  # distinct(Peakid,RSID,.keep_all = TRUE) %>% 
-  # left_join(., joined_LFC_df,by = c("Peakid"="peakid", "ENTREZID"="NCBI_gene","SYMBOL"="SYMBOL")) #%>% 
-  # dplyr::select(Peakid:Geneid, AC_3h_lfc, AC_24h_lfc) %>% 
-  left_join(., (ATAC_3_lfc %>% dplyr::select(peak,med_3h_lfc)),by=c("Peakid"="peak")) %>% 
-  left_join(., (ATAC_24_lfc %>% dplyr::select(peak,med_24h_lfc)),by=c("Peakid"="peak"))%>% 
-### peaks left out here were chopped due to low counts (row_means<0) %>% 
-  # mutate(ENTREZID= if_else(RSID=="rs36022097","8970",ENTREZID),
-  #        SYMBOL=if_else(RSID=="rs36022097","H2BC11",SYMBOL)) %>% 
-dplyr::filter(!is.na(med_24h_lfc)) %>% 
-  left_join(., RNA_median_3_lfc,by =c("SYMBOL"="SYMBOL")) %>%
-  
-  left_join(., RNA_median_24_lfc,by =c("ENTREZID"="ENTREZID", "SYMBOL"="SYMBOL")) %>% 
- 
-  mutate(reheat=if_else(SYMBOL %in% Reheat_data$gene,"reheat_gene","not_reheat_gene")) %>% 
-  # dplyr::filter(!is.na(med_3h_lfc)) %>% 
-  distinct(RSID,.keep_all = TRUE) %>% 
-  dplyr::select(RSID,Peakid,med_3h_lfc,med_24h_lfc,,RNA_3h_lfc,RNA_24h_lfc, ENTREZID,SYMBOL,reheat) %>% #AC_3h_lfc,AC_24h_lfc) %>% 
-  tidyr::unite(name,RSID,SYMBOL,Peakid,sep ="_",remove=FALSE) %>% 
-  left_join(.,(match %>% 
-                 group_by(Peakid) %>%
-                 filter(!(TEstatus=="not_TE_peak" & any (TEstatus == "TE_peak"))) %>% 
-                 ungroup() %>%
-                 distinct(TEstatus,Peakid,.keep_all = TRUE)),
-            by = c("Peakid"="Peakid")) %>% 
-  group_by(Peakid) %>% 
- summarize(name=unique(name),
-           RSID=unique(RSID),
-           med_3h_lfc=unique(med_3h_lfc),
-           med_24h_lfc=unique(med_24h_lfc),
-           # AC_3h_lfc=unique(AC_3h_lfc),
-           # AC_24h_lfc=unique(AC_24h_lfc),
-           RNA_3h_lfc=unique(RNA_3h_lfc),
-           RNA_24h_lfc=unique(RNA_24h_lfc),
-          repClass=paste(unique(repClass),collapse=":"),
-           TEstatus=paste(unique(TEstatus),collapse=";"),
-          SYMBOL=paste(unique(SYMBOL),collapse=";"),
-           reheat=paste(unique(reheat),collapse=";"),
-          mrc=unique(mrc)) %>% 
-  mutate(point_ol=if_else(RSID %in% point_only$RSID,"yes","no")) %>% 
-  mutate(eQTL=if_else(RSID %in% dox_eqtl_SNPs$SNPS,"yes",if_else(Peakid %in% mar_eqtl_SNPS$Peakid,"yes","no")))
-
-schneider_mat <- schneider_df %>% 
-  ungroup() %>% 
-  dplyr::select(name,med_3h_lfc:RNA_24h_lfc) %>% 
-  column_to_rownames("name") %>% 
-  as.matrix()
-schneider_name_mat <- schneider_df %>% 
-  ungroup() %>% 
-  dplyr::select(name,TEstatus,mrc,reheat,point_ol)
-
-row_anno <- ComplexHeatmap::rowAnnotation(TE_status=schneider_name_mat$TEstatus,reheat_status=schneider_name_mat$reheat,MRC=schneider_name_mat$mrc,direct_overlap=schneider_name_mat$point_ol,col= list(TE_status= c("TE_peak"="goldenrod","TE_peak;not_TE_peak"="goldenrod","not_TE_peak;TE_peak"="goldenrod","not_TE_peak"="lightblue"), 
-                                                                                                MRC = c("EAR_open" = "#F8766D",   "EAR_close" = "#f6483c",
-    "ESR_open" = "#7CAE00",
-    "ESR_close" = "#587b00",
-     "ESR_opcl"="grey40",
-    "ESR_C"="grey40",
-      "ESR_clop"="tan",
-    "ESR_D"="tan",
-     "ESR_OC" = "#6a9500",
-     "LR_open" = "#00BFC4",
-     "LR_close" = "#008d91",
-     "NR" = "#C77CFF",
-    "not_mrc"="black"
-  ),
-  reheat_status=c("reheat_gene"="green","not_reheat_gene"="orange")
-),direct_overlap=c("yes"="red","no"="grey8"))
-mat2 <- schneider_mat  
-rownames(mat2)[1] = paste(c(letters, LETTERS), collapse = "")
-simply_map <- ComplexHeatmap::Heatmap(schneider_mat,
-                        left_annotation = row_anno,
-                        show_row_names = TRUE,
-                        # row_names_side = "left",
-                        row_names_max_width= max_text_width(rownames(schneider_mat),                                                        gp=gpar(fontsize=12)),
-                        heatmap_legend_param = list(direction = "horizontal"),
-                        show_column_names = TRUE,
-                        cluster_rows = FALSE,
-                        cluster_columns = FALSE)
-
-draw(simply_map, merge_legend = TRUE, heatmap_legend_side = "bottom", 
-    annotation_legend_side = "bottom")
-
-
-```
-```{r point and 10k only eval=FALSE, fig.height=10, fig.width=7, include=FALSE}
+```{r point-10k-20k-50k overlap, fig.height=35, fig.width=6}
 schneider_df <-
-new_SNP_peak_check_10k%>% as.data.frame() %>% ##SYMBOL.y is old TSS neargene- now I am integrating another dataframe SNP_closest_genes
-  dplyr::select(Peakid,RSID,ENTREZID.x:dist_to_NG,ENTREZID.y:SYMBOL.y, dist_SNP_NG_TSS) %>% 
-left_join(.,SNP_closest_genes,by=c("RSID"="RSID")) %>% 
-  # mutate(SYMBOLA=if_else(is.na(SYMBOL.y),SYMBOL.x,SYMBOL.y)) %>%
-# mutate(ENTREZID=if_else(is.na(ENTREZID.y),ENTREZID.x,ENTREZID.y))%>%
- # dplyr::select(Peakid, RSID, ENTREZID, SYMBOL)# %>% 
- dplyr::select(Peakid, RSID,  SYMBOL) %>% 
-  separate_longer_delim(SYMBOL,delim=";") %>% 
-  # distinct(Peakid,RSID,.keep_all = TRUE) %>% 
-  # left_join(., joined_LFC_df,by = c("Peakid"="peakid", "ENTREZID"="NCBI_gene","SYMBOL"="SYMBOL")) #%>% 
-  # dplyr::select(Peakid:Geneid, AC_3h_lfc, AC_24h_lfc) %>% 
-  left_join(., (ATAC_3_lfc %>% dplyr::select(peak,med_3h_lfc)),by=c("Peakid"="peak")) %>% 
-  left_join(., (ATAC_24_lfc %>% dplyr::select(peak,med_24h_lfc)),by=c("Peakid"="peak"))%>% 
-### peaks left out here were chopped due to low counts (row_means<0) %>% 
-  # mutate(ENTREZID= if_else(RSID=="rs36022097","8970",ENTREZID),
-  #        SYMBOL=if_else(RSID=="rs36022097","H2BC11",SYMBOL)) %>% 
-dplyr::filter(!is.na(med_24h_lfc)) %>% 
-  left_join(., RNA_median_3_lfc,by =c("SYMBOL"="SYMBOL")) %>%
-  
-  left_join(., RNA_median_24_lfc,by =c("ENTREZID"="ENTREZID", "SYMBOL"="SYMBOL")) %>% 
- 
+schneider_50k_list%>% 
+  as.data.frame() %>%
+  left_join(., peak_10kb_neargenes, by=c("Peakid"="Peakid")) %>%
+  left_join(., (ATAC_3_lfc %>%
+                  dplyr::select(peak,med_3h_lfc)),by=c("Peakid"="peak")) %>% 
+  left_join(., (ATAC_24_lfc %>%
+                  dplyr::select(peak,med_24h_lfc)),by=c("Peakid"="peak"))%>% 
+  left_join(., RNA_median_3_lfc,by =c("NCBI_gene"="ENTREZID", "SYMBOL"="SYMBOL")) %>%
+  left_join(., RNA_median_24_lfc,by =c("NCBI_gene"="ENTREZID", "SYMBOL"="SYMBOL")) %>% 
   mutate(reheat=if_else(SYMBOL %in% Reheat_data$gene,"reheat_gene","not_reheat_gene")) %>% 
-  # dplyr::filter(!is.na(med_3h_lfc)) %>% 
-  distinct(RSID,.keep_all = TRUE) %>% 
-  dplyr::select(RSID,Peakid,med_3h_lfc,med_24h_lfc,,RNA_3h_lfc,RNA_24h_lfc, ENTREZID,SYMBOL,reheat) %>% #AC_3h_lfc,AC_24h_lfc) %>% 
+  distinct(RSID,Peakid,.keep_all = TRUE) %>% 
   tidyr::unite(name,RSID,SYMBOL,Peakid,sep ="_",remove=FALSE) %>% 
   left_join(.,(match %>% 
                  group_by(Peakid) %>%
@@ -496,9 +393,15 @@ dplyr::filter(!is.na(med_24h_lfc)) %>%
                  ungroup() %>%
                  distinct(TEstatus,Peakid,.keep_all = TRUE)),
             by = c("Peakid"="Peakid")) %>% 
-  group_by(Peakid) %>% 
+  mutate(dist_to_SNP=case_when(Peakid %in% schneider_short_list$Peakid &RSID %in% schneider_short_list$RSID~ 0,
+                               Peakid %in% schneider_10k_list$Peakid &RSID %in% schneider_10k_list$RSID~ 10,
+    Peakid %in% schneider_20k_list$Peakid &RSID %in% schneider_20k_list$RSID~ 20,
+     Peakid %in% schneider_50k_list$Peakid &RSID %in% schneider_50k_list$RSID ~ 50)) %>% 
+  group_by(RSID,Peakid) %>% 
+  # mutate(Keep=case_when(RSID))
+  # group_by(Peakid) %>% 
  summarize(name=unique(name),
-           RSID=unique(RSID),
+           # RSID=unique(RSID),
            med_3h_lfc=unique(med_3h_lfc),
            med_24h_lfc=unique(med_24h_lfc),
            # AC_3h_lfc=unique(AC_3h_lfc),
@@ -509,9 +412,10 @@ dplyr::filter(!is.na(med_24h_lfc)) %>%
            TEstatus=paste(unique(TEstatus),collapse=";"),
           SYMBOL=paste(unique(SYMBOL),collapse=";"),
            reheat=paste(unique(reheat),collapse=";"),
-          mrc=unique(mrc)) %>% 
-  mutate(point_ol=if_else(RSID %in% point_only$RSID,"yes","no")) %>% 
-  mutate(eQTL=if_else(RSID %in% dox_eqtl_SNPs$SNPS,"yes",if_else(Peakid %in% mar_eqtl_SNPS$Peakid,"yes","no")))
+          mrc=unique(mrc),
+          dist_to_SNP=min(dist_to_SNP)) #%>% 
+  # mutate(point_ol=if_else(RSID %in% point_only$RSID,"yes","no")) %>% 
+  # mutate(eQTL=if_else(RSID %in% dox_eqtl_SNPs$SNPS,"yes",if_else(Peakid %in% mar_eqtl_SNPS$Peakid,"yes","no")))
 
 schneider_mat <- schneider_df %>% 
   ungroup() %>% 
@@ -520,31 +424,31 @@ schneider_mat <- schneider_df %>%
   as.matrix()
 schneider_name_mat <- schneider_df %>% 
   ungroup() %>% 
-  dplyr::select(name,TEstatus,mrc,reheat,point_ol)
+  dplyr::select(name,TEstatus,mrc,reheat,dist_to_SNP)
 
-row_anno <- ComplexHeatmap::rowAnnotation(TE_status=schneider_name_mat$TEstatus,reheat_status=schneider_name_mat$reheat,MRC=schneider_name_mat$mrc,direct_overlap=schneider_name_mat$point_ol,col= list(TE_status= c("TE_peak"="goldenrod","TE_peak;not_TE_peak"="goldenrod","not_TE_peak;TE_peak"="goldenrod","not_TE_peak"="lightblue"), 
-                                                                                                MRC = c("EAR_open" = "#F8766D",   "EAR_close" = "#f6483c",
-    "ESR_open" = "#7CAE00",
-    "ESR_close" = "#587b00",
-     "ESR_opcl"="grey40",
-    "ESR_C"="grey40",
-      "ESR_clop"="tan",
-    "ESR_D"="tan",
-     "ESR_OC" = "#6a9500",
-     "LR_open" = "#00BFC4",
-     "LR_close" = "#008d91",
-     "NR" = "#C77CFF",
-    "not_mrc"="black"
-  ),
-  reheat_status=c("reheat_gene"="green","not_reheat_gene"="orange")
-),direct_overlap=c("yes"="red","no"="grey8"))
+row_anno <- ComplexHeatmap::rowAnnotation(TE_status=schneider_name_mat$TEstatus,reheat_status=schneider_name_mat$reheat,MRC=schneider_name_mat$mrc,direct_overlap=schneider_name_mat$dist_to_SNP,col= list(TE_status=c("TE_peak"="goldenrod",
+                                "TE_peak;not_TE_peak"="goldenrod",
+                                "not_TE_peak;TE_peak"="goldenrod",
+                                "not_TE_peak"="lightblue"),                                                     MRC = c("EAR_open" = "#F8766D",                                                                    "EAR_close" = "#f6483c","ESR_open" = "#7CAE00",
+                            "ESR_close" = "#587b00",
+                            "ESR_opcl"="grey40",
+                            "ESR_C"="grey40",
+                            "ESR_clop"="tan",
+                             "ESR_D"="tan",
+                               "ESR_OC" = "#6a9500",
+                                "LR_open" = "#00BFC4",
+                              "LR_close" = "#008d91",
+                              "NR" = "#C77CFF",
+                                "not_mrc"="black"),
+                    reheat_status=c("reheat_gene"="green","not_reheat_gene"="orange"),
+                    direct_overlap=c("0"="red","10"="pink","20"="tan2","50"="grey8")))
 mat2 <- schneider_mat  
-rownames(mat2)[1] = paste(c(letters, LETTERS), collapse = "")
+# rownames(mat2)[1] = paste(c(letters, LETTERS), collapse = "")
 simply_map <- ComplexHeatmap::Heatmap(schneider_mat,
                         left_annotation = row_anno,
                         show_row_names = TRUE,
                         # row_names_side = "left",
-                        row_names_max_width= max_text_width(rownames(schneider_mat),                                                        gp=gpar(fontsize=12)),
+                        row_names_max_width= max_text_width(rownames(schneider_mat),                                                        gp=gpar(fontsize=8)),
                         heatmap_legend_param = list(direction = "horizontal"),
                         show_column_names = TRUE,
                         cluster_rows = FALSE,
@@ -552,198 +456,97 @@ simply_map <- ComplexHeatmap::Heatmap(schneider_mat,
 
 draw(simply_map, merge_legend = TRUE, heatmap_legend_side = "bottom", 
     annotation_legend_side = "bottom")
+
+
+```
+
+
+```{r point and 10k only, eval=FALSE, fig.height=10, fig.width=7, include=FALSE}
+schneider_df <-
+schneider_50k_list%>% 
+  as.data.frame() %>%
+  left_join(., peak_10kb_neargenes, by=c("Peakid"="Peakid")) %>%
+  left_join(., (ATAC_3_lfc %>%
+                  dplyr::select(peak,med_3h_lfc)),by=c("Peakid"="peak")) %>% 
+  left_join(., (ATAC_24_lfc %>%
+                  dplyr::select(peak,med_24h_lfc)),by=c("Peakid"="peak"))%>% 
+  left_join(., RNA_median_3_lfc,by =c("NCBI_gene"="ENTREZID", "SYMBOL"="SYMBOL")) %>%
+  left_join(., RNA_median_24_lfc,by =c("NCBI_gene"="ENTREZID", "SYMBOL"="SYMBOL")) %>% 
+  mutate(reheat=if_else(SYMBOL %in% Reheat_data$gene,"reheat_gene","not_reheat_gene")) %>% 
+  distinct(RSID,Peakid,.keep_all = TRUE) %>% 
+  tidyr::unite(name,RSID,SYMBOL,Peakid,sep ="_",remove=FALSE) %>% 
+  left_join(.,(match %>% 
+                 group_by(Peakid) %>%
+                 filter(!(TEstatus=="not_TE_peak" & any (TEstatus == "TE_peak"))) %>% 
+                 ungroup() %>%
+                 distinct(TEstatus,Peakid,.keep_all = TRUE)),
+            by = c("Peakid"="Peakid")) %>% 
+  mutate(dist_to_SNP=case_when(Peakid %in% schneider_short_list$Peakid &RSID %in% schneider_short_list$RSID~ 0,
+                               Peakid %in% schneider_10k_list$Peakid &RSID %in% schneider_10k_list$RSID~ 10,
+    Peakid %in% schneider_20k_list$Peakid &RSID %in% schneider_20k_list$RSID~ 20,
+     Peakid %in% schneider_50k_list$Peakid &RSID %in% schneider_50k_list$RSID ~ 50)) %>% 
+  group_by(RSID,Peakid) %>% 
+  # mutate(Keep=case_when(RSID))
+  # group_by(Peakid) %>% 
+ summarize(name=unique(name),
+           # RSID=unique(RSID),
+           med_3h_lfc=unique(med_3h_lfc),
+           med_24h_lfc=unique(med_24h_lfc),
+           # AC_3h_lfc=unique(AC_3h_lfc),
+           # AC_24h_lfc=unique(AC_24h_lfc),
+           RNA_3h_lfc=unique(RNA_3h_lfc),
+           RNA_24h_lfc=unique(RNA_24h_lfc),
+          repClass=paste(unique(repClass),collapse=":"),
+           TEstatus=paste(unique(TEstatus),collapse=";"),
+          SYMBOL=paste(unique(SYMBOL),collapse=";"),
+           reheat=paste(unique(reheat),collapse=";"),
+          mrc=unique(mrc),
+          dist_to_SNP=min(dist_to_SNP)) #%>% 
+  # mutate(point_ol=if_else(RSID %in% point_only$RSID,"yes","no")) %>% 
+  # mutate(eQTL=if_else(RSID %in% dox_eqtl_SNPs$SNPS,"yes",if_else(Peakid %in% mar_eqtl_SNPS$Peakid,"yes","no")))
+
+schneider_mat <- schneider_df %>% 
+  ungroup() %>% 
+  dplyr::select(name,med_3h_lfc:RNA_24h_lfc) %>% 
+  column_to_rownames("name") %>% 
+  as.matrix()
+schneider_name_mat <- schneider_df %>% 
+  ungroup() %>% 
+  dplyr::select(name,TEstatus,mrc,reheat,dist_to_SNP)
+
+row_anno <- ComplexHeatmap::rowAnnotation(TE_status=schneider_name_mat$TEstatus,reheat_status=schneider_name_mat$reheat,MRC=schneider_name_mat$mrc,direct_overlap=schneider_name_mat$dist_to_SNP,col= list(TE_status=c("TE_peak"="goldenrod",
+                                "TE_peak;not_TE_peak"="goldenrod",
+                                "not_TE_peak;TE_peak"="goldenrod",
+                                "not_TE_peak"="lightblue"),                                                     MRC = c("EAR_open" = "#F8766D",                                                                    "EAR_close" = "#f6483c","ESR_open" = "#7CAE00",
+                            "ESR_close" = "#587b00",
+                            "ESR_opcl"="grey40",
+                            "ESR_C"="grey40",
+                            "ESR_clop"="tan",
+                             "ESR_D"="tan",
+                               "ESR_OC" = "#6a9500",
+                                "LR_open" = "#00BFC4",
+                              "LR_close" = "#008d91",
+                              "NR" = "#C77CFF",
+                                "not_mrc"="black"),
+                    reheat_status=c("reheat_gene"="green","not_reheat_gene"="orange"),
+                    direct_overlap=c("0"="red","10"="pink","20"="tan2","50"="grey8")))
+mat2 <- schneider_mat  
+# rownames(mat2)[1] = paste(c(letters, LETTERS), collapse = "")
+simply_map <- ComplexHeatmap::Heatmap(schneider_mat,
+                        left_annotation = row_anno,
+                        show_row_names = TRUE,
+                        # row_names_side = "left",
+                        row_names_max_width= max_text_width(rownames(schneider_mat),                                                        gp=gpar(fontsize=8)),
+                        heatmap_legend_param = list(direction = "horizontal"),
+                        show_column_names = TRUE,
+                        cluster_rows = FALSE,
+                        cluster_columns = FALSE)
+
+draw(simply_map, merge_legend = TRUE, heatmap_legend_side = "bottom", 
+    annotation_legend_side = "bottom")
+
   
 ```
-
-
-
-#### GWAS SNP overlap log2cpm
-
-
-### TTN
-```{r toplistdata}
-drug_pal <- c("#8B006D","#DF707E","#F1B72B", "#3386DD","#707031","#41B333")
-# K27_counts <-  readRDS("data/Final_four_data/All_Raodahpeaks.RDS")
-ATAC_counts <- readRDS("data/Final_four_data/x4_filtered.RDS")
-RNA_counts <- readRDS("data/other_papers/Counts_RNA_ERMatthews.RDS")
-# overlap_atac_ac_peaks <- readRDS( "data/Final_four_data/overlapping_ac_atac_peaks.RDS")
-TNT_peak <- data.frame(peak="chr2.178547784.178549172", RNA="TTN", ENTREZID=7273)
- AS1 <- 100506866
-RNA_counts %>% 
-  column_to_rownames("ENTREZID") %>% 
-  cpm(., log = TRUE) %>% 
-  as.data.frame() %>% 
-  dplyr::filter(row.names(.) %in% TNT_peak$ENTREZID) %>% 
-  mutate(ENTREZID = row.names(.)) %>% 
-  pivot_longer(cols = !ENTREZID, names_to = "sample", values_to = "counts") %>% 
-  separate("sample", into = c("trt","ind","time")) %>% 
-  mutate(time=factor(time, levels = c("3h","24h"))) %>% 
-  mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
-  ggplot(., aes (x = time, y=counts))+
-  geom_boxplot(aes(fill=trt))+
-  ggtitle("Titin (TTN) RNA expression")+
-  scale_fill_manual(values = drug_pal)+
-  theme_bw()+
-  ylab("log2 cpm RNA")
- 
-RNA_counts %>% 
-  column_to_rownames("ENTREZID") %>% 
-  cpm(., log = TRUE) %>% 
-  as.data.frame() %>% 
-  dplyr::filter(row.names(.) %in% AS1) %>% 
-  mutate(ENTREZID = row.names(.)) %>% 
-  pivot_longer(cols = !ENTREZID, names_to = "sample", values_to = "counts") %>% 
-  separate("sample", into = c("trt","ind","time")) %>% 
-  mutate(time=factor(time, levels = c("3h","24h"))) %>% 
-  mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
-  ggplot(., aes (x = time, y=counts))+
-  geom_boxplot(aes(fill=trt))+
-  ggtitle("Titin-AS1 (TTN-AS1) RNA expression")+
-  scale_fill_manual(values = drug_pal)+
-  theme_bw()+
-  ylab("log2 cpm RNA")
- 
-
-
-ATAC_counts %>% 
-  cpm(., log = TRUE) %>% 
-   as.data.frame() %>%
-  rename_with(.,~gsub(pattern = "Ind1_75", replacement = "1_",.)) %>%
-  rename_with(.,~gsub(pattern = "Ind2_87", replacement = "2_",.)) %>%
-  rename_with(.,~gsub(pattern = "Ind3_77", replacement = "3_",.)) %>%
-  rename_with(.,~gsub(pattern = "Ind6_71", replacement = "6_",.)) %>%
-  rename_with(.,~gsub( "DX" ,'DOX',.)) %>%
-  rename_with(.,~gsub( "DA" ,'DNR',.)) %>%
-  rename_with(.,~gsub( "E" ,'EPI',.)) %>%
-  rename_with(.,~gsub( "T" ,'TRZ',.)) %>%
-  rename_with(.,~gsub( "M" ,'MTX',.)) %>%
-  rename_with(.,~gsub( "V" ,'VEH',.)) %>%
-  rename_with(.,~gsub("24h","_24h",.)) %>%
-  rename_with(.,~gsub("3h","_3h",.)) %>% 
-  dplyr::filter(row.names(.) %in% TNT_peak$peak) %>% 
-  mutate(Peakid = row.names(.)) %>% 
-  pivot_longer(cols = !Peakid, names_to = "sample", values_to = "counts") %>% 
-  separate("sample", into = c("ind","trt","time")) %>% 
-  mutate(time=factor(time, levels = c("3h","24h"))) %>% 
-  mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
-  ggplot(., aes (x = time, y=counts))+
-  geom_boxplot(aes(fill=trt))+
-  ggtitle("Titin (TTN) ATAC accessibility")+
-  scale_fill_manual(values = drug_pal)+
-  theme_bw()+
-  ylab("log2 cpm ATAC")
-```
-
-### rs12051934 ALPK2
-
-```{r ALPK2}
-
-ALPK2_peak <- data.frame(peak="chr18.58336709.58336869", RNA="ALPK2", ENTREZID=115701)
-
-RNA_counts %>% 
-  column_to_rownames("ENTREZID") %>% 
-  cpm(., log = TRUE) %>% 
-  as.data.frame() %>% 
-  dplyr::filter(row.names(.) %in% ALPK2_peak$ENTREZID) %>% 
-  mutate(ENTREZID = row.names(.)) %>% 
-  pivot_longer(cols = !ENTREZID, names_to = "sample", values_to = "counts") %>% 
-  separate("sample", into = c("trt","ind","time")) %>% 
-  mutate(time=factor(time, levels = c("3h","24h"))) %>% 
-  mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
-  ggplot(., aes (x = time, y=counts))+
-  geom_boxplot(aes(fill=trt))+
-  ggtitle("ALPK2 RNA expression")+
-  scale_fill_manual(values = drug_pal)+
-  theme_bw()+
-  ylab("log2 cpm RNA")
-
-
-ATAC_counts %>% 
-  cpm(., log = TRUE) %>% 
-   as.data.frame() %>%
-  rename_with(.,~gsub(pattern = "Ind1_75", replacement = "1_",.)) %>%
-  rename_with(.,~gsub(pattern = "Ind2_87", replacement = "2_",.)) %>%
-  rename_with(.,~gsub(pattern = "Ind3_77", replacement = "3_",.)) %>%
-  rename_with(.,~gsub(pattern = "Ind6_71", replacement = "6_",.)) %>%
-  rename_with(.,~gsub( "DX" ,'DOX',.)) %>%
-  rename_with(.,~gsub( "DA" ,'DNR',.)) %>%
-  rename_with(.,~gsub( "E" ,'EPI',.)) %>%
-  rename_with(.,~gsub( "T" ,'TRZ',.)) %>%
-  rename_with(.,~gsub( "M" ,'MTX',.)) %>%
-  rename_with(.,~gsub( "V" ,'VEH',.)) %>%
-  rename_with(.,~gsub("24h","_24h",.)) %>%
-  rename_with(.,~gsub("3h","_3h",.)) %>% 
-  dplyr::filter(row.names(.) %in% ALPK2_peak$peak) %>% 
-  mutate(Peakid = row.names(.)) %>% 
-  pivot_longer(cols = !Peakid, names_to = "sample", values_to = "counts") %>% 
-  separate("sample", into = c("ind","trt","time")) %>% 
-  mutate(time=factor(time, levels = c("3h","24h"))) %>% 
-  mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
-  ggplot(., aes (x = time, y=counts))+
-  geom_boxplot(aes(fill=trt))+
-  ggtitle("ALPK2 ATAC accessibility")+
-  scale_fill_manual(values = drug_pal)+
-  theme_bw()+
-  ylab("log2 cpm ATAC")
-
-```
-### rs4916358 PRDX6 
-```{r PRDX6}
-schneider_df %>% dplyr::filter(SYMBOL.x=="PRDX6")
-PRDX6_peak <- data.frame(peak="chr1.173473597.173473889", RNA="PRDX6", ENTREZID=9588)
-
-RNA_counts %>% 
-  column_to_rownames("ENTREZID") %>% 
-  cpm(., log = TRUE) %>% 
-  as.data.frame() %>% 
-  dplyr::filter(row.names(.) %in% PRDX6_peak$ENTREZID) %>% 
-  mutate(ENTREZID = row.names(.)) %>% 
-  pivot_longer(cols = !ENTREZID, names_to = "sample", values_to = "counts") %>% 
-  separate("sample", into = c("trt","ind","time")) %>% 
-  mutate(time=factor(time, levels = c("3h","24h"))) %>% 
-  mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
-  ggplot(., aes (x = time, y=counts))+
-  geom_boxplot(aes(fill=trt))+
-  ggtitle(paste(PRDX6_peak$RNA," RNA expression"))+
-  scale_fill_manual(values = drug_pal)+
-  theme_bw()+
-  ylab("log2 cpm RNA")
-
-
-
-plotpanelATAC <- ATAC_counts %>% 
-  cpm(., log = TRUE) %>% 
-   as.data.frame() %>%
-  rename_with(.,~gsub(pattern = "Ind1_75", replacement = "1_",.)) %>%
-  rename_with(.,~gsub(pattern = "Ind2_87", replacement = "2_",.)) %>%
-  rename_with(.,~gsub(pattern = "Ind3_77", replacement = "3_",.)) %>%
-  rename_with(.,~gsub(pattern = "Ind6_71", replacement = "6_",.)) %>%
-  rename_with(.,~gsub( "DX" ,'DOX',.)) %>%
-  rename_with(.,~gsub( "DA" ,'DNR',.)) %>%
-  rename_with(.,~gsub( "E" ,'EPI',.)) %>%
-  rename_with(.,~gsub( "T" ,'TRZ',.)) %>%
-  rename_with(.,~gsub( "M" ,'MTX',.)) %>%
-  rename_with(.,~gsub( "V" ,'VEH',.)) %>%
-  rename_with(.,~gsub("24h","_24h",.)) %>%
-  rename_with(.,~gsub("3h","_3h",.)) 
-
-plotpanelATAC %>% 
-  dplyr::filter(row.names(.) %in% PRDX6_peak$peak) %>% 
-  mutate(Peakid = row.names(.)) %>% 
-  pivot_longer(cols = !Peakid, names_to = "sample", values_to = "counts") %>% 
-  separate("sample", into = c("ind","trt","time")) %>% 
-  mutate(time=factor(time, levels = c("3h","24h"))) %>% 
-  mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
-   ggplot(., aes (x = time, y=counts))+
-  geom_boxplot(aes(fill=trt))+
-  ggtitle(paste(PRDX6_peak$RNA," gene and \n",PRDX6_peak$peak," ATAC accessibility"))+
-  scale_fill_manual(values = drug_pal)+
-  theme_bw()+
-  ylab("log2 cpm ATAC")
-
-```
-
-
 
 
 
