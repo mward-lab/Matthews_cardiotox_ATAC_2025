@@ -1563,6 +1563,26 @@ seq_all_cd_200 <- readRDS("data/Final_four_data/sequencing_cd_200_object8_motif.
 #   arrange(.,EVALUE.x)# %>%
 ```
 
+```{r specdataframe groups}
+spec_dataframe_200 <- readRDS("data/Final_four_data/spec_dataframe_200.RDS")
+
+spec_dataframe_200 %>% 
+  dplyr::select(CLUSTER, ID:CONSENSUS,motif_name, mrc,NAME,ENR_RATIO,EVALUE.x) %>% 
+  dplyr::filter(ENR_RATIO>1.2) %>% 
+ dplyr::filter(EVALUE.x<0.05)%>% 
+  group_by(mrc,CLUSTER) %>% 
+  summarize(ID=paste(unique(ID), collapse = ";"),
+            ALT_ID=paste(unique(ALT_ID), collapse = ";"),
+            motif_name=paste(unique(motif_name),collapse="; "),
+            NAME=paste((NAME),collapse =";"),
+            mrc=unique(mrc),
+            sig_val=paste0(min(EVALUE.x),"-",max(EVALUE.x)),
+            order_val=min(EVALUE.x)) %>% 
+    arrange(mrc,order_val) #%>% 
+  # write_delim(.,"data/Final_four_data/motif_cluster_dataframe.txt",delim="\t")
+
+
+```
 
 ```{r top}
 # spec_dataframe_200 %>% 
@@ -1577,15 +1597,15 @@ seq_all_cd_200 <- readRDS("data/Final_four_data/sequencing_cd_200_object8_motif.
   # distinct(CLUSTER,.keep_all = TRUE)
 # distinct(motif_name)
 
-spec_dataframe_200 %>% 
-  dplyr::filter(mrc=="ESR_open") %>% 
-  dplyr::filter(ENR_RATIO>(ER_rat)) %>% 
-  dplyr::select(RANK,CLUSTER, SITES,SIM_MOTIF,ALT_ID, ID,EVALUE.x, TP:'FP%', motif_name)%>%
-  arrange(.,EVALUE.x) %>%
-  mutate(log10Evalue= log(EVALUE.x, base = 10)*(-1)) %>% 
-  mutate(motif_name=if_else(motif_name=="KLF9",paste(motif_name, RANK, sep="_"),             if_else(motif_name=="^ZN*",paste(motif_name, RANK, sep="_"), if_else(motif_name=="ZSCAN4",paste(motif_name, RANK,sep="_"),motif_name))))%>%
-  distinct(CLUSTER,.keep_all = TRUE) %>% 
-  slice_head(n=5)
+# spec_dataframe_200 %>% 
+#   dplyr::filter(mrc=="ESR_open") %>% 
+#   dplyr::filter(ENR_RATIO>(ER_rat)) %>% 
+#   dplyr::select(RANK,CLUSTER, SITES,SIM_MOTIF,ALT_ID, ID,EVALUE.x, TP:'FP%', motif_name)%>%
+#   arrange(.,EVALUE.x) %>%
+#   mutate(log10Evalue= log(EVALUE.x, base = 10)*(-1)) %>% 
+#   mutate(motif_name=if_else(motif_name=="KLF9",paste(motif_name, RANK, sep="_"),             if_else(motif_name=="^ZN*",paste(motif_name, RANK, sep="_"), if_else(motif_name=="ZSCAN4",paste(motif_name, RANK,sep="_"),motif_name))))%>%
+#   distinct(CLUSTER,.keep_all = TRUE) %>% 
+#   slice_head(n=5)
 ```
 
 
