@@ -1338,6 +1338,51 @@ results_or_cre %>%
 ```
 
 
+### Peaks enhancers and TEs
+
+```{r EnhacerTE analysis}
+Nine_group_TE <- readRDS("data/Final_four_data/Nine_group_TE_df.RDS")
+
+# peak_list_all_mrc %>% 
+#   dplyr::select(chr:Peakid,NCBI_gene:dist_to_NG,mrc9) %>% 
+#   GRanges()
+
+# All_enhancers_peaks <- Whole_peaks %>% as.data.frame() %>% 
+#   dplyr::filter(blockCount=="CTCF-only,CTCF-bound"|
+#                   blockCount =="PLS"|
+#                   blockCount =="PLS,CTCF-bound"|
+#                   blockCount =="dELS"|
+#                   blockCount =="dELS,CTCF-bound"|
+#                   blockCount =="pELS"|
+#                   blockCount =="pELS,CTCF-bound") %>% 
+#   mutate(type=if_else(blockCount=="CTCF-only,CTCF-bound","CTCF-only", if_else(grepl("PLS",blockCount),"Promoter-like",                       if_else(grepl("pELS",blockCount),"Proximal enhancer-like", "Distal enhancer-like"),blockCount)))
+
+# All_enhancers_peaks %>% 
+#   left_join(Nine_group_TE,.,by=c("Peakid"="Peakid","mrc"="mrc9")) %>%
+#   mutate(TEstatus=if_else(is.na(per_ol),"not_TE_peak","TE_peak")) %>% 
+#   dplyr::select(Peakid:repFamily, TEstatus,mrc,NCBI_gene:dist_to_NG,name, blockCount,type) %>% 
+#   # dplyr::filter(type=="Proximal enhancer-like"|type=="Distal enhancer-like") %>%
+#   distinct() %>% 
+#   # dplyr::filter( repClass=="Retroposon") %>% 
+#   group_by( mrc,repClass,type) %>% tally %>% 
+#   pivot_wider(., id_cols=c(mrc,repClass),names_from=type,values_from = n)
+
+CRE_summary
+
+TEfile <- Nine_group_TE %>% 
+  mutate(TEstatus=if_else(is.na(per_ol),"not_TE_peak","TE_peak")) %>% 
+  group_by(Peakid) %>% 
+  summarise(repName=paste(repName,collapse=";"),
+            repClass=paste(repClass,collapse=";"),
+            repClass_org=paste(repClass_org,collapse=";"),
+            TEstatus=paste(TEstatus,collapse=";"),
+            mrc=paste(unique(mrc),collapse = ";"))
+TEfile %>% 
+  left_join(.,CRE_summary,by=c("Peakid"="Peakid","mrc"="mrc")) %>% 
+  dplyr::select(Peakid:mrc,NCBI_gene:PLS_status)
+```
+
+
 
 
 
@@ -1393,21 +1438,3 @@ peak_list_all_MRC %>%
   coord_cartesian(ylim= c(-3.5,2))
 
 ```
-
-### Counts of peaks-
-
-```{r top2b_cluster, eval=FALSE, include=FALSE}
-peak_list_all_MRC %>% 
-  dplyr::filter(peakid %in% top2Boverlap$id) %>% 
-  dplyr::select(peakid,MRC) %>% 
-  left_join(.,Peak_MRC_table, by=c("peakid"="peakid")) %>% 
-  group_by(MRC) %>% 
-  tally
-
-
-```
-
-```{r peaks not in CREs}
-
-```
-
