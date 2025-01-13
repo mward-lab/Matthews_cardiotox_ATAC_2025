@@ -276,6 +276,9 @@ FF_bound %>%
 
 
 # saveRDS(FF_bound,"data/Final_four_data/ATAC_seq_counts.RDS")
+#  ATAC_seq_counts %>% 
+# pivot_wider(., id_cols= c(sample, indv, trt, time),names_from = Total_reads,values_from = read_num) %>% 
+#    write_delim(.,file="data/Final_four_data/reads_summary_FF.txt",delim="\t")
 ```
 
 
@@ -925,7 +928,8 @@ hr24_RNA <- toplistall_RNA %>%
   pivot_wider(., id_cols=c(ENTREZID,SYMBOL), names_from = id, values_from = logFC) %>% 
   dplyr::rename(DOX_24_RNA=DOX, DNR_24_RNA=DNR,EPI_24_RNA=EPI,MTX_24_RNA=MTX, TRZ_24_RNA=TRZ)
 RNA_LFC_df <- hr3_RNA %>% 
-  left_join(., hr24_RNA, by=c("SYMBOL"="SYMBOL","ENTREZID"="ENTREZID"))# %>% 
+  left_join(., hr24_RNA, by=c("SYMBOL"="SYMBOL","ENTREZID"="ENTREZID")) %>% 
+  dplyr::select(ENTREZID:MTX_3_RNA,DNR_24_RNA:MTX_24_RNA)
   # unite(name,SYMBOL:ENTREZID) %>% 
   # column_to_rownames("name") %>% 
   # as.matrix
@@ -942,8 +946,10 @@ hr24_ATAC <- toplist_ff %>%
   dplyr::filter(time=="24 hours") %>% 
   pivot_wider(., id_cols = c("peak"),names_from = trt,values_from = logFC) %>% 
    dplyr::rename(DOX_24_ATAC=DOX, DNR_24_ATAC=DNR,EPI_24_ATAC=EPI,MTX_24_ATAC=MTX, TRZ_24_ATAC=TRZ)
+
 ATAC_LFC_df <- hr3_ATAC %>% 
-  left_join(., hr24_ATAC, by=c("peak"="peak")) #%>% 
+  left_join(., hr24_ATAC, by=c("peak"="peak")) %>%
+   dplyr::select(peak:MTX_3_ATAC,DNR_24_ATAC:MTX_24_ATAC)
   # column_to_rownames("peak") %>% 
   # as.matrix()
   
@@ -999,7 +1005,7 @@ bind_frame_ATACK27 <- overlap_df_ggplot %>%
 hr24_K27 <- toplist_ac_lfc %>% 
   dplyr::filter(time=="24") %>% 
   dplyr::select(Peakid:logFC) %>% 
-  ###something wierd in peaknames... additional numbers? so I will remove them
+  ###something weird in peaknames... additional numbers? so I will remove them
    mutate(Peakid=str_replace(Peakid, "\\.\\.\\.[0=9]*","/")) %>% 
   separate(Peakid, into=c("Geneid",NA),sep="/") %>% 
   pivot_wider(., id_cols=c(Geneid), names_from = "trt", values_from = "logFC") %>% 
@@ -1026,7 +1032,7 @@ RNA_ATAC_K27_mat <-
   as.matrix() 
 
 All_cor_mat <- cor(RNA_ATAC_K27_mat,method = "pearson", use = "pairwise.complete.obs")
-Heatmap(All_cor_mat)
+ComplexHeatmap::Heatmap(All_cor_mat)
 
 ```
 
@@ -1790,6 +1796,7 @@ hour3_lfc_2kb %>%
    sm_statCorr(corr_method = 'pearson')+
   ggtitle("3 hour logFC, 2kb filtering")
 ```
+
 ```{r 24hour 2kb, eval=FALSE, include=FALSE}
 hour24_lfc_2kb <- toplist_ff %>% 
   dplyr::filter(time=="24 hours") %>% 
@@ -1821,8 +1828,8 @@ hour24_lfc_2kb %>%
 
 Snyder_41peaks <- read.delim("data/other_papers/ENCFF966JZT_bed_Snyder_41peaks.bed",header=TRUE) %>% 
   GRanges()
-overlap_set <- join_overlap_intersect(ATAC_peaks_gr,Snyder_41peaks)
-overlap_set %>% as.data.frame %>% distinct(Peakid)
+# overlap_set <- join_overlap_intersect(ATAC_peaks_gr,Snyder_41peaks)
+# overlap_set %>% as.data.frame %>% distinct(Peakid)
 raodah_fullpeaks <- readRDS( "data/Final_four_data/All_Raodahpeaks.RDS") %>%
   GRanges %>% 
   GenomeInfoDb::keepStandardChromosomes(., pruning.mode = "coarse") %>% 
@@ -2055,7 +2062,7 @@ joined_LFC_df %>%
 ```{r correlations shared 2kb}
 
 joined_LFC_df %>% 
-  dplyr::filter(dist_to_NG>-2000 & dist_to_NG<2000) %>% 
+  dplyr::filter(dist_to_NG>-2000 & dist_to_NG<2000)%>% 
 ggplot(., aes(x=AC_3h_lfc,y=RNA_3h_lfc))+
    geom_point()+
    sm_statCorr(corr_method = 'pearson')+
@@ -2340,7 +2347,7 @@ ggplot(., aes(x=AC_24h_lfc,y=RNA_24h_lfc))+
 ```
 
 
-### Correlation Heat map
++### Correlation Heat map
 
 
 ```{r}
