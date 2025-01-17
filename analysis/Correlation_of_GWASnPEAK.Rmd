@@ -53,6 +53,12 @@ library(smplot2)
 library(readxl)
 
 ```
+Notes to self(and anyone else who is reading this!):  
+This is me applying the same code from my correlation_of_SNPnPeak.rmd document.    
+Summary of what I am doing:
+1: create a list of peaks within +/-20 kb, +/-10 kb, and +/- 5 kb of an RNA expressed gene TSS. (3 separate lists)  
+2: making a dataframe that has all ATAC 3 hour and 24 hr LFC by peak for later ease of use.
+3: creating lists of gwas SNPs (HF and ARR lists only) that are either 1bp, 10kb, 20kb, or 50kb in length to determine impact of the SNP on surrounding peaks.
 
 
 ```{r loading data}
@@ -172,7 +178,7 @@ ATAC_LFC <- Collapsed_new_peaks %>%
  
 ```
 
-
+Here I am doing the overlapping of the previous ranges of SNPs and the full ATAC peak set.  I also later create the data frames from the reheat data, the reheat data using the p<0.005 top genes, the cluster names associated with each peak, and the list of TE/notTE associated with each peak.
 ```{r Creating df lists}
 
 ATAC_peaks_gr <- Collapsed_new_peaks %>% GRanges()
@@ -201,7 +207,9 @@ match <- Nine_te_df %>%
 ```
 
 
-### Peaks within 5kb +/- RNA TSS
+### Peaks within 5kb +/- RNA TSS, gwas range +/- 10 kb
+
+To break down what I am doing here:  I start with the list of peaks that overlap a gwas SNP that has been expanded by 20kb.  I then only add the RNA expressed genes associated with the peaks that are within +/- 5 kb of its TSS.  I join the median LFC data frames for ATAC and RNA at 3 and 24 hours, the TEstatus, the reheat status and exclude any SNP-Peak combinations that do not have RNA assigned. (This effectively is filtering out peaks outside of the 10kb TSS range That would make the list drop from 2019 to 298 rows)
 ```{r point-10k-20k-50k overlap, fig.height=55, fig.width=7}
 gwas_df <-gwas_20k_list%>% 
   as.data.frame() %>%
@@ -282,7 +290,9 @@ draw(simply_map, merge_legend = TRUE, heatmap_legend_side = "bottom",
 
 ```
 
-### Peaks within 10 kb +/- of RNA TSS
+### Peaks within 5kb +/- RNA TSS, gwas range +/- 25 kb
+
+For comparison, I went ahead and did the same this as above, but used the +/- 25 kb expanded SNP range.  This left me with 660 ATAC-SNP_RNA sets.
 ```{r point and 10k only, fig.height=35, fig.width=7}
 gwas_df <-
 gwas_50k_list%>% 
@@ -323,9 +333,8 @@ gwas_50k_list%>%
           SYMBOL=paste(unique(SYMBOL),collapse=";"),
            reheat=paste(unique(reheat),collapse=";"),
           mrc=unique(mrc),
-          dist_to_SNP=min(dist_to_SNP)) #%>% 
-  # mutate(point_ol=if_else(SNPS %in% point_only$SNPS,"yes","no")) %>% 
-  # mutate(eQTL=if_else(SNPS %in% dox_eqtl_SNPs$SNPS,"yes",if_else(Peakid %in% mar_eqtl_SNPS$Peakid,"yes","no")))
+          dist_to_SNP=min(dist_to_SNP))  %>% 
+  na.omit(RNA_3h_lfc)
 
 gwas_mat <- gwas_df %>% 
   ungroup() %>% 
@@ -367,11 +376,13 @@ simply_map <- ComplexHeatmap::Heatmap(gwas_mat,
 draw(simply_map, merge_legend = TRUE, heatmap_legend_side = "bottom", 
     annotation_legend_side = "bottom")
 ```
-### Peaks within +/-20 kb RNA TSS 
+### Peaks within +/-20 kb RNA TSS ,gwas range +/- 10 kb
+
+warning, 702 rows below 
 
 ```{r 20kb RNA,fig.height=35, fig.width=7}
 gwas_df <-
-gwas_50k_list%>% 
+gwas_20k_list%>% 
   as.data.frame() %>%
   left_join(., peak_40kb_neargenes, by=c("Peakid"="Peakid")) %>%
   left_join(., (ATAC_3_lfc %>%
@@ -409,9 +420,8 @@ gwas_50k_list%>%
           SYMBOL=paste(unique(SYMBOL),collapse=";"),
            reheat=paste(unique(reheat),collapse=";"),
           mrc=unique(mrc),
-          dist_to_SNP=min(dist_to_SNP)) #%>% 
-  # mutate(point_ol=if_else(SNPS %in% point_only$SNPS,"yes","no")) %>% 
-  # mutate(eQTL=if_else(SNPS %in% dox_eqtl_SNPs$SNPS,"yes",if_else(Peakid %in% mar_eqtl_SNPS$Peakid,"yes","no")))
+          dist_to_SNP=min(dist_to_SNP))  %>% 
+  na.omit(RNA_3h_lfc)
 
 gwas_mat <- gwas_df %>% 
   ungroup() %>% 
@@ -455,8 +465,8 @@ draw(simply_map, merge_legend = TRUE, heatmap_legend_side = "bottom",
 
 ```
 ### gwas short list only
-`r length(gwas_short_list$name)`
-```{r noRNA,fig.height=15, fig.width=7}
+To make life really easy, or the smallest set that was readable, I used only the peaks that were directly overlapping a SNP, but filtered out peaks that were more than +/-20 kb from an expressed RNA TSS.  This gave me 33 ATAC-SNP-RNA rows.
+```{r noRNA,fig.height=10, fig.width=7}
 
 gwas_df_short <-gwas_short_list%>%
   as.data.frame() %>%
