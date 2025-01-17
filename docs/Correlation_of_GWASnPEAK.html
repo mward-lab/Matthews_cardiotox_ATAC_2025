@@ -521,15 +521,15 @@ project makes it easier to run your code on other machines.</p>
 <div class="panel panel-default">
 <div class="panel-heading">
 <p class="panel-title">
-<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomreneeisnowhereATAClearningtree20ed2fe1cf5a8ef38a6420b9dac02fba955dc25btargetblank20ed2fea">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomreneeisnowhereATAClearningtreee179f611fcb6cc8a2ffea96328023383c0b10f42targetblanke179f61a">
 <span class="glyphicon glyphicon-ok text-success"
 aria-hidden="true"></span> <strong>Repository version:</strong>
-<a href="https://github.com/reneeisnowhere/ATAC_learning/tree/20ed2fe1cf5a8ef38a6420b9dac02fba955dc25b" target="_blank">20ed2fe</a>
+<a href="https://github.com/reneeisnowhere/ATAC_learning/tree/e179f611fcb6cc8a2ffea96328023383c0b10f42" target="_blank">e179f61</a>
 </a>
 </p>
 </div>
 <div
-id="strongRepositoryversionstrongahrefhttpsgithubcomreneeisnowhereATAClearningtree20ed2fe1cf5a8ef38a6420b9dac02fba955dc25btargetblank20ed2fea"
+id="strongRepositoryversionstrongahrefhttpsgithubcomreneeisnowhereATAClearningtreee179f611fcb6cc8a2ffea96328023383c0b10f42targetblanke179f61a"
 class="panel-collapse collapse">
 <div class="panel-body">
 <p>
@@ -539,7 +539,7 @@ reproducibility.
 </p>
 <p>
 The results in this page were generated with repository version
-<a href="https://github.com/reneeisnowhere/ATAC_learning/tree/20ed2fe1cf5a8ef38a6420b9dac02fba955dc25b" target="_blank">20ed2fe</a>.
+<a href="https://github.com/reneeisnowhere/ATAC_learning/tree/e179f611fcb6cc8a2ffea96328023383c0b10f42" target="_blank">e179f61</a>.
 See the <em>Past versions</em> tab to see a history of the changes made
 to the R Markdown and HTML files.
 </p>
@@ -748,6 +748,7 @@ Unstaged changes:
     Modified:   analysis/TE_analysis_ff.Rmd
     Modified:   analysis/final_four_analysis.Rmd
     Modified:   analysis/final_plot_attempt.Rmd
+    Modified:   analysis/index.Rmd
 
 </code></pre>
 <p>
@@ -793,6 +794,40 @@ Message
 </tr>
 </thead>
 <tbody>
+<tr>
+<td>
+Rmd
+</td>
+<td>
+<a href="https://github.com/reneeisnowhere/ATAC_learning/blob/e179f611fcb6cc8a2ffea96328023383c0b10f42/analysis/Correlation_of_GWASnPEAK.Rmd" target="_blank">e179f61</a>
+</td>
+<td>
+E. Renee Matthews
+</td>
+<td>
+2025-01-17
+</td>
+<td>
+updates with comments
+</td>
+</tr>
+<tr>
+<td>
+html
+</td>
+<td>
+<a href="https://rawcdn.githack.com/reneeisnowhere/ATAC_learning/d09c7dba1dd557be32e8b98f9d78292ddf16ea67/docs/Correlation_of_GWASnPEAK.html" target="_blank">d09c7db</a>
+</td>
+<td>
+E. Renee Matthews
+</td>
+<td>
+2025-01-17
+</td>
+<td>
+Build site.
+</td>
+</tr>
 <tr>
 <td>
 Rmd
@@ -852,6 +887,16 @@ library(ComplexHeatmap)
 library(cowplot)
 library(smplot2)
 library(readxl)</code></pre>
+<p>Notes to self(and anyone else who is reading this!):<br />
+This is me applying the same code from my correlation_of_SNPnPeak.rmd
+document.<br />
+Summary of what I am doing: 1: create a list of peaks within +/-20 kb,
++/-10 kb, and +/- 5 kb of an RNA expressed gene TSS. (3 separate
+lists)<br />
+2: making a dataframe that has all ATAC 3 hour and 24 hr LFC by peak for
+later ease of use. 3: creating lists of gwas SNPs (HF and ARR lists
+only) that are either 1bp, 10kb, 20kb, or 50kb in length to determine
+impact of the SNP on surrounding peaks.</p>
 <pre class="r"><code>Collapsed_new_peaks &lt;- read_delim(&quot;data/Final_four_data/collapsed_new_peaks.txt&quot;, delim = &quot;\t&quot;, col_names = TRUE)
 Collapsed_new_peaks_gr &lt;- Collapsed_new_peaks %&gt;% dplyr::select(chr:Peakid) %&gt;% GRanges()
 
@@ -963,6 +1008,11 @@ ATAC_LFC &lt;- Collapsed_new_peaks %&gt;%
                  dplyr::select(Peakid) %&gt;% 
   left_join(.,(ATAC_3_lfc %&gt;% dplyr::select(peak, med_3h_lfc)), by=c(&quot;Peakid&quot;=&quot;peak&quot;)) %&gt;% 
   left_join(.,(ATAC_24_lfc %&gt;% dplyr::select(peak, med_24h_lfc)), by=c(&quot;Peakid&quot;=&quot;peak&quot;))</code></pre>
+<p>Here I am doing the overlapping of the previous ranges of SNPs and
+the full ATAC peak set. I also later create the data frames from the
+reheat data, the reheat data using the p&lt;0.005 top genes, the cluster
+names associated with each peak, and the list of TE/notTE associated
+with each peak.</p>
 <pre class="r"><code>ATAC_peaks_gr &lt;- Collapsed_new_peaks %&gt;% GRanges()
 
 Peaks_cutoff &lt;- read_delim(&quot;data/Final_four_data/LCPM_matrix_ff.txt&quot;,delim = &quot;/&quot;) %&gt;% dplyr::select(Peakid)
@@ -985,8 +1035,17 @@ Nine_te_df &lt;- readRDS(&quot;data/Final_four_data/Nine_group_TE_df.RDS&quot;)
 match &lt;- Nine_te_df %&gt;% 
    mutate(TEstatus=if_else(!is.na(per_ol),&quot;TE_peak&quot;,&quot;not_TE_peak&quot;)) %&gt;% 
   distinct(Peakid,TEstatus,mrc,.keep_all = TRUE) </code></pre>
-<div id="peaks-within-5kb---rna-tss" class="section level3">
-<h3>Peaks within 5kb +/- RNA TSS</h3>
+<div id="peaks-within-5kb---rna-tss-gwas-range---10-kb"
+class="section level3">
+<h3>Peaks within 5kb +/- RNA TSS, gwas range +/- 10 kb</h3>
+<p>To break down what I am doing here: I start with the list of peaks
+that overlap a gwas SNP that has been expanded by 20kb. I then only add
+the RNA expressed genes associated with the peaks that are within +/- 5
+kb of its TSS. I join the median LFC data frames for ATAC and RNA at 3
+and 24 hours, the TEstatus, the reheat status and exclude any SNP-Peak
+combinations that do not have RNA assigned. (This effectively is
+filtering out peaks outside of the 10kb TSS range That would make the
+list drop from 2019 to 298 rows)</p>
 <pre class="r"><code>gwas_df &lt;-gwas_20k_list%&gt;% 
   as.data.frame() %&gt;%
   left_join(., peak_10kb_neargenes, by=c(&quot;Peakid&quot;=&quot;Peakid&quot;)) %&gt;%
@@ -1063,9 +1122,50 @@ simply_map &lt;- ComplexHeatmap::Heatmap(gwas_mat,
 draw(simply_map, merge_legend = TRUE, heatmap_legend_side = &quot;bottom&quot;, 
     annotation_legend_side = &quot;bottom&quot;)</code></pre>
 <p><img src="figure/Correlation_of_GWASnPEAK.Rmd/point-10k-20k-50k%20overlap-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-no-spaces-point-10k-20k-50k-overlap-1">
+Past versions of "point-10k-20k-50k overlap-1.png"
+</button>
+</p>
+<div id="fig-no-spaces-point-10k-20k-50k-overlap-1" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/reneeisnowhere/ATAC_learning/blob/d09c7dba1dd557be32e8b98f9d78292ddf16ea67/docs/figure/Correlation_of_GWASnPEAK.Rmd/point-10k-20k-50k overlap-1.png" target="_blank">d09c7db</a>
+</td>
+<td>
+E. Renee Matthews
+</td>
+<td>
+2025-01-17
+</td>
+</tr>
+</tbody>
+</table>
 </div>
-<div id="peaks-within-10-kb---of-rna-tss" class="section level3">
-<h3>Peaks within 10 kb +/- of RNA TSS</h3>
+</div>
+</div>
+<div id="peaks-within-5kb---rna-tss-gwas-range---25-kb"
+class="section level3">
+<h3>Peaks within 5kb +/- RNA TSS, gwas range +/- 25 kb</h3>
+<p>For comparison, I went ahead and did the same this as above, but used
+the +/- 25 kb expanded SNP range. This left me with 660 ATAC-SNP_RNA
+sets.</p>
 <pre class="r"><code>gwas_df &lt;-
 gwas_50k_list%&gt;% 
   as.data.frame() %&gt;%
@@ -1105,9 +1205,8 @@ gwas_50k_list%&gt;%
           SYMBOL=paste(unique(SYMBOL),collapse=&quot;;&quot;),
            reheat=paste(unique(reheat),collapse=&quot;;&quot;),
           mrc=unique(mrc),
-          dist_to_SNP=min(dist_to_SNP)) #%&gt;% 
-  # mutate(point_ol=if_else(SNPS %in% point_only$SNPS,&quot;yes&quot;,&quot;no&quot;)) %&gt;% 
-  # mutate(eQTL=if_else(SNPS %in% dox_eqtl_SNPs$SNPS,&quot;yes&quot;,if_else(Peakid %in% mar_eqtl_SNPS$Peakid,&quot;yes&quot;,&quot;no&quot;)))
+          dist_to_SNP=min(dist_to_SNP))  %&gt;% 
+  na.omit(RNA_3h_lfc)
 
 gwas_mat &lt;- gwas_df %&gt;% 
   ungroup() %&gt;% 
@@ -1148,10 +1247,51 @@ simply_map &lt;- ComplexHeatmap::Heatmap(gwas_mat,
 
 draw(simply_map, merge_legend = TRUE, heatmap_legend_side = &quot;bottom&quot;, 
     annotation_legend_side = &quot;bottom&quot;)</code></pre>
-<p><img src="figure/Correlation_of_GWASnPEAK.Rmd/point%20and%2010k%20only-1.png" width="672" style="display: block; margin: auto;" />
-### Peaks within +/-20 kb RNA TSS</p>
+<p><img src="figure/Correlation_of_GWASnPEAK.Rmd/point%20and%2010k%20only-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-no-spaces-point-and-10k-only-1">
+Past versions of "point and 10k only-1.png"
+</button>
+</p>
+<div id="fig-no-spaces-point-and-10k-only-1" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/reneeisnowhere/ATAC_learning/blob/d09c7dba1dd557be32e8b98f9d78292ddf16ea67/docs/figure/Correlation_of_GWASnPEAK.Rmd/point and 10k only-1.png" target="_blank">d09c7db</a>
+</td>
+<td>
+E. Renee Matthews
+</td>
+<td>
+2025-01-17
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<div id="peaks-within--20-kb-rna-tss-gwas-range---10-kb"
+class="section level3">
+<h3>Peaks within +/-20 kb RNA TSS ,gwas range +/- 10 kb</h3>
+<p>warning, 702 rows below</p>
 <pre class="r"><code>gwas_df &lt;-
-gwas_50k_list%&gt;% 
+gwas_20k_list%&gt;% 
   as.data.frame() %&gt;%
   left_join(., peak_40kb_neargenes, by=c(&quot;Peakid&quot;=&quot;Peakid&quot;)) %&gt;%
   left_join(., (ATAC_3_lfc %&gt;%
@@ -1189,9 +1329,8 @@ gwas_50k_list%&gt;%
           SYMBOL=paste(unique(SYMBOL),collapse=&quot;;&quot;),
            reheat=paste(unique(reheat),collapse=&quot;;&quot;),
           mrc=unique(mrc),
-          dist_to_SNP=min(dist_to_SNP)) #%&gt;% 
-  # mutate(point_ol=if_else(SNPS %in% point_only$SNPS,&quot;yes&quot;,&quot;no&quot;)) %&gt;% 
-  # mutate(eQTL=if_else(SNPS %in% dox_eqtl_SNPs$SNPS,&quot;yes&quot;,if_else(Peakid %in% mar_eqtl_SNPS$Peakid,&quot;yes&quot;,&quot;no&quot;)))
+          dist_to_SNP=min(dist_to_SNP))  %&gt;% 
+  na.omit(RNA_3h_lfc)
 
 gwas_mat &lt;- gwas_df %&gt;% 
   ungroup() %&gt;% 
@@ -1232,8 +1371,51 @@ simply_map &lt;- ComplexHeatmap::Heatmap(gwas_mat,
 
 draw(simply_map, merge_legend = TRUE, heatmap_legend_side = &quot;bottom&quot;, 
     annotation_legend_side = &quot;bottom&quot;)</code></pre>
-<p><img src="figure/Correlation_of_GWASnPEAK.Rmd/20kb%20RNA-1.png" width="672" style="display: block; margin: auto;" />
-### gwas short list only 0</p>
+<p><img src="figure/Correlation_of_GWASnPEAK.Rmd/20kb%20RNA-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-no-spaces-20kb-RNA-1">
+Past versions of "20kb RNA-1.png"
+</button>
+</p>
+<div id="fig-no-spaces-20kb-RNA-1" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/reneeisnowhere/ATAC_learning/blob/d09c7dba1dd557be32e8b98f9d78292ddf16ea67/docs/figure/Correlation_of_GWASnPEAK.Rmd/20kb RNA-1.png" target="_blank">d09c7db</a>
+</td>
+<td>
+E. Renee Matthews
+</td>
+<td>
+2025-01-17
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<div id="gwas-short-list-only" class="section level3">
+<h3>gwas short list only</h3>
+<p>To make life really easy, or the smallest set that was readable, I
+used only the peaks that were directly overlapping a SNP, but filtered
+out peaks that were more than +/-20 kb from an expressed RNA TSS. This
+gave me 33 ATAC-SNP-RNA rows.</p>
 <pre class="r"><code>gwas_df_short &lt;-gwas_short_list%&gt;%
   as.data.frame() %&gt;%
   left_join(., peak_40kb_neargenes, by=c(&quot;Peakid&quot;=&quot;Peakid&quot;)) %&gt;%
@@ -1315,6 +1497,43 @@ simply_map_short &lt;- ComplexHeatmap::Heatmap(gwas_mat_short,
 draw(simply_map_short, merge_legend = TRUE, heatmap_legend_side = &quot;bottom&quot;, 
     annotation_legend_side = &quot;bottom&quot;)</code></pre>
 <p><img src="figure/Correlation_of_GWASnPEAK.Rmd/noRNA-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-noRNA-1">
+Past versions of noRNA-1.png
+</button>
+</p>
+<div id="fig-noRNA-1" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/reneeisnowhere/ATAC_learning/blob/d09c7dba1dd557be32e8b98f9d78292ddf16ea67/docs/figure/Correlation_of_GWASnPEAK.Rmd/noRNA-1.png" target="_blank">d09c7db</a>
+</td>
+<td>
+E. Renee Matthews
+</td>
+<td>
+2025-01-17
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 <br>
 <p>
 <button type="button" class="btn btn-default btn-workflowr btn-workflowr-sessioninfo" data-toggle="collapse" data-target="#workflowr-sessioninfo" style="display: block;">
