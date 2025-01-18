@@ -725,7 +725,75 @@ simply_map_short <- ComplexHeatmap::Heatmap(schneider_mat_short,
 draw(simply_map_short, merge_legend = TRUE, heatmap_legend_side = "bottom", 
     annotation_legend_side = "bottom")
 
-
+# saveRDS(schneider_df_short,"data/Final_four_data/schneider_df_short.RDS")
 ```
 
+### Genes of interest
+
+```{r}
+drug_pal <- c("#8B006D","#DF707E","#F1B72B", "#3386DD","#707031","#41B333")
+# K27_counts <-  readRDS("data/Final_four_data/All_Raodahpeaks.RDS")
+ATAC_counts <- readRDS("data/Final_four_data/x4_filtered.RDS")
+RNA_counts <- readRDS("data/other_papers/Counts_RNA_ERMatthews.RDS")
+```
+
+```{r}
+
+df_gene_schneider <- data.frame(SYMBOL=c("PRDX6"))
+df_gene_schneider <- df_gene_schneider %>% 
+left_join(., (RNA_median_24_lfc %>% dplyr::select(ENTREZID,SYMBOL)), by = c ("SYMBOL"="SYMBOL")) %>% 
+   left_join(., (schneider_df_short %>% dplyr::select(RSID,Peakid,SYMBOL)),by = c("SYMBOL"="SYMBOL"))
+
+
+RNA_counts %>% 
+  column_to_rownames("ENTREZID") %>% 
+  cpm(., log = TRUE) %>% 
+  as.data.frame() %>% 
+  dplyr::filter(row.names(.) %in% df_gene_schneider$ENTREZID) %>% 
+  mutate(ENTREZID = row.names(.)) %>%
+  pivot_longer(cols = !ENTREZID, names_to = "sample", values_to = "counts") %>% 
+  left_join(., df_gene_schneider, by =c("ENTREZID"="ENTREZID")) %>% 
+  separate("sample", into = c("trt","ind","time")) %>% 
+  mutate(time=factor(time, levels = c("3h","24h"))) %>% 
+  mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
+  ggplot(., aes (x = time, y=counts))+
+  geom_boxplot(aes(fill=trt))+
+  facet_wrap(~SYMBOL+Peakid, scales="free_y")+
+    scale_fill_manual(values = drug_pal)+
+  ggtitle("RNA LFC of expressed gene")+
+  theme_bw()+
+  ylab("log2 cpm RNA")
+
+ATAC_counts %>% 
+  cpm(., log = TRUE) %>% 
+   as.data.frame() %>%
+  rename_with(.,~gsub(pattern = "Ind1_75", replacement = "1_",.)) %>%
+  rename_with(.,~gsub(pattern = "Ind2_87", replacement = "2_",.)) %>%
+  rename_with(.,~gsub(pattern = "Ind3_77", replacement = "3_",.)) %>%
+  rename_with(.,~gsub(pattern = "Ind6_71", replacement = "6_",.)) %>%
+  rename_with(.,~gsub( "DX" ,'DOX',.)) %>%
+  rename_with(.,~gsub( "DA" ,'DNR',.)) %>%
+  rename_with(.,~gsub( "E" ,'EPI',.)) %>%
+  rename_with(.,~gsub( "T" ,'TRZ',.)) %>%
+  rename_with(.,~gsub( "M" ,'MTX',.)) %>%
+  rename_with(.,~gsub( "V" ,'VEH',.)) %>%
+  rename_with(.,~gsub("24h","_24h",.)) %>%
+  rename_with(.,~gsub("3h","_3h",.)) %>% 
+  dplyr::filter(row.names(.) %in% df_gene_schneider$Peakid) %>% 
+  mutate(Peakid = row.names(.)) %>% 
+  pivot_longer(cols = !Peakid, names_to = "sample", values_to = "counts") %>% 
+  left_join(., df_gene_schneider, by =c("Peakid"="Peakid")) %>% 
+  separate("sample", into = c("ind","trt","time")) %>% 
+  mutate(time=factor(time, levels = c("3h","24h"))) %>% 
+  mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
+  ggplot(., aes (x = time, y=counts))+
+  geom_boxplot(aes(fill=trt))+
+  facet_wrap(~Peakid+SYMBOL,scales="free_y")+
+  ggtitle(" ATAC accessibility")+
+  scale_fill_manual(values = drug_pal)+
+  theme_bw()+
+  ylab("log2 cpm ATAC")
+            
+```
+#### ATAC-seq by peaks
 
