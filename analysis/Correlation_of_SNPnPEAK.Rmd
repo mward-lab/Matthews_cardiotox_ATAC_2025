@@ -640,9 +640,9 @@ draw(simply_map, merge_legend = TRUE, heatmap_legend_side = "bottom",
 
 ### Final +/-5kb peak-TSS of expressed RNA,  +/-25 kb of SNP
 
-```{r noRNA, fig.height=10,fig.width=7}
+```{r noRNA, fig.height=6,fig.width=7}
 
-schneider_df_short <-schneider_50k_list%>%
+schneider_df_short <-schneider_20k_list%>%
   as.data.frame() %>%
   left_join(., peak_10kb_neargenes, by=c("Peakid"="Peakid")) %>%
   left_join(., (ATAC_3_lfc %>%
@@ -681,9 +681,8 @@ schneider_df_short <-schneider_50k_list%>%
           SYMBOL=paste(unique(SYMBOL),collapse=";"),
            reheat=paste(unique(reheat),collapse=";"),
           mrc=unique(mrc),
-          dist_to_SNP=min(dist_to_SNP)) #%>% 
-  # mutate(point_ol=if_else(RSID %in% point_only$RSID,"yes","no")) %>% 
-  # mutate(eQTL=if_else(RSID %in% dox_eqtl_SNPs$SNPS,"yes",if_else(Peakid %in% mar_eqtl_SNPS$Peakid,"yes","no")))
+          dist_to_SNP=min(dist_to_SNP))  %>% 
+  arrange(., Peakid)
 
 schneider_mat_short <- schneider_df_short %>% 
   ungroup() %>% 
@@ -716,7 +715,7 @@ simply_map_short <- ComplexHeatmap::Heatmap(schneider_mat_short,
                         left_annotation = row_anno_short,
                         show_row_names = TRUE,
                         # row_names_side = "left",
-                        row_names_max_width= max_text_width(rownames(schneider_mat_short),                                                        gp=gpar(fontsize=8)),
+                        row_names_max_width= max_text_width(rownames(schneider_mat_short),                                                        gp=gpar(fontsize=16)),
                         heatmap_legend_param = list(direction = "horizontal"),
                         show_column_names = TRUE,
                         cluster_rows = FALSE,
