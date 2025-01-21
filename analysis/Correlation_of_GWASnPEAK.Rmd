@@ -174,8 +174,10 @@ ATAC_LFC <- Collapsed_new_peaks %>%
                  dplyr::select(Peakid) %>% 
   left_join(.,(ATAC_3_lfc %>% dplyr::select(peak, med_3h_lfc)), by=c("Peakid"="peak")) %>% 
   left_join(.,(ATAC_24_lfc %>% dplyr::select(peak, med_24h_lfc)), by=c("Peakid"="peak"))
-            
- 
+            Short_gwas_gr %>% as.data.frame(
+              
+            )
+ rtracklayer::export.bed(Short_gwas_gr,"data/Final_four_data/ARR_HF_SNP_local.bed", index=TRUE)
 ```
 
 Here I am doing the overlapping of the previous ranges of SNPs and the full ATAC peak set.  I also later create the data frames from the reheat data, the reheat data using the p<0.005 top genes, the cluster names associated with each peak, and the list of TE/notTE associated with each peak.
@@ -405,6 +407,7 @@ gwas_20k_list%>%
     Peakid %in% gwas_20k_list$Peakid &SNPS %in% gwas_20k_list$SNPS~ 20,
      Peakid %in% gwas_50k_list$Peakid &SNPS %in% gwas_50k_list$SNPS ~ 50)) %>% 
   group_by(SNPS,Peakid) %>% 
+  arrange(., Peakid) %>% 
   # mutate(Keep=case_when(SNPS))
   # group_by(Peakid) %>% 
  summarize(name=unique(name),
@@ -492,6 +495,7 @@ gwas_df_short <-gwas_short_list%>%
     Peakid %in% gwas_20k_list$Peakid &SNPS %in% gwas_20k_list$SNPS~ 20,
      Peakid %in% gwas_50k_list$Peakid &SNPS %in% gwas_50k_list$SNPS ~ 50)) %>% 
   group_by(SNPS,Peakid) %>% 
+  
   # mutate(Keep=case_when(SNPS))
   # group_by(Peakid) %>% 
  summarize(name=unique(name),
@@ -507,7 +511,8 @@ gwas_df_short <-gwas_short_list%>%
           SYMBOL=paste(unique(SYMBOL),collapse=";"),
            reheat=paste(unique(reheat),collapse=";"),
           mrc=unique(mrc),
-          dist_to_SNP=min(dist_to_SNP)) #%>% 
+          dist_to_SNP=min(dist_to_SNP)) %>% 
+   arrange(., Peakid)
  
 gwas_mat_short <- gwas_df_short %>% 
   ungroup() %>% 
@@ -538,9 +543,10 @@ mat2_short <- gwas_mat_short
 # rownames(mat2)[1] = paste(c(letters, LETTERS), collapse = "")
 simply_map_short <- ComplexHeatmap::Heatmap(gwas_mat_short,
                         left_annotation = row_anno_short,
-                        show_row_names = TRUE,
+                        # show_row_names = TRUE,
+                        # width = 10,
                         # row_names_side = "left",
-                        row_names_max_width= max_text_width(rownames(gwas_mat_short),                                                        gp=gpar(fontsize=8)),
+                        row_names_max_width= max_text_width(rownames(gwas_mat_short),                                                        gp=gpar(fontsize=16)),
                         heatmap_legend_param = list(direction = "horizontal"),
                         show_column_names = TRUE,
                         cluster_rows = FALSE,
@@ -562,9 +568,9 @@ RNA_counts <- readRDS("data/other_papers/Counts_RNA_ERMatthews.RDS")
 ```
 
 
-```{r}
+```{r, fig.height=3, fig.width=7}
 
-df_gene <- data.frame(SYMBOL=c("PSRC1","CDKN1A"))
+df_gene <- data.frame(SYMBOL=c("PSRC1","CDKN1A","CELSR2"))
 df_gene <- df_gene %>% 
 left_join(., (RNA_median_24_lfc %>% dplyr::select(ENTREZID,SYMBOL)), by = c ("SYMBOL"="SYMBOL")) %>% 
   left_join(., (gwas_df_short %>% dplyr::select(SNPS,Peakid,mrc,SYMBOL)),by = c("SYMBOL"="SYMBOL")) 
