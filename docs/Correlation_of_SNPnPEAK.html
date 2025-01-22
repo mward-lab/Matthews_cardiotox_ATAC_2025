@@ -521,15 +521,15 @@ project makes it easier to run your code on other machines.</p>
 <div class="panel panel-default">
 <div class="panel-heading">
 <p class="panel-title">
-<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomreneeisnowhereATAClearningtree1652dee94b2e62c2ef8608f0b432f975ecc8eb97targetblank1652deea">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomreneeisnowhereATAClearningtreeb3248cc2fa2f45072adeed12edba151401fa8a0ftargetblankb3248cca">
 <span class="glyphicon glyphicon-ok text-success"
 aria-hidden="true"></span> <strong>Repository version:</strong>
-<a href="https://github.com/reneeisnowhere/ATAC_learning/tree/1652dee94b2e62c2ef8608f0b432f975ecc8eb97" target="_blank">1652dee</a>
+<a href="https://github.com/reneeisnowhere/ATAC_learning/tree/b3248cc2fa2f45072adeed12edba151401fa8a0f" target="_blank">b3248cc</a>
 </a>
 </p>
 </div>
 <div
-id="strongRepositoryversionstrongahrefhttpsgithubcomreneeisnowhereATAClearningtree1652dee94b2e62c2ef8608f0b432f975ecc8eb97targetblank1652deea"
+id="strongRepositoryversionstrongahrefhttpsgithubcomreneeisnowhereATAClearningtreeb3248cc2fa2f45072adeed12edba151401fa8a0ftargetblankb3248cca"
 class="panel-collapse collapse">
 <div class="panel-body">
 <p>
@@ -539,7 +539,7 @@ reproducibility.
 </p>
 <p>
 The results in this page were generated with repository version
-<a href="https://github.com/reneeisnowhere/ATAC_learning/tree/1652dee94b2e62c2ef8608f0b432f975ecc8eb97" target="_blank">1652dee</a>.
+<a href="https://github.com/reneeisnowhere/ATAC_learning/tree/b3248cc2fa2f45072adeed12edba151401fa8a0f" target="_blank">b3248cc</a>.
 See the <em>Past versions</em> tab to see a history of the changes made
 to the R Markdown and HTML files.
 </p>
@@ -744,7 +744,6 @@ Untracked files:
 
 Unstaged changes:
     Modified:   ATAC_learning.Rproj
-    Modified:   analysis/Correlation_of_GWASnPEAK.Rmd
     Modified:   analysis/Enhancer_files_ff.Rmd
     Modified:   analysis/TE_analysis_ff.Rmd
     Modified:   analysis/final_four_analysis.Rmd
@@ -795,6 +794,40 @@ Message
 </tr>
 </thead>
 <tbody>
+<tr>
+<td>
+Rmd
+</td>
+<td>
+<a href="https://github.com/reneeisnowhere/ATAC_learning/blob/b3248cc2fa2f45072adeed12edba151401fa8a0f/analysis/Correlation_of_SNPnPEAK.Rmd" target="_blank">b3248cc</a>
+</td>
+<td>
+E. Renee Matthews
+</td>
+<td>
+2025-01-21
+</td>
+<td>
+adding in protein data
+</td>
+</tr>
+<tr>
+<td>
+html
+</td>
+<td>
+<a href="https://rawcdn.githack.com/reneeisnowhere/ATAC_learning/949b32be65df1cd41ba3d58e5c1549e1e736f279/docs/Correlation_of_SNPnPEAK.html" target="_blank">949b32b</a>
+</td>
+<td>
+E. Renee Matthews
+</td>
+<td>
+2025-01-21
+</td>
+<td>
+Build site.
+</td>
+</tr>
 <tr>
 <td>
 Rmd
@@ -1283,7 +1316,23 @@ SNP_closest_genes &lt;- overlap_SNP_gene_ensembl %&gt;%
 ATAC_LFC &lt;- Collapsed_new_peaks %&gt;%
                  dplyr::select(Peakid) %&gt;% 
   left_join(.,(ATAC_3_lfc %&gt;% dplyr::select(peak, med_3h_lfc)), by=c(&quot;Peakid&quot;=&quot;peak&quot;)) %&gt;% 
-  left_join(.,(ATAC_24_lfc %&gt;% dplyr::select(peak, med_24h_lfc)), by=c(&quot;Peakid&quot;=&quot;peak&quot;))</code></pre>
+  left_join(.,(ATAC_24_lfc %&gt;% dplyr::select(peak, med_24h_lfc)), by=c(&quot;Peakid&quot;=&quot;peak&quot;))
+            
+#### adding in protein LFC data from Omar and Sayan&#39;s paper, unpublished data, pending acceptance.
+# Proteomics_data &lt;- read_excel(&quot;data/other_papers/Proteomics_data.xlsx&quot;, 
+#     skip = 1)
+# Dox_prot &lt;- Proteomics_data %&gt;% 
+#   dplyr::select(Protein, logFC) %&gt;% 
+#   left_join(., idmapping_2025_01_21ENTREZID, by =c(&quot;Protein&quot;=&quot;From&quot;))%&gt;% 
+#   dplyr::rename(&quot;ENTREZID&quot;=To) %&gt;% 
+#   left_join(., idmapping_2025_01_SYMBOL, by=c(&quot;Protein&quot;=&quot;From&quot;)) %&gt;% 
+#   dplyr::rename(&quot;SYMBOL&quot;=To)
+# saveRDS(Dox_prot,&quot;data/other_papers/Dox_proteome_paper.RDS&quot;)
+Dox_prot &lt;- readRDS(&quot;data/other_papers/Dox_proteome_paper.RDS&quot;)
+proto_list &lt;- Dox_prot %&gt;% 
+  group_by(SYMBOL,logFC) %&gt;% 
+  summarize(ENTREZID=paste(unique(ENTREZID),collapse=&quot;;&quot;),
+            Protein=paste(unique(Protein),collapse=&quot;;&quot;))</code></pre>
 <pre class="r"><code># new_SNP_peak_check &lt;-   readRDS(&quot;data/Final_four_data/new_SNP_peak_check.RDS&quot;)
 point_only &lt;- SNP_peak_check
 SNP_10k_only &lt;- SNP_peak_check_10k
@@ -1915,11 +1964,12 @@ class="section level3">
            reheat=paste(unique(reheat),collapse=&quot;;&quot;),
           mrc=unique(mrc),
           dist_to_SNP=min(dist_to_SNP))  %&gt;% 
-  arrange(., Peakid)
+  arrange(., Peakid) %&gt;% 
+  left_join(., proto_list, by=c(&quot;SYMBOL&quot;=&quot;SYMBOL&quot;))
 
 schneider_mat_short &lt;- schneider_df_short %&gt;% 
   ungroup() %&gt;% 
-  dplyr::select(name,med_3h_lfc:RNA_24h_lfc) %&gt;% 
+  dplyr::select(name,med_3h_lfc:RNA_24h_lfc,logFC) %&gt;% 
   column_to_rownames(&quot;name&quot;) %&gt;% 
   as.matrix()
 schneider_name_mat_short &lt;- schneider_df_short %&gt;% 
@@ -1979,6 +2029,17 @@ Date
 </tr>
 </thead>
 <tbody>
+<tr>
+<td>
+<a href="https://github.com/reneeisnowhere/ATAC_learning/blob/949b32be65df1cd41ba3d58e5c1549e1e736f279/docs/figure/Correlation_of_SNPnPEAK.Rmd/noRNA-1.png" target="_blank">949b32b</a>
+</td>
+<td>
+E. Renee Matthews
+</td>
+<td>
+2025-01-21
+</td>
+</tr>
 <tr>
 <td>
 <a href="https://github.com/reneeisnowhere/ATAC_learning/blob/17a22e96be4f6e9b460ae63b1edc6a927273516b/docs/figure/Correlation_of_SNPnPEAK.Rmd/noRNA-1.png" target="_blank">17a22e9</a>
