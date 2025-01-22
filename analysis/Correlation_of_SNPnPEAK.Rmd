@@ -181,7 +181,22 @@ ATAC_LFC <- Collapsed_new_peaks %>%
   left_join(.,(ATAC_3_lfc %>% dplyr::select(peak, med_3h_lfc)), by=c("Peakid"="peak")) %>% 
   left_join(.,(ATAC_24_lfc %>% dplyr::select(peak, med_24h_lfc)), by=c("Peakid"="peak"))
             
- 
+#### adding in protein LFC data from Omar and Sayan's paper, unpublished data, pending acceptance.
+# Proteomics_data <- read_excel("data/other_papers/Proteomics_data.xlsx", 
+#     skip = 1)
+# Dox_prot <- Proteomics_data %>% 
+#   dplyr::select(Protein, logFC) %>% 
+#   left_join(., idmapping_2025_01_21ENTREZID, by =c("Protein"="From"))%>% 
+#   dplyr::rename("ENTREZID"=To) %>% 
+#   left_join(., idmapping_2025_01_SYMBOL, by=c("Protein"="From")) %>% 
+#   dplyr::rename("SYMBOL"=To)
+# saveRDS(Dox_prot,"data/other_papers/Dox_proteome_paper.RDS")
+Dox_prot <- readRDS("data/other_papers/Dox_proteome_paper.RDS")
+proto_list <- Dox_prot %>% 
+  group_by(SYMBOL,logFC) %>% 
+  summarize(ENTREZID=paste(unique(ENTREZID),collapse=";"),
+            Protein=paste(unique(Protein),collapse=";"))
+
 ```
 
 
@@ -682,11 +697,12 @@ schneider_df_short <-schneider_20k_list%>%
            reheat=paste(unique(reheat),collapse=";"),
           mrc=unique(mrc),
           dist_to_SNP=min(dist_to_SNP))  %>% 
-  arrange(., Peakid)
+  arrange(., Peakid) %>% 
+  left_join(., proto_list, by=c("SYMBOL"="SYMBOL"))
 
 schneider_mat_short <- schneider_df_short %>% 
   ungroup() %>% 
-  dplyr::select(name,med_3h_lfc:RNA_24h_lfc) %>% 
+  dplyr::select(name,med_3h_lfc:RNA_24h_lfc,logFC) %>% 
   column_to_rownames("name") %>% 
   as.matrix()
 schneider_name_mat_short <- schneider_df_short %>% 

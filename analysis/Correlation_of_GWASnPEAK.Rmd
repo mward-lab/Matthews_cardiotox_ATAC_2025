@@ -177,7 +177,14 @@ ATAC_LFC <- Collapsed_new_peaks %>%
             Short_gwas_gr %>% as.data.frame(
               
             )
- rtracklayer::export.bed(Short_gwas_gr,"data/Final_four_data/ARR_HF_SNP_local.bed", index=TRUE)
+ # rtracklayer::export.bed(Short_gwas_gr,"data/Final_four_data/ARR_HF_SNP_local.bed")
+ # 
+ 
+ Dox_prot <- readRDS("data/other_papers/Dox_proteome_paper.RDS")
+proto_list <- Dox_prot %>% 
+  group_by(SYMBOL,logFC) %>% 
+  summarize(ENTREZID=paste(unique(ENTREZID),collapse=";"),
+            Protein=paste(unique(Protein),collapse=";"))
 ```
 
 Here I am doing the overlapping of the previous ranges of SNPs and the full ATAC peak set.  I also later create the data frames from the reheat data, the reheat data using the p<0.005 top genes, the cluster names associated with each peak, and the list of TE/notTE associated with each peak.
@@ -512,11 +519,12 @@ gwas_df_short <-gwas_short_list%>%
            reheat=paste(unique(reheat),collapse=";"),
           mrc=unique(mrc),
           dist_to_SNP=min(dist_to_SNP)) %>% 
-   arrange(., Peakid)
+   arrange(., Peakid)%>% 
+  left_join(., proto_list, by=c("SYMBOL"="SYMBOL"))
  
 gwas_mat_short <- gwas_df_short %>% 
   ungroup() %>% 
-  dplyr::select(name,med_3h_lfc:RNA_24h_lfc) %>% 
+  dplyr::select(name,med_3h_lfc:RNA_24h_lfc,logFC) %>% 
   column_to_rownames("name") %>% 
   as.matrix()
 gwas_name_mat_short <- gwas_df_short %>% 
