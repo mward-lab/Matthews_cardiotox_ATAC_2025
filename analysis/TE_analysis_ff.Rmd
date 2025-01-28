@@ -54,11 +54,12 @@ library(plyranges)
 library(ggrepel)
 library(epitools)
 library(circlize)
+library(ggridges)
 
 ```
 ##### loading data
 
-This is where I pull in the repeatmasker file taken from UCSC genomebrowser, the peaks assigned with the closest expressed genes as 'neargenes' by TSS,  the same peaks list, only condensing to unique peaks (some are assigned to two neargene), I call the collapsed_peaks and the peaks assigned to each MRC (EAR, etc...).  
+This is where I pull in the repeatmasker file taken from UCSC genome browser, the peaks assigned with the closest expressed genes as 'neargenes' by TSS,  the same peaks list, only condensing to unique peaks (some are assigned to two neargene), I call the collapsed_peaks and the peaks assigned to each MRC (EAR, etc...).  
 With the TSS data and the collapsed data, I made granges objects.  I also separate out the LINEs, SINEs, LTRs, DNAs, and Retroposons from the repeatmasker to make granges objects from those sets.  
 ```{r repeatmasker df}
 repeatmasker <- read.delim("data/other_papers/repeatmasker.tsv")
@@ -1346,7 +1347,7 @@ TE_mrc_status_list %>%
 ```
 #### LTR repeats
 ```{r LTR breakdown,fig.height=6}
-per_cov <- 0.5
+per_cov <- 0.0
 
 
 LTR_df%>% 
@@ -1485,7 +1486,7 @@ TE_mrc_status_list %>%
 #### DNA TEs
 
 ```{r DNA breakdown, fig.height=6}
-per_cov <- 0.5
+per_cov <- 0.0
 
 DNA_df%>% 
 count(repFamily) %>% 
@@ -1913,7 +1914,7 @@ chisq.test(chitest_ESRvNRTE)
 ### Breakdown of Classes by 4 member clusters
 
 ```{r breakdown by cluster}
-per_cov <- 0.5
+per_cov <- 0.0
  
 # ggline_df <-   Line_repeats %>%
 #   as.data.frame() %>% 
@@ -2413,7 +2414,7 @@ This section reclassifies any TE that is NOT a LINE, SINE, LTR, DNA, or retropos
 ```{r breakdown by specific cluster, fig.width=10}
 
 
-per_cov <- 0.5
+per_cov <- 0.0
 subsetall_df <-  Eight_group_TE %>% 
   dplyr::filter(mrc != "not_mrc") %>%
   mutate(mrc="all_peaks") 
@@ -2757,7 +2758,7 @@ chi_TE_Eight %>%
 ### sub-Class breakdown
 
 ```{r breakdown by subsetcluster, fig.width=10}
-per_cov <- 0.5
+per_cov <- 0.0
  
 ggline_df <-Line_repeats %>% 
   as.data.frame() %>% 
@@ -2845,6 +2846,7 @@ ggretroposon_df <-retroposon_repeats %>%
 ### Eight group by subset TE type
 
 ```{r LinesLTRand eight, fig.width=10}
+Eight_group_TE
 
 eight_lines <- Eight_group_TE %>% 
     dplyr::filter(repClass=="LINE") %>% 
@@ -3059,7 +3061,7 @@ Col_fullDF_cug_overlap %>%
 
 CUG_mrc_nine_list <-
 Col_TSS_data_gr%>% as.data.frame() %>%
-  left_join(., (Col_fullDF_cug_overlap %>% as.data.frame(.)), by =c("seqnames"="seqnames","start"="start","end"="end","Peakid"="Peakid", "NCBI_gene"="NCBI_gene", "ensembl_ID"="ensembl_ID","dist_to_NG"="dist_to_NG",  "SYMBOL" = "SYMBOL", "peak_width"="peak_width")) %>% 
+  left_join(., (Col_fullDF_cug_overlap %>% as.data.frame(.)), by =c("seqnames"="seqnames","start"="start","end"="end","Peakid"="Peakid", "NCBI_gene"="NCBI_gene", "dist_to_NG"="dist_to_NG",  "SYMBOL" = "SYMBOL", "peak_width"="peak_width")) %>% 
   left_join(., (Peaks_v_cpgpromo %>% dplyr::select(promotor_name,Peakid,peak_width)), by=c("peak_width"="peak_width","Peakid"="Peakid")) %>% 
   dplyr::select(Peakid, name,cpgNum:promotor_name) %>% 
   mutate(cugstatus=if_else(is.na(cpgNum),"not_CGi_peak","CGi_peak")) %>% 
@@ -3293,7 +3295,7 @@ Col_fullDF_overlap %>%
 test2 <- join_overlap_intersect(peaks, gwas_snp_gr) 
 
 test2_5k <- join_overlap_intersect(peaks, gwas_snp_5k_gr) 
-  
+  # saveRDS(SNP_df,"data/Final_four_data/SNP_table_collapesed.RDS")
 test2 %>% 
    join_overlap_intersect(., all_TEs_gr) %>% 
   as.data.frame %>% 
@@ -3409,7 +3411,7 @@ SNPanno %>%
   kable_paper("striped", full_width = TRUE) %>%
   kable_styling(full_width = FALSE, font_size = 14) %>% 
   scroll_box(height = "500px")
-  
+# final_SNP_df <- SNP_df %>% left_join(.,Collapsed_new_peaks, by = c("Peakid"="Peakid"))
 ```
 
 ##### SNP enrichment tests
@@ -4267,6 +4269,7 @@ for (matrix_name in names(matrix_list)) {
   }
 }
 # saveRDS(results_or,"data/Final_four_data/OR_results_TE_df.RDS")
+# results_or <- readRDS("data/Final_four_data/OR_results_TE_df.RDS")
 # Print the resulting dataframe
 print(results_or) %>% 
   kable(., caption = "Odd ratio results and significance values of TE enrichment compared to No response group") %>% 
@@ -4281,7 +4284,7 @@ print(results_or) %>%
 # # Create the color function with 12 bins
 # col_fun_OR <- colorRamp2(breaks, colors)
 
-col_fun_OR = colorRamp2(c(0,1,1.5,5), c("blueviolet","white","lightgreen","green3" ))
+col_fun_OR = colorRamp2(c(0,.8,1,1.5,3,4), c("#BC9BFF","#BC9BFF","white","lightgreen","green3","green3" ))
 sig_mat_OR <- results_or %>% 
   as.data.frame() %>% 
   dplyr::select( Matrix_Name,Row_Compared,P_Value) %>% 
@@ -4311,7 +4314,7 @@ results_or %>%
 
 pay no attention to the output here
 ```{r looking at ESRopcl, eval=FALSE, include=FALSE}
-Peaksofinterest <- data.frame(Peakid=c("chr2.178547784.178549172","chr1.236688731.236689166","chr12.106865628.106866040","chr16.719886.721785","chr22.46417011.46418228","chr3.14232390.14233136"))
+# Peaksofinterest <- data.frame(Peakid=c("chr2.178547784.178549172","chr1.236688731.236689166","chr12.106865628.106866040","chr16.719886.721785","chr22.46417011.46418228","chr3.14232390.14233136"))
 SNP_status_list %>% 
   dplyr::filter(ARR_status=="SNP_peak") %>% 
   left_join(.,(Collapsed_peaks %>% dplyr::select(Peakid,NG_TSS:dist_to_NG)), by=c("Peakid"="Peakid")) %>% 
@@ -4351,5 +4354,84 @@ Reheat_data <- read_excel("data/other_papers/jah36123-sup-0002-tables2.xlsx")
     dplyr::filter(SYMBOL %in% Reheat_data$gene) %>% 
     left_join(., Reheat_data, by=c("SYMBOL"="gene")) %>% 
     dplyr::select(Peakid, SNPS, SYMBOL, gwas, fisher_pvalue:mean_lfc,dist_to_NG)
+ 
+```
+
+```{r ARRHF SNP, eval=FALSE, include=FALSE}
+gwas_snp_20k_gr <- gwas_snp_list %>% 
+   mutate(CHR_ID=as.numeric(CHR_ID), CHR_POS=as.numeric(CHR_POS)) %>% 
+  na.omit() %>%
+   mutate(start=CHR_POS-10000, end=CHR_POS+10000, chr=paste0("chr",CHR_ID)) %>% 
+  GRanges()
+gwas_snp_50k_gr <- gwas_snp_list %>% 
+   mutate(CHR_ID=as.numeric(CHR_ID), CHR_POS=as.numeric(CHR_POS)) %>% 
+  na.omit() %>%
+   mutate(start=CHR_POS-25000, end=CHR_POS+25000, chr=paste0("chr",CHR_ID)) %>% 
+  GRanges()
+
+ARR_HF_gr <- join_overlap_intersect(peaks, gwas_snp_gr) 
+
+ARR_HF_gr_10k <- join_overlap_intersect(peaks, gwas_snp_5k_gr) 
+ARR_HF_gr_20k <- join_overlap_intersect(peaks, gwas_snp_20k_gr) 
+ARR_HF_gr_50k <- join_overlap_intersect(peaks, gwas_snp_50k_gr) 
+
+
+# ARR_HF_snp_list <- 
+  direct <- SNP_df %>% 
+    dplyr::filter(grepl("ARR",gwas)|grepl("HF",gwas)) %>% 
+  dplyr::select(Peakid,SNPS,gwas,mrc) 
+  
+  Collapsed_new_peaks <- read_delim("data/Final_four_data/collapsed_new_peaks.txt", delim = "\t", col_names = TRUE)
+  
+ RNA_median_3_lfc <- readRDS("data/other_papers/RNA_median_3_lfc.RDS")
+RNA_median_24_lfc <- readRDS("data/other_papers/RNA_median_24_lfc.RDS")
+  ATAC_24_lfc <- read_csv("data/Final_four_data/median_24_lfc.csv") 
+ATAC_3_lfc <- read_csv("data/Final_four_data/median_3_lfc.csv")
+
+
+
+
+ARR_HF_gr_50k %>% 
+    as.data.frame() %>% 
+    dplyr::filter(gwas=="ARR"|gwas=="HF") %>% 
+    left_join(.,(Collapsed_new_peaks %>% dplyr::select(Peakid,NCBI_gene,SYMBOL)), by=c("Peakid"="Peakid"))
+  
+```
+
+##### SVA dist from TSS
+
+```{r}
+
+Peak_TE_overlapbreakdown %>%  mutate(mrc=if_else(
+  Peakid %in% EAR_open$Peakid, "EAR_open",if_else(
+    Peakid %in% EAR_close$Peakid, "EAR_close", if_else(
+      Peakid %in% ESR_open$Peakid,"ESR_open", if_else(
+        Peakid %in% ESR_close$Peakid,"ESR_close",
+    if_else(
+      Peakid %in% ESR_opcl$Peakid,"ESR_opcl",        if_else(
+        Peakid %in% LR_open$Peakid,"LR_open",
+           if_else(
+             Peakid %in% LR_close$Peakid,"LR_close",if_else(
+               Peakid %in% NR_df$Peakid,"NR",if_else(
+                 Peakid %in% ESR_clop$Peakid,"ESR_clop","not_mrc")))))))))) %>%
+  mutate(mrc=factor(mrc, levels = c("EAR_open",
+                    "ESR_open", "LR_open", "ESR_opcl", "EAR_close","ESR_close", "LR_close","ESR_clop","NR","not_mrc"))) %>% 
+  dplyr::filter(repClass=="Retroposon") %>% 
+  dplyr::filter(dist_to_NG>-20000&dist_to_NG<20000) %>% 
+  ggplot(., aes (x=dist_to_NG,y=mrc, fill=mrc))+
+  geom_density_ridges()+
+  theme_classic()+
+  # xlim(-50000,50000)+
+  ggtitle("Density of SVA element containing peaks from TSS 20kb filter")+
+  xlab("Distancs from TSS (bp)")+
+  facet_wrap(~repName)
+  # coord_cartesian(xlim = c(-50000,50000))
+
+  
+
+```
+
+```{r}
+
 ```
 

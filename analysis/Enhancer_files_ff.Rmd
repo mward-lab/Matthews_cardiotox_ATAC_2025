@@ -55,6 +55,7 @@ library(plyranges)
 library(genomation)
 library(gprofiler2)
 library(epitools)
+library(smplot2)
 
 ```
 
@@ -1301,7 +1302,8 @@ for (matrix_name in names(matrix_list_cre)) {
     }
   }
 }
-saveRDS(results_or_cre,"data/Final_four_data/OR_results_cRE_df.RDS")
+# saveRDS(results_or_cre,"data/Final_four_data/OR_results_cRE_df.RDS")
+ results_or_cre <- readRDS("data/Final_four_data/OR_results_cRE_df.RDS")
 # Print the resulting dataframe
 print(results_or_cre) %>% 
   kable(., caption = " Odds ratio results and significance values of cRE enrichment compared to No response group") %>% 
@@ -1311,7 +1313,7 @@ print(results_or_cre) %>%
 
 library(circlize)
 # col_fun_cre = colorRamp2(c(0,6), c("white", "purple3"))
-col_fun_cre = colorRamp2(c(0,1,3), c("blueviolet","white","green3" ))
+col_fun_cre =  colorRamp2(c(0,.8,1,1.5,3,4), c("#BC9BFF","#BC9BFF","white","lightgreen","green3","green3" ))
 sig_mat_cre <- results_or_cre %>% 
   as.data.frame() %>% 
   dplyr::select( Matrix_Name,Row_Compared,P_Value) %>% 
@@ -1343,58 +1345,564 @@ results_or_cre %>%
 ```{r EnhacerTE analysis}
 Nine_group_TE <- readRDS("data/Final_four_data/Nine_group_TE_df.RDS")
 
-# peak_list_all_mrc %>% 
-#   dplyr::select(chr:Peakid,NCBI_gene:dist_to_NG,mrc9) %>% 
-#   GRanges()
-
-# All_enhancers_peaks <- Whole_peaks %>% as.data.frame() %>% 
-#   dplyr::filter(blockCount=="CTCF-only,CTCF-bound"|
-#                   blockCount =="PLS"|
-#                   blockCount =="PLS,CTCF-bound"|
-#                   blockCount =="dELS"|
-#                   blockCount =="dELS,CTCF-bound"|
-#                   blockCount =="pELS"|
-#                   blockCount =="pELS,CTCF-bound") %>% 
-#   mutate(type=if_else(blockCount=="CTCF-only,CTCF-bound","CTCF-only", if_else(grepl("PLS",blockCount),"Promoter-like",                       if_else(grepl("pELS",blockCount),"Proximal enhancer-like", "Distal enhancer-like"),blockCount)))
-
-# All_enhancers_peaks %>% 
-#   left_join(Nine_group_TE,.,by=c("Peakid"="Peakid","mrc"="mrc9")) %>%
-#   mutate(TEstatus=if_else(is.na(per_ol),"not_TE_peak","TE_peak")) %>% 
-#   dplyr::select(Peakid:repFamily, TEstatus,mrc,NCBI_gene:dist_to_NG,name, blockCount,type) %>% 
-#   # dplyr::filter(type=="Proximal enhancer-like"|type=="Distal enhancer-like") %>%
-#   distinct() %>% 
-#   # dplyr::filter( repClass=="Retroposon") %>% 
-#   group_by( mrc,repClass,type) %>% tally %>% 
-#   pivot_wider(., id_cols=c(mrc,repClass),names_from=type,values_from = n)
-
 CRE_summary
 
-TEfile <- Nine_group_TE %>% 
-  mutate(TEstatus=if_else(is.na(per_ol),"not_TE_peak","TE_peak")) %>% 
-  group_by(Peakid) %>% 
-  summarise(repName=paste(repName,collapse=";"),
-            repClass=paste(repClass,collapse=";"),
-            repClass_org=paste(repClass_org,collapse=";"),
-            TEstatus=paste(TEstatus,collapse=";"),
-            mrc=paste(unique(mrc),collapse = ";"))
-TEfile %>% 
+# TEfile <- Nine_group_TE %>%
+#   mutate(TEstatus=if_else(is.na(per_ol),"not_TE_peak","TE_peak")) %>%
+#   group_by(Peakid) %>%
+#   summarise(repName=paste(repName,collapse=";"),
+#             repClass=paste(repClass,collapse=";"),
+#             repClass_org=paste(repClass_org,collapse=";"),
+#             TEstatus=paste(unique(TEstatus),collapse=";"),
+#             mrc=paste(unique(mrc),collapse = ";"))
+# saveRDS(TEfile,"data/Final_four_data/TEfile_saved.RDS")
+TEfile <-readRDS("data/Final_four_data/TEfile_saved.RDS")
+
+  
+RNA_median_3_lfc <- readRDS("data/other_papers/RNA_median_3_lfc.RDS")
+RNA_median_24_lfc <- readRDS("data/other_papers/RNA_median_24_lfc.RDS")
+
+joined_median_RNA_ATAC <- TEfile %>% 
   left_join(.,CRE_summary,by=c("Peakid"="Peakid","mrc"="mrc")) %>% 
-  dplyr::select(Peakid:mrc,NCBI_gene:PLS_status)
+  dplyr::select(Peakid:mrc,NCBI_gene:PLS_status) %>% 
+  left_join(.,(median_24_lfc %>%
+              dplyr::select(peak, med_24h_lfc)),by=c("Peakid"="peak"))%>% 
+  left_join(.,(median_3_lfc %>%
+              dplyr::select(peak, med_3h_lfc)),by=c("Peakid"="peak"))%>% 
+  left_join(.,RNA_median_3_lfc,by=c("NCBI_gene"="ENTREZID","SYMBOL"="SYMBOL")) %>% 
+  left_join(.,RNA_median_24_lfc,by=c("NCBI_gene"="ENTREZID","SYMBOL"="SYMBOL"))
 ```
 
 
+```{r visulization of enhancer info}
+
+joined_median_RNA_ATAC %>% 
+  # mutate(TEst)
+  dplyr::filter(TEstatus=="not_TE_peak") %>%
+  # dplyr::filter(dELS_status=="dELS_peak"|pELS_status=="pELS_peak") %>%
+  # dplyr::filter(cRE_status=="not_cRE_peak") %>%
+  # dplyr::filter(mrc=="LR_open"|mrc=="LR_close") %>%
+  # dplyr::filter(mrc!="NR") %>%
+  # dplyr::filter(dist_to_NG<5000&dist_to_NG>-5000) %>%
+  ggplot(.,aes(x=med_24h_lfc,RNA_24h_lfc))+
+  geom_point()+
+  sm_statCorr(corr_method = 'pearson')+
+  ggtitle("Correlation of LFC peaks(-TEs) and RNA at 24 hours")+
+  ylab("RNA LFC")+
+   xlab("ATAC-seq log FC")
+
+joined_median_RNA_ATAC %>% 
+  # mutate(TEst)
+  dplyr::filter(TEstatus=="TE_peak") %>%
+  # dplyr::filter(dELS_status=="dELS_peak"|pELS_status=="pELS_peak") %>%
+  # dplyr::filter(cRE_status=="not_cRE_peak") %>%
+  # dplyr::filter(mrc=="LR_open"|mrc=="LR_close") %>%
+  # dplyr::filter(mrc!="NR") %>%
+  # dplyr::filter(dist_to_NG<5000&dist_to_NG>-5000) %>%
+  ggplot(.,aes(x=med_24h_lfc,RNA_24h_lfc))+
+  geom_point()+
+  sm_statCorr(corr_method = 'pearson')+
+  ggtitle("Correlation of LFC peaks(+TEs) and RNA at 24 hours")+
+  ylab("RNA LFC")+
+   xlab("ATAC-seq log FC")
+  
+ 
+
+
+```
+
+```{r Corr of TE peaks and enhancers}
+joined_median_RNA_ATAC %>% 
+  dplyr::filter(TEstatus=="TE_peak") %>%
+  dplyr::filter(cRE_status=="cRE_peak") %>%
+  dplyr::filter(dist_to_NG<5000&dist_to_NG>-5000) %>%
+  ggplot(.,aes(x=med_24h_lfc,RNA_24h_lfc))+
+  geom_point()+
+  sm_statCorr(corr_method = 'pearson')+
+  ggtitle("Correlation of LFC ATAC peaks (+TE+cRE) and RNA LFC at 24 hours +/- 5 kb of TSS")+
+  ylab("RNA LFC")+
+   xlab("ATAC-seq log FC")
+
+joined_median_RNA_ATAC %>% 
+  dplyr::filter(TEstatus=="not_TE_peak") %>%
+  dplyr::filter(cRE_status=="cRE_peak") %>%
+  dplyr::filter(dist_to_NG<5000&dist_to_NG>-5000) %>%
+  ggplot(.,aes(x=med_24h_lfc,RNA_24h_lfc))+
+  geom_point()+
+  sm_statCorr(corr_method = 'pearson')+
+  ggtitle("Correlation of LFC ATAC peaks (-TE+cRE) and RNA LFC at 24 hours +/- 5 kb of TSS")+
+  ylab("RNA LFC")+
+   xlab("ATAC-seq log FC")
+  
+joined_median_RNA_ATAC %>% 
+  dplyr::filter(dist_to_NG<5000&dist_to_NG>-5000) %>%
+  group_by(TEstatus,cRE_status) %>% tally %>% pivot_wider(id_cols = TEstatus, names_from = cRE_status,values_from = n) %>% 
+  column_to_rownames("TEstatus") 
+
+TE_cRE_mat <- joined_median_RNA_ATAC %>% 
+dplyr::filter(dist_to_NG<5000&dist_to_NG>-5000) %>%
+  group_by(TEstatus,cRE_status) %>% 
+  tally %>% 
+  pivot_wider(id_cols = TEstatus, names_from = cRE_status,values_from = n) %>% 
+  column_to_rownames("TEstatus") %>% 
+  na.omit(.) %>% 
+  as.matrix(.)
+
+```
+
+
+```{r }
+joined_median_RNA_ATAC %>% 
+  dplyr::filter(TEstatus=="TE_peak") %>%
+  dplyr::filter(cRE_status=="not_cRE_peak") %>%
+  dplyr::filter(dist_to_NG<5000&dist_to_NG>-5000) %>%
+  ggplot(.,aes(x=med_24h_lfc,RNA_24h_lfc))+
+  geom_point()+
+  sm_statCorr(corr_method = 'pearson')+
+  ggtitle("Correlation of LFC ATAC peaks (+TE-cRE) and RNA LFC at 24 hours +/- 5 kb of TSS")+
+  ylab("RNA-seq LFC")+
+   xlab("ATAC-seq LFC")
+
+joined_median_RNA_ATAC %>% 
+  dplyr::filter(TEstatus=="not_TE_peak") %>%
+  dplyr::filter(cRE_status=="not_cRE_peak") %>%
+  dplyr::filter(dist_to_NG<5000&dist_to_NG>-5000) %>%
+  ggplot(.,aes(x=med_24h_lfc,RNA_24h_lfc))+
+  geom_point()+
+  sm_statCorr(corr_method = 'pearson')+
+  ggtitle("Correlation of LFC ATAC peaks (-TE-cRE) and RNA LFC at 24 hours +/- 5 kb of TSS")+
+  ylab("RNA-seq LFC")+
+   xlab("ATAC-seq LFC")
+
+
+```
+
+```{r}
+joined_median_RNA_ATAC %>% 
+  dplyr::filter(TEstatus=="TE_peak") %>%
+   dplyr::filter(dELS_status=="dELS_peak"|pELS_status=="pELS_peak") %>%
+  dplyr::filter(dist_to_NG<5000&dist_to_NG>-5000) %>%
+  ggplot(.,aes(x=med_24h_lfc,RNA_24h_lfc))+
+  geom_point()+
+  sm_statCorr(corr_method = 'pearson')+
+  ggtitle("Correlation of TE_peaks with enhancer like sequences: \n5kb ATAC and RNA LFC at 24 hours")+
+  ylab("RNA LFC")+
+   xlab("ATAC-seq log FC")
+
+joined_median_RNA_ATAC %>% 
+  dplyr::filter(TEstatus=="not_TE_peak") %>%
+   dplyr::filter(dELS_status!="dELS_peak"&pELS_status!="pELS_peak") %>%
+  dplyr::filter(dist_to_NG<5000&dist_to_NG>-5000) %>%
+  ggplot(.,aes(x=med_24h_lfc,RNA_24h_lfc))+
+  geom_point()+
+  sm_statCorr(corr_method = 'pearson')+
+  ggtitle("Correlation of not_TE_peaks with enhancer like sequences: \n5kb ATAC and RNA LFC at 24 hours")+
+  ylab("RNA LFC")+
+   xlab("ATAC-seq log FC")
+
+joined_median_RNA_ATAC %>% 
+  group_by(TEstatus,dELS_status) %>% tally
+
+TE_dELS_mat <- joined_median_RNA_ATAC %>% 
+dplyr::filter(dist_to_NG<5000&dist_to_NG>-5000) %>%
+  group_by(TEstatus,dELS_status) %>% 
+  tally %>% 
+  pivot_wider(id_cols = TEstatus, names_from = dELS_status,values_from = n) %>% 
+  column_to_rownames("TEstatus") %>% 
+  na.omit(.) %>% 
+  as.matrix(.)
+
+joined_median_RNA_ATAC %>% 
+  group_by(TEstatus,pELS_status) %>% tally
+
+TE_pELS_mat <- joined_median_RNA_ATAC %>% 
+  dplyr::filter(dist_to_NG<5000&dist_to_NG>-5000) %>%
+  group_by(TEstatus,pELS_status) %>% 
+  tally %>% 
+  pivot_wider(id_cols = TEstatus, names_from = pELS_status,values_from = n) %>% 
+  column_to_rownames("TEstatus") %>% 
+  na.omit(.) %>% 
+  as.matrix(.)
+```
+####### dELS
+```{r dELS}
+joined_median_RNA_ATAC %>% 
+  dplyr::filter(TEstatus=="TE_peak") %>%
+   dplyr::filter(dELS_status=="dELS_peak") %>%
+  # dplyr::filter(dist_to_NG<5000&dist_to_NG>-5000) %>%
+  ggplot(.,aes(x=med_24h_lfc,RNA_24h_lfc))+
+  geom_point()+
+  sm_statCorr(corr_method = 'pearson')+
+  ggtitle("Correlation of peaks (+TE+dELS) sequences: \n5kb and RNA LFC at 24 hours")+
+  ylab("RNA LFC")+
+   xlab("ATAC-seq log FC")
+
+joined_median_RNA_ATAC %>% 
+  dplyr::filter(TEstatus=="not_TE_peak") %>%
+   dplyr::filter(dELS_status=="dELS_peak") %>%
+  # dplyr::filter(dist_to_NG<5000&dist_to_NG>-5000) %>%
+  ggplot(.,aes(x=med_24h_lfc,RNA_24h_lfc))+
+  geom_point()+
+  sm_statCorr(corr_method = 'pearson')+
+  ggtitle("Correlation of peaks (-TE+dELS) sequences: \n5kb and RNA LFC at 24 hours")+
+  ylab("RNA LFC")+
+   xlab("ATAC-seq log FC")
+
+joined_median_RNA_ATAC %>% 
+  dplyr::filter(TEstatus=="TE_peak") %>%
+   dplyr::filter(dELS_status=="not_dELS_peak") %>%
+  # dplyr::filter(dist_to_NG<5000&dist_to_NG>-5000) %>%
+  ggplot(.,aes(x=med_24h_lfc,RNA_24h_lfc))+
+  geom_point()+
+  sm_statCorr(corr_method = 'pearson')+
+  ggtitle("Correlation of peaks (+TE-dELS) sequences: \n5kb and RNA LFC at 24 hours")+
+  ylab("RNA LFC")+
+   xlab("ATAC-seq log FC")
+
+joined_median_RNA_ATAC %>% 
+  dplyr::filter(TEstatus=="not_TE_peak") %>%
+   dplyr::filter(dELS_status=="not_dELS_peak") %>%
+  # dplyr::filter(dist_to_NG<5000&dist_to_NG>-5000) %>%
+  ggplot(.,aes(x=med_24h_lfc,RNA_24h_lfc))+
+  geom_point()+
+  sm_statCorr(corr_method = 'pearson')+
+  ggtitle("Correlation of peaks (-TE-dELS) sequences: \n5kb and RNA LFC at 24 hours")+
+  ylab("RNA LFC")+
+   xlab("ATAC-seq log FC")
+
+
+joined_median_RNA_ATAC %>% 
+dplyr::filter(dist_to_NG<5000&dist_to_NG>-5000) %>%
+  group_by(TEstatus,dELS_status) %>% 
+  tally %>% 
+  pivot_wider(id_cols = TEstatus, names_from = dELS_status,values_from = n)
+```
+####### pELS
+```{r pELS}
+joined_median_RNA_ATAC %>% 
+  dplyr::filter(TEstatus=="TE_peak") %>%
+   dplyr::filter(pELS_status=="pELS_peak") %>%
+  dplyr::filter(dist_to_NG<5000&dist_to_NG>-5000) %>%
+  ggplot(.,aes(x=med_24h_lfc,RNA_24h_lfc))+
+  geom_point()+
+  sm_statCorr(corr_method = 'pearson')+
+  ggtitle("Correlation of peaks (+TE+pELS) sequences: \n5kb and RNA LFC at 24 hours")+
+  ylab("RNA LFC")+
+   xlab("ATAC-seq log FC")
+
+joined_median_RNA_ATAC %>% 
+  dplyr::filter(TEstatus=="not_TE_peak") %>%
+   dplyr::filter(pELS_status=="pELS_peak") %>%
+  dplyr::filter(dist_to_NG<5000&dist_to_NG>-5000) %>%
+  ggplot(.,aes(x=med_24h_lfc,RNA_24h_lfc))+
+  geom_point()+
+  sm_statCorr(corr_method = 'pearson')+
+  ggtitle("Correlation of peaks (-TE+pELS) sequences: \n5kb and RNA LFC at 24 hours")+
+  ylab("RNA LFC")+
+   xlab("ATAC-seq log FC")
+
+joined_median_RNA_ATAC %>% 
+  dplyr::filter(TEstatus=="TE_peak") %>%
+   dplyr::filter(pELS_status=="not_pELS_peak") %>%
+  dplyr::filter(dist_to_NG<5000&dist_to_NG>-5000) %>%
+  ggplot(.,aes(x=med_24h_lfc,RNA_24h_lfc))+
+  geom_point()+
+  sm_statCorr(corr_method = 'pearson')+
+  ggtitle("Correlation of peaks (+TE-pELS) sequences: \n5kb and RNA LFC at 24 hours")+
+  ylab("RNA LFC")+
+   xlab("ATAC-seq log FC")
+
+joined_median_RNA_ATAC %>% 
+  dplyr::filter(TEstatus=="not_TE_peak") %>%
+   dplyr::filter(pELS_status=="not_pELS_peak") %>%
+  dplyr::filter(dist_to_NG<5000&dist_to_NG>-5000) %>%
+  ggplot(.,aes(x=med_24h_lfc,RNA_24h_lfc))+
+  geom_point()+
+  sm_statCorr(corr_method = 'pearson')+
+  ggtitle("Correlation of peaks (-TE-pELS) sequences: \n5kb and RNA LFC at 24 hours")+
+  ylab("RNA LFC")+
+   xlab("ATAC-seq log FC")
+
+
+joined_median_RNA_ATAC %>% 
+# dplyr::filter(dist_to_NG<5000&dist_to_NG>-5000) %>%
+  group_by(TEstatus,pELS_status) %>% 
+  tally %>% 
+  pivot_wider(id_cols = TEstatus, names_from = pELS_status,values_from = n)
+```
+
+```{r Promotor like sequences}
+joined_median_RNA_ATAC %>% 
+  dplyr::filter(TEstatus=="TE_peak") %>%
+   dplyr::filter(PLS_status=="PLS_peak") %>%
+  dplyr::filter(dist_to_NG<5000&dist_to_NG>-5000) %>%
+  ggplot(.,aes(x=med_24h_lfc,RNA_24h_lfc))+
+  geom_point()+
+  sm_statCorr(corr_method = 'pearson')+
+  ggtitle("Correlation of peaks (+TE+PLS) sequences: \n5kb and RNA LFC at 24 hours")+
+  ylab("RNA LFC")+
+   xlab("ATAC-seq log FC")
+
+joined_median_RNA_ATAC %>% 
+  dplyr::filter(TEstatus=="not_TE_peak") %>%
+   dplyr::filter(PLS_status=="PLS_peak") %>%
+  dplyr::filter(dist_to_NG<5000&dist_to_NG>-5000) %>%
+  ggplot(.,aes(x=med_24h_lfc,RNA_24h_lfc))+
+  geom_point()+
+  sm_statCorr(corr_method = 'pearson')+
+  ggtitle("Correlation of peaks (-TE+PLS) sequences: \n5kb and RNA LFC at 24 hours")+
+  ylab("RNA LFC")+
+   xlab("ATAC-seq log FC")
+
+joined_median_RNA_ATAC %>% 
+  dplyr::filter(TEstatus=="TE_peak") %>%
+   dplyr::filter(PLS_status=="not_PLS_peak") %>%
+  dplyr::filter(dist_to_NG<5000&dist_to_NG>-5000) %>%
+  ggplot(.,aes(x=med_24h_lfc,RNA_24h_lfc))+
+  geom_point()+
+  sm_statCorr(corr_method = 'pearson')+
+  ggtitle("Correlation of peaks (+TE-PLS) sequences: \n5kb and RNA LFC at 24 hours")+
+  ylab("RNA LFC")+
+   xlab("ATAC-seq log FC")
+
+joined_median_RNA_ATAC %>% 
+  dplyr::filter(TEstatus=="not_TE_peak") %>%
+   dplyr::filter(PLS_status=="not_PLS_peak") %>%
+  dplyr::filter(dist_to_NG<5000&dist_to_NG>-5000) %>%
+  ggplot(.,aes(x=med_24h_lfc,RNA_24h_lfc))+
+  geom_point()+
+  sm_statCorr(corr_method = 'pearson')+
+  ggtitle("Correlation of peaks (-TE-PLS) sequences: \n5kb and RNA LFC at 24 hours")+
+  ylab("RNA LFC")+
+   xlab("ATAC-seq log FC")
 
 
 
+joined_median_RNA_ATAC %>% 
+  dplyr::filter(dist_to_NG<5000&dist_to_NG>-5000) %>%
+  group_by(TEstatus,PLS_status) %>% tally %>% 
+   pivot_wider(id_cols = TEstatus, names_from = PLS_status,values_from = n)
+
+TE_PLS_mat <- joined_median_RNA_ATAC %>% 
+dplyr::filter(dist_to_NG<5000&dist_to_NG>-5000) %>%
+  group_by(TEstatus,PLS_status) %>% 
+  tally %>% 
+  pivot_wider(id_cols = TEstatus, names_from = PLS_status,values_from = n) %>% 
+  column_to_rownames("TEstatus") %>% 
+  na.omit(.) %>% 
+  as.matrix(.)
+
+
+```
+
+
+```{r CTCF like sequences}
+
+joined_median_RNA_ATAC %>% 
+  dplyr::filter(TEstatus=="TE_peak") %>%
+   dplyr::filter(CTCF_status=="CTCF_peak") %>%
+  dplyr::filter(dist_to_NG<5000&dist_to_NG>-5000) %>%
+  ggplot(.,aes(x=med_24h_lfc,RNA_24h_lfc))+
+  geom_point()+
+  sm_statCorr(corr_method = 'pearson')+
+  ggtitle("Correlation of peaks (+TE+CTCF) sequences: \n5kb and RNA LFC at 24 hours")+
+  ylab("RNA LFC")+
+   xlab("ATAC-seq log FC")
+
+joined_median_RNA_ATAC %>% 
+  dplyr::filter(TEstatus=="not_TE_peak") %>%
+   dplyr::filter(CTCF_status=="CTCF_peak") %>%
+  dplyr::filter(dist_to_NG<5000&dist_to_NG>-5000) %>%
+  ggplot(.,aes(x=med_24h_lfc,RNA_24h_lfc))+
+  geom_point()+
+  sm_statCorr(corr_method = 'pearson')+
+  ggtitle("Correlation of peaks (-TE+CTCF) sequences: \n5kb and RNA LFC at 24 hours")+
+  ylab("RNA LFC")+
+   xlab("ATAC-seq log FC")
+
+joined_median_RNA_ATAC %>% 
+  dplyr::filter(TEstatus=="TE_peak") %>%
+   dplyr::filter(CTCF_status=="not_CTCF_peak") %>%
+  dplyr::filter(dist_to_NG<5000&dist_to_NG>-5000) %>%
+  ggplot(.,aes(x=med_24h_lfc,RNA_24h_lfc))+
+  geom_point()+
+  sm_statCorr(corr_method = 'pearson')+
+  ggtitle("Correlation of peaks (+TE-CTCF) sequences: \n5kb and RNA LFC at 24 hours")+
+  ylab("RNA LFC")+
+   xlab("ATAC-seq log FC")
+
+joined_median_RNA_ATAC %>% 
+  dplyr::filter(TEstatus=="not_TE_peak") %>%
+   dplyr::filter(CTCF_status=="not_CTCF_peak") %>%
+  dplyr::filter(dist_to_NG<5000&dist_to_NG>-5000) %>%
+  ggplot(.,aes(x=med_24h_lfc,RNA_24h_lfc))+
+  geom_point()+
+  sm_statCorr(corr_method = 'pearson')+
+  ggtitle("Correlation of peaks (-TE-CTCF) sequences: \n5kb and RNA LFC at 24 hours")+
+  ylab("RNA LFC")+
+   xlab("ATAC-seq log FC")
 
 
 
+TE_CTCF_mat <- joined_median_RNA_ATAC %>% 
+dplyr::filter(dist_to_NG<5000&dist_to_NG>-5000) %>%
+  group_by(TEstatus,CTCF_status) %>% 
+  tally %>% 
+  pivot_wider(id_cols = TEstatus, names_from = CTCF_status,values_from = n) %>% 
+  column_to_rownames("TEstatus") %>% 
+  na.omit(.) %>% 
+  as.matrix(.)
+
+joined_median_RNA_ATAC %>% 
+# dplyr::filter(dist_to_NG<5000&dist_to_NG>-5000) %>%
+  group_by(TEstatus,CTCF_status) %>% 
+  tally %>% 
+  pivot_wider(id_cols = TEstatus, names_from = CTCF_status,values_from = n)
+
+```
+
+###### SVA
+```{r SVA examine}
+joined_median_RNA_ATAC %>% 
+  dplyr::filter(grepl("SVA*",repName)) %>% 
+  # dplyr::filter(TEstatus=="not_TE_peak") %>%
+  
+   dplyr::filter(cRE_status=="cRE_peak") %>%
+  dplyr::filter(dist_to_NG<5000&dist_to_NG>-5000) %>%
+  ggplot(.,aes(x=med_3h_lfc,RNA_3h_lfc))+
+  geom_point()+
+  sm_statCorr(corr_method = 'pearson')+
+  ggtitle("Correlation of LFC of peaks (+SVA+cRE) and RNA LFC at 3 hours")+
+  ylab("RNA LFC")+
+   xlab("ATAC-seq log FC")
+
+joined_median_RNA_ATAC %>% 
+  dplyr::filter(!grepl("SVA*",repName)) %>%
+  # dplyr::filter(TEstatus=="not_TE_peak") %>%
+  
+   dplyr::filter(cRE_status=="cRE_peak") %>%
+  dplyr::filter(dist_to_NG<5000&dist_to_NG>-5000) %>%
+  ggplot(.,aes(x=med_3h_lfc,RNA_3h_lfc))+
+  geom_point()+
+  sm_statCorr(corr_method = 'pearson')+
+  ggtitle("Correlation of LFC of peaks (-SVAs+cRE)and RNA LFC at 3 hours")+
+  ylab("RNA LFC")+
+   xlab("ATAC-seq log FC")
+
+joined_median_RNA_ATAC %>% 
+  dplyr::filter(!grepl("SVA*",repName)) %>%
+  # dplyr::filter(TEstatus=="not_TE_peak") %>%
+  
+   dplyr::filter(cRE_status=="not_cRE_peak") %>%
+  dplyr::filter(dist_to_NG<5000&dist_to_NG>-5000) %>%
+  ggplot(.,aes(x=med_3h_lfc,RNA_3h_lfc))+
+  geom_point()+
+  sm_statCorr(corr_method = 'pearson')+
+  ggtitle("Correlation of LFC of peaks (-SVAs-cRE)and RNA LFC at 3 hours")+
+  ylab("RNA LFC")+
+   xlab("ATAC-seq log FC")
 
 
+joined_median_RNA_ATAC %>% 
+  dplyr::filter(grepl("SVA*",repName)) %>% 
+  # dplyr::filter(TEstatus=="not_TE_peak") %>%
+  
+   dplyr::filter(cRE_status=="not_cRE_peak") %>%
+  dplyr::filter(dist_to_NG<5000&dist_to_NG>-5000) %>%
+  ggplot(.,aes(x=med_3h_lfc,RNA_3h_lfc))+
+  geom_point()+
+  sm_statCorr(corr_method = 'pearson')+
+  ggtitle("Correlation of LFC of peaks (+SVA-cRE)  and RNA LFC at 3 hours")+
+  ylab("RNA LFC")+
+   xlab("ATAC-seq log FC")
+
+
+
+joined_median_RNA_ATAC %>% 
+  dplyr::filter(grepl("SVA*",repName)) %>% 
+  # dplyr::filter(TEstatus=="not_TE_peak") %>%
+  
+   dplyr::filter(pELS_status=="pELS_peak"|dELS_status=="dELS_peak") %>%
+  # dplyr::filter(dist_to_NG<5000&dist_to_NG>-5000) %>%
+  ggplot(.,aes(x=med_24h_lfc,RNA_24h_lfc))+
+  geom_point()+
+  sm_statCorr(corr_method = 'pearson')+
+  ggtitle("Correlation of LFC of peaks (+SVA+pELS/dELS)  and RNA LFC at 24 hours")+
+  ylab("RNA LFC")+
+   xlab("ATAC-seq log FC")
+
+joined_median_RNA_ATAC %>% 
+  dplyr::filter(grepl("SVA*",repName)) %>% 
+  # dplyr::filter(TEstatus=="not_TE_peak") %>%
+  
+   dplyr::filter(PLS_status=="PLS_peak") %>%
+  # dplyr::filter(dist_to_NG<5000&dist_to_NG>-5000) %>%
+  ggplot(.,aes(x=med_24h_lfc,RNA_24h_lfc))+
+  geom_point()+
+  sm_statCorr(corr_method = 'pearson')+
+  ggtitle("Correlation of LFC of peaks (+SVA+PLS)  and RNA LFC at 24 hours")+
+  ylab("RNA LFC")+
+   xlab("ATAC-seq log FC")
+```
+
+
+#### Chi square
+```{r chi square RNA_cRE corr}
+matrix_list_TE_cRE <- list("PLS"=TE_PLS_mat, "dELS"=TE_dELS_mat, "pELS"=TE_pELS_mat,"CTCF"= TE_CTCF_mat,"All cREs"= TE_cRE_mat)
+results_te_cre <- data.frame(Matrix_Name = character(),
+                      Row_Compared = character(),
+                      Chi_Square_Statistic = numeric(),
+                      P_Value = numeric(),
+                      stringsAsFactors = FALSE)
+names_list_te_cre <- names(matrix_list_TE_cRE)
+# Loop through each matrix in the list
+for (matrix_name in names_list_te_cre) {
+  current_matrix <- matrix_list_TE_cRE[[matrix_name]]
+  n_rows <- nrow(current_matrix)
+  
+  # Print matrix details for debugging
+  cat("Processing Matrix:", matrix_name, "\n")
+  print(current_matrix)
+  
+  # Loop through each row of the current matrix (except the last row)
+  for (i in 1:(n_rows - 1)) {
+    # Print row details for debugging
+    cat("Comparing row", i, "with last row:\n")
+    print(current_matrix[i, ])
+    print(current_matrix[n_rows, ])
+    
+    # Perform chi-square test between row i and the last row
+    test_result <- tryCatch({
+      chisq.test(rbind(current_matrix[i, ], current_matrix[n_rows, ]))
+    }, error = function(e) {
+      cat("Error in chi-square test:", e$message, "\n")
+      return(NULL)
+    })
+    
+    # Only store the result if test_result is valid (i.e., not NULL)
+    if (!is.null(test_result)) {
+      results_te_cre <- rbind(results_te_cre, data.frame(Matrix_Name = matrix_name,
+                                           Row_Compared = rownames(current_matrix)[i],
+                                           Chi_Square_Statistic = test_result$statistic,
+                                           P_Value = test_result$p.value))
+    }
+  }
+}
+# Print the resulting dataframe
+# saveRDS(results_cre,"data/Final_four_data/Chisquare_cREs_results.RDS")
+print(results_te_cre) %>% 
+  kable(., caption = " Chi squre results and significance values of Transposable elements and cRE enrichment compared to not-TE/cREs") %>% 
+  kable_paper("striped", full_width = TRUE) %>%
+  kable_styling(full_width = FALSE, font_size = 14) %>% 
+  scroll_box(width = "100%", height = "400px")
+
+
+
+```
 
 
 ### Top2b
-to be determined.... ingnore for now
+to be determined.... ignore for now
 ```{r Top2b peaks, eval=FALSE, include=FALSE}
 
 ### created the marked dataframe with mRC
