@@ -56,6 +56,7 @@ library(genomation)
 library(gprofiler2)
 library(epitools)
 library(smplot2)
+library(circlize)
 
 ```
 
@@ -1303,7 +1304,13 @@ for (matrix_name in names(matrix_list_cre)) {
   }
 }
 # saveRDS(results_or_cre,"data/Final_four_data/OR_results_cRE_df.RDS")
- results_or_cre <- readRDS("data/Final_four_data/OR_results_cRE_df.RDS")
+ # results_or_cre <- readRDS("data/Final_four_data/OR_results_cRE_df.RDS")
+ 
+ 
+ results_or_cre <- results_or_cre %>% 
+  mutate(Matrix_Name=factor(Matrix_Name, levels=c("All cREs","PLS","dELS", "pELS","CTCF"))) %>% 
+    mutate(Row_Compared=factor(Row_Compared, levels = c("EAR_open","ESR_open", "LR_open","ESR_opcl", "EAR_close", "ESR_close", "LR_close", "ESR_clop"))) %>% 
+  arrange(Matrix_Name,Row_Compared)  
 # Print the resulting dataframe
 print(results_or_cre) %>% 
   kable(., caption = " Odds ratio results and significance values of cRE enrichment compared to No response group") %>% 
@@ -1311,9 +1318,9 @@ print(results_or_cre) %>%
   kable_styling(full_width = FALSE, font_size = 14) %>% 
   scroll_box(width = "100%", height = "400px")
 
-library(circlize)
+
 # col_fun_cre = colorRamp2(c(0,6), c("white", "purple3"))
-col_fun_cre =  colorRamp2(c(0,.8,1,1.5,3,4), c("#BC9BFF","#BC9BFF","white","lightgreen","green3","green3" ))
+col_fun_cre =  colorRamp2(c(0,1,1.5,3,4), c("#BC9BFF","white","lightgreen","green3","green3" ))
 sig_mat_cre <- results_or_cre %>% 
   as.data.frame() %>% 
   dplyr::select( Matrix_Name,Row_Compared,P_Value) %>% 
@@ -1337,7 +1344,7 @@ results_or_cre %>%
             grid.text("*", x, y, gp = gpar(fontsize = 20))})
 
         
-```
+``` 
 
 
 ### Peaks enhancers and TEs
