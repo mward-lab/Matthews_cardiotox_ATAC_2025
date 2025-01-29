@@ -4268,9 +4268,14 @@ for (matrix_name in names(matrix_list)) {
     }
   }
 }
+
 # saveRDS(results_or,"data/Final_four_data/OR_results_TE_df.RDS")
-# results_or <- readRDS("data/Final_four_data/OR_results_TE_df.RDS")
-# Print the resulting dataframe
+# results_or <- readRDS("data/Final_four_data/OR_results_TE_df.RDS") # Print the resulting dataframe
+
+results_or <- results_or %>% 
+  mutate(Matrix_Name=factor(Matrix_Name, levels=c("TE","Sines","Lines", "DNA","LTR","Retro","CGI","TSS"))) %>% 
+    mutate(Row_Compared=factor(Row_Compared, levels = c("EAR_open","ESR_open", "LR_open","ESR_opcl", "EAR_close", "ESR_close", "LR_close", "ESR_clop"))) %>% 
+  arrange(Matrix_Name,Row_Compared)  
 print(results_or) %>% 
   kable(., caption = "Odd ratio results and significance values of TE enrichment compared to No response group") %>% 
   kable_paper("striped", full_width = TRUE) %>%
@@ -4284,7 +4289,7 @@ print(results_or) %>%
 # # Create the color function with 12 bins
 # col_fun_OR <- colorRamp2(breaks, colors)
 
-col_fun_OR = colorRamp2(c(0,.8,1,1.5,3,4), c("#BC9BFF","#BC9BFF","white","lightgreen","green3","green3" ))
+col_fun_OR = colorRamp2(c(0,1,1.5,3,4), c("#BC9BFF","white","lightgreen","green3","green3" ))
 sig_mat_OR <- results_or %>% 
   as.data.frame() %>% 
   dplyr::select( Matrix_Name,Row_Compared,P_Value) %>% 
