@@ -51,6 +51,7 @@ library(ComplexHeatmap)
 library(cowplot)
 library(smplot2)
 library(readxl)
+library(arrow)
 
 ```
 Notes to self(and anyone else who is reading this!):  
@@ -763,14 +764,155 @@ draw(simply_map_gwas, merge_legend = TRUE, heatmap_legend_side = "bottom",
 ```
 
 ```{r new heatmap noRNA}
-### Goal: using new SNP range of +/- 10 kb (20kb range)
-# test <- count_df %>% 
-#   as.data.frame() %>% 
-#   left_join(., Nine_te_df, by=("Peakid"="Peakid"))#%>% 
-#   
-# new_gwas_df %>% 
-#   dplyr::filter(GWAS=="HF"|GWAS=="AF;HF") %>% 
-#   distinct(SNPS
-           # 
+Knowles_respQTL <- readRDS("data/Knowles_5.RDS")
+Knowles_alleQTL <- readRDS("data/Knowles_4.RDS")
+# file <- read_parquet(choose.files())
+Heart_Left_Ventricle_v10_eGenes <- readRDS("data/other_papers/Heart_Left_Ventricle_v10_eGenes_GTEx.RDS")
+gwaslist <- new_gwas_df %>% distinct(SNPS) %>% ungroup()
+Heart_Left_Ventricle_v10_eGenes %>% dplyr::filter (rs_id_dbSNP155_GRCh38p13 %in% gwaslist$SNPS)
+gwaslist$gene <-c("-","PSRC1","PSRC1","CLCN6","-","PRRX1","PRRX1","-","-","-",
+"FUT11;SYNPO2l-AS1","-","ENSG00000254851;ENSG00000280143","-","-","-","TMEM263-DT","-","-","BRICD5;PGP",
+"-","-","-","-","CHRNB1","-","-","-","FKBP7","-",
+"PLGLB1","-","KCNE1","-","-","-","SCN10A","GMPPB;WDR6;NCKIPSD;NICN1;RBM6;AMT;QRICH1;IHO1","WDR1","-",
+"-","-","-","DNAJC18;SPATA24;PROB1;SLC23A1","-","CDKN1A","CAV2;ENSG00000279086","-","-")
+
+gwaslist %>% 
+  dplyr::filter(SNPS %in% Knowles_alleQTL$RSID)
+Knowles_alleQTL %>% 
+  dplyr::filter(RSID %in% gwaslist$SNPS)
+# write.csv(gwaslist,"data/other_papers/GWAS_eQTL_genes.csv")
+
+```
+### Park et al.  
+
+
+```{r Boram Park etal}
+# saveRDS(ParkSNPs,"data/other_papers/ParkSNPs_pull_VEF.RDS")
+
+ParkSNPs <- readRDS("data/other_papers/ParkSNPs_pull_VEF.RDS")
+
+
+ParkSNP_table <-
+  ParkSNPs %>% 
+  dplyr::select(1:2) %>% 
+    distinct() %>% 
+    separate_wider_delim(.,Location,delim=":",names=c("chr","position"), cols_remove=FALSE) %>% 
+    separate_wider_delim(.,position,delim="-",names=c("begin","term")) %>%
+    mutate(chr=paste0("chr",chr)) 
+ParkSNP_gr <- ParkSNP_table %>% 
+  mutate("start" = begin, "end"=term) %>% 
+    GRanges()
+ParkSNP_10k_gr <- ParkSNP_table %>% 
+  mutate(begin=as.numeric(begin),term=as.numeric(term)) %>% 
+  mutate(start=begin-5000, end=term+5000) %>% 
+  GRanges()
+
+ParkSNP_20k_gr <- ParkSNP_table %>% 
+  mutate(begin=as.numeric(begin),term=as.numeric(term)) %>% 
+  mutate(start=begin-10000, end=term+10000) %>% 
+  GRanges()
+
+ParkSNP_gr_check <- join_overlap_intersect(Collapsed_new_peaks_gr,ParkSNP_gr) %>%
+  as.data.frame()
+
+ParkSNP_gr_10k_check <- join_overlap_intersect(Collapsed_new_peaks_gr,ParkSNP_10k_gr) %>%
+  as.data.frame()
+
+ParkSNP_gr_20k_check <- join_overlap_intersect(Collapsed_new_peaks_gr,ParkSNP_20k_gr) %>%
+  as.data.frame()
+
+```
+
+```{r masterplot Park}
+
+ParkSNP_gr_check <- join_overlap_intersect(Collapsed_new_peaks_gr,ParkSNP_gr) %>%
+  as.data.frame()
+Park_df <-ParkSNP_gr_20k_check%>% 
+  as.data.frame() %>%
+  dplyr::select(Peakid, X.Uploaded_variation) %>% 
+  dplyr::rename("SNPS"=X.Uploaded_variation) %>% 
+  left_join(., Nine_te_df, by=("Peakid"="Peakid")) %>%
+  dplyr::select(Peakid, SNPS,mrc,TEstatus) %>% 
+  # left_join(., (Collapsed_new_peaks %>% 
+  #             dplyr::select(Peakid,NCBI_gene,SYMBOL)), by=c("Peakid"="Peakid"))
+  left_join(., (ATAC_3_lfc %>%
+          dplyr::select(peak,med_3h_lfc)),by=c("Peakid"="peak")) %>% 
+  left_join(., (ATAC_24_lfc %>%
+              dplyr::select(peak,med_24h_lfc)),by=c("Peakid"="peak"))%>% 
+    dplyr::filter(mrc !="NR") %>%
+  dplyr::filter(mrc !="not_mrc") %>% 
+ mutate(dist_to_SNP=case_when(
+    Peakid %in% ParkSNP_gr_check$Peakid &SNPS %in% ParkSNP_gr_check$X.Uploaded_variation~ 0,
+    Peakid %in% ParkSNP_gr_10k_check$Peakid &SNPS %in% ParkSNP_gr_10k_check$X.Uploaded_variation~ 10,
+    Peakid %in% ParkSNP_gr_20k_check$Peakid &SNPS %in% ParkSNP_gr_20k_check$X.Uploaded_variation~ 20)) %>% 
+    tidyr::unite(name,Peakid,SNPS, sep = "_", remove = FALSE) %>% 
+  group_by(Peakid) %>% 
+   summarize(name=unique(name),
+           med_3h_lfc=unique(med_3h_lfc),
+           med_24h_lfc=unique(med_24h_lfc),
+           # AC_3h_lfc=unique(AC_3h_lfc),
+           # AC_24h_lfc=unique(AC_24h_lfc),
+           # RNA_3h_lfc=unique(RNA_3h_lfc),
+           # RNA_24h_lfc=unique(RNA_24h_lfc),
+          # repClass=paste(unique(repClass),collapse=":"),
+           TEstatus=paste(unique(TEstatus),collapse=";"),
+          # SYMBOL=paste(unique(SYMBOL),collapse=";"),
+           # reheat=paste(unique(reheat),collapse=";"),
+          mrc=unique(mrc),
+          dist_to_SNP=min(dist_to_SNP))  %>% 
+  arrange(., Peakid)
+ 
+new_park_mat <- Park_df%>% 
+  ungroup() %>% 
+  dplyr::select(name,med_3h_lfc, med_24h_lfc) %>% 
+  column_to_rownames("name") %>% 
+  as.matrix()
+new_park_name_mat <- Park_df %>% 
+  ungroup() %>% 
+  dplyr::select(name,TEstatus,mrc,dist_to_SNP)
+
+row_anno_park <-
+  rowAnnotation(
+    TE_status=new_park_name_mat$TEstatus,
+    # gwas_status=new_park_name_mat$GWAS,
+    MRC=new_park_name_mat$mrc,
+    direct_overlap=new_park_name_mat$dist_to_SNP,
+    col= list(TE_status=c("TE_peak"="goldenrod",
+                          "not_TE_peak"="lightblue"), 
+              MRC = c("EAR_open" = "#F8766D",
+                      "EAR_close" = "#f6483c",
+                      "ESR_open" = "#7CAE00",
+                      "ESR_close" = "#587b00",
+                      "ESR_opcl"="grey40", 
+                      "ESR_clop"="tan",
+                      "LR_open" = "#00BFC4",
+                      "LR_close" = "#008d91",
+                      "NR" = "#C77CFF",
+                      "not_mrc"="black"),
+              # gwas_status=c("AF"="green",
+              #               "HF"="orange", 
+              #               "AF;HF"="purple3"),
+              direct_overlap=c("0"="red",
+                               "10"="pink",
+                               "20"="tan2",
+                               "50"="grey8")))
+
+simply_map_park <- ComplexHeatmap::Heatmap(new_park_mat,
+                        left_annotation = row_anno_park,
+                        row_names_max_width = max_text_width(rownames(new_park_mat),  
+                                                             gp=gpar(fontsize=16)),
+                        heatmap_legend_param = list(direction = "horizontal"),
+                        show_column_names = TRUE,
+                        cluster_rows = FALSE,
+                        cluster_columns = FALSE)
+
+draw(simply_map_park, merge_legend = TRUE, heatmap_legend_side = "bottom", 
+    annotation_legend_side = "bottom")
+
+
+
+ 
+
+
 ```
 
