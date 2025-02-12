@@ -608,17 +608,17 @@ plot_grid(v7,v8,  rel_widths =c(.8,1))
 ```
 ```{r median LFC for raodah}
 
-# AC.DNR_3.top= topTable(efit_raodah_23s, coef=1, adjust.method="BH", number=Inf, sort.by="p")
-# AC.DOX_3.top= topTable(efit_raodah_23s, coef=2, adjust.method="BH", number=Inf, sort.by="p")
-# AC.EPI_3.top= topTable(efit_raodah_23s, coef=3, adjust.method="BH", number=Inf, sort.by="p")
-# AC.MTX_3.top= topTable(efit_raodah_23s, coef=4, adjust.method="BH", number=Inf, sort.by="p")
-# 
-# AC.DNR_24.top= topTable(efit_raodah_23s, coef=5, adjust.method="BH", number=Inf, sort.by="p")
-# AC.DOX_24.top= topTable(efit_raodah_23s, coef=6, adjust.method="BH", number=Inf, sort.by="p")
-# AC.EPI_24.top= topTable(efit_raodah_23s, coef=7, adjust.method="BH", number=Inf, sort.by="p")
-# AC.MTX_24.top= topTable(efit_raodah_23s, coef=8, adjust.method="BH", number=Inf, sort.by="p")
-# toplist_ac_23  <- list(AC.DNR_3.top,  AC.DOX_3.top, AC.EPI_3.top, AC.MTX_3.top, AC.DNR_24.top, AC.DOX_24.top, AC.EPI_24.top, AC.MTX_24.top)
-# names(toplist_ac_23 ) <- c("DNR_3", "DOX_3","EPI_3","MTX_3","DNR_24", "DOX_24","EPI_24","MTX_24")
+AC.DNR_3.top= topTable(efit_raodah_23s, coef=1, adjust.method="BH", number=Inf, sort.by="p")%>% rownames_to_column("peak")
+AC.DOX_3.top= topTable(efit_raodah_23s, coef=2, adjust.method="BH", number=Inf, sort.by="p")%>% rownames_to_column("peak")
+AC.EPI_3.top= topTable(efit_raodah_23s, coef=3, adjust.method="BH", number=Inf, sort.by="p")%>% rownames_to_column("peak")
+AC.MTX_3.top= topTable(efit_raodah_23s, coef=4, adjust.method="BH", number=Inf, sort.by="p")%>% rownames_to_column("peak")
+
+AC.DNR_24.top= topTable(efit_raodah_23s, coef=5, adjust.method="BH", number=Inf, sort.by="p")%>% rownames_to_column("peak")
+AC.DOX_24.top= topTable(efit_raodah_23s, coef=6, adjust.method="BH", number=Inf, sort.by="p")%>% rownames_to_column("peak")
+AC.EPI_24.top= topTable(efit_raodah_23s, coef=7, adjust.method="BH", number=Inf, sort.by="p")%>% rownames_to_column("peak")
+AC.MTX_24.top= topTable(efit_raodah_23s, coef=8, adjust.method="BH", number=Inf, sort.by="p")%>% rownames_to_column("peak")
+toplist_ac_23  <- list(AC.DNR_3.top,  AC.DOX_3.top, AC.EPI_3.top, AC.MTX_3.top, AC.DNR_24.top, AC.DOX_24.top, AC.EPI_24.top, AC.MTX_24.top)
+names(toplist_ac_23 ) <- c("DNR_3", "DOX_3","EPI_3","MTX_3","DNR_24", "DOX_24","EPI_24","MTX_24")
 # toplist_ac_lfc <-map_df(toplist_ac_23, ~as.data.frame(.x), .id="trt_time")
 # # # #
 # toplist_ac_lfc <- toplist_ac_lfc %>%
@@ -668,7 +668,7 @@ write_csv(AC_median_24_lfc, "data/Final_four_data/AC_median_24_lfc.csv")
 
 
 ```{r example 3hr expression}
-DNR_3_top3 <- row.names(AC.DNR_3.top[1:3,])
+DNR_3_top3 <- AC.DNR_3.top[1:3,1]
 
 log_filt_23s <- lcpm_h3_23s_filtered %>% 
   cpm(., log=TRUE) %>% as.data.frame()
@@ -688,7 +688,7 @@ log_filt_23s %>%
   scale_fill_manual(values = drug_pal)+
   theme_bw()
 
-DOX_3_top3 <- row.names(AC.DOX_3.top[1:3,])
+DOX_3_top3 <- AC.DOX_3.top[1:3,1]
 
 log_filt_23s %>% 
   dplyr::filter(row.names(.) %in% DOX_3_top3) %>% 
@@ -704,7 +704,7 @@ log_filt_23s %>%
   scale_fill_manual(values = drug_pal)+
   theme_bw()
 
-EPI_3_top3 <- row.names(AC.EPI_3.top[1:3,])
+EPI_3_top3 <- AC.EPI_3.top[1:3,1]
 
 log_filt_23s %>% 
   dplyr::filter(row.names(.) %in% EPI_3_top3) %>% 
@@ -720,7 +720,7 @@ log_filt_23s %>%
   scale_fill_manual(values = drug_pal)+
   theme_bw()
 
-MTX_3_top3 <- row.names(AC.MTX_3.top[1:3,])
+MTX_3_top3 <- AC.MTX_3.top[1:3,1]
 
 log_filt_23s %>% 
   dplyr::filter(row.names(.) %in% MTX_3_top3) %>% 
@@ -739,7 +739,7 @@ log_filt_23s %>%
 
 
 ```{r example 24hr expression}
-DNR_24_top3 <- row.names(AC.DNR_24.top[1:3,])
+DNR_24_top3 <- AC.DNR_24.top[1:3,1]
 
 log_filt_23s <- lcpm_h3_23s_filtered %>% 
   cpm(., log=TRUE) %>% as.data.frame()
@@ -759,7 +759,7 @@ log_filt_23s %>%
   scale_fill_manual(values = drug_pal)+
   theme_bw()
 
-DOX_24_top3 <- row.names(AC.DOX_24.top[1:3,])
+DOX_24_top3 <- AC.DOX_24.top[1:3,1]
 
 log_filt_23s %>% 
   dplyr::filter(row.names(.) %in% DOX_24_top3) %>% 
@@ -775,7 +775,7 @@ log_filt_23s %>%
   scale_fill_manual(values = drug_pal)+
   theme_bw()
 
-EPI_24_top3 <- row.names(AC.EPI_24.top[1:3,])
+EPI_24_top3 <- AC.EPI_24.top[1:3,1]
 
 log_filt_23s %>% 
   dplyr::filter(row.names(.) %in% EPI_24_top3) %>% 
@@ -791,7 +791,7 @@ log_filt_23s %>%
   scale_fill_manual(values = drug_pal)+
   theme_bw()
 
-MTX_24_top3 <- row.names(AC.MTX_24.top[1:3,])
+MTX_24_top3 <- AC.MTX_24.top[1:3,1]
 
 log_filt_23s %>% 
   dplyr::filter(row.names(.) %in% MTX_24_top3) %>% 
@@ -863,60 +863,70 @@ ATAC.DNR_24.top_ff= topTable(efit4, coef=6, adjust.method="BH", number=Inf, sort
 ATAC.DOX_24.top_ff= topTable(efit4, coef=7, adjust.method="BH", number=Inf, sort.by="p")%>% rownames_to_column("peak")
 ATAC.EPI_24.top_ff= topTable(efit4, coef=8, adjust.method="BH", number=Inf, sort.by="p")%>% rownames_to_column("peak")
 ATAC.MTX_24.top_ff= topTable(efit4, coef=9, adjust.method="BH", number=Inf, sort.by="p")%>% rownames_to_column("peak")
+
 ATAC_LFC_data<- ATAC.DNR_3.top_ff %>% 
   dplyr::select(peak,logFC) %>% 
   dplyr::rename("ATAC_DNR_3"=logFC) %>% 
-  left_join(., (ATAC.DOX_3.top_ff %>% select(peak,logFC) %>%
+  left_join(., (ATAC.DOX_3.top_ff %>% dplyr::select(peak,logFC) %>%
                   dplyr::rename("ATAC_DOX_3"=logFC)), by=c("peak"="peak")) %>% 
-  left_join(., (ATAC.EPI_3.top_ff %>% select(peak,logFC) %>%
+  left_join(., (ATAC.EPI_3.top_ff %>% dplyr::select(peak,logFC) %>%
                   dplyr::rename("ATAC_EPI_3"=logFC)), by=c("peak"="peak")) %>%
-  left_join(., (ATAC.MTX_3.top_ff %>% select(peak,logFC) %>%
+  left_join(., (ATAC.MTX_3.top_ff %>% dplyr::select(peak,logFC) %>%
                   dplyr::rename("ATAC_MTX_3"=logFC)), by=c("peak"="peak")) %>%
-  left_join(., (ATAC.DNR_24.top_ff %>% select(peak,logFC) %>%
+  left_join(., (ATAC.DNR_24.top_ff %>% dplyr::select(peak,logFC) %>%
                   dplyr::rename("ATAC_DNR_24"=logFC)), by=c("peak"="peak")) %>%
-  left_join(., (ATAC.DOX_24.top_ff %>% select(peak,logFC) %>%
+  left_join(., (ATAC.DOX_24.top_ff %>% dplyr::select(peak,logFC) %>%
                   dplyr::rename("ATAC_DOX_24"=logFC)), by=c("peak"="peak")) %>%
-  left_join(., (ATAC.EPI_24.top_ff %>% select(peak,logFC) %>%
+  left_join(., (ATAC.EPI_24.top_ff %>% dplyr::select(peak,logFC) %>%
                   dplyr::rename("ATAC_EPI_24"=logFC)), by=c("peak"="peak")) %>%
-  left_join(., (ATAC.MTX_24.top_ff %>% select(peak,logFC) %>%
+  left_join(., (ATAC.MTX_24.top_ff %>% dplyr::select(peak,logFC) %>%
                   dplyr::rename("ATAC_MTX_24"=logFC)), by=c("peak"="peak")) 
 
 
-AC_LFC_data <- AC.DNR_3.top %>% 
-  rownames_to_column("Geneid") %>% 
+AC_LFC_data <-  AC.DNR_3.top %>%
+  column_to_rownames("peak") %>% 
+  rownames_to_column("Geneid") %>%
   dplyr::select(Geneid,logFC) %>% 
   dplyr::rename("AC_DNR_3"=logFC) %>% 
   left_join(., (AC.DOX_3.top %>%
+                  column_to_rownames("peak") %>% 
                   rownames_to_column("Geneid") %>% 
-                  select(Geneid,logFC) %>%
+                  dplyr::select(Geneid,logFC) %>%
                   dplyr::rename("AC_DOX_3"=logFC)), by=c("Geneid"="Geneid")) %>% 
   left_join(., (AC.EPI_3.top %>% 
+                  column_to_rownames("peak") %>% 
                   rownames_to_column("Geneid") %>% 
-                  select(Geneid,logFC) %>%
+                  dplyr::select(Geneid,logFC) %>%
                   dplyr::rename("AC_EPI_3"=logFC)), by=c("Geneid"="Geneid")) %>%
-  left_join(., (AC.MTX_3.top %>% 
+  left_join(., (AC.MTX_3.top %>%
+                  column_to_rownames("peak") %>% 
                   rownames_to_column("Geneid") %>% 
-                  select(Geneid,logFC) %>%
+                  dplyr::select(Geneid,logFC) %>%
                   dplyr::rename("AC_MTX_3"=logFC)), by=c("Geneid"="Geneid")) %>%
-  left_join(., (AC.DNR_24.top %>% 
+  left_join(., (AC.DNR_24.top %>%
+                  column_to_rownames("peak") %>% 
                   rownames_to_column("Geneid") %>% 
-                  select(Geneid,logFC) %>%
+                  dplyr::select(Geneid,logFC) %>%
                   dplyr::rename("AC_DNR_24"=logFC)), by=c("Geneid"="Geneid")) %>%
   left_join(., (AC.DOX_24.top %>% 
+                  column_to_rownames("peak") %>% 
                   rownames_to_column("Geneid") %>% 
-                  select(Geneid,logFC) %>%
+                  dplyr::select(Geneid,logFC) %>%
                   dplyr::rename("AC_DOX_24"=logFC)), by=c("Geneid"="Geneid")) %>%
   left_join(., (AC.EPI_24.top %>% 
+                  column_to_rownames("peak") %>% 
                   rownames_to_column("Geneid") %>% 
-                  select(Geneid,logFC) %>%
+                  dplyr::select(Geneid,logFC) %>%
                   dplyr::rename("AC_EPI_24"=logFC)), by=c("Geneid"="Geneid")) %>%
   left_join(., (AC.MTX_24.top %>% 
+                  column_to_rownames("peak") %>% 
                   rownames_to_column("Geneid") %>% 
-                  select(Geneid,logFC) %>%
+                  dplyr::select(Geneid,logFC) %>%
                   dplyr::rename("AC_MTX_24"=logFC)), by=c("Geneid"="Geneid")) 
 
-LFC_corr <- overlap_df_ggplot %>% 
-  select(peakid,Geneid) %>% 
+LFC_corr <-
+overlap_df_ggplot %>% 
+  dplyr::select(peakid,Geneid) %>% 
   left_join(., ATAC_LFC_data, by = c("peakid"="peak")) %>% 
   left_join(., AC_LFC_data, by = c ("Geneid"="Geneid")) %>% 
   unite("name",peakid:Geneid) %>% 
@@ -1061,6 +1071,154 @@ LR_23s <- motif_prob_23s %>%
 # saveRDS(EAR_23s,"data/Final_four_data/H3K27ac_files/EAR_23s.RDS")
 # 
 # saveRDS(LR_23s,"data/Final_four_data/H3K27ac_files/LR_23s.RDS")
+
+```
+
+```{r}
+Clust_1 <- readRDS("data/Final_four_data/H3K27ac_files/NR_23s.RDS")
+
+Clust_2 <- readRDS("data/Final_four_data/H3K27ac_files/ESR_23s.RDS")
+
+Clust_3 <- readRDS("data/Final_four_data/H3K27ac_files/EAR_23s.RDS")
+
+Clust_4 <- readRDS("data/Final_four_data/H3K27ac_files/LR_23s.RDS")
+
+AC.DNR_24.top %>% 
+  rownames_to_column("AC_Peakid") %>% 
+  dplyr::select(AC_Peakid) %>% 
+  mutate(Cluster = case_when(
+    AC_Peakid %in% Clust_1$Peakid ~ "Clust_1",
+    AC_Peakid %in% Clust_2$Peakid ~ "Clust_2",
+    AC_Peakid %in% Clust_3$Peakid ~ "Clust_3",
+    AC_Peakid %in% Clust_4$Peakid ~ "Clust_4",
+    TRUE ~ "not_in_cluster")) %>% 
+  write_delim(.,file="data/Final_four_data/H3K27ac_files/Cluster_dataframe.txt",delim="\t")
+```
+### Additional QC on H3K27ac CUT&Tag
+
+```{r getting the FRiP and trttime}
+# saveRDS(H3K27ac_count_txt,"data/Final_four_data/H3K27ac_files/featureCounts_summary_masterpeak_set.RDS")
+
+H3K27ac_count_txt <- readRDS("data/Final_four_data/H3K27ac_files/featureCounts_summary_masterpeak_set.RDS")
+
+names(H3K27ac_count_txt ) = gsub(pattern = "_final.bam*", replacement = "", x = names(H3K27ac_count_txt ))
+names(H3K27ac_count_txt ) = gsub(pattern = "^Individual_data/77-1/bamFiles/*", replacement = "", x = names(H3K27ac_count_txt ))
+names(H3K27ac_count_txt ) = gsub(pattern = "^Individual_data/87-1/bamFiles/*", replacement = "", x = names(H3K27ac_count_txt ))
+names(H3K27ac_count_txt ) = gsub(pattern = "^Individual_data/71-1/bamFiles/*", replacement = "", x = names(H3K27ac_count_txt ))
+
+
+names(H3K27ac_count_txt ) = gsub(pattern = "*87_1_*", replacement = "A_", x = names(H3K27ac_count_txt ))
+ names(H3K27ac_count_txt ) = gsub(pattern = "77_1_*", replacement = "B_", x = names(H3K27ac_count_txt ))
+ names(H3K27ac_count_txt ) = gsub(pattern = "71_1_*", replacement = "C_", x = names(H3K27ac_count_txt ))
+ 
+H3K27ac_summary <- H3K27ac_count_txt %>% 
+  column_to_rownames("Status") %>% 
+  t() %>% 
+  as.data.frame() %>% 
+  rownames_to_column("samples") %>% 
+  rowwise() %>% 
+  mutate(Total=sum(c_across(Assigned:Unassigned_Ambiguity))) %>% 
+  mutate(percent=sprintf("%.2f",Assigned/Total*100)) %>% 
+  # dplyr::select(samples, Assigned,Total,percent) %>% 
+  mutate(samples=gsub("24","_24",samples)) %>% 
+  mutate(samples=gsub("3","_3",samples)) %>% 
+  mutate(percent=(as.numeric(percent))) %>% 
+  separate_wider_delim(.,samples,names=c("Ind","trt","time"), delim="_",cols_remove=FALSE)
+
+H3K27ac_summary %>% 
+  dplyr::select(Ind,trt,time, percent) %>% 
+  mutate(trt= factor(trt, levels = c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
+  mutate(time=factor(time, levels= c("3","24"))) %>% 
+  # mutate(Ind=factor(I))
+  ggplot(., aes(x=trt,y=percent,group=(interaction(time,trt))))+
+  geom_boxplot(aes(fill=trt))+
+   geom_point(aes(col=Ind, size =3))+
+  # geom_hline(yintercept = 20)+
+  facet_wrap(time~.)+
+   scale_fill_manual(values=drug_pal)+
+  scale_color_brewer(palette = "Dark2")+
+  ggtitle("fraction of reads in high confidence regions")+
+  theme_bw()+
+  theme(strip.text = element_text(face = "bold",  hjust = .5, size = 8),
+        strip.background = element_rect(fill = "white", linetype = "solid",
+                                        color = "black", linewidth = 1),
+        panel.spacing = unit(1, 'points'))
+  
+```
+### H3K27
+```{r getting fragments}
+# saveRDS(H3K27ac_frag_count,"data/Final_four_data/H3K27ac_files/featureCounts_fragments.RDS")
+
+H3K27ac_frag_count <- readRDS("data/Final_four_data/H3K27ac_files/featureCounts_fragments.RDS")
+
+names(H3K27ac_frag_count ) = gsub(pattern = "_final.bam*", replacement = "", x = names(H3K27ac_frag_count ))
+names(H3K27ac_frag_count ) = gsub(pattern = "^Individual_data/77-1/bamFiles/*", replacement = "", x = names(H3K27ac_frag_count ))
+names(H3K27ac_frag_count ) = gsub(pattern = "^Individual_data/87-1/bamFiles/*", replacement = "", x = names(H3K27ac_frag_count ))
+names(H3K27ac_frag_count ) = gsub(pattern = "^Individual_data/71-1/bamFiles/*", replacement = "", x = names(H3K27ac_frag_count ))
+
+
+names(H3K27ac_frag_count ) = gsub(pattern = "*87_1_*", replacement = "A_", x = names(H3K27ac_frag_count ))
+ names(H3K27ac_frag_count ) = gsub(pattern = "77_1_*", replacement = "B_", x = names(H3K27ac_frag_count ))
+ names(H3K27ac_frag_count ) = gsub(pattern = "71_1_*", replacement = "C_", x = names(H3K27ac_frag_count ))
+ H3K27ac_frag_summary <- H3K27ac_frag_count %>% 
+  column_to_rownames("Status") %>% 
+  t() %>% 
+  as.data.frame() %>% 
+  rownames_to_column("samples") %>% 
+  rowwise() %>% 
+  mutate(Total=sum(c_across(Assigned:Unassigned_Ambiguity))) %>% 
+  # mutate(percent=sprintf("%.2f",Assigned/Total*100)) %>% 
+  # dplyr::select(samples, Assigned,Total,percent) %>% 
+  mutate(samples=gsub("24","_24",samples)) %>% 
+  mutate(samples=gsub("3","_3",samples)) %>% 
+  separate_wider_delim(.,samples,names=c("Ind","trt","time"), delim="_",cols_remove=FALSE)
+
+ H3K27ac_frag_summary %>% 
+   dplyr::select(Ind:samples,Total) %>% 
+   mutate(trt= factor(trt, levels = c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
+  mutate(time=factor(time, levels= c("3","24"))) %>% 
+  # mutate(Ind=factor(I))
+  ggplot(., aes(x=trt,y=Total,group=(interaction(time,trt))))+
+  geom_boxplot(aes(fill=trt))+
+   geom_point(aes(col=Ind, size =3))+
+  # geom_hline(yintercept = 20)+
+  facet_wrap(time~.)+
+   scale_fill_manual(values=drug_pal)+
+  scale_color_brewer(palette = "Dark2")+
+  ggtitle("Fragments across treatment and time")+
+  theme_bw()+
+  theme(strip.text = element_text(face = "bold",  hjust = .5, size = 8),
+        strip.background = element_rect(fill = "white", linetype = "solid",
+                                        color = "black", linewidth = 1),
+        panel.spacing = unit(1, 'points'))
+ 
+```
+
+```{r TSSE score}
+allTSSE_ac <- readRDS( "data/Final_four_data/H3K27ac_files/H3K27ac_TSSE_scores.RDS")
+
+
+allTSSE_ac %>% as.data.frame() %>% 
+  rownames_to_column("sample") %>% 
+  separate(sample, into = c("indv","trt","time"), sep= "_") %>%
+  mutate(trt= factor(trt, levels = c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
+  mutate(time = factor(time, levels = c("3","24"),labels = c("3 hours","24 hours"))) %>% 
+  dplyr::filter(indv !=4 &indv !=5) %>% 
+  ggplot(., aes(x= time, y= V1, group = indv))+
+
+   # geom_col(position= "dodge",aes(fill=trt)) %>%
+  # geom_jitter(aes(col = trt, size = 1.5, alpha = 0.5) ,  position=position_jitter(0.25))+
+  geom_point(aes(col = trt,size = 1.5,alpha = 0.5))+
+  geom_hline(yintercept=5, linetype = 3)+
+    geom_hline(yintercept=7, col = "blue")+
+  facet_wrap(~indv)+
+   theme_bw()+
+  ggtitle("TSS enrichment scores")+
+   scale_color_manual(values=drug_pal)+
+   theme(strip.text = element_text(face = "bold",  hjust = .5, size = 8),
+        strip.background = element_rect(fill = "white", linetype = "solid",
+                                        color = "black", linewidth = 1))
+
 
 ```
 
