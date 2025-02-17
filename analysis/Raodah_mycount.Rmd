@@ -1341,3 +1341,31 @@ c2 <- plotAvgProf(tagMatrix_C[c(2,3,5,7,9)], xlim=c(-3000, 3000), ylab = "Count 
 plot_grid(a1,a2, b1,b2,c1,c2, axis="l",align = "hv",nrow=3, ncol=2)
 ```
 
+```{r H3K27ac log2cpm}
+###overlap with chr6.36678380.36679788
+
+overlap_SNP_peaks <- c(
+  AC_peakid=c("chr6.36674959.36687167","chr9.76818277.76818859"))
+ 
+lcpm_h3_23s%>% 
+  as.data.frame() %>% 
+  rownames_to_column("Peakid")%>% 
+  dplyr::filter(Peakid %in% overlap_SNP_peaks) %>%
+  pivot_longer(., cols = !Peakid, names_to = "samples",values_to = "logcpm") %>% 
+  separate_wider_delim(., samples, delim = "_",names=c("ind","trt","time"), cols_remove = FALSE) %>% 
+  left_join(., (sample_peaks %>% 
+              rownames_to_column("cluster") %>% 
+              dplyr::select(cluster,Peakid)),
+            by=c("Peakid"="Peakid")) %>% 
+  mutate(trt=factor(trt, levels = c("DOX","EPI","DNR","MTX","TRZ", "VEH")),
+         time= factor(time, levels = c("3","24"))) %>% 
+  ggplot(aes(x=time,y=logcpm))+
+  geom_boxplot(aes(fill=trt))+
+  # geom_point(aes(color=ind))+
+  facet_wrap(~Peakid+cluster,scales="free_y", nrow=4, ncol=2)+
+  ggtitle(" H3K27ac acetylation")+
+  scale_fill_manual(values = drug_pal)+
+  theme_bw()+
+  ylab("log2 cpm H3K27ac")
+```
+
