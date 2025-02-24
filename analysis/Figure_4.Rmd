@@ -1,0 +1,245 @@
+---
+title: "Figure 4"
+author: "Renee Matthews"
+date: "2025-02-24"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE,
+	warning = FALSE,
+		dev = c("png","pdf")
+)
+```
+
+```{css, echo=FALSE}
+pre {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+pre[class] {
+  max-height: 200px;
+}
+```
+##### packages
+```{r  package loading}
+library(tidyverse)
+library(kableExtra)
+library(broom)
+library(RColorBrewer)
+library(gprofiler2)
+library(ChIPseeker)
+library("TxDb.Hsapiens.UCSC.hg38.knownGene")
+library("org.Hs.eg.db")
+library(rtracklayer)
+# library(edgeR)
+library(ggfortify)
+# library(limma)
+library(readr)
+library(BiocGenerics)
+library(gridExtra)
+library(VennDiagram)
+library(scales)
+library(ggVennDiagram)
+library(BiocParallel)
+library(ggpubr)
+library(biomaRt)
+```
+
+
+
+```{r table function}
+GO_KEGG_analysis <- function(df,type, setp_value=1){
+# Extract the name of the dataframe
+  a <- deparse(substitute(df)) %>% 
+  gsub("_NG_2kresgenes","",.)
+
+ # Prepare the table output
+  df_nomtable <-  df$result %>% 
+  dplyr::select(c(source, term_id,
+                  term_name,intersection_size, 
+                   term_size, p_value))
+# Create a color palette for different dataframe names
+  # You can customize this color palette as needed  
+  
+  mrc_palette <- c(
+    "EAR_open" = "#F8766D",
+    "EAR_close" = "#f6483c",
+    "ESR_open" = "#7CAE00",
+    "ESR_close" = "#587b00",
+    "ESR_opcl" = "cornflowerblue",
+    "ESR_clop"= "grey60",
+     "LR_open" = "#00BFC4",
+     "LR_close" = "#008d91",
+     "NR" = "#C77CFF"
+  )
+   # Use the dataframe name as the fill color (fallback to black if name is not in the palette)
+   fill_color <- mrc_palette[a] %||% "darkgrey"
+   
+
+plot <- df_nomtable %>%
+  filter(source==type) %>% 
+     dplyr::filter(p_value < setp_value) %>% 
+  mutate(log10_p=(-log(p_value, base=10))) %>% 
+  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
+    geom_col(fill=fill_color)+
+  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
+  theme_bw()+
+  ylab("")+
+  xlab(paste0("-log10 p-value"))+
+  guides(fill="none")+
+  theme(axis.text.y = element_text(color="black"))+
+  ggtitle(paste0("(p < ",setp_value," ) ",type," terms found in\n ",a," neargenes"))
+
+
+print(plot)
+}
+```
+Figure 4: GO analysis
+```{r}
+knitr::include_graphics("assets/Figure\ 4.png", error=FALSE)
+knitr::include_graphics("docs/assets/Figure\ 4.png",error = FALSE)
+
+```
+
+
+```{r loading data frames}
+mrc_palette <- c(
+    "EAR_open" = "#F8766D",
+    "EAR_close" = "#f6483c",
+    "ESR_open" = "#7CAE00",
+    "ESR_close" = "#587b00",
+     "ESR_OC" = "#6a9500",
+    "ESR_opcl" = "cornflowerblue",
+    "ESR_clop"= "grey60",
+     "LR_open" = "#00BFC4",
+     "LR_close" = "#008d91",
+     "NR" = "#C77CFF"
+  )
+
+TSS_NG_data <- read_delim("data/Final_four_data/TSS_assigned_NG.txt", 
+    delim = "\t", escape_double = FALSE, 
+    trim_ws = TRUE)
+
+background_NGs <- TSS_NG_data %>% distinct(ENTREZID,SYMBOL)
+peak_list_all_mrc <- readRDS( "data/Final_four_data/Peak_list_all_mrc_NG.RDS")
+mrc_list <- readRDS("data/Final_four_data/Nine_group_TE_anno_with1bp.RDS")
+
+###because mrc list changed groupings to nine groups not eight
+
+EAR_open <- mrc_list %>% 
+  dplyr::filter(mrc=="EAR_open")%>% 
+  distinct(Peakid)
+ESR_opcl <- mrc_list %>% 
+  dplyr::filter(mrc=="ESR_opcl")%>% 
+  distinct(Peakid)
+ESR_clop <- mrc_list %>% 
+  dplyr::filter(mrc=="ESR_clop") %>% 
+  distinct(Peakid)
+
+
+EAR_open_NG_2k<-  peak_list_all_mrc %>% 
+      dplyr::filter(Peakid %in%EAR_open$Peakid) %>% 
+    dplyr::filter(dist_to_NG >-2000&dist_to_NG<2000) %>% 
+    dplyr::select(Peakid, NCBI_gene:SYMBOL,dist_to_NG, mrc) %>% 
+    separate_longer_delim(., cols=NCBI_gene:SYMBOL, delim= ",") %>% 
+    distinct(NCBI_gene,SYMBOL)
+
+
+EAR_close_NG_2k<-  peak_list_all_mrc %>% 
+      dplyr::filter(mrc =="EAR_close") %>% 
+    dplyr::filter(dist_to_NG >-2000&dist_to_NG<2000) %>% 
+    dplyr::select(Peakid, NCBI_gene:SYMBOL,dist_to_NG, mrc) %>% 
+    separate_longer_delim(., cols=NCBI_gene:SYMBOL, delim= ",") %>% 
+    distinct(NCBI_gene,SYMBOL)
+  
+ESR_open_NG_2k<-  peak_list_all_mrc %>% 
+      dplyr::filter(mrc =="ESR_open") %>% 
+    dplyr::filter(dist_to_NG >-2000&dist_to_NG<2000) %>% 
+    dplyr::select(Peakid, NCBI_gene:SYMBOL,dist_to_NG, mrc) %>% 
+    separate_longer_delim(., cols=NCBI_gene:SYMBOL, delim= ",") %>% 
+    distinct(NCBI_gene,SYMBOL)
+ESR_close_NG_2k<-  peak_list_all_mrc %>% 
+      dplyr::filter(mrc =="ESR_close") %>% 
+    dplyr::filter(dist_to_NG >-2000&dist_to_NG<2000) %>% 
+    dplyr::select(Peakid, NCBI_gene:SYMBOL,dist_to_NG, mrc) %>% 
+    separate_longer_delim(., cols=NCBI_gene:SYMBOL, delim= ",") %>% 
+    distinct(NCBI_gene,SYMBOL)
+ESR_opcl_NG_2k<-  peak_list_all_mrc %>% 
+     dplyr::filter(Peakid %in%ESR_opcl$Peakid) %>% 
+    dplyr::filter(dist_to_NG >-2000&dist_to_NG<2000) %>% 
+    dplyr::select(Peakid, NCBI_gene:SYMBOL,dist_to_NG, mrc) %>% 
+    separate_longer_delim(., cols=NCBI_gene:SYMBOL, delim= ",") %>% 
+    distinct(NCBI_gene,SYMBOL)
+
+ESR_clop_NG_2k<-  peak_list_all_mrc %>% 
+      dplyr::filter(Peakid %in%ESR_clop$Peakid) %>% 
+    dplyr::filter(dist_to_NG >-2000&dist_to_NG<2000) %>% 
+    dplyr::select(Peakid, NCBI_gene:SYMBOL,dist_to_NG, mrc) %>% 
+    separate_longer_delim(., cols=NCBI_gene:SYMBOL, delim= ",") %>% 
+    distinct(NCBI_gene,SYMBOL)
+
+LR_open_NG_2k<-  peak_list_all_mrc %>% 
+      dplyr::filter(mrc =="LR_open") %>% 
+    dplyr::filter(dist_to_NG >-2000&dist_to_NG<2000) %>% 
+    dplyr::select(Peakid, NCBI_gene:SYMBOL,dist_to_NG, mrc) %>% 
+    separate_longer_delim(., cols=NCBI_gene:SYMBOL, delim= ",") %>% 
+    distinct(NCBI_gene,SYMBOL)
+LR_close_NG_2k<-  peak_list_all_mrc %>% 
+      dplyr::filter(mrc =="LR_close") %>% 
+    dplyr::filter(dist_to_NG >-2000&dist_to_NG<2000) %>% 
+    dplyr::select(Peakid, NCBI_gene:SYMBOL,dist_to_NG, mrc) %>% 
+    separate_longer_delim(., cols=NCBI_gene:SYMBOL, delim= ",") %>% 
+    distinct(NCBI_gene,SYMBOL)
+
+NR_NG_2k <-   peak_list_all_mrc %>%
+      dplyr::filter(mrc =="NR") %>% 
+    dplyr::filter(dist_to_NG >-2000&dist_to_NG<2000) %>% 
+    dplyr::select(Peakid, NCBI_gene:SYMBOL,dist_to_NG, mrc) %>% 
+    separate_longer_delim(., cols=NCBI_gene, delim= ",") %>% 
+     separate_longer_delim(., cols=,SYMBOL, delim= ",")  
+
+NR_NG_2k <- readRDS("data/Final_four_data/GO_analysis/NR_NG_2kresgenes.RDS")
+EAR_close_NG_2kresgenes <- readRDS("data/Final_four_data/GO_analysis/EAR_close_NG_2kresgenes.RDS")
+ESR_close_NG_2kresgenes <- readRDS("data/Final_four_data/GO_analysis/ESR_close_NG_2kresgenes.RDS")
+
+ESR_opcl_NG_2k <- readRDS("data/Final_four_data/GO_analysis/ESR_opcl_NG_2kresgenes.RDS")
+ESR_clop_NG_2k <- readRDS("data/Final_four_data/GO_analysis/ESR_clop_NG_2kresgenes.RDS")
+LR_open_NG_2kresgenes <- readRDS("data/Final_four_data/GO_analysis/LR_open_NG_2kresgenes.RDS")
+LR_close_NG_2kresgenes <- readRDS("data/Final_four_data/GO_analysis/LR_close_NG_2kresgenes.RDS")
+ESR_open_NG_2kresgenes <-readRDS ("data/Final_four_data/GO_analysis/ESR_open_NG_2kresgenes.RDS")
+EAR_open_NG_2kresgenes<-readRDS  ("data/Final_four_data/GO_analysis/EAR_open_NG_2kresgenes.RDS")
+
+```
+Sample Query Code
+```{r, eval=FALSE,include=TRUE}
+ESR_clop_NG_2kresgenes <- gost(query = ESR_clop_NG_2k$NCBI_gene,
+                    organism = "hsapiens",
+                    significant = FALSE,
+                    ordered_query = FALSE,
+                    domain_scope = "custom",
+                    measure_underrepresentation = FALSE,
+                    evcodes = FALSE,
+                    user_threshold = 0.05,
+                    correction_method = c("fdr"),
+                    custom_bg = background_NGs$ENTREZID,
+                    sources=c("GO:BP","KEGG"))
+
+
+```
+
+```{r Go results}
+
+GO_KEGG_analysis(EAR_open_NG_2kresgenes,"GO:BP", 0.049)
+GO_KEGG_analysis(EAR_close_NG_2kresgenes,"GO:BP", 0.049)
+GO_KEGG_analysis(ESR_open_NG_2kresgenes,"GO:BP", 0.049)
+GO_KEGG_analysis(ESR_close_NG_2kresgenes,"GO:BP", 0.049)
+GO_KEGG_analysis(ESR_opcl_NG_2kresgenes,"GO:BP", 0.049)
+GO_KEGG_analysis(ESR_clop_NG_2kresgenes,"GO:BP", 0.049)
+GO_KEGG_analysis(LR_open_NG_2kresgenes,"GO:BP", 0.049)
+GO_KEGG_analysis(LR_close_NG_2kresgenes,"GO:BP", 0.049)
+```
+
