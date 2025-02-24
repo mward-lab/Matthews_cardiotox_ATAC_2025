@@ -1,45 +1,5 @@
 
 
-
-peak_rep_names <-data.frame(motif=c("NR","LR", "ESR","EAR"),rep_chrom=c("chr10.34739536.34740341",
-                    "chr6.133609545.133610219",
-                   "chr10.72331769.72332348",
-                   "chr5.32419744.32420111"))
-
-log_filt_ff <- filt4_matrix_lcpm %>%
-  as.data.frame() %>%
-  rename_with(.,~gsub(pattern = "Ind1_75", replacement = "1_",.)) %>%
-  rename_with(.,~gsub(pattern = "Ind2_87", replacement = "2_",.)) %>%
-  rename_with(.,~gsub(pattern = "Ind3_77", replacement = "3_",.)) %>%
-  rename_with(.,~gsub(pattern = "Ind6_71", replacement = "6_",.)) %>%
-  rename_with(.,~gsub( "DX" ,'DOX',.)) %>%
-  rename_with(.,~gsub( "DA" ,'DNR',.)) %>%
-  rename_with(.,~gsub( "E" ,'EPI',.)) %>%
-  rename_with(.,~gsub( "T" ,'TRZ',.)) %>%
-  rename_with(.,~gsub( "M" ,'MTX',.)) %>%
-  rename_with(.,~gsub( "V" ,'VEH',.)) %>%
-  rename_with(.,~gsub("24h","_24h",.)) %>%
-  rename_with(.,~gsub("3h","_3h",.))
-
-
-
-
-
-
-log_filt_ff %>%
-  dplyr::filter(row.names(.) %in% peak_rep_names$rep_chrom)%>%
-  mutate(Peak = row.names(.)) %>%
-  pivot_longer(cols = !Peak, names_to = "sample", values_to = "counts") %>%
-  separate("sample", into = c("indv","trt","time")) %>%
-  mutate(time=factor(time, levels = c("3h","24h"))) %>%
-  mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>%
-  ggplot(., aes (x = time, y=counts))+
-  geom_boxplot(aes(fill=trt))+
-  facet_wrap(Peak~.)+
-  ggtitle("EAR_ESR_LR_NR")+
-  scale_fill_manual(values = drug_pal)+
-  theme_bw()
-
 ###################### combining matrices for paper figure
 library(tidyverse)
 library(ComplexHeatmap)
