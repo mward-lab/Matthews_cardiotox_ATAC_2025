@@ -39,12 +39,10 @@ library(ggfortify)
 library(readr)
 library(BiocGenerics)
 library(gridExtra)
-library(VennDiagram)
 library(scales)
-library(ggVennDiagram)
 library(BiocParallel)
 library(ggpubr)
-library(edgeR)
+# library(edgeR)
 library(genomation)
 library(ggsignif)
 library(plyranges)
@@ -142,7 +140,10 @@ overlapping_regions <- Col_TSS_data_gr[queryHits(overlaps)]
 TSS_overlap_list <- overlapping_regions %>% as.data.frame() %>% 
   distinct(Peakid)
 
-
+Col_fullDF_cug_overlap <- join_overlap_intersect(Col_TSS_data_gr,cpg_island_gr)
+Col_fullDF_cug_overlap <-Col_fullDF_cug_overlap %>% 
+  as.data.frame %>% 
+  mutate(per_ol=width/cpg_width)
 ```
 
 
@@ -381,11 +382,6 @@ results_or <- results_or %>%
   mutate(Matrix_Name=factor(Matrix_Name, levels=c("TE","Sines","Lines", "DNA","LTR","Retro","CGI","TSS"))) %>% 
     mutate(Row_Compared=factor(Row_Compared, levels = c("EAR_open","ESR_open", "LR_open","ESR_opcl", "EAR_close", "ESR_close", "LR_close", "ESR_clop"))) %>% 
   arrange(Matrix_Name,Row_Compared)  
-print(results_or) %>% 
-  kable(., caption = "Odd ratio results and significance values of TE enrichment compared to No response group") %>% 
-  kable_paper("striped", full_width = TRUE) %>%
-  kable_styling(full_width = FALSE, font_size = 14) %>% 
-  scroll_box(width = "100%", height = "400px")
 
 
 col_fun_OR = colorRamp2(c(0,1,1.5,3,4), c("#BC9BFF","white","lightgreen","green3","green3" ))
@@ -397,20 +393,20 @@ sig_mat_OR <- results_or %>%
   as.matrix() 
 
 
-results_or %>% 
-  as.data.frame() %>% 
-  dplyr::select( Matrix_Name,Row_Compared,Odds_Ratio) %>% 
-  pivot_wider(., id_cols = Matrix_Name, names_from = Row_Compared, values_from = Odds_Ratio) %>% 
-  column_to_rownames("Matrix_Name") %>% 
-  as.matrix() %>% 
-  ComplexHeatmap::Heatmap(. ,col = col_fun_OR, 
-                          cluster_rows=FALSE, 
-                          cluster_columns=FALSE, 
-                          column_names_side = "top", 
-                          column_names_rot = 45,
-                          # na_col = "black",
-                          cell_fun = function(j, i, x, y, width, height, fill) {if (!is.na(sig_mat_OR[i, j]) && sig_mat_OR[i, j] < 0.05)
-            grid.text("*", x, y, gp = gpar(fontsize = 20))})
+# results_or %>% 
+#   as.data.frame() %>% 
+#   dplyr::select( Matrix_Name,Row_Compared,Odds_Ratio) %>% 
+#   pivot_wider(., id_cols = Matrix_Name, names_from = Row_Compared, values_from = Odds_Ratio) %>% 
+#   column_to_rownames("Matrix_Name") %>% 
+#   as.matrix() %>% 
+#   ComplexHeatmap::Heatmap(. ,col = col_fun_OR, 
+#                           cluster_rows=FALSE, 
+#                           cluster_columns=FALSE, 
+#                           column_names_side = "top", 
+#                           column_names_rot = 45,
+#                           # na_col = "black",
+#                           cell_fun = function(j, i, x, y, width, height, fill) {if (!is.na(sig_mat_OR[i, j]) && sig_mat_OR[i, j] < 0.05)
+#             grid.text("*", x, y, gp = gpar(fontsize = 20))})
 
 
 ```
@@ -619,22 +615,87 @@ sig_mat_cre <- results_or_cre %>%
   as.matrix() 
 
 
-results_or_cre %>% 
-  as.data.frame() %>% 
-  dplyr::select( Matrix_Name,Row_Compared,Odds_Ratio) %>% 
-  pivot_wider(., id_cols = Matrix_Name, names_from = Row_Compared, values_from = Odds_Ratio) %>% 
-  column_to_rownames("Matrix_Name") %>% 
-  as.matrix() %>% 
-  ComplexHeatmap::Heatmap(. ,col = col_fun_cre, 
-                          cluster_rows=FALSE, 
-                          cluster_columns=FALSE, 
-                          column_names_side = "top", 
-                          column_names_rot = 45,
-                          cell_fun = function(j, i, x, y, width, height, fill) {if (!is.na(sig_mat_cre[i, j]) && sig_mat_cre[i, j] < 0.05)
-            grid.text("*", x, y, gp = gpar(fontsize = 20))})
+# results_or_cre %>% 
+#   as.data.frame() %>% 
+#   dplyr::select( Matrix_Name,Row_Compared,Odds_Ratio) %>% 
+#   pivot_wider(., id_cols = Matrix_Name, names_from = Row_Compared, values_from = Odds_Ratio) %>% 
+#   column_to_rownames("Matrix_Name") %>% 
+#   as.matrix() %>% 
+#   ComplexHeatmap::Heatmap(. ,col = col_fun_cre, 
+#                           cluster_rows=FALSE, 
+#                           cluster_columns=FALSE, 
+#                           column_names_side = "top", 
+#                           column_names_rot = 45,
+#                           cell_fun = function(j, i, x, y, width, height, fill) {if (!is.na(sig_mat_cre[i, j]) && sig_mat_cre[i, j] < 0.05)
+#             grid.text("*", x, y, gp = gpar(fontsize = 20))})
 
 
 ```
+Now to adjust P-values BH style:
+```{r adj_BH heatmap}
+
+
+bot_df <- results_or_cre
+top_df <- results_or
+
+
+results_order <- top_df %>%
+  rbind(bot_df) %>%
+  mutate(Matrix_Name=factor(Matrix_Name,
+                            levels=c("TE",
+                                     "Sines",
+                                     "Lines",
+                                     "DNA","LTR",
+                                     "Retro","CGI",
+                                     "TSS","All cREs",
+                                     "PLS","dELS","pELS",
+                                     "CTCF"))) %>%
+  arrange(Matrix_Name) %>%
+  group_by(Row_Compared) %>%
+  mutate(rank_val=rank(P_Value, ties.method = "first")) %>%
+  mutate(BH_correction= p.adjust(P_Value,method= "BH")) %>%
+  mutate(sig=P_Value<BH_correction) %>%
+  mutate(Row_Compared=factor(Row_Compared,levels = c("EAR_open", "ESR_open", "LR_open","ESR_opcl",
+                                                     "EAR_close","ESR_close","LR_close","ESR_clop")))
+
+critical_value <- max(results_order$P_Value[results_order$sig])
+
+col_fun_OR = colorRamp2(c(0,1,1.5,3,4), c("#BC9BFF","white","lightgreen","green3","green3" ))
+sig_mat_OR <- results_order %>%
+  as.data.frame() %>%
+  dplyr::select( Matrix_Name,Row_Compared,BH_correction) %>%
+  arrange(Matrix_Name) %>%
+  pivot_wider(., id_cols = Matrix_Name, names_from = Row_Compared, values_from = BH_correction) %>%
+  dplyr::select(Matrix_Name,EAR_open,ESR_open,LR_open,ESR_opcl,EAR_close,ESR_close,LR_close,ESR_clop) %>%
+  column_to_rownames("Matrix_Name") %>%
+  as.matrix()
+
+
+results_mat <- results_order %>%
+  as.data.frame() %>%
+  dplyr::select( Matrix_Name,Row_Compared,Odds_Ratio) %>%
+  arrange(Matrix_Name) %>%
+  pivot_wider(., id_cols = Matrix_Name, names_from = Row_Compared, values_from = Odds_Ratio) %>%
+  dplyr::select(Matrix_Name,EAR_open,ESR_open,LR_open,ESR_opcl,EAR_close,ESR_close,LR_close,ESR_clop) %>%
+  column_to_rownames("Matrix_Name") %>%
+  as.matrix()
+
+
+#%>%
+  ComplexHeatmap::Heatmap(results_mat ,col = col_fun_OR,
+                          cluster_rows=FALSE,
+                          cluster_columns=FALSE,
+                          column_names_side = "top",
+                          column_names_rot = 45,
+                          # na_col = "black",
+                          cell_fun = function(j, i, x, y, width, height, fill) {
+                            if (!is.na(sig_mat_OR[i, j]) && sig_mat_OR[i, j] <0.05) {
+                              grid.text("*", x, y, gp = gpar(fontsize = 20))  # Add star if significant
+                            } })
+
+
+```
+
 
 ### Figure 2.B:  SVAs (Retrotransposons in repeatmasker)
 
@@ -703,7 +764,7 @@ h.genome_SVA %>%
   ggplot(., aes(x=mrc, fill= repName))+
   geom_bar(position="fill", col="black")+
   theme_bw()+
-  ggtitle("Repeat breakdown across eight clusters")+
+  ggtitle("Repeat breakdown across response classes")+
   scale_fill_retroposons()
 ```
 
