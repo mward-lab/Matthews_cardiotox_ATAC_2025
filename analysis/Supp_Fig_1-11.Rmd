@@ -55,5 +55,687 @@ library(smplot2)
 library(readxl)
 library(devtools)
 library(vargen)
+library(eulerr)
 
 ```
+
+
+
+### Figure S1: 
+```{r}
+knitr::include_graphics("assets/Fig\ S1.png", error=FALSE)
+knitr::include_graphics("docs/assets/Fig\ S1.png",error = FALSE)
+
+```
+
+```{r S1 dataframe, fig.width=10, fig.height=7}
+drug_pal <- c("#8B006D","#DF707E","#F1B72B", "#3386DD","#707031","#41B333")
+read_summary <- read_delim(file="data/Final_four_data/reads_summary_FF.txt",delim="\t")
+read_summary %>% 
+  pivot_longer(., cols=c(total_reads:unique_mapped_reads), names_to = "read_type",values_to = "counts") %>% 
+  dplyr::mutate(trt=factor(trt, levels = c("DOX", "EPI","DNR", "MTX","TRZ","VEH"))) %>% 
+  mutate(time=factor(time, levels =c("3h","24h"))) %>% 
+  mutate(indv=gsub("1","D",indv), indv=gsub("2","A",indv), indv=gsub("3","B",indv), indv=gsub("6","C",indv))%>% 
+  mutate(indv=factor(indv, levels=c("IndD","IndA","IndB","IndC"))) %>% 
+  mutate(read_type=factor(read_type, levels =c("total_reads","total_mapped_reads","nuclear_mapped_reads","unique_mapped_reads","nodup_mapped_reads"))) %>% 
+  ggplot(., aes(x=read_type, y=counts))+
+  geom_boxplot(aes(fill=trt))+
+  geom_point(aes(col=indv))+
+   theme_bw()+
+  facet_wrap(~trt+time,nrow = 3, ncol = 6 )+
+ scale_fill_manual(values=drug_pal)+
+  scale_color_brewer(palette = "Dark2")+
+  theme(strip.text = element_text(face = "bold",  hjust = 0, size = 8),
+        strip.background = element_rect(fill = "white", linetype = "solid",
+                                        color = "black", linewidth = 1),
+        panel.spacing = unit(1, 'points'),
+        axis.text.x=element_text(angle = 90, vjust = 0.5, hjust=1))
+
+
+```
+
+### Figure S2A: Read numbers across treatment and time
+```{r fig2a}
+read_summary %>% 
+  dplyr::select(sample:time, nodup_mapped_reads) %>% 
+  dplyr::mutate(trt=factor(trt, levels = c("DOX", "EPI","DNR", "MTX","TRZ","VEH"))) %>% 
+  mutate(time=factor(time, levels =c("3h","24h"))) %>% 
+  mutate(indv=gsub("1","D",indv), 
+         indv=gsub("2","A",indv), 
+         indv=gsub("3","B",indv), 
+         indv=gsub("6","C",indv))%>% 
+  mutate(indv=factor(indv, levels=c("IndD","IndA","IndB","IndC"))) %>% 
+  ggplot(., aes(x=trt,y=nodup_mapped_reads,group=(interaction(time,trt))))+
+  geom_boxplot(aes(fill=trt))+
+  geom_point(aes(col=indv, size =3))+
+  facet_wrap(time~.)+
+  scale_fill_manual(values=drug_pal)+
+  scale_color_brewer(palette = "Dark2")+
+  ggtitle("Reads across treatment and time")+
+  theme_bw()+
+  theme(strip.text = element_text(face = "bold",  hjust = .5, size = 8),
+        strip.background = element_rect(fill = "white", linetype = "solid",
+                                        color = "black", linewidth = 1),
+        panel.spacing = unit(1, 'points'))
+   
+
+```
+### Figure S2B: Fragments across treatment and time
+```{r Figs2b}
+peakcount_ff <- read_delim("data/Final_four_data/Peak_count_ff.txt",delim= "\t")
+peakcount_ff %>% 
+  mutate(time = factor(time, levels = c("3h", "24h"), labels= c("3 hours","24 hours"))) %>% 
+  mutate(trt = factor(trt, levels = c("DOX","EPI", "DNR", "MTX", "TRZ", "VEH"))) %>% 
+   mutate(indv=gsub("1","D",indv), 
+         indv=gsub("2","A",indv), 
+         indv=gsub("3","B",indv), 
+         indv=gsub("6","C",indv))%>% 
+  mutate(indv=factor(indv, levels=c("D","A","B","C"))) %>% 
+   ggplot(., aes(x=trt,y=peak_number))+
+  geom_boxplot(aes(fill=trt))+
+   geom_point(aes(col=indv, size =3))+
+  facet_wrap(time~.)+
+     scale_fill_manual(values=drug_pal)+
+  scale_color_brewer(palette = "Dark2")+
+  ggtitle("Regions across treatment and time")+
+  theme_bw()+
+  theme(strip.text = element_text(face = "bold",  hjust = .5, size = 8),
+        strip.background = element_rect(fill = "white", linetype = "solid",
+                                        color = "black", linewidth = 1),
+        panel.spacing = unit(1, 'points'))
+
+```
+
+### Figure S3: Fraction of fragments in high-confidence regions
+```{r}
+
+frip_newpeaks <- c(38.8,36.3,46.0,38.9,49.6,40.0,39.2,30.2,52.1,39.8,51.1,28.0,
+                   42.3,40.3,39.7,38.7,37.9,36.6,36.0,48.7,50.4,44.2,52.0,31.9,
+                   40.5,34.1,41.2,33.7,43.5,28.6,34.7,42.8,38.1,40.3,44.6,26.4,
+                   46.5,23.9,46.9,25.8,46.7,23.8,21.8,39.2,33.2,22.8,36.8,34.8)
+peakcount_ff$frip_newpeaks <- frip_newpeaks
+
+peakcount_ff %>% 
+  mutate(time = factor(time, levels = c("3h", "24h"), labels= c("3 hours","24 hours"))) %>% 
+  mutate(trt = factor(trt, levels = c("DOX","EPI", "DNR", "MTX", "TRZ", "VEH"))) %>% 
+   mutate(indv=gsub("1","D",indv), 
+         indv=gsub("2","A",indv), 
+         indv=gsub("3","B",indv), 
+         indv=gsub("6","C",indv))%>% 
+  mutate(indv=factor(indv, levels=c("D","A","B","C"))) %>% 
+   ggplot(., aes(x=trt,y=frip_newpeaks))+
+  geom_boxplot(aes(fill=trt))+
+   geom_point(aes(col=indv, size =3))+
+  geom_hline(aes(yintercept = 20), linetype=2, color="red")+
+  facet_wrap(time~.)+
+     scale_fill_manual(values=drug_pal)+
+  scale_color_brewer(palette = "Dark2")+
+  ggtitle("Fraction of fragments in high-confidence regions")+
+  theme_bw()+
+  theme(strip.text = element_text(face = "bold",  hjust = .5, size = 8),
+        strip.background = element_rect(fill = "white", linetype = "solid",
+                                        color = "black", linewidth = 1),
+        panel.spacing = unit(1, 'points'))+
+  coord_cartesian(ylim = c(0,100))
+
+
+```
+
+### Figure S4: Heart left ventricle ATAC open chromatin regions overlapped with high confidence regions
+
+```{r figS4}
+Snyder_41peaks <- read.delim("data/other_papers/ENCFF966JZT_bed_Snyder_41peaks.bed",header=TRUE) %>% 
+  GRanges()
+length(Snyder_41peaks)
+filtered_hc_regions <- read_delim("data/Final_four_data/LCPM_matrix_ff.txt",delim = "/") %>% 
+  dplyr::select(Peakid) %>% 
+  separate_wider_delim(., cols =Peakid,
+                       names=c("chr","start","end"), 
+                       delim = ".", 
+                       cols_remove = FALSE) 
+
+filtered_hc_regions_gr <- filtered_hc_regions %>%
+  dplyr::filter(chr!="chrY") %>% 
+  GRanges() %>% 
+  keepStandardChromosomes(., pruning.mode = "coarse")
+
+heart_overlap <- join_overlap_intersect(Snyder_41peaks,filtered_hc_regions_gr)
+ length(unique(heart_overlap$Peakid))
+
+fit <- euler(c("This study" = length(filtered_hc_regions_gr) - length(unique(heart_overlap$Peakid)),        
+               "Snyder study" = length(Snyder_41peaks) - length(unique(heart_overlap$name)),        
+               "This study&Snyder study" = 66927))
+plot(fit, fills = list(fill = c("skyblue", "lightcoral"), alpha = 0.6),
+     labels = FALSE, edges = TRUE, quantities = TRUE,
+     main = "Euler diagram between this study and Snyder's study")
+
+```
+### Figure S5A: Enrichment of accessible chromatin at TSS
+```{r figS5A}
+
+## What I did here:  I called all my narrowpeak files made by MACS2 callpeaks
+
+# peakfiles1 <- choose.files()
+# 
+# ##This loop first established a list then (because I already knew the list had 12 files)
+# ## I then imported each of these onto that list.  Once I had the list, I stored it as
+# ## an R object, 
+# Ind1_peaks <- list()
+# for (file in 1:12){
+#     testname <- basename(peakfiles1[file])
+#   banana_peel <- str_split_i(testname, "_",3)
+#  Ind1_peaks[[banana_peel]] <- readPeakFile(peakfiles1[file])
+# }
+# saveRDS(Ind4_peaks, "data/Ind4_peaks_list.RDS")
+# I then called annotatePeak on that list object, and stored that as a R object for later retrieval.)
+
+# peakAnnoList_1 <- lapply(Ind1_peaks, annotatePeak, tssRegion =c(-2000,2000), TxDb= txdb)
+# saveRDS(peakAnnoList_1, "data/peakAnnoList_1.RDS")
+
+
+
+IndD_TSS_peaks_plot <- readRDS("data/Ind1_TSS_peaks.RDS")
+IndA_TSS_peaks_plot <- readRDS("data/Ind2_TSS_peaks.RDS")
+IndB_TSS_peaks_plot <- readRDS("data/Ind3_TSS_peaks.RDS")
+IndC_TSS_peaks_plot <- readRDS("data/Ind6_TSS_peaks.RDS")
+
+d1<- plotAvgProf(IndD_TSS_peaks_plot[c(1,3,5,7,9,11)], xlim=c(-3000, 3000), ylab = "Count Frequency")+ ggtitle("3 hour Individual D" )+coord_cartesian(xlim=c(-2000,2000))
+a1 <- plotAvgProf(IndA_TSS_peaks_plot[c(1,3,5,7,9,11)], xlim=c(-3000, 3000), ylab = "Count Frequency")+ ggtitle("3 hour Individual A" )+coord_cartesian(xlim=c(-2000,2000))
+b1 <- plotAvgProf(IndB_TSS_peaks_plot[c(1,3,5,7,9,11)], xlim=c(-3000, 3000), ylab = "Count Frequency")+ ggtitle("3 hour Individual B" )+coord_cartesian(xlim=c(-2000,2000))
+c1 <- plotAvgProf(IndC_TSS_peaks_plot[c(1,3,5,7,9,11)], xlim=c(-3000, 3000), ylab = "Count Frequency")+ ggtitle("3 hour Individual C" )+coord_cartesian(xlim=c(-2000,2000))
+
+d2 <- plotAvgProf(IndD_TSS_peaks_plot[c(2,4,6,8,10,12)], xlim=c(-3000, 3000),ylab = "Count Frequency")+ ggtitle("24 hour Individual D" )+coord_cartesian(xlim=c(-2000,2000))
+a2 <- plotAvgProf(IndA_TSS_peaks_plot[c(2,4,6,8,10,12)], xlim=c(-3000, 3000),ylab = "Count Frequency")+ ggtitle("24 hour Individual A" )+coord_cartesian(xlim=c(-2000,2000))
+b2 <- plotAvgProf(IndB_TSS_peaks_plot[c(2,4,6,8,10,12)], xlim=c(-3000, 3000),ylab = "Count Frequency")+ ggtitle("24 hour Individual B" )+coord_cartesian(xlim=c(-2000,2000))
+c2 <- plotAvgProf(IndC_TSS_peaks_plot[c(2,4,6,8,10,12)], xlim=c(-3000, 3000),ylab = "Count Frequency")+ ggtitle("24 hour Individual C" )+coord_cartesian(xlim=c(-2000,2000))
+
+plot_grid(a1,a2, b1,b2,c1,c2,d1,d2, axis="l",align = "hv",nrow=4, ncol=2)
+
+```
+
+
+Code used to calculate fig S5B enrichment scores
+```{r echo=TRUE,file='code/TSSE.R'}
+
+```
+### Figure S5B: TSS enrichement scores
+```{r figS5B}
+
+allTSSE <- readRDS( "data/all_TSSE_scores.RDS")
+allTSSE %>% as.data.frame() %>% 
+  rownames_to_column("sample") %>% 
+  separate(sample, into = c("indv","trt","time"), sep= "_") %>%
+  mutate(trt= factor(trt, levels = c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
+  mutate(time = factor(time, levels = c("3","24"),labels = c("3 hours","24 hours"))) %>% 
+  dplyr::filter(indv !=4 &indv !=5) %>% 
+  mutate(indv=gsub("1","D",indv), 
+         indv=gsub("2","A",indv), 
+         indv=gsub("3","B",indv), 
+         indv=gsub("6","C",indv))%>% 
+  ggplot(., aes(x= time, y= V1, group = indv))+
+  geom_jitter(aes(col = trt, size = 1.5, alpha = 0.5) ,  position=position_jitter(0.25))+
+  geom_hline(yintercept=5, linetype = 3)+
+    geom_hline(yintercept=7, col = "blue")+
+  facet_wrap(~indv)+
+   theme_bw()+
+  ylab("score")+
+  ggtitle("TSS enrichment scores")+
+   scale_color_manual(values=drug_pal)+
+   theme(strip.text = element_text(face = "bold",  hjust = .5, size = 8),
+        strip.background = element_rect(fill = "white", linetype = "solid",
+                                        color = "black", linewidth = 1))
+
+```
+
+
+### Figure S6: cardiac Troponin T region at TSS
+```{r FigS6}
+knitr::include_graphics("assets/Fig\ S6.png", error=FALSE)
+knitr::include_graphics("docs/assets/Fig\ S6.png",error = FALSE)
+
+```
+### Figure S7: ATAC-sequencing samples cluster by time and treatment
+```{r FigS7,fig.height=8}
+
+ATAC_counts <- readRDS("data/Final_four_data/ATAC_filtered_raw_counts_allsamples.RDS") %>%   as.data.frame() %>% 
+  rename_with(.,~gsub(pattern = "Ind1_75", replacement = "D_",.)) %>% 
+  rename_with(.,~gsub(pattern = "Ind2_87", replacement = "A_",.)) %>% 
+  rename_with(.,~gsub(pattern = "Ind3_77", replacement = "B_",.)) %>% 
+  rename_with(.,~gsub(pattern = "Ind6_71", replacement = "C_",.)) %>% 
+  rename_with(.,~gsub( "DX" ,'DOX',.)) %>% 
+  rename_with(.,~gsub( "DA" ,'DNR',.)) %>% 
+  rename_with(.,~gsub( "E" ,'EPI',.)) %>% 
+  rename_with(.,~gsub( "T" ,'TRZ',.)) %>%
+  rename_with(.,~gsub( "M" ,'MTX',.)) %>% 
+  rename_with(.,~gsub( "V" ,'VEH',.)) %>% 
+  rename_with(.,~gsub("24h","_24h",.)) %>% 
+  rename_with(.,~gsub("3h","_3h",.)) %>% 
+  cpm(., log = TRUE) 
+
+FCmatrix_full <-   ATAC_counts %>%
+  as.matrix() %>% 
+  cor()
+
+filmat_groupmat_col <- data.frame(timeset = colnames(FCmatrix_full))
+
+counts_corr_mat <-filmat_groupmat_col %>%
+  # mutate(sample = timeset) %>% 
+  separate(timeset, into = c("indv","trt","time"), sep= "_") %>% 
+  mutate(class = if_else(trt == "DNR", "AC", 
+                         if_else(trt == "DOX", "AC", 
+                                 if_else(trt == "EPI", "AC", "nAC")))) %>%
+  mutate(TOP2i = if_else(trt == "DNR", "yes", 
+                         if_else(trt == "DOX", "yes", 
+                                 if_else(trt == "EPI", "yes", 
+                                         if_else(trt == "MTX", "yes", "no"))))) 
+
+                         
+ mat_colors <- list( 
+   trt= c("#F1B72B","#8B006D","#DF707E","#3386DD","#707031","#41B333"),
+   indv=c("#1B9E77", "#D95F02" ,"#7570B3", "#E6AB02"),
+   time=c("pink", "chocolate4"),
+   class=c("yellow1","darkorange1"), 
+   TOP2i =c("darkgreen","lightgreen"))                        
+                         
+names(mat_colors$trt)   <- unique(counts_corr_mat$trt)                      
+names(mat_colors$indv) <- unique(counts_corr_mat$indv)
+names(mat_colors$time) <- unique(counts_corr_mat$time)
+names(mat_colors$class) <- unique(counts_corr_mat$class)
+names(mat_colors$TOP2i) <- unique(counts_corr_mat$TOP2i)
+
+htanno_full <-  ComplexHeatmap::HeatmapAnnotation(df = counts_corr_mat, col = mat_colors)
+Heatmap(FCmatrix_full, top_annotation = htanno_full)
+
+```
+
+### Figure S8: PC1 associates with drug treatment and PC2 associates with individual
+```{r FigS8}
+
+pca_final_four <- (prcomp(t(ATAC_counts), scale. = TRUE))
+
+pca_final_four_anno <- pca_final_four$x %>% 
+  as.data.frame() %>% 
+  rownames_to_column("sample") %>% 
+  separate_wider_delim(., cols =sample,
+                       names=c("indv","trt","time"), 
+                       delim = "_", 
+                       cols_remove = FALSE) %>% 
+  mutate(time = factor(time, levels = c("3h", "24h"), labels= c("3 hours","24 hours"))) %>% 
+  mutate(trt = factor(trt, levels = c("DOX","EPI", "DNR", "MTX", "TRZ", "VEH"))) 
+pca_plot <-
+  function(df, col_var = NULL, shape_var = NULL, title = "") {
+    ggplot(df) + geom_point(aes(
+      x = PC1,
+      y = PC2,
+      color = col_var,
+      shape = shape_var
+    ),
+    size = 5) +
+      labs(title = title, x = "PC 1", y = "PC 2") +
+      scale_color_manual(values = c(
+        "#8B006D",
+        "#DF707E",
+        "#F1B72B",
+        "#3386DD",
+        "#707031",
+        "#41B333"
+      ))
+  }
+get_regr_pval <- function(mod) {
+  # Returns the p-value for the Fstatistic of a linear model
+  # mod: class lm
+  stopifnot(class(mod) == "lm")
+  fstat <- summary(mod)$fstatistic
+  pval <- 1 - pf(fstat[1], fstat[2], fstat[3])
+  return(pval)
+}
+
+plot_versus_pc <- function(df, pc_num, fac) {
+  # df: data.frame
+  # pc_num: numeric, specific PC for plotting
+  # fac: column name of df for plotting against PC
+  pc_char <- paste0("PC", pc_num)
+  # Calculate F-statistic p-value for linear model
+  pval <- get_regr_pval(lm(df[[ pc_char]] ~ df[[ fac]]))
+  if (is.numeric(df[, f])) {
+    ggplot(df, aes_string(x = f, y = pc_char)) + geom_point() +
+      geom_smooth(method = "lm") + labs(title = sprintf("p-val: %.2f", pval))
+  } else {
+    ggplot(df, aes_string(x = f, y = pc_char)) + geom_boxplot() +
+      labs(title = sprintf("p-val: %.3f", pval))
+  }
+}
+  
+facs <- c("indv", "trt", "time")
+names(facs) <- c("Individual", "Treatment", "Time")
+drug1 <- c("DOX","EPI", "DNR", "MTX", "TRZ", "VEH")##for changing shapes and colors
+time <- rep(c("24h", "3h"),24) %>% factor(., levels = c("3h","24h"))
+##gglistmaking
+for (f in facs) {
+  # PC1 v PC2
+  pca_plot(pca_final_four_anno, col_var = f, shape_var = time,
+           title = names(facs)[which(facs == f)])
+  # print(last_plot())
+  
+  # Plot f versus PC1 and PC2
+  f_v_pc1 <- arrangeGrob(plot_versus_pc(pca_final_four_anno, 1, f))
+  f_v_pc2 <- arrangeGrob(plot_versus_pc(pca_final_four_anno, 2, f))
+  grid.arrange(f_v_pc1, f_v_pc2, ncol = 2, top = names(facs)[which(facs == f)])
+  # summary(plot_versus_pc(PCA_info_anno_all, 1, f))
+  # summary(plot_versus_pc(PCA_info_anno_all, 2, f))
+}
+
+```
+
+### Figure S9: Thousands of differentially accessible regions are induced inresponse to treatment at 24 hours.
+
+```{r figS9}
+### results from diff analysis check out the final_four_analysis.html file for detailed steps
+efit4 <- readRDS("data/Final_four_data/efit4_filt_bl.RDS")
+
+V.DNR_3.top= topTable(efit4, coef=1, adjust.method="BH", number=Inf, sort.by="p")
+V.DOX_3.top= topTable(efit4, coef=2, adjust.method="BH", number=Inf, sort.by="p")
+V.EPI_3.top= topTable(efit4, coef=3, adjust.method="BH", number=Inf, sort.by="p")
+V.MTX_3.top= topTable(efit4, coef=4, adjust.method="BH", number=Inf, sort.by="p")
+V.TRZ_3.top= topTable(efit4, coef=5, adjust.method="BH", number=Inf, sort.by="p")
+V.DNR_24.top= topTable(efit4, coef=6, adjust.method="BH", number=Inf, sort.by="p")
+V.DOX_24.top= topTable(efit4, coef=7, adjust.method="BH", number=Inf, sort.by="p")
+V.EPI_24.top= topTable(efit4, coef=8, adjust.method="BH", number=Inf, sort.by="p")
+V.MTX_24.top= topTable(efit4, coef=9, adjust.method="BH", number=Inf, sort.by="p")
+V.TRZ_24.top= topTable(efit4, coef=10, adjust.method="BH", number=Inf, sort.by="p")
+
+plot_filenames <- c("V.DNR_3.top","V.DOX_3.top","V.EPI_3.top","V.MTX_3.top",
+                    "V.TRZ_.top","V.DNR_24.top","V.DOX_24.top","V.EPI_24.top",
+                    "V.MTX_24.top","V.TRZ_24.top")
+plot_files <- c( V.DNR_3.top,V.DOX_3.top,V.EPI_3.top,V.MTX_3.top,
+                    V.TRZ_3.top,V.DNR_24.top,V.DOX_24.top,V.EPI_24.top,
+                    V.MTX_24.top,V.TRZ_24.top)
+
+volcanosig <- function(df, psig.lvl) {
+    df <- df %>% 
+    mutate(threshold = ifelse(adj.P.Val > psig.lvl, "A", ifelse(adj.P.Val <= psig.lvl & logFC<=0,"B","C")))
+  
+  ggplot(df, aes(x=logFC, y=-log10(P.Value))) + 
+    geom_point(aes(color=threshold))+
+       xlab(expression("Log"[2]*" FC"))+
+    ylab(expression("-log"[10]*"P Value"))+
+    scale_color_manual(values = c("black", "red","blue"))+
+    theme_cowplot()+
+    ylim(0,20)+
+    xlim(-6,6)+
+    theme(legend.position = "none",
+              plot.title = element_text(size = rel(1.5), hjust = 0.5),
+              axis.title = element_text(size = rel(0.8))) 
+}
+
+v1 <- volcanosig(V.DNR_3.top, 0.01)+ ggtitle("DNR 3 hour")
+v2 <- volcanosig(V.DNR_24.top, 0.01)+ ggtitle("DNR 24 hour")+ylab("")
+v3 <- volcanosig(V.DOX_3.top, 0.01)+ ggtitle("DOX 3 hour")
+v4 <- volcanosig(V.DOX_24.top, 0.01)+ ggtitle("DOX 24 hour")+ylab("")
+v5 <- volcanosig(V.EPI_3.top, 0.01)+ ggtitle("EPI 3 hour")
+v6 <- volcanosig(V.EPI_24.top, 0.01)+ ggtitle("EPI 24 hour")+ylab("")
+v7 <- volcanosig(V.MTX_3.top, 0.01)+ ggtitle("MTX 3 hour")
+v8 <- volcanosig(V.MTX_24.top, 0.01)+ ggtitle("MTX 24 hour")+ylab("")
+v9 <- volcanosig(V.TRZ_3.top, 0.01)+ ggtitle("TRZ 3 hour")
+v10 <- volcanosig(V.TRZ_24.top, 0.01)+ ggtitle("TRZ 24 hour")+ylab("")
+
+plot_grid(v1,v2,  rel_widths =c(.8,1))
+plot_grid(v3,v4,  rel_widths =c(.8,1))
+plot_grid(v5,v6,  rel_widths =c(.8,1))
+plot_grid(v7,v8,  rel_widths =c(.8,1))
+plot_grid(v9,v10,  rel_widths =c(.8,1))
+
+
+
+```
+
+### Figure S10: Top differentiall accesible regions are shared across anthracyclines
+#### Figure S10A: examples at 3 and 24 hours
+
+
+```{r FigS10A}
+
+DNR_3_top3_ff <- row.names(V.DNR_3.top[1:3,])
+
+log_filt_ff <- ATAC_counts%>% 
+  as.data.frame()  
+  
+row.names(log_filt_ff) <- row.names(ATAC_counts)
+
+log_filt_ff %>% 
+  dplyr::filter(row.names(.) %in% DNR_3_top3_ff) %>% 
+  mutate(Peak = row.names(.)) %>% 
+  pivot_longer(cols = !Peak, names_to = "sample", values_to = "counts") %>% 
+  separate("sample", into = c("indv","trt","time")) %>% 
+  mutate(time=factor(time, levels = c("3h","24h"))) %>% 
+  mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
+  ggplot(., aes (x = time, y=counts))+
+  geom_boxplot(aes(fill=trt))+
+  facet_wrap(Peak~.)+
+  ggtitle("top 3 DAR in 3 hour DNR")+
+  scale_fill_manual(values = drug_pal)+
+  theme_bw()
+
+DOX_3_top3_ff <- row.names(V.DOX_3.top[1:3,])
+
+log_filt_ff %>% 
+  dplyr::filter(row.names(.) %in% DOX_3_top3_ff) %>% 
+  mutate(Peak = row.names(.)) %>% 
+  pivot_longer(cols = !Peak, names_to = "sample", values_to = "counts") %>% 
+  separate("sample", into = c("indv","trt","time")) %>% 
+  mutate(time=factor(time, levels = c("3h","24h"))) %>% 
+  mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
+  ggplot(., aes (x = time, y=counts))+
+  geom_boxplot(aes(fill=trt))+
+  facet_wrap(Peak~.)+
+  ggtitle("top 3 DAR in 3 hour DOX")+
+  scale_fill_manual(values = drug_pal)+
+  theme_bw()
+
+EPI_3_top3_ff <- row.names(V.EPI_3.top[1:3,])
+
+log_filt_ff %>% 
+  dplyr::filter(row.names(.) %in% EPI_3_top3_ff) %>% 
+  mutate(Peak = row.names(.)) %>% 
+  pivot_longer(cols = !Peak, names_to = "sample", values_to = "counts") %>% 
+  separate("sample", into = c("indv","trt","time")) %>% 
+  mutate(time=factor(time, levels = c("3h","24h"))) %>% 
+  mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
+  ggplot(., aes (x = time, y=counts))+
+  geom_boxplot(aes(fill=trt))+
+  facet_wrap(Peak~.)+
+  ggtitle("top 3 DAR in 3 hour EPI")+
+  scale_fill_manual(values = drug_pal)+
+  theme_bw()
+
+MTX_3_top3_ff <- row.names(V.MTX_3.top[1:3,])
+
+log_filt_ff %>% 
+  dplyr::filter(row.names(.) %in% MTX_3_top3_ff) %>% 
+  mutate(Peak = row.names(.)) %>% 
+  pivot_longer(cols = !Peak, names_to = "sample", values_to = "counts") %>% 
+  separate("sample", into = c("indv","trt","time")) %>% 
+  mutate(time=factor(time, levels = c("3h","24h"))) %>% 
+  mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
+  ggplot(., aes (x = time, y=counts))+
+  geom_boxplot(aes(fill=trt))+
+  facet_wrap(Peak~.)+
+  ggtitle("top 3 DAR in 3 hour MTX")+
+  scale_fill_manual(values = drug_pal)+
+  theme_bw()
+
+TRZ_3_top3_ff <- row.names(V.TRZ_3.top[1:3,])
+
+log_filt_ff %>% 
+  dplyr::filter(row.names(.) %in% TRZ_3_top3_ff) %>% 
+  mutate(Peak = row.names(.)) %>% 
+  pivot_longer(cols = !Peak, names_to = "sample", values_to = "counts") %>% 
+  separate("sample", into = c("indv","trt","time")) %>% 
+  mutate(time=factor(time, levels = c("3h","24h"))) %>% 
+  mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
+  ggplot(., aes (x = time, y=counts))+
+  geom_boxplot(aes(fill=trt))+
+  facet_wrap(Peak~.)+
+  ggtitle("top 3 DAR in 3 hour TRZ")+
+ scale_fill_manual(values = drug_pal)+
+  theme_bw()
+
+DNR_24_top3_ff <- row.names(V.DNR_24.top[1:3,])
+
+
+
+log_filt_ff %>% 
+  dplyr::filter(row.names(.) %in% DNR_24_top3_ff) %>% 
+  mutate(Peak = row.names(.)) %>% 
+  pivot_longer(cols = !Peak, names_to = "sample", values_to = "counts") %>% 
+  separate("sample", into = c("indv","trt","time")) %>% 
+  mutate(time=factor(time, levels = c("3h","24h"))) %>% 
+  mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
+  ggplot(., aes (x = time, y=counts))+
+  geom_boxplot(aes(fill=trt))+
+  facet_wrap(Peak~.)+
+  ggtitle("top 3 DAR in 24 hour DNR")+
+  scale_fill_manual(values = drug_pal)+
+  theme_bw()
+
+DOX_24_top3_ff <- row.names(V.DOX_24.top[1:3,])
+
+log_filt_ff %>% 
+  dplyr::filter(row.names(.) %in% DOX_24_top3_ff) %>% 
+  mutate(Peak = row.names(.)) %>% 
+  pivot_longer(cols = !Peak, names_to = "sample", values_to = "counts") %>% 
+  separate("sample", into = c("indv","trt","time")) %>% 
+  mutate(time=factor(time, levels = c("3h","24h"))) %>% 
+  mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
+  ggplot(., aes (x = time, y=counts))+
+  geom_boxplot(aes(fill=trt))+
+  facet_wrap(Peak~.)+
+  ggtitle("top 3 DAR in 24 hour DOX")+
+  scale_fill_manual(values = drug_pal)+
+  theme_bw()
+
+EPI_24_top3_ff <- row.names(V.EPI_24.top[1:3,])
+
+log_filt_ff %>% 
+  dplyr::filter(row.names(.) %in% EPI_24_top3_ff) %>% 
+  mutate(Peak = row.names(.)) %>% 
+  pivot_longer(cols = !Peak, names_to = "sample", values_to = "counts") %>% 
+  separate("sample", into = c("indv","trt","time")) %>% 
+  mutate(time=factor(time, levels = c("3h","24h"))) %>% 
+  mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
+  ggplot(., aes (x = time, y=counts))+
+  geom_boxplot(aes(fill=trt))+
+  facet_wrap(Peak~.)+
+  ggtitle("top 3 DAR in 24 hour EPI")+
+  scale_fill_manual(values = drug_pal)+
+  theme_bw()
+
+MTX_24_top3_ff <- row.names(V.MTX_24.top[1:3,])
+
+log_filt_ff %>% 
+  dplyr::filter(row.names(.) %in% MTX_24_top3_ff) %>% 
+  mutate(Peak = row.names(.)) %>% 
+  pivot_longer(cols = !Peak, names_to = "sample", values_to = "counts") %>% 
+  separate("sample", into = c("indv","trt","time")) %>% 
+  mutate(time=factor(time, levels = c("3h","24h"))) %>% 
+  mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
+  ggplot(., aes (x = time, y=counts))+
+  geom_boxplot(aes(fill=trt))+
+  facet_wrap(Peak~.)+
+  ggtitle("top 3 DAR in 24 hour MTX")+
+  scale_fill_manual(values = drug_pal)+
+  theme_bw()
+
+
+TRZ_24_top3_ff <- row.names(V.TRZ_24.top[1:3,])
+
+log_filt_ff %>% 
+  dplyr::filter(row.names(.) %in% TRZ_24_top3_ff) %>% 
+  mutate(Peak = row.names(.)) %>% 
+  pivot_longer(cols = !Peak, names_to = "sample", values_to = "counts") %>% 
+  separate("sample", into = c("indv","trt","time")) %>% 
+  mutate(time=factor(time, levels = c("3h","24h"))) %>% 
+  mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
+  ggplot(., aes (x = time, y=counts))+
+  geom_boxplot(aes(fill=trt))+
+  facet_wrap(Peak~.)+
+  ggtitle("top 3 DAR in 24 hour TRZ")+
+  scale_fill_manual(values = drug_pal)+
+  theme_bw()
+
+
+```
+
+#### Figure S10B: LFC correlation
+```{r FigS10B}
+FCmatrix_ff <- subset(efit4$coefficients)
+
+colnames(FCmatrix_ff) <-
+  c("DNR\n3h",
+    "DOX\n3h",
+    "EPI\n3h",
+    "MTX\n3h",
+    "TRZ\n3h",
+    "DNR\n24h",
+    "DOX\n24h",
+    "EPI\n24h",
+    "MTX\n24h",
+    "TRZ\n24h"
+     )
+
+
+mat_col_ff <-
+  data.frame(
+    time = c(rep("3 hours", 5), rep("24 hours", 5)),
+    class = (c(
+      "AC", "AC", "AC", "nAC","nAC",  "AC", "AC", "AC", "nAC","nAC" 
+    )))
+rownames(mat_col_ff) <- colnames(FCmatrix_ff)
+
+mat_colors_ff <-
+  list(
+    time = c("pink", "chocolate4"),
+    class = c("yellow1", "lightgreen"))
+
+names(mat_colors_ff$time) <- unique(mat_col_ff$time)
+names(mat_colors_ff$class) <- unique(mat_col_ff$class)
+# names(mat_colors_FC$TOP2i) <- unique(mat_col_FC$TOP2i)
+corrFC_ff <- cor(FCmatrix_ff)
+
+htanno_ff <-  HeatmapAnnotation(df = mat_col_ff, col = mat_colors_ff)
+Heatmap(corrFC_ff, top_annotation = htanno_ff)
+```
+
+### Figure S11: Four differentially accessible signatures capture the response to treatment over time.
+#### Figure S11A: Bayesian information criterion
+```{r echo=TRUE, file='code/corMotifcustom.R'}
+
+```
+
+```{r FigS11A}
+group <- c( rep(c(1,2,3,4,5,6,7,8,9,10,11,12),4))
+group <- factor(group, levels =c("1","2","3","4","5","6","7","8","9","10","11","12"))
+group_fac_ff <- group
+groupid_ff <- as.numeric(group_fac_ff)
+
+compid_ff <- data.frame(c1= c(2,4,6,8,10,1,3,5,7,9), c2 = c( 12,12,12,12,12,11,11,11,11,11))
+y_TMM_cpm_ff <- ATAC_counts
+
+# set.seed(31415)
+# cormotif_initial_ff <- cormotiffit(exprs = y_TMM_cpm_ff, groupid = groupid_ff, compid = compid_ff, K=1:8, max.iter = 500, runtype = "logCPM")
+# 
+# saveRDS(cormotif_initial_ff,"data/Final_four_data/cormotif_ff_4_run.RDS")
+
+# cormotif_four_ff <- cormotiffit(exprs = y_TMM_cpm_ff, groupid = groupid_ff, compid = compid_ff, K=4, max.iter = 500, runtype = "logCPM")
+
+# saveRDS(cormotif_four_ff,"data/Final_four_data/cormotif_only4_run.RDS")
+cormotif_initial_ff <-  readRDS("data/Final_four_data/cormotif_ff_4_run.RDS")
+Cormotif::plotIC(cormotif_initial_ff)
+```
+
+#### Figure S11B: Akaike information criterion
+
+```{r  FigS11B}
+Cormotif::plotIC(cormotif_initial_ff)
+```
+
