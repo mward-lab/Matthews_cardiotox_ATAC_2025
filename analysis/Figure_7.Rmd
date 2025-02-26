@@ -60,12 +60,17 @@ library(vargen)
 ```
 
 
+### Figure 7: 
+```{r}
+knitr::include_graphics("assets/Figure\ 7.png", error=FALSE)
+knitr::include_graphics("docs/assets/Figure\ 7.png",error = FALSE)
+
+```
 
 
 
 
 ```{r loading data}
-
 Collapsed_new_peaks <- read_delim("data/Final_four_data/collapsed_new_peaks.txt", delim = "\t", col_names = TRUE)
 
 Collapsed_new_peaks_gr <- Collapsed_new_peaks %>% dplyr::select(chr:Peakid) %>% GRanges()
@@ -145,6 +150,219 @@ ATAC_LFC <- Collapsed_new_peaks %>%
                  dplyr::select(Peakid) %>% 
   left_join(.,(ATAC_3_lfc %>% dplyr::select(peak, med_3h_lfc)), by=c("Peakid"="peak")) %>% 
   left_join(.,(ATAC_24_lfc %>% dplyr::select(peak, med_24h_lfc)), by=c("Peakid"="peak"))
-            Short_gwas_gr %>% as.data.frame()
- 
+            
+Peaks_cutoff <- read_delim("data/Final_four_data/LCPM_matrix_ff.txt",delim = "/") %>% dplyr::select(Peakid)
+  
+
+gwas_short_list <- gwas_peak_check %>% as.data.frame %>% dplyr::filter(Peakid %in%Peaks_cutoff$Peakid)
+
+gwas_10k_list <- gwas_peak_check_10k %>% distinct(SNPS,Peakid)%>% dplyr::filter(Peakid %in%Peaks_cutoff$Peakid)
+
+gwas_20k_list <- gwas_peak_check_20k %>% distinct(SNPS,Peakid)%>% dplyr::filter(Peakid %in%Peaks_cutoff$Peakid)
+
+
+Nine_te_df <- readRDS("data/Final_four_data/Nine_group_TE_df.RDS")
+###needed to change TE status to at least 1 bp overlap
+match <- Nine_te_df %>% 
+   mutate(TEstatus=if_else(!is.na(per_ol),"TE_peak","not_TE_peak")) %>% 
+  distinct(Peakid,TEstatus,mrc,.keep_all = TRUE) 
+
+count_df <- join_overlap_intersect(Collapsed_new_peaks_gr, Short_gwas_gr)
 ```
+
+#### Figure 7A:
+```{r heatmap,fig.height=12, fig.width=8}
+new_gwas_df <- count_df %>% 
+  as.data.frame() %>% 
+  left_join(., Nine_te_df, by=("Peakid"="Peakid")) %>%
+  left_join(.,(Collapsed_new_peaks %>% 
+                 dplyr::select (Peakid, SYMBOL )),by = c ("Peakid"="Peakid")) %>% 
+  dplyr::filter(mrc !="NR") %>%
+  dplyr::filter(mrc !="not_mrc") %>%
+  left_join(., (ATAC_3_lfc %>%
+  dplyr::select(peak,med_3h_lfc)),by=c("Peakid"="peak")) %>% 
+  left_join(., (ATAC_24_lfc %>%
+  dplyr::select(peak,med_24h_lfc)),by=c("Peakid"="peak")) %>% 
+  mutate(dist_to_SNP=0) %>% 
+  group_by(Peakid, SNPS) %>% 
+  summarize(med_3h_lfc=unique(med_3h_lfc),
+           med_24h_lfc=unique(med_24h_lfc),
+            SYMBOL=unique(SYMBOL),collapse=";",
+           # AC_24h_lfc=unique(AC_24h_lfc),
+           repClass=paste(unique(repClass),collapse=":"),
+           TEstatus=paste(unique(TEstatus),collapse=";"),
+            GWAS=paste(unique(gwas),collapse=";"),
+           mrc=unique(mrc),
+            dist_to_SNP=min(dist_to_SNP)) %>% 
+  tidyr::unite(name,Peakid,SNPS,sep ="_",remove=FALSE) %>% 
+   arrange(., Peakid)
+
+
+new_gwas_mat <- new_gwas_df%>% 
+  ungroup() %>% 
+  dplyr::select(name,med_3h_lfc, med_24h_lfc) %>% 
+  column_to_rownames("name") %>% 
+  as.matrix()
+new_gwas_name_mat <- new_gwas_df %>% 
+  ungroup() %>% 
+  dplyr::select(name,TEstatus,mrc,GWAS,dist_to_SNP)
+
+row_anno_gwas <-
+  rowAnnotation(
+    TE_status=new_gwas_name_mat$TEstatus,
+    gwas_status=new_gwas_name_mat$GWAS,
+    MRC=new_gwas_name_mat$mrc,
+    direct_overlap=new_gwas_name_mat$dist_to_SNP,
+    col= list(TE_status=c("TE_peak"="goldenrod",
+                          "not_TE_peak"="lightblue"), 
+              MRC = c("EAR_open" = "#F8766D",
+                      "EAR_close" = "#f6483c",
+                      "ESR_open" = "#7CAE00",
+                      "ESR_close" = "#587b00",
+                      "ESR_opcl"="grey40", 
+                      "ESR_clop"="tan",
+                      "LR_open" = "#00BFC4",
+                      "LR_close" = "#008d91",
+                      "NR" = "#C77CFF",
+                      "not_mrc"="black"),
+              gwas_status=c("AF"="green",
+                            "HF"="orange", 
+                            "AF;HF"="purple3"),
+              direct_overlap=c("0"="goldenrod4",
+                               "10"="pink",
+                               "20"="tan2",
+                               "50"="grey8")))
+
+simply_map_gwas <- ComplexHeatmap::Heatmap(new_gwas_mat,
+                        left_annotation = row_anno_gwas,
+                        row_names_max_width = max_text_width(rownames(new_gwas_mat),  
+                                                             gp=gpar(fontsize=16)),
+                        heatmap_legend_param = list(direction = "horizontal"),
+                        show_column_names = TRUE,
+                        cluster_rows = FALSE,
+                        cluster_columns = FALSE)
+
+draw(simply_map_gwas, merge_legend = TRUE, heatmap_legend_side = "bottom", 
+    annotation_legend_side = "bottom")
+```
+
+#### Figure 7B: IGV genome browser image- see above processed image.
+
+#### Figure 7C: Chromatin accessibility at rs3176326
+
+```{r ATAC}
+drug_pal <- c("#8B006D","#DF707E","#F1B72B", "#3386DD","#707031","#41B333")
+# K27_counts <-  readRDS("data/Final_four_data/All_Raodahpeaks.RDS")
+ATAC_counts <- readRDS("data/Final_four_data/ATAC_filtered_raw_counts_allsamples.RDS") %>% 
+  cpm(., log = TRUE) %>% 
+   as.data.frame() %>%
+  rename_with(.,~gsub(pattern = "Ind1_75", replacement = "D_",.)) %>%
+  rename_with(.,~gsub(pattern = "Ind2_87", replacement = "A_",.)) %>%
+  rename_with(.,~gsub(pattern = "Ind3_77", replacement = "B_",.)) %>%
+  rename_with(.,~gsub(pattern = "Ind6_71", replacement = "C_",.)) %>%
+  rename_with(.,~gsub( "DX" ,'DOX',.)) %>%
+  rename_with(.,~gsub( "DA" ,'DNR',.)) %>%
+  rename_with(.,~gsub( "E" ,'EPI',.)) %>%
+  rename_with(.,~gsub( "T" ,'TRZ',.)) %>%
+  rename_with(.,~gsub( "M" ,'MTX',.)) %>%
+  rename_with(.,~gsub( "V" ,'VEH',.)) %>%
+  rename_with(.,~gsub("24h","_24h",.)) %>%
+  rename_with(.,~gsub("3h","_3h",.)) %>% 
+  rownames_to_column("Peakid")
+
+overlap_ATAC_H3K27ac <- readRDS("data/Final_four_data/LFC_ATAC_K27ac.RDS") %>% 
+  dplyr::select(peakid, Geneid)
+
+SNP_exp_DF <- new_gwas_df %>% 
+  dplyr::filter(SNPS=="rs3176326") %>%
+  dplyr::select(Peakid,SNPS,SYMBOL) %>% 
+  left_join(.,overlap_ATAC_H3K27ac, by=c("Peakid"="peakid"))
+
+
+ATAC_counts %>% 
+  dplyr::filter(Peakid %in% SNP_exp_DF$Peakid) %>% 
+   pivot_longer(cols = !Peakid, names_to = "sample", values_to = "counts") %>% 
+  left_join(., SNP_exp_DF) %>% 
+  separate("sample", into = c("ind","trt","time")) %>% 
+  mutate(time=factor(time, levels = c("3h","24h"))) %>% 
+  mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
+  ggplot(., aes (x = time, y=counts))+
+  geom_boxplot(aes(fill=trt))+
+  facet_wrap(~Peakid,scales="free_y")+
+  ggtitle(" ATAC accessibility")+
+  scale_fill_manual(values = drug_pal)+
+  theme_bw()+
+  ylab("log2 cpm ATAC")
+
+```
+
+
+#### Figure 7D: H3K27ac at rs3176326
+```{r H3K27ac}
+
+
+H3K27ac_counts <- read_delim("data/Final_four_data/H3K27ac_files/H3K27ac_counts_file.txt", delim= "\t")
+lcpmH3K27ac <- H3K27ac_counts %>% 
+  column_to_rownames("Geneid") %>% 
+  dplyr::select(!C_VEH_3) %>% 
+  dplyr::select(!B_VEH_24) %>% 
+  cpm(.,log=TRUE) %>% 
+  as.data.frame() %>% 
+  rownames_to_column("Geneid")
+
+lcpmH3K27ac %>% 
+  dplyr::filter(Geneid %in% SNP_exp_DF$Geneid) %>% 
+   pivot_longer(cols = !Geneid, names_to = "sample", values_to = "counts") %>% 
+  left_join(., SNP_exp_DF) %>% 
+  separate("sample", into = c("ind","trt","time")) %>% 
+  mutate(time=factor(time, levels = c("3","24"))) %>% 
+  mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
+  ggplot(., aes (x = time, y=counts))+
+  geom_boxplot(aes(fill=trt))+
+  facet_wrap(~Geneid,scales="free_y")+
+  ggtitle("H3K27 acetylation")+
+  scale_fill_manual(values = drug_pal)+
+  theme_bw()+
+  ylab("log2 cpm ATAC")
+
+
+
+```
+
+
+
+#### Figure 7E: Gene expression of rs3176326 heart eGene
+
+
+```{r  RNA}
+
+RNA_counts <- readRDS("data/other_papers/cpmcount.RDS") %>%
+  dplyr::rename_with(.,~gsub(pattern="Da",replacement="DNR",.)) %>% 
+ dplyr::rename_with(.,~gsub(pattern="Do",replacement="DOX",.)) %>% 
+  dplyr::rename_with(.,~gsub(pattern="Ep",replacement="EPI",.)) %>% 
+   dplyr::rename_with(.,~gsub(pattern="Mi",replacement="MTX",.)) %>% 
+    dplyr::rename_with(.,~gsub(pattern="Tr",replacement="TRZ",.)) %>% 
+       dplyr::rename_with(.,~gsub(pattern="Ve",replacement="VEH",.)) %>% 
+  rownames_to_column("ENTREZID")
+
+SNP_exp_DF <-SNP_exp_DF %>% 
+left_join(., (RNA_median_24_lfc %>% dplyr::select(ENTREZID,SYMBOL)), by = c ("SYMBOL"="SYMBOL")) 
+
+
+RNA_counts %>% 
+  dplyr::filter(ENTREZID %in% SNP_exp_DF$ENTREZID) %>% 
+  pivot_longer(cols = !ENTREZID, names_to = "sample", values_to = "counts") %>% 
+  left_join(., SNP_exp_DF, by =c("ENTREZID"="ENTREZID")) %>% 
+  separate("sample", into = c("trt","ind","time")) %>% 
+  mutate(time=factor(time, levels = c("3h","24h"))) %>% 
+  mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
+  ggplot(., aes (x = time, y=counts))+
+  geom_boxplot(aes(fill=trt))+
+  facet_wrap(~SYMBOL, scales="free_y")+
+  ggtitle("RNA log 2 cpm of expressed gene")+
+    scale_fill_manual(values = drug_pal)+
+  theme_bw()+
+  ylab("log2 cpm RNA")
+
+```
+
