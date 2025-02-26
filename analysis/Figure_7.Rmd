@@ -1,0 +1,150 @@
+---
+title: "Figure 7"
+author: "Renee Matthews"
+date: "2025-02-25"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE,
+	warning = FALSE,
+	dev = c("png","pdf")
+)
+```
+
+```{css, echo=FALSE}
+pre {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+pre[class] {
+  max-height: 200px;
+}
+```
+
+
+
+```{r  package loading}
+library(tidyverse)
+library(kableExtra)
+library(broom)
+library(RColorBrewer)
+library("TxDb.Hsapiens.UCSC.hg38.knownGene")
+library("org.Hs.eg.db")
+library(rtracklayer)
+library(ggfortify)
+library(readr)
+library(BiocGenerics)
+library(gridExtra)
+library(VennDiagram)
+library(scales)
+library(ggVennDiagram)
+library(BiocParallel)
+library(ggpubr)
+library(edgeR)
+library(genomation)
+library(ggsignif)
+library(plyranges)
+library(ggrepel)
+library(ComplexHeatmap)
+library(cowplot)
+library(smplot2)
+library(readxl)
+library(devtools)
+library(vargen)
+
+
+```
+
+
+
+
+
+
+```{r loading data}
+
+Collapsed_new_peaks <- read_delim("data/Final_four_data/collapsed_new_peaks.txt", delim = "\t", col_names = TRUE)
+
+Collapsed_new_peaks_gr <- Collapsed_new_peaks %>% dplyr::select(chr:Peakid) %>% GRanges()
+
+RNA_median_3_lfc <- readRDS("data/other_papers/RNA_median_3_lfc.RDS")
+RNA_median_24_lfc <- readRDS("data/other_papers/RNA_median_24_lfc.RDS")
+
+ATAC_24_lfc <- read_csv("data/Final_four_data/median_24_lfc.csv") 
+ATAC_3_lfc <- read_csv("data/Final_four_data/median_3_lfc.csv")
+
+#### AS of 1/23/24, I am pulling updated gwas for HF and ARR (now the term is Atrial fib)  These are stored as RDS in the other papers folder
+# saveRDS(gwas_ud_HF, "data/other_papers/HF_gwas_association_downloaded_2025_01_23_EFO_0003144_withChildTraits.RDS")
+# saveRDS(gwas_ud_AF,"data/other_papers/AF_gwas_association_downloaded_2025_01_23_EFO_0000275.RDS")
+
+gwas_HF <- readRDS("data/other_papers/HF_gwas_association_downloaded_2025_01_23_EFO_0003144_withChildTraits.RDS")
+
+gwas_ARR <- readRDS("data/other_papers/AF_gwas_association_downloaded_2025_01_23_EFO_0000275.RDS")
+Short_gwas_gr <-
+  gwas_ARR %>% 
+          distinct(SNPS,.keep_all = TRUE) %>%
+          dplyr::select(CHR_ID, CHR_POS,SNPS) %>% 
+          mutate(gwas="AF") %>% 
+   rbind(gwas_HF %>% 
+          distinct(SNPS,.keep_all = TRUE) %>%
+          dplyr::select(CHR_ID, CHR_POS,SNPS) %>% 
+          mutate(gwas="HF")) %>% 
+  na.omit() %>% 
+ mutate(seqnames=paste0("chr",CHR_ID), CHR_POS=as.numeric(CHR_POS)) %>% 
+  na.omit() %>%
+   mutate(start=CHR_POS, end=CHR_POS, width=1) %>% 
+  GRanges()
+
+
+Short_gwas_5k_gr <- 
+    gwas_ARR %>% 
+          distinct(SNPS,.keep_all = TRUE) %>%
+          dplyr::select(CHR_ID, CHR_POS,SNPS) %>% 
+          mutate(gwas="AF") %>% 
+   rbind(gwas_HF %>% 
+          distinct(SNPS,.keep_all = TRUE) %>%
+          dplyr::select(CHR_ID, CHR_POS,SNPS) %>% 
+          mutate(gwas="HF")) %>% 
+  na.omit() %>% 
+ mutate(seqnames=paste0("chr",CHR_ID), CHR_POS=as.numeric(CHR_POS)) %>% 
+  na.omit() %>%
+   mutate(start=CHR_POS-5000, end=CHR_POS+4999) %>% 
+  GRanges()
+
+
+Short_gwas_20k_gr <- 
+    gwas_ARR %>% 
+          distinct(SNPS,.keep_all = TRUE) %>%
+          dplyr::select(CHR_ID, CHR_POS,SNPS) %>% 
+          mutate(gwas="AF") %>% 
+   rbind(gwas_HF %>% 
+          distinct(SNPS,.keep_all = TRUE) %>%
+          dplyr::select(CHR_ID, CHR_POS,SNPS) %>% 
+          mutate(gwas="HF")) %>% 
+  na.omit() %>% 
+ mutate(seqnames=paste0("chr",CHR_ID), CHR_POS=as.numeric(CHR_POS)) %>% 
+  na.omit() %>%
+  mutate(start=(CHR_POS-10000),end=(CHR_POS+9999), width=20000) %>%
+  distinct() %>% 
+  GRanges()
+
+gwas_peak_check <- join_overlap_intersect(Collapsed_new_peaks_gr,Short_gwas_gr) %>%
+  as.data.frame()
+ 
+gwas_peak_check_10k <- join_overlap_intersect(Collapsed_new_peaks_gr,Short_gwas_5k_gr) %>%
+  as.data.frame()
+gwas_peak_check_20k <- join_overlap_intersect(Collapsed_new_peaks_gr,Short_gwas_20k_gr) %>% 
+  as.data.frame()
+ 
+
+
+ATAC_LFC <- Collapsed_new_peaks %>%
+                 dplyr::select(Peakid) %>% 
+  left_join(.,(ATAC_3_lfc %>% dplyr::select(peak, med_3h_lfc)), by=c("Peakid"="peak")) %>% 
+  left_join(.,(ATAC_24_lfc %>% dplyr::select(peak, med_24h_lfc)), by=c("Peakid"="peak"))
+            Short_gwas_gr %>% as.data.frame()
+ 
+```
