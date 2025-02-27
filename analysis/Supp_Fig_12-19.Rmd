@@ -1,0 +1,177 @@
+---
+title: "Supplemental Figures 12-19"
+author: "Renee Matthews"
+date: "2025-02-27"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE,
+	warning = FALSE,
+	dev = c("png","pdf")
+)
+```
+
+```{css, echo=FALSE}
+pre {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+pre[class] {
+  max-height: 200px;
+}
+```
+
+
+
+```{r  package loading}
+library(tidyverse)
+library(kableExtra)
+library(broom)
+library(RColorBrewer)
+library(ChIPseeker)
+library("TxDb.Hsapiens.UCSC.hg38.knownGene")
+library("org.Hs.eg.db")
+library(rtracklayer)
+library(ggfortify)
+library(readr)
+library(BiocGenerics)
+library(gridExtra)
+library(VennDiagram)
+library(scales)
+library(ggVennDiagram)
+library(BiocParallel)
+library(ggpubr)
+library(edgeR)
+library(genomation)
+library(ggsignif)
+library(plyranges)
+library(ggrepel)
+library(ComplexHeatmap)
+library(cowplot)
+library(smplot2)
+library(readxl)
+library(devtools)
+library(vargen)
+library(eulerr)
+
+```
+
+### Figure S12: H3K27ac Enrichment at TSS
+```{r}
+knitr::include_graphics("assets/Fig\ S12.png", error=FALSE)
+knitr::include_graphics("docs/assets/Fig\ S12.png",error = FALSE)
+
+```
+
+
+```{r Code for making FIGS12objects, eval=FALSE,echo=TRUE}
+txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
+###taken from Peak_calling rmd
+
+# first get peakfiles (using .narrowPeak files from MACS2 calling) and upload functions
+
+TSS = getBioRegion(TxDb=txdb, upstream=2000, downstream=2000, by = "gene", 
+                   type = "start_site")
+#### EXAMPLE OF CODE #####
+# ind4_V24hpeaks_gr <- prepGRangeObj(ind4_V24hpeaks)
+# ind1_DA24hpeaks_gr <- prepGRangeObj((ind1_DA24hpeaks))
+# H3K27ac_list <- GRangesList(ind1_DA24hpeaks_gr, ind4_V24hpeaks_gr)
+# # ##plotting the TSS average window (making an overlap of each using Epi_list as list holder)
+# H3K27ac_list_tagMatrix = lapply(H3K27ac_list, getTagMatrix, windows = TSS)
+# plotAvgProf(H3K27ac_list_tagMatrix, xlim=c(-3000, 3000), ylab = "Count Frequency")
+#plotPeakProf(H3K27ac_list_tagMatrix, facet = "none", conf = 0.95)
+
+## What I did here:  I called all my narrowpeak files
+peakfiles1 <- choose.files()
+
+##these were practice for getting file names and shortening for the for loop below
+# testname <- basename(peakfiles1[1])
+# str_split_i(testname, "_",3)
+
+##This loop first established a list then (because I already knew the list had 12 files)
+## I then imported each of these onto that list.  Once I had the list, I stored it as
+## an R object, 
+IndA_peaks <- list()
+for (file in 1:8){
+    testname <- basename(peakfiles1[file])
+  banana_peel <- str_split_i(testname, "_",3)
+ IndA_peaks[[banana_peel]] <- readPeakFile(peakfiles1[file])
+}
+saveRDS(IndA_peaks, "data/Final_four_data/H3K27ac_files/IndA_peaks_list.RDS")
+# I then called annotatePeak on that list object, and stored that as a R object for later retrieval.)
+peakAnnoList_1 <- lapply(IndA_peaks, annotatePeak, tssRegion =c(-2000,2000), TxDb= txdb)
+saveRDS(peakAnnoList_1, "data/Final_four_data/H3K27ac_files/IndA_peakAnnoList.RDS")
+promoter <- getPromoters(TxDb=txdb, upstream=3000, downstream=3000)
+tagMatrix_C <- lapply(IndC_peaks,getTagMatrix, windows=promoter)
+plotAvgProf(tagMatrix_C, xlim = c(-3000,3000),xlab = "Genomic Region (5'->3')", ylab = "Read Count Frequency")
+
+saveRDS(tagMatrix_C, "data/Final_four_data/H3K27ac_files/IndC_tagMatrix.RDS")
+```
+#### Making the plot
+
+```{r FigS12, fig.width=7, fig.height=7}
+
+##load tagMatrix files from above
+tagMatrix_A <- readRDS("data/Final_four_data/H3K27ac_files/IndA_tagMatrix.RDS")
+tagMatrix_B <- readRDS("data/Final_four_data/H3K27ac_files/IndB_tagMatrix.RDS")
+tagMatrix_C <- readRDS("data/Final_four_data/H3K27ac_files/IndC_tagMatrix.RDS")
+###making the plots and storing the 3 hour as an object
+a1<- plotAvgProf(tagMatrix_A[c(1,3,5,7)], xlim=c(-3000, 3000), ylab = "Count Frequency")+ ggtitle("3 hour Individual A" )+coord_cartesian(xlim=c(-2000,2000))
+  
+b1 <- plotAvgProf(tagMatrix_B[c(1,3,4,7)], xlim=c(-3000, 3000), ylab = "Count Frequency")+ ggtitle("3 hour Individual B" )+coord_cartesian(xlim=c(-2000,2000))
+c1 <- plotAvgProf(tagMatrix_C[c(1,4,6,8)], xlim=c(-3000, 3000), ylab = "Count Frequency")+ ggtitle("3 hour Individual C" )+coord_cartesian(xlim=c(-2000,2000))
+
+### making the plots and storing the 24 hour as an object
+a2<- plotAvgProf(tagMatrix_A[c(2,4,6,8)], xlim=c(-3000, 3000), ylab = "Count Frequency")+ ggtitle("24 hour Individual A" )+coord_cartesian(xlim=c(-2000,2000))
+b2 <- plotAvgProf(tagMatrix_B[c(2,5,6,8)], xlim=c(-3000, 3000), ylab = "Count Frequency")+ ggtitle("24 hour Individual B" )+coord_cartesian(xlim=c(-2000,2000))
+c2 <- plotAvgProf(tagMatrix_C[c(2,3,5,7,9)], xlim=c(-3000, 3000), ylab = "Count Frequency")+ ggtitle("24 hour Individual C" )+coord_cartesian(xlim=c(-2000,2000))
+
+plot_grid(a1,a2, b1,b2,c1,c2, axis="l",align = "hv",nrow=3, ncol=2)
+```
+
+### Figure S13: Correlation between H3K27ac enrichment across samples
+
+```{r FigS13, fig.height=7,fig.width=8}
+H3K27ac_counts <- read_delim("data/Final_four_data/H3K27ac_files/H3K27ac_counts_file.txt", delim= "\t")
+corr_lcpmH3K27ac <- H3K27ac_counts %>% 
+  column_to_rownames("Geneid") %>% 
+  cpm(.,log=TRUE) %>% 
+  cor()
+  
+filmat_groupmat_col <- data.frame(timeset = colnames(corr_lcpmH3K27ac))
+
+counts_corr_mat <-  filmat_groupmat_col %>% 
+  separate(timeset, into = c("indv","trt","time"), sep= "_") %>% 
+  mutate(time = factor(time, levels = c("3", "24"), labels= c("3 hours","24 hours"))) %>% 
+  mutate(trt = factor(trt, levels = c("DOX","EPI", "DNR", "MTX","VEH"))) %>% 
+  mutate(class = if_else(trt == "DNR", "AC", if_else(
+    trt == "DOX", "AC", if_else(trt == "EPI", "AC", "nAC")
+  ))) %>%
+  mutate(TOP2i = if_else(trt == "DNR", "yes", if_else(
+    trt == "DOX", "yes", if_else(trt == "EPI", "yes", if_else(trt == "MTX", "yes", "no"))))) %>% 
+  mutate(indv=factor(indv, levels = c("A","B","C"))) 
+                         
+ mat_colors <- list( 
+   trt= c("#F1B72B","#8B006D","#DF707E","#3386DD","#41B333"),
+   indv=c(A="#1B9E77",B= "#D95F02" ,C="#7570B3"),
+   time=c("pink", "chocolate4"),
+   class=c("yellow1","darkorange1"), 
+   TOP2i =c("darkgreen","lightgreen"))                        
+                         
+names(mat_colors$trt)   <- unique(counts_corr_mat$trt)                      
+names(mat_colors$indv) <- unique(counts_corr_mat$indv)
+names(mat_colors$time) <- unique(counts_corr_mat$time)
+names(mat_colors$class) <- unique(counts_corr_mat$class)
+names(mat_colors$TOP2i) <- unique(counts_corr_mat$TOP2i)
+
+htanno <-  ComplexHeatmap::HeatmapAnnotation(df = counts_corr_mat, col = mat_colors)
+ComplexHeatmap::Heatmap(corr_lcpmH3K27ac, top_annotation = htanno)
+
+
+
+```
+
