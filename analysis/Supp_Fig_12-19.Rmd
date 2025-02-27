@@ -204,7 +204,7 @@ row_means23s <- rowMeans(lcpm_h3_23s)
 h3_23s_filtered <- PCA_H3_mat_23s[row_means23s >0,]
 filt_H3_matrix_lcpm_23s <- cpm(h3_23s_filtered, log=TRUE)
 
-### no difference in between filtered and unfilterd numbers
+### no difference in between filtered and unfiltered numbers
 
 for_group_23s <- data.frame(timeset=colnames(PCA_H3_mat_23s)) %>%
   mutate(sample = timeset) %>%
@@ -313,7 +313,384 @@ plot_grid(v7,v8,  rel_widths =c(.8,1))
 #### Figure S14B: 
 
 ```{r FigS14B}
+FCmatrix_23s <- subset(efit_raodah_23s$coefficients)
 
+colnames(FCmatrix_23s) <-
+  c("DNR\n3h",
+    "DOX\n3h",
+    "EPI\n3h",
+    "MTX\n3h",
+    "DNR\n24h",
+    "DOX\n24h",
+    "EPI\n24h",
+    "MTX\n24h"
+     )
+
+
+mat_col_FC <-
+  data.frame(
+    time = c(rep("3 hours", 4), rep("24 hours", 4)),
+    class = (c(
+      "AC", "AC", "AC", "nAC", "AC", "AC", "AC", "nAC"
+    )))
+rownames(mat_col_FC) <- colnames(FCmatrix_23s)
+
+mat_colors_FC <-
+  list(
+    time = c("pink", "chocolate4"),
+    class = c("yellow1", "lightgreen"))
+
+names(mat_colors_FC$time) <- unique(mat_col_FC$time)
+names(mat_colors_FC$class) <- unique(mat_col_FC$class)
+# names(mat_colors_FC$TOP2i) <- unique(mat_col_FC$TOP2i)
+corrFC_23s <- cor(FCmatrix_23s)
+
+htanno_23s <-  HeatmapAnnotation(df = mat_col_FC, col = mat_colors_FC)
+Heatmap(corrFC_23s, top_annotation = htanno_23s)
+
+
+```
+
+### Figure S15: 
+
+#### Figure S15 A & B:
+
+```{r Figs15AB}
+###now adjusted for 23 samples:
+H3K27ac_counts_file <- read_delim("data/Final_four_data/H3K27ac_files/H3K27ac_counts_file.txt", delim= "\t")
+PCA_H3_mat_23s <- H3K27ac_counts_file %>% 
+  ##removing C_VEH_3 and B_VEH_24 columns 
+  dplyr::select(Geneid,B_DNR_24:B_MTX_24, B_VEH_3:C_VEH_24) %>% 
+  column_to_rownames("Geneid") %>% 
+  as.matrix()
+
+anno_H3_mat_23s <-
+data.frame(timeset=colnames(PCA_H3_mat_23s)) %>%
+  mutate(sample = timeset) %>% 
+  separate(timeset, into = c("indv","trt","time"), sep= "_") %>% 
+  mutate(time = factor(time, levels = c("3", "24"), labels= c("3 hours","24 hours"))) %>% 
+  mutate(trt = factor(trt, levels = c("DOX","EPI", "DNR", "MTX","VEH"))) 
+
+for_group3 <- data.frame(timeset=colnames(PCA_H3_mat_23s)) %>% 
+  mutate(sample = timeset) %>% 
+  separate(timeset, into = c("indv","trt","time"), sep= "_") %>% 
+  tidyr::unite("test", trt:time,sep="_", remove = FALSE)
+### for 3 individuals {2,3,6}
+group_3 <- c( 1,2,4,5,6,7,10,1,2,3,4,7,8,9,10,1,2,3,5,6,7,8,9)
+group_fac_3 <- group_3
+groupid_3 <- as.numeric(group_fac_3)
+label <- for_group3$sample
+compid_3 <- data.frame(c1= c(2,4,6,8,1,3,5,7), c2 = c( 10,10,10,10,9,9,9,9))
+
+y_TMM_cpm_3 <- cpm(PCA_H3_mat_23s, log = TRUE)
+
+colnames(y_TMM_cpm_3) <- label
+
+# set.seed(31415)
+# cormotif_initial_3 <- cormotiffit(exprs = y_TMM_cpm_3, groupid = groupid_3, compid = compid_3, K=1:6, max.iter = 500, runtype = "logCPM")
+
+##results from the K1:6 run:
+cormotif_initial_23s <- readRDS("data/Final_four_data/cormotif_3_raodah_run_23s.RDS")
+
+Cormotif::plotIC(cormotif_initial_23s)
+
+
+
+```
+
+#### Figure S15 C:
+
+```{r FigS15C}
+Cormotif::plotMotif(cormotif_initial_23s)
+
+```
+
+#### Figure S15 D:
+
+```{r FigS15D}
+drug_pal <- c("#8B006D","#DF707E","#F1B72B", "#3386DD","#41B333")
+H3K27ac_counts_file <- read_delim("data/Final_four_data/H3K27ac_files/H3K27ac_counts_file.txt", delim= "\t")
+lcpm_h3_23s <- H3K27ac_counts_file %>% 
+  ##removing C_VEH_3 and B_VEH_24 columns 
+  dplyr::select(Geneid,B_DNR_24:B_MTX_24, B_VEH_3:C_VEH_24) %>% 
+  column_to_rownames("Geneid") %>% 
+  as.matrix() %>% 
+ cpm(., log = TRUE) 
+
+NR_ac <- readRDS("data/Final_four_data/H3K27ac_files/NR_23s.RDS")
+
+ESR_ac <- readRDS("data/Final_four_data/H3K27ac_files/ESR_23s.RDS")
+
+EAR_ac <- readRDS("data/Final_four_data/H3K27ac_files/EAR_23s.RDS")
+
+LR_ac <- readRDS("data/Final_four_data/H3K27ac_files/LR_23s.RDS")
+
+set.seed(31415)
+sample_peaks <- rbind(
+  "NR_1"=sample_n(NR_ac,size = 2),
+  "ESR_2"=sample_n(ESR_ac,size=2),
+  "EAR_3"=sample_n(EAR_ac,size=2),
+  "LR_4"=sample_n(LR_ac, size=2)) 
+sample_peaks_choice <- sample_peaks %>% 
+  dplyr::filter(rownames(.)=="NR_1.2"|
+                  rownames(.)=="ESR_2.1"|
+                  rownames(.)=="EAR_3.1"|
+                  rownames(.)=="LR_4.1")
+lcpm_h3_23s%>% 
+  as.data.frame() %>% 
+  rownames_to_column("Peakid")%>% 
+  dplyr::filter(Peakid %in% sample_peaks_choice$Peakid) %>%
+  pivot_longer(., cols = !Peakid, names_to = "samples",values_to = "logcpm") %>% 
+  separate_wider_delim(., samples, delim = "_",names=c("ind","trt","time"), cols_remove = FALSE) %>% 
+  left_join(., (sample_peaks %>% 
+              rownames_to_column("cluster") %>% 
+              dplyr::select(cluster,Peakid)),
+            by=c("Peakid"="Peakid")) %>% 
+  mutate(trt=factor(trt, levels = c("DOX","EPI","DNR","MTX","TRZ", "VEH")),
+         time= factor(time, levels = c("3","24"))) %>% 
+  ggplot(aes(x=time,y=logcpm))+
+  geom_boxplot(aes(fill=trt))+
+  # geom_point(aes(color=ind))+
+  facet_wrap(~Peakid+cluster,scales="free_y", nrow=4, ncol=2)+
+  ggtitle(" H3K27ac acetylation")+
+  scale_fill_manual(values = drug_pal)+
+  theme_bw()+
+  ylab("log2 cpm H3K27ac")
+
+```
+
+### Figure S16: Shared ATAC and H3K27-acetylation regions cluster by time
+
+```{r  FigS16}
+
+toplist_atac_lfc <- readRDS("data/Final_four_data/toplist_ff.RDS") 
+
+hr3_ATAC <- toplist_atac_lfc %>% 
+  dplyr::select(trt:logFC) %>% 
+  dplyr::filter(time=="3 hours") %>% 
+  pivot_wider(., id_cols = c("peak"),names_from = trt,values_from = logFC) %>% 
+   dplyr::rename(DOX_3_ATAC=DOX, DNR_3_ATAC=DNR,EPI_3_ATAC=EPI,MTX_3_ATAC=MTX, TRZ_3_ATAC=TRZ)
+
+hr24_ATAC <- toplist_atac_lfc %>% 
+  dplyr::select(trt:logFC) %>% 
+  dplyr::filter(time=="24 hours") %>% 
+  pivot_wider(., id_cols = c("peak"),names_from = trt,values_from = logFC) %>% 
+   dplyr::rename(DOX_24_ATAC=DOX, DNR_24_ATAC=DNR,EPI_24_ATAC=EPI,MTX_24_ATAC=MTX, TRZ_24_ATAC=TRZ)
+
+ATAC_LFC_df <- hr3_ATAC %>% 
+  left_join(., hr24_ATAC, by=c("peak"="peak")) %>%
+   dplyr::select(peak:MTX_3_ATAC,DNR_24_ATAC:MTX_24_ATAC)
+
+toplist_ac_lfc <- readRDS("data/Final_four_data/toplist_ac_lfc.RDS")
+
+hr3_K27 <- toplist_ac_lfc %>% 
+  dplyr::filter(time=="3") %>% 
+  dplyr::select(Peakid:logFC) %>% 
+  ###something weird in peaknames... additional numbers? so I will remove them
+   mutate(Peakid=str_replace(Peakid, "\\.\\.\\.[0=9]*","/")) %>% 
+  separate(Peakid, into=c("Geneid",NA),sep="/") %>% 
+  pivot_wider(., id_cols=c(Geneid), names_from = "trt", values_from = "logFC") %>% 
+  dplyr::rename(DOX_3_K27=DOX, DNR_3_K27=DNR,EPI_3_K27=EPI,MTX_3_K27=MTX) 
+
+hr24_K27 <- toplist_ac_lfc %>% 
+  dplyr::filter(time=="24") %>% 
+  dplyr::select(Peakid:logFC) %>% 
+  ###something weird in peaknames... additional numbers? so I will remove them
+   mutate(Peakid=str_replace(Peakid, "\\.\\.\\.[0=9]*","/")) %>% 
+  separate(Peakid, into=c("Geneid",NA),sep="/") %>% 
+  pivot_wider(., id_cols=c(Geneid), names_from = "trt", values_from = "logFC") %>% 
+  dplyr::rename(DOX_24_K27=DOX, DNR_24_K27=DNR,EPI_24_K27=EPI,MTX_24_K27=MTX)
+
+
+K27_LFC_df <- hr3_K27 %>% 
+  left_join(., hr24_K27, by=c("Geneid"="Geneid"))  
+
+
+
+overlap_df_ggplot <- readRDS("data/Final_four_data/LFC_ATAC_K27ac.RDS") %>% 
+  dplyr::select(peakid,Geneid) %>% 
+  left_join(.,ATAC_LFC_df, by=c("peakid"="peak")) %>% 
+  left_join(.,K27_LFC_df, by= c("Geneid"="Geneid"))
+ 
+counts_corr <-
+  overlap_df_ggplot %>% 
+    tidyr::unite(.,"name",peakid,Geneid,sep="_") %>% 
+  column_to_rownames("name") %>% 
+  cor()
+ComplexHeatmap::Heatmap(counts_corr)
+```
+
+
+### Figure S17:
+
+```{r FigS17, message=FALSE, warning=FALSE}
+
+RNA_ATAC_overlap_df_ggplot <- readRDS("data/Final_four_data/LFC_ATAC_K27ac.RDS") %>% 
+  dplyr::select(peakid,Geneid)
+Collapsed_new_peaks <- read_delim("data/Final_four_data/collapsed_new_peaks.txt", delim = "\t", col_names = TRUE)
+
+RNA_median_3_lfc <- readRDS("data/other_papers/RNA_median_3_lfc.RDS")
+RNA_median_24_lfc <- readRDS("data/other_papers/RNA_median_24_lfc.RDS")
+overlap_df_ggplot <- readRDS("data/Final_four_data/LFC_ATAC_K27ac.RDS")
+
+ATAC_median_24_lfc <- read_csv("data/Final_four_data/median_24_lfc.csv") 
+ATAC_median_3_lfc <- read_csv("data/Final_four_data/median_3_lfc.csv")
+
+anti_joined_lfc <- ATAC_median_24_lfc %>% 
+  dplyr::filter(!peak %in% RNA_ATAC_overlap_df_ggplot$peakid)  %>% 
+  left_join(., (Collapsed_new_peaks %>% dplyr::select(Peakid, NCBI_gene:dist_to_NG)), by = c("peak"="Peakid")) %>% 
+  left_join(.,ATAC_median_3_lfc,by = c("peak"="peak")) %>% 
+  left_join(., RNA_median_3_lfc ,
+                by=c("SYMBOL"="SYMBOL", "NCBI_gene"="ENTREZID")) %>%
+  left_join(., RNA_median_24_lfc,
+                 by=c("SYMBOL"="SYMBOL", "NCBI_gene"="ENTREZID")) 
+
+joined_LFC_df <-
+RNA_ATAC_overlap_df_ggplot %>%
+  left_join(.,(Collapsed_new_peaks %>%
+                 dplyr::select(Peakid,dist_to_NG, NCBI_gene:SYMBOL)),
+            by=c("peakid"="Peakid")) %>% 
+  left_join(., RNA_median_3_lfc ,
+                 by=c("SYMBOL"="SYMBOL", "NCBI_gene"="ENTREZID")) %>%
+  left_join(., RNA_median_24_lfc,
+             by=c("SYMBOL"="SYMBOL", "NCBI_gene"="ENTREZID")) %>% 
+  left_join(.,ATAC_median_3_lfc,by = c("peakid"="peak")) %>%
+  left_join(.,ATAC_median_24_lfc,by = c("peakid"="peak")) %>% 
+  dplyr::filter(dist_to_NG > -2000| dist_to_NG <2000)
+
+ 
+joined_LFC_df %>% 
+dplyr::filter(dist_to_NG>-2000 & dist_to_NG<2000) %>% 
+  ggplot(., aes(x=med_3h_lfc,y=RNA_3h_lfc))+
+   geom_point()+
+   sm_statCorr(corr_method = 'pearson')+
+  ggtitle("Correlation of shared 2kb H3K27ac peaks and ATAC_peaks at 3 hours")+
+  ylab("H3K27ac peak LFC")+
+   xlab("ATAC-seq log FC")
+
+joined_LFC_df %>% 
+dplyr::filter(dist_to_NG>-2000 & dist_to_NG<2000) %>% 
+  ggplot(., aes(x=med_24h_lfc,y=RNA_24h_lfc))+
+   geom_point()+
+   sm_statCorr(corr_method = 'pearson')+
+  ggtitle("Correlation of shared 2kb H3K27ac peaks and ATAC_peaks at 24 hours")+
+  ylab("H3K27ac peak LFC")+
+   xlab("ATAC-seq log FC")
+ 
+ anti_joined_lfc %>% 
+ dplyr::filter(dist_to_NG>-2000 & dist_to_NG<2000) %>% 
+   # dplyr::filter(peak %in% ATAC_LFC_df$peak) %>% 
+  ggplot(., aes(x=med_3h_lfc,y=RNA_3h_lfc))+
+   geom_point()+
+   sm_statCorr(corr_method = 'pearson')+
+  ggtitle("ATAC-seq regions without H3K27ac overlap at 3 hours")+
+  ylab("RNA expression LFC")+
+   xlab("ATAC-seq log FC")
+ 
+ anti_joined_lfc %>% 
+  dplyr::filter(dist_to_NG>-2000 & dist_to_NG<2000) %>% 
+ggplot(., aes(x=med_24h_lfc,y=RNA_24h_lfc))+
+   geom_point()+
+   sm_statCorr(corr_method = 'pearson')+
+   ggtitle("Correlation of ATAC peaks not shared with H3K27ac and RNA-NG at 24 hours")+
+  xlab("ATAC peak LFC")+
+   ylab("RNA LFC")
+ 
+```
+
+### Figure S18:
+
+```{r FigS18, fig.height=7}
+
+toplistall_RNA <- readRDS("data/other_papers/toplistall_RNA.RDS") 
+toplistall_RNA <- toplistall_RNA %>% 
+  mutate(logFC = logFC*(-1))
+
+hr3_RNA <- toplistall_RNA %>% 
+  dplyr::select(time:logFC) %>% 
+  dplyr::filter(time=="3_hours") %>% 
+  pivot_wider(., id_cols=c(ENTREZID,SYMBOL), names_from = id, values_from = logFC) %>% 
+  dplyr::rename(DOX_3_RNA=DOX, DNR_3_RNA=DNR,EPI_3_RNA=EPI,MTX_3_RNA=MTX, TRZ_3_RNA=TRZ)
+  
+
+hr24_RNA <- toplistall_RNA %>% 
+  dplyr::select(time:logFC) %>% 
+  dplyr::filter(time=="24_hours") %>% 
+  pivot_wider(., id_cols=c(ENTREZID,SYMBOL), names_from = id, values_from = logFC) %>% 
+  dplyr::rename(DOX_24_RNA=DOX, DNR_24_RNA=DNR,EPI_24_RNA=EPI,MTX_24_RNA=MTX, TRZ_24_RNA=TRZ)
+RNA_LFC_df <- hr3_RNA %>% 
+  left_join(., hr24_RNA, by=c("SYMBOL"="SYMBOL","ENTREZID"="ENTREZID")) %>% 
+  dplyr::select(ENTREZID:MTX_3_RNA,DNR_24_RNA:MTX_24_RNA)
+
+
+
+combo_lfc <- readRDS("data/Final_four_data/LFC_ATAC_K27ac.RDS") %>% 
+  dplyr::select(peakid,Geneid) %>% 
+  left_join(.,ATAC_LFC_df, by=c("peakid"="peak")) %>% 
+  left_join(.,K27_LFC_df, by= c("Geneid"="Geneid"))
+
+combo_corr <- combo_lfc %>% 
+  left_join(.,(Collapsed_new_peaks %>% 
+  dplyr::select(Peakid, NCBI_gene,SYMBOL)), by=c("peakid"="Peakid")) %>% 
+  left_join(., RNA_LFC_df, by=c("SYMBOL"="SYMBOL","NCBI_gene"="ENTREZID")) %>% 
+  tidyr::unite(., "name",peakid,Geneid,NCBI_gene,SYMBOL,sep = "_") %>% 
+  column_to_rownames("name") %>% 
+  na.omit() %>% 
+  cor()
+ComplexHeatmap::Heatmap(combo_corr)
+```
+###: Figure S19
+```{r FigS19A}
+drug_pal <- c("#8B006D","#DF707E","#F1B72B", "#3386DD","#707031","#41B333")
+PRDX6_info <- Collapsed_new_peaks %>% dplyr::filter(SYMBOL=="PRDX6") %>% 
+  distinct(NCBI_gene,SYMBOL)
+
+RNA_counts <- readRDS("data/other_papers/cpmcount.RDS") %>%
+  dplyr::rename_with(.,~gsub(pattern="Da",replacement="DNR",.)) %>% 
+ dplyr::rename_with(.,~gsub(pattern="Do",replacement="DOX",.)) %>% 
+  dplyr::rename_with(.,~gsub(pattern="Ep",replacement="EPI",.)) %>% 
+   dplyr::rename_with(.,~gsub(pattern="Mi",replacement="MTX",.)) %>% 
+    dplyr::rename_with(.,~gsub(pattern="Tr",replacement="TRZ",.)) %>% 
+       dplyr::rename_with(.,~gsub(pattern="Ve",replacement="VEH",.)) %>% 
+  rownames_to_column("ENTREZID") 
+
+
+RNA_counts %>% 
+  dplyr::filter(ENTREZID == PRDX6_info$NCBI_gene) %>% 
+  pivot_longer(cols = !ENTREZID, names_to = "sample", values_to = "counts") %>% 
+  left_join(., PRDX6_info, by =c("ENTREZID"="NCBI_gene")) %>% 
+  separate("sample", into = c("trt","ind","time")) %>% 
+  mutate(time=factor(time, levels = c("3h","24h"))) %>% 
+  mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
+  ggplot(., aes (x = time, y=counts))+
+  geom_boxplot(aes(fill=trt))+
+  facet_wrap(~SYMBOL, scales="free_y")+
+  ggtitle("RNA log 2 cpm of expressed gene")+
+    scale_fill_manual(values = drug_pal)+
+  theme_bw()+
+  ylab("log2 cpm RNA")
+
+```
+
+```{r}
+PRUNE2_info <- Collapsed_new_peaks %>% dplyr::filter(SYMBOL=="PRUNE2") %>% 
+  distinct(NCBI_gene,SYMBOL)
+
+
+RNA_counts %>% 
+  dplyr::filter(ENTREZID == PRUNE2_info$NCBI_gene) %>% 
+  pivot_longer(cols = !ENTREZID, names_to = "sample", values_to = "counts") %>% 
+  left_join(., PRUNE2_info, by =c("ENTREZID"="NCBI_gene")) %>% 
+  separate("sample", into = c("trt","ind","time")) %>% 
+  mutate(time=factor(time, levels = c("3h","24h"))) %>% 
+  mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
+  ggplot(., aes (x = time, y=counts))+
+  geom_boxplot(aes(fill=trt))+
+  facet_wrap(~SYMBOL, scales="free_y")+
+  ggtitle("RNA log 2 cpm of expressed gene")+
+    scale_fill_manual(values = drug_pal)+
+  theme_bw()+
+  ylab("log2 cpm RNA")
 
 
 ```
