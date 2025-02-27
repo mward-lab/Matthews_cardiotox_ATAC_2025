@@ -175,3 +175,139 @@ ComplexHeatmap::Heatmap(corr_lcpmH3K27ac, top_annotation = htanno)
 
 ```
 
+### Figure S14: H3K27-acetylation response is highly correlated across ACs
+
+#### Figure S14A: Differentially enriched H3K27ac regions across drug treatments
+
+Code for Differential analysis
+```{r FigS14 diff analysis, echo=TRUE, eval=FALSE}
+### group  without veh3hr and veh24hr individual samples
+# group_23s <- c( 1,2,4,5,6,7,10,1,2,3,4,7,8,9,10,1,2,3,5,6,7,8,9)
+H3K27ac_counts_file <- read_delim("data/Final_four_data/H3K27ac_files/H3K27ac_counts_file.txt", delim= "\t")
+PCA_H3_mat_23s <- H3K27ac_counts_file %>% 
+  ##removing C_VEH_3 and B_VEH_24 columns 
+  dplyr::select(Geneid,B_DNR_24:B_MTX_24, B_VEH_3:C_VEH_24) %>% 
+  column_to_rownames("Geneid") %>% 
+  as.matrix()
+
+anno_H3_mat_23s <-
+data.frame(timeset=colnames(PCA_H3_mat_23s)) %>%
+  mutate(sample = timeset) %>% 
+  separate(timeset, into = c("indv","trt","time"), sep= "_") %>% 
+  mutate(time = factor(time, levels = c("3", "24"), labels= c("3 hours","24 hours"))) %>% 
+  mutate(trt = factor(trt, levels = c("DOX","EPI", "DNR", "MTX","VEH"))) 
+  
+
+  
+lcpm_h3_23s <- cpm(PCA_H3_mat_23s, log=TRUE)  ### for determining the basic cutoffs
+row_means23s <- rowMeans(lcpm_h3_23s)
+h3_23s_filtered <- PCA_H3_mat_23s[row_means23s >0,]
+filt_H3_matrix_lcpm_23s <- cpm(h3_23s_filtered, log=TRUE)
+
+### no difference in between filtered and unfilterd numbers
+
+for_group_23s <- data.frame(timeset=colnames(PCA_H3_mat_23s)) %>%
+  mutate(sample = timeset) %>%
+  separate(timeset, into = c("indv","trt","time"), sep= "_") %>%
+  unite("test", trt:time,sep="_", remove = FALSE)
+
+# dge_23s <- DGEList.data.frame(counts = PCA_H3_mat_23s, group = group_23s, genes = lcpm_h3_23s_filtered)
+
+# group_1 <- for_group_23s$test
+# 
+# dge_23s$group$indv <- for_group_23s$indv
+# dge_23s$group$time <- for_group_23s$time
+# dge_23s$group$trt <- for_group_23s$trt
+# # 
+# indv_23s <- for_group_23s$indv
+# mm <- model.matrix(~0 +group_1)
+# colnames(mm) <-  c("DNR_24", "DNR_3", "DOX_24","DOX_3","EPI_24", "EPI_3","MTX_24", "MTX_3","VEH_24", "VEH_3")
+# 
+# y <- voom(dge_23s$counts, mm,plot =TRUE)
+# 
+# corfit <- duplicateCorrelation(y, mm, block = indv_23s)
+# 
+# v <- voom(dge_23s$counts, mm, block = indv_23s, correlation = corfit$consensus)
+# 
+# fit <- lmFit(v, mm, block = indv_23s, correlation = corfit$consensus)
+# # colnames(mm) <- c("DNR_24","DNR_3","DOX_24","DOX_3","EPI_24","EPI_3","MTX_24","MTX_3","TRZ_24","TRZ_3","VEH_24", "VEH_3")
+# #
+# #
+# cm <- makeContrasts(
+#   DNR_3.VEH_3 = DNR_3-VEH_3,
+#   DOX_3.VEH_3 = DOX_3-VEH_3,
+#   EPI_3.VEH_3 = EPI_3-VEH_3,
+#   MTX_3.VEH_3 = MTX_3-VEH_3,
+#   DNR_24.VEH_24 =DNR_24-VEH_24,
+#   DOX_24.VEH_24= DOX_24-VEH_24,
+#   EPI_24.VEH_24= EPI_24-VEH_24,
+#   MTX_24.VEH_24= MTX_24-VEH_24,
+#     levels = mm)
+#
+# vfit <- lmFit(y, mm)
+# # 
+# vfit<- contrasts.fit(vfit, contrasts=cm)
+# 
+# efit4_raodah_23s <- eBayes(vfit)
+
+
+```
+
+
+```{r FigS14A }
+efit_raodah_23s <- readRDS("data/Final_four_data/efit4_raodah_23s.RDS")
+results = decideTests(efit_raodah_23s)
+summary(results)
+
+AC.DNR_3.top= topTable(efit_raodah_23s, coef=1, adjust.method="BH", number=Inf, sort.by="p")
+AC.DOX_3.top= topTable(efit_raodah_23s, coef=2, adjust.method="BH", number=Inf, sort.by="p")
+AC.EPI_3.top= topTable(efit_raodah_23s, coef=3, adjust.method="BH", number=Inf, sort.by="p")
+AC.MTX_3.top= topTable(efit_raodah_23s, coef=4, adjust.method="BH", number=Inf, sort.by="p")
+
+AC.DNR_24.top= topTable(efit_raodah_23s, coef=5, adjust.method="BH", number=Inf, sort.by="p")
+AC.DOX_24.top= topTable(efit_raodah_23s, coef=6, adjust.method="BH", number=Inf, sort.by="p")
+AC.EPI_24.top= topTable(efit_raodah_23s, coef=7, adjust.method="BH", number=Inf, sort.by="p")
+AC.MTX_24.top= topTable(efit_raodah_23s, coef=8, adjust.method="BH", number=Inf, sort.by="p")
+
+
+plot_filenames <- c("AC.DNR_3.top","AC.DOX_3.top","AC.EPI_3.top","AC.MTX_3.top",
+                    "AC.DNR_24.top","AC.DOX_24.top","AC.EPI_24.top",
+                    "AC.MTX_24.top")
+plot_files <- c( AC.DNR_3.top,AC.DOX_3.top,AC.EPI_3.top,AC.MTX_3.top,
+                    AC.DNR_24.top,AC.DOX_24.top,AC.EPI_24.top,
+                    AC.MTX_24.top)
+
+volcanosig <- function(df, psig.lvl) {
+    df <- df %>% 
+    mutate(threshold = ifelse(adj.P.Val > psig.lvl, "A", ifelse(adj.P.Val <= psig.lvl & logFC<=0,"B","C")))
+     
+    ggplot(df, aes(x=logFC, y=-log10(P.Value))) + 
+      geom_point(aes(color=threshold))+
+      xlab(expression("Log"[2]*" FC"))+
+      ylab(expression("-log"[10]*"P Value"))+
+      scale_color_manual(values = c("black", "red","blue"))+
+      ylim(0,12)+
+      xlim(-5,5)+
+      theme_cowplot()+
+      theme(legend.position = "none",
+              plot.title = element_text(size = rel(1.5), hjust = 0.5),
+              axis.title = element_text(size = rel(0.8))) 
+}
+
+v1 <- volcanosig(AC.DNR_3.top, 0.05)+ ggtitle("H3K27ac DNR 3 hour")
+v2 <- volcanosig(AC.DNR_24.top, 0.05)+ ggtitle("H3K27ac DNR 24 hour")+ylab("")
+v3 <- volcanosig(AC.DOX_3.top, 0.05)+ ggtitle("H3K27ac DOX 3 hour")
+v4 <- volcanosig(AC.DOX_24.top, 0.05)+ ggtitle("H3K27ac DOX 24 hour")+ylab("")
+v5 <- volcanosig(AC.EPI_3.top, 0.05)+ ggtitle("H3K27ac EPI 3 hour")
+v6 <- volcanosig(AC.EPI_24.top, 0.05)+ ggtitle("H3K27ac EPI 24 hour")+ylab("")
+v7 <- volcanosig(AC.MTX_3.top, 0.05)+ ggtitle("H3K27ac MTX 3 hour")
+v8 <- volcanosig(AC.MTX_24.top, 0.05)+ ggtitle("H3K27ac MTX 24 hour")+ylab("")
+
+plot_grid(v1,v2,  rel_widths =c(.8,1))
+plot_grid(v3,v4,  rel_widths =c(.8,1))
+plot_grid(v5,v6,  rel_widths =c(.8,1))
+plot_grid(v7,v8,  rel_widths =c(.8,1))
+
+
+```
+
