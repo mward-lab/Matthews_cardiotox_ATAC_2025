@@ -2,7 +2,7 @@
 
 This connects to the figures of our paper.
 
-https://github.com/mward-lab/Matthews_cardiotox_ATAC_2025/index.html
+[Link to paper figures and previous analysis](https://mward-lab.github.io/Matthews_cardiotox_ATAC_2025/index.html)
 
 
 
