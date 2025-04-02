@@ -2,7 +2,8 @@
 
 This is the link to my initial files of analysis.
 
-https://reneeisnowhere.github.io/ATAC_learning/index.html
+https://github.com/mward-lab/Matthews_cardiotox_ATAC_2025.git        
+
 
 A [workflowr][] project.
 
