@@ -2,7 +2,8 @@
 
 This is the link to my initial files of analysis.
 
-https://github.com/mward-lab/Matthews_cardiotox_ATAC_2025.git        
+https://github.com/mward-lab/Matthews_cardiotox_ATAC_2025/index.html
+
 
 
 A [workflowr][] project.
