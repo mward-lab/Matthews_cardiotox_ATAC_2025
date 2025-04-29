@@ -307,7 +307,7 @@ pivot_longer(cols = reads:mapped_reads, names_to="count_type", values_to = "read
 ### cardiomyocyte purity
 ```{r purity table}
 
-Purity_table <- cbind("indv"= c("75-1","87-1","77-1","71-1"),
+Purity_table <- data_frame("indv"= c("75-1","87-1","77-1","71-1"),
 "assign"=c("D","A","B","C"),
 "num"= c(1,2,3,6),
 "cm_purity"=c(98.5,98.3,99.5,86.75))
@@ -317,10 +317,12 @@ Purity_table %>%
   kable_styling(full_width = FALSE, font_size = 16) %>%
   scroll_box(height = "800px")
   
-
+median(Purity_table$cm_purity)
 ```
 
 ```{r  TSS enrichment}
+
+### for code to calculate the TSSE scores, reference the file "code/TSSE.R"
 allTSSE <- readRDS( "data/all_TSSE_scores.RDS")
 allTSSE %>% as.data.frame() %>% 
   rownames_to_column("sample") %>% 
@@ -329,28 +331,49 @@ allTSSE %>% as.data.frame() %>%
   mutate(time = factor(time, levels = c("3","24"),labels = c("3 hours","24 hours"))) %>% 
   dplyr::filter(indv !=4 &indv !=5) %>% 
   ggplot(., aes(x= time, y= V1, group = indv))+
-
-   # geom_col(position= "dodge",aes(fill=trt)) %>%
-  geom_jitter(aes(col = trt, size = 1.5, alpha = 0.5) ,  position=position_jitter(0.25))+
+  geom_jitter(aes(col = trt, size = 1.5, alpha = 0.5) ,
+              position=position_jitter(0.25))+
   geom_hline(yintercept=5, linetype = 3)+
-    geom_hline(yintercept=7, col = "blue")+
+  geom_hline(yintercept=7, col = "blue")+
   facet_wrap(~indv)+
-   theme_bw()+
+  theme_bw()+
   ggtitle("TSS enrichment scores")+
-   scale_color_manual(values=drug_pal)+
-   theme(strip.text = element_text(face = "bold",  hjust = .5, size = 8),
+  scale_color_manual(values=drug_pal)+
+  theme(strip.text = element_text(face = "bold",  hjust = .5, size = 8),
         strip.background = element_rect(fill = "white", linetype = "solid",
                                         color = "black", linewidth = 1))
 
 ```
 
 ```{r TSS peaks plot, fig.width=8, fig.height=12}
+
+
+
+#### These Ind1 TSS_peaks were created on the "analysis/Peak_calling.RDS" file  example code:
+# Import in peak files: peakfiles3 <- choose.files()
+###This loop first established a list then (because I already knew the list had 12 files)
+## I then imported each of these onto that list.  Once I had the list, I stored it as
+## an R object, 
+# Ind3_peaks <- list()
+# for (file in 1:12){
+#     testname <- basename(peakfiles3[file])
+#   banana_peel <- str_split_i(testname, "_",3)
+#  Ind3_peaks[[banana_peel]] <- readPeakFile(peakfiles3[file])
+# }
+# saveRDS(Ind3_peaks, "data/Ind3_peaks_list.RDS")
+# 
+# I then called annotatePeak on that list object, and stored that as a R object for later retrieval.)
+# peakAnnoList_3 <- lapply(Ind3_peaks, annotatePeak, tssRegion =c(-2000,2000), TxDb= txdb)
+# saveRDS(peakAnnoList_3, "data/peakAnnoList_3.RDS")
+# Epi_list_tagMatrix = lapply(Ind3_peaks, getTagMatrix, windows = TSS)
+# saveRDS(Epi_list_tagMatrix, "data/Ind3_TSS_peaks.RDS")
+
+
 Ind1_TSS_peaks_plot <- readRDS("data/Ind1_TSS_peaks.RDS")
 Ind2_TSS_peaks_plot <- readRDS("data/Ind2_TSS_peaks.RDS")
 Ind3_TSS_peaks_plot <- readRDS("data/Ind3_TSS_peaks.RDS")
 Ind6_TSS_peaks_plot <- readRDS("data/Ind6_TSS_peaks.RDS")
-# plot_list <- readRDS("data/Final_four_data/Plot_list_holder.RDS")
-# list2env(plot_list,envir = .GlobalEnv)
+
 a1<- plotAvgProf(Ind1_TSS_peaks_plot[c(1,3,5,7,9,11)], xlim=c(-3000, 3000), ylab = "Count Frequency")+ ggtitle("3 hour Individual 1" )+coord_cartesian(xlim=c(-2000,2000))
 b1 <- plotAvgProf(Ind2_TSS_peaks_plot[c(1,3,5,7,9,11)], xlim=c(-3000, 3000), ylab = "Count Frequency")+ ggtitle("3 hour Individual 2" )+coord_cartesian(xlim=c(-2000,2000))
 c1 <- plotAvgProf(Ind3_TSS_peaks_plot[c(1,3,5,7,9,11)], xlim=c(-3000, 3000), ylab = "Count Frequency")+ ggtitle("3 hour Individual 3" )+coord_cartesian(xlim=c(-2000,2000))
@@ -360,30 +383,36 @@ a2 <- plotAvgProf(Ind1_TSS_peaks_plot[c(2,4,6,8,10,12)], xlim=c(-3000, 3000),yla
 b2 <- plotAvgProf(Ind2_TSS_peaks_plot[c(2,4,6,8,10,12)], xlim=c(-3000, 3000),ylab = "Count Frequency")+ ggtitle("24 hour Individual 2" )+coord_cartesian(xlim=c(-2000,2000))
 c2 <- plotAvgProf(Ind3_TSS_peaks_plot[c(2,4,6,8,10,12)], xlim=c(-3000, 3000),ylab = "Count Frequency")+ ggtitle("24 hour Individual 3" )+coord_cartesian(xlim=c(-2000,2000))
 d2 <- plotAvgProf(Ind6_TSS_peaks_plot[c(2,4,6,8,10,12)], xlim=c(-3000, 3000),ylab = "Count Frequency")+ ggtitle("24 hour Individual 6" )+coord_cartesian(xlim=c(-2000,2000))
-# plot_list <- list("a1"=a1,"a2"=a2,"b1"=b1,"b2"=b2,"c1"=c1,"c2"=c2,"d1"=d1,"d2"=d2)
-# saveRDS(plot_list,"data/Final_four_data/Plot_list_holder.RDS")
+
 plot_grid(a1,a2, b1,b2,c1,c2,d1,d2, axis="l",align = "hv",nrow=4, ncol=2)
-# a2+coord_cartesian(xlim=c(-2000,2000))
+
 ```
 
 
 
-Analysis using the four selected individuals and the peaks generated from just that set:
+Analysis using the four selected individuals and the peaks generated from just that set:  
+
+To create this peak set, 
+-First I moved all .narrowPeak files into the same folder and ran `bedtools multiinter -i ./* >log.file.txt` to create an intersection of all peaks.  I then was only interested in segments that had a count of more than 4 (intersection existed in at least 4 of the data sets) in all files.   I filtered column #4 of the `log.file.txt` output by `awk -F"\t" '$4 > 4 {print $1"\t"$2"\t"$3 }' log.file.txt > all_filt_peaks.bed` and printed the results of anything >4 in bed format to the `all_filt_peaks.bed` file.   Upon further reading of bedtools documents, I realized the number of "peaks" was actually fragments of peaks that were intersected among all files.  This was not the final output I wanted so I intersected these high counted segments back with the very first initial mergedPeaks.bed file using `bedtools intersect -a mergedPeaks.bed -b all_filt_peaks.bed -wa -u > merged_filtered_peaks.bed`.  using the `-wa -u` flags allowed me to filter the first mergedPeaks file, keeping only those high confidence peaks that overlapped the `all_filt_peaks.bed` and only reporting the unique calls.
+
+
+Additionally, I filtered out the blacklisted regions using the following code: `intersectBed -v -a merged_filtered_peaks.bed -b Blacklist/hg38.blacklist.bed.gz > final_bl_filt_peaks.bed`
+My final  high confidence peaks file contains 172,418 peaks.
+I used this file to collect PE-read counts using `featureCounts -p -a high_conf_peaks.saf -F SAF -o all_four_filtered_counts.txt ind1/trimmed/filt_files/*nodup.bam ind2/trimmed/filt_files/*nodup.bam ind3/trimmed/filt_files/*nodup.bam ind6/trimmed/filt_files/*nodup.bam`
+`
+
 
 ```{r loading peak file}
-# Peaks_bed_file <- rtracklayer::BEDFile("~/ATAC_downloads/finalfour_bl_filt_peaks.bed")
-# import(Peaks_bed_file) %>% as.data.frame()
-# write_delim(Snyder_41peaks, "data/other_papers/ENCFF966JZT_bed_Snyder_41peaks.bed",delim = "\t")
-  all_four_filt_counts <- read.delim("data/all_four_filtered_counts.txt",header=TRUE) %>% 
+##removing non-standard chromosomes 
+all_four_filt_counts <- read.delim("data/all_four_filtered_counts.txt",header=TRUE) %>% 
   GRanges() %>% 
   keepStandardChromosomes(pruning.mode = "coarse") %>% 
-  as.data.frame()
-
+  as.data.frame() 
  
 ```
 
 ```{r edit_names of counts file}
-# all_four_filt_counts %>% 
+
 names(all_four_filt_counts) = gsub(pattern = "_S.*", replacement = "", x = names(all_four_filt_counts))
 
 names(all_four_filt_counts) = gsub(pattern = "ind1.trimmed.filt_files.trimmed_|ind2.trimmed.filt_files.trimmed_|ind3.trimmed.filt_files.trimmed_|ind6.trimmed.filt_files.trimmed_", replacement = "", x = names(all_four_filt_counts))
@@ -484,20 +513,14 @@ annotation_mat <- data.frame(timeset=colnames(PCA4mat)) %>%
        timeset = gsub("3h","_3h",timeset)) %>%
   separate(timeset, into = c("indv","trt","time"), sep= "_") %>% 
   mutate(trt= case_match(trt, 'DX' ~'DOX', 'E'~'EPI', 'DA'~'DNR', 'M'~'MTX', 'T'~'TRZ', 'V'~'VEH',.default = trt)) %>% 
-  # mutate(indv = factor(indv, levels = c("1", "2", "3", "4", "5", "6"))) %>%
   mutate(time = factor(time, levels = c("3h", "24h"), labels= c("3 hours","24 hours"))) %>% 
   mutate(trt = factor(trt, levels = c("DOX","EPI", "DNR", "MTX", "TRZ", "VEH"))) 
 
 PCA4_info <- (prcomp(t(PCA4mat), scale. = TRUE)) 
 PCA4_info_anno <- PCA4_info$x %>% cbind(.,annotation_mat)
-# autoplot(PCA_info)
+
 summary(PCA4_info)
-# %>% as.tibble() %>% 
-#   kable(., caption = "Summary of PCA variables") %>% 
-#   kable_paper("striped", full_width = TRUE) %>%
-#   kable_styling(full_width = FALSE, font_size = 16) %>%
-#   scroll_box(height = "500px")
-# cpm(PCAmat, log=TRUE)
+
 pca_plot(PCA4_info_anno, col_var='trt', shape_var = 'time')+ggtitle("PCA of raw counts by time and treatment")
         
 pca_plot(PCA4_info_anno, col_var='trt', shape_var = 'indv')+ggtitle("PCA of raw counts by treatment and individual")
@@ -551,23 +574,6 @@ names(mat_colors$time) <- unique(counts_corr_mat$time)
 names(mat_colors$class) <- unique(counts_corr_mat$class)
 names(mat_colors$TOP2i) <- unique(counts_corr_mat$TOP2i)
 
-# mat_col_ff <-
-#   data.frame(
-#     time = c(rep("3 hours", 5), rep("24 hours", 5)),
-#     class = (c(
-#       "AC", "AC", "AC", "nAC","nAC",  "AC", "AC", "AC", "nAC","nAC" 
-#     )))
-# rownames(mat_col_ff) <- colnames(FCmatrix_ff)
-# 
-# mat_colors_ff <-
-#   list(
-#     time = c("pink", "chocolate4"),
-    # class = c("yellow1", "lightgreen"))
-
-# names(mat_colors_ff$time) <- unique(mat_col_ff$time)
-# names(mat_colors_ff$class) <- unique(mat_col_ff$class)
-# names(mat_colors_FC$TOP2i) <- unique(mat_col_FC$TOP2i)
-# corrFC_ff <- cor(FCmatrix_ff)
 
 htanno_full <-  ComplexHeatmap::HeatmapAnnotation(df = counts_corr_mat, col = mat_colors)
 Heatmap(FCmatrix_full, top_annotation = htanno_full)
@@ -578,15 +584,22 @@ Heatmap(FCmatrix_full, top_annotation = htanno_full)
 ```
 
 ### PCA analysis 155560 peaks
+
+
+
 ```{r filter log2cpm}
-# saveRDS(x4_filtered,"data/Final_four_data/ATAC_filtered_raw_counts_allsamples.RDS")
 l4cpm <- cpm(PCA4mat, log=TRUE)  ### for determining the basic cutoffs
 dim(l4cpm)
 
 row_means <- rowMeans(l4cpm)
+
 x4_filtered <- PCA4mat[row_means > 0,]
-dim(x4_filtered)
+
+###  removing chrY (the three rows)
+
+
 # saveRDS(x4_filtered,"data/Final_four_data/x4_filtered.RDS")
+# x4_filtered <- readRDS("data/Final_four_data/x4_filtered.RDS")
 filt4_matrix_lcpm <- cpm(x4_filtered, log=TRUE)
 
 PCA4_info_filter <- (prcomp(t(filt4_matrix_lcpm), scale. = TRUE))
@@ -661,7 +674,9 @@ new_peaks_gr <- new_peaks_list %>%
   dplyr::filter(chr!="chrY") %>% 
   GRanges() %>% 
    keepStandardChromosomes(., pruning.mode = "coarse")
+
 stdChr <- standardChromosomes(new_peaks_gr)
+
 peakAnnoList_n45_motif <- readRDS("data/peakAnnoList_n45_motif.RDS")
 old_peaks_gr <- peakAnnoList_n45_motif$background_gr %>% as.GRanges()
 old_peaks_gr$old_width <- width(old_peaks_gr)
@@ -726,9 +741,9 @@ Snyder_41peaks %>% as.data.frame() %>% dplyr::filter(!name %in% heart_overlap_sn
 
 library(eulerr)
 
-fit <- euler(c("This study" = 155560 - 66927,        
+fit <- euler(c("This study" = 155557 - 66927,        
                "Snyder study" = 218982 - 137976,        # Unique to B
-               "This study&Snyder study" = min(66927, 137976)))
+               "This study&Snyder study" = min(66927)))
 plot(fit, fills = list(fill = c("skyblue", "lightcoral"), alpha = 0.6),
      labels = FALSE, edges = TRUE, quantities = TRUE,
      main = "Euler diagram between this study and Snyder's study")
@@ -769,6 +784,7 @@ group <- factor(group, levels =c("1","2","3","4","5","6","7","8","9","10","11","
 short_names <- paste0(pca_final_four_anno$indv,"_",pca_final_four_anno$trt,"_",pca_final_four_anno$time)
 
 dge <- DGEList.data.frame(counts = x4_filtered, group = group, genes = row.names(x4_filtered))
+dge<-  dge[!grepl("^chrY", rownames(dge)),,keep.lib.sizes=FALSE ]
 
 group_1 <- c(rep(c("DNR_24","DNR_3","DOX_24","DOX_3","EPI_24","EPI_3","MTX_24","MTX_3","TRZ_24","TRZ_3","VEH_24", "VEH_3"),4))
 
@@ -778,40 +794,40 @@ dge$group$trt <- pca_final_four_anno$trt
 
 indv <- pca_final_four_anno$indv
 efit4 <- readRDS("data/Final_four_data/efit4_filt_bl.RDS")
-# mm <- model.matrix(~0 +group_1)  
-# colnames(mm) <-  c("DNR_24", "DNR_3", "DOX_24","DOX_3","EPI_24", "EPI_3","MTX_24", "MTX_3", "TRZ_24","TRZ_3","VEH_24", "VEH_3")
+mm <- model.matrix(~0 +group_1)
+colnames(mm) <-  c("DNR_24", "DNR_3", "DOX_24","DOX_3","EPI_24", "EPI_3","MTX_24", "MTX_3", "TRZ_24","TRZ_3","VEH_24", "VEH_3")
 # 
-# y <- voom(dge$counts, mm,plot =TRUE)
+y <- voom(dge$counts, mm,plot =TRUE)
 # # 
-# corfit <- duplicateCorrelation(y, mm, block = indv)
+corfit <- duplicateCorrelation(y, mm, block = indv)
 # # 
-# v <- voom(dge$counts, mm, block = indv, correlation = corfit$consensus)
+v <- voom(dge$counts, mm, block = indv, correlation = corfit$consensus)
 # # 
-# fit <- lmFit(v, mm, block = indv, correlation = corfit$consensus)
-# colnames(mm) <- c("DNR_24","DNR_3","DOX_24","DOX_3","EPI_24","EPI_3","MTX_24","MTX_3","TRZ_24","TRZ_3","VEH_24", "VEH_3")
+fit <- lmFit(v, mm, block = indv, correlation = corfit$consensus)
 #
 #
-# cm <- makeContrasts(
-#   DNR_3.VEH_3 = DNR_3-VEH_3,
-#   DOX_3.VEH_3 = DOX_3-VEH_3,
-#   EPI_3.VEH_3 = EPI_3-VEH_3,
-#   MTX_3.VEH_3 = MTX_3-VEH_3,
-#   TRZ_3.VEH_3 = TRZ_3-VEH_3,
-#   DNR_24.VEH_24 =DNR_24-VEH_24,
-#   DOX_24.VEH_24= DOX_24-VEH_24,
-#   EPI_24.VEH_24= EPI_24-VEH_24,
-#   MTX_24.VEH_24= MTX_24-VEH_24,
-#   TRZ_24.VEH_24= TRZ_24-VEH_24,
-#   levels = mm)
+cm <- makeContrasts(
+  DNR_3.VEH_3 = DNR_3-VEH_3,
+  DOX_3.VEH_3 = DOX_3-VEH_3,
+  EPI_3.VEH_3 = EPI_3-VEH_3,
+  MTX_3.VEH_3 = MTX_3-VEH_3,
+  TRZ_3.VEH_3 = TRZ_3-VEH_3,
+  DNR_24.VEH_24 =DNR_24-VEH_24,
+  DOX_24.VEH_24= DOX_24-VEH_24,
+  EPI_24.VEH_24= EPI_24-VEH_24,
+  MTX_24.VEH_24= MTX_24-VEH_24,
+  TRZ_24.VEH_24= TRZ_24-VEH_24,
+  levels = mm)
 
-# vfit <- lmFit(y, mm)
+vfit <- lmFit(y, mm)
 
-# vfit<- contrasts.fit(vfit, contrasts=cm)
+vfit<- contrasts.fit(vfit, contrasts=cm)
 # 
-# efit4 <- eBayes(vfit)
+efit4 <- eBayes(vfit)
 # saveRDS(efit4,"data/Final_four_data/efit4_filt_bl.RDS")
 results = decideTests(efit4)
 summary(results)
+
 
 ```
 
@@ -1360,12 +1376,6 @@ hour24_lfc %>%
 ```{r FF cormotif}
 
                      
-# indv_n45 <- df_names_n45$indv
-# indv <- factor(indv, levels = c(1,2,3,4,5,6))
-# time_n45 <- df_names_n45$time
-# time <- factor(time, levels =c("3h","24"))
-# trt_n45 <- df_names_n45$trt
-# label_n45 <- paste0(indv_n45,"_",trt_n45,"_",time_n45)
 group_fac_ff <- group
 groupid_ff <- as.numeric(group_fac_ff)
 
@@ -1379,6 +1389,7 @@ set.seed(31415)
 # cormotif_initial_ff <- cormotiffit(exprs = y_TMM_cpm_ff, groupid = groupid_ff, compid = compid_ff, K=1:8, max.iter = 500, runtype = "logCPM")
 # 
 # saveRDS(cormotif_initial_ff,"data/Final_four_data/cormotif_ff_4_run.RDS")
+# saveRDS(cormotif_initial_ffl,"data/Final_four_data/cormotif_ff_4_run_noY.RDS")
 
 # cormotif_four_ff <- cormotiffit(exprs = y_TMM_cpm_ff, groupid = groupid_ff, compid = compid_ff, K=4, max.iter = 500, runtype = "logCPM")
 
@@ -1408,10 +1419,6 @@ Study breakdown: 1 = DNR_3, 2 = DOX_3, 3 = EPI_3, 4 = MTX_3, 5 = TRZ_3\
 
 ```{r making clusters}
 motif_prob_ff <- readRDS("data/Final_four_data/motif_prob_ff.RDS")
-
-# motif_prob_ff %>% 
-#   as.data.frame() %>% 
-#   dplyr::filter(V1<.5 & V2>.5 & V3 <.5& V4<0.5)
 
 background_peaks <- motif_prob_ff %>% 
   as.data.frame() %>% 
@@ -1448,7 +1455,7 @@ EAR_ff <- motif_prob_ff %>%
   rownames_to_column("Peakid") %>% 
   dplyr::select(Peakid) %>% 
   separate(Peakid, into=c("chr","start","end"),remove = FALSE)
- 
+ ###to get these peak names, I did a random sample of 2 for each, then pulled the first one of the two.  There were no differences in the two I had picked, but I did the code outside of this box and never put it back in)
 peak_rep_names <-c("NR"= "chr7.76515428.76516495",
 "LR"= "chr14.69543633.69543934", "ESR"="chr10.72331769.72332348", "EAR"="chr16.66248203.66248529")
 
@@ -1620,7 +1627,7 @@ Collapsed_new_peaks <- TSS_NG_table %>%
               dist_to_NG =min(dist_to_NG))
  write_delim(Collapsed_new_peaks,"data/Final_four_data/collapsed_new_peaks.txt",delim = "\t",col_names = TRUE)
 ```
-### Eight group peak characteristics
+### Nine group peak characteristics
 
 ```{r new MRC8}
 TSS_assigned_NG <- read_delim("data/Final_four_data/TSS_assigned_NG.txt", delim = "\t", col_names = TRUE)
@@ -1715,7 +1722,7 @@ plotAnnoBar(peakAnnoList_8_motif[c(8,1,3,5,6,2,4,7)])+
   ggtitle ("Genomic Feature Distribution, eight groups")
 
 plotAnnoBar(peakAnnoList_9_motif[c(9,1,3,7,5,2,4,8,6)])+
-  ggtitle ("Genomic Feature Distribution, eight groups")
+  ggtitle ("Genomic Feature Distribution, nine groups")
 
 ```
 
@@ -2312,9 +2319,6 @@ fullpeaks_joined_lfc %>%
    ggtitle("Correlation of 20kb ATAC peaks and RNA-NGat 3 hours")+
   xlab("ATAC peak LFC")+
    ylab("RNA LFC")
-# ATAC3h_RNA3h_20kb_cor <- fullpeaks_joined_lfc %>% 
-#   dplyr::filter(dist_to_NG>-20000 & dist_to_NG<20000)%>%
-#    dplyr::summarise(cor_test = list(cor.test(AC_3h_lfc, RNA_3h_lfc, method = "pearson")))
 
 
 fullpeaks_joined_lfc %>% 
