@@ -667,8 +667,7 @@ for (f in facs) {
 ### Comparing the peak sets, old and new
 
 ```{r compare old and new sets}
-# write_delim((filt4_matrix_lcpm %>% as.data.frame(.) %>% rownames_to_column("Peakid")), "data/Final_four_data/LCPM_matrix_ff.txt", delim = "/t")
-# filt4_matrix_lcpm <- read_delim("data/Final_four_data/LCPM_matrix_ff.txt",delim = "/t")
+
 new_peaks_list <- row.names(filt4_matrix_lcpm) %>% as.data.frame() %>% separate_wider_delim(., cols =.,names=c("chr","start","end"), delim = ".", cols_remove = FALSE) %>%  dplyr::rename("peakid"=4)
 new_peaks_gr <- new_peaks_list %>%
   dplyr::filter(chr!="chrY") %>% 
@@ -784,7 +783,7 @@ group <- factor(group, levels =c("1","2","3","4","5","6","7","8","9","10","11","
 short_names <- paste0(pca_final_four_anno$indv,"_",pca_final_four_anno$trt,"_",pca_final_four_anno$time)
 
 dge <- DGEList.data.frame(counts = x4_filtered, group = group, genes = row.names(x4_filtered))
-dge<-  dge[!grepl("^chrY", rownames(dge)),,keep.lib.sizes=FALSE ]
+
 
 group_1 <- c(rep(c("DNR_24","DNR_3","DOX_24","DOX_3","EPI_24","EPI_3","MTX_24","MTX_3","TRZ_24","TRZ_3","VEH_24", "VEH_3"),4))
 
@@ -797,33 +796,33 @@ efit4 <- readRDS("data/Final_four_data/efit4_filt_bl.RDS")
 mm <- model.matrix(~0 +group_1)
 colnames(mm) <-  c("DNR_24", "DNR_3", "DOX_24","DOX_3","EPI_24", "EPI_3","MTX_24", "MTX_3", "TRZ_24","TRZ_3","VEH_24", "VEH_3")
 # 
-y <- voom(dge$counts, mm,plot =TRUE)
+# y <- voom(dge$counts, mm,plot =TRUE)
 # # 
-corfit <- duplicateCorrelation(y, mm, block = indv)
+# corfit <- duplicateCorrelation(y, mm, block = indv)
 # # 
-v <- voom(dge$counts, mm, block = indv, correlation = corfit$consensus)
-# # 
-fit <- lmFit(v, mm, block = indv, correlation = corfit$consensus)
+# v <- voom(dge$counts, mm, block = indv, correlation = corfit$consensus)
+# # # 
+# fit <- lmFit(v, mm, block = indv, correlation = corfit$consensus)
 #
 #
-cm <- makeContrasts(
-  DNR_3.VEH_3 = DNR_3-VEH_3,
-  DOX_3.VEH_3 = DOX_3-VEH_3,
-  EPI_3.VEH_3 = EPI_3-VEH_3,
-  MTX_3.VEH_3 = MTX_3-VEH_3,
-  TRZ_3.VEH_3 = TRZ_3-VEH_3,
-  DNR_24.VEH_24 =DNR_24-VEH_24,
-  DOX_24.VEH_24= DOX_24-VEH_24,
-  EPI_24.VEH_24= EPI_24-VEH_24,
-  MTX_24.VEH_24= MTX_24-VEH_24,
-  TRZ_24.VEH_24= TRZ_24-VEH_24,
-  levels = mm)
+# cm <- makeContrasts(
+#   DNR_3.VEH_3 = DNR_3-VEH_3,
+#   DOX_3.VEH_3 = DOX_3-VEH_3,
+#   EPI_3.VEH_3 = EPI_3-VEH_3,
+#   MTX_3.VEH_3 = MTX_3-VEH_3,
+#   TRZ_3.VEH_3 = TRZ_3-VEH_3,
+#   DNR_24.VEH_24 =DNR_24-VEH_24,
+#   DOX_24.VEH_24= DOX_24-VEH_24,
+#   EPI_24.VEH_24= EPI_24-VEH_24,
+#   MTX_24.VEH_24= MTX_24-VEH_24,
+#   TRZ_24.VEH_24= TRZ_24-VEH_24,
+#   levels = mm)
 
-vfit <- lmFit(y, mm)
+# vfit <- lmFit(y, mm)
 
-vfit<- contrasts.fit(vfit, contrasts=cm)
+# vfit<- contrasts.fit(vfit, contrasts=cm)
 # 
-efit4 <- eBayes(vfit)
+# efit4 <- eBayes(vfit)
 # saveRDS(efit4,"data/Final_four_data/efit4_filt_bl.RDS")
 results = decideTests(efit4)
 summary(results)
@@ -831,8 +830,74 @@ summary(results)
 
 ```
 
-```{r making the DAR dataframe}
+```{r Volcanoes}
 
+
+V.DNR_3.top= topTable(efit4, coef=1, adjust.method="BH", number=Inf, sort.by="p")
+V.DOX_3.top= topTable(efit4, coef=2, adjust.method="BH", number=Inf, sort.by="p")
+V.EPI_3.top= topTable(efit4, coef=3, adjust.method="BH", number=Inf, sort.by="p")
+V.MTX_3.top= topTable(efit4, coef=4, adjust.method="BH", number=Inf, sort.by="p")
+V.TRZ_3.top= topTable(efit4, coef=5, adjust.method="BH", number=Inf, sort.by="p")
+V.DNR_24.top= topTable(efit4, coef=6, adjust.method="BH", number=Inf, sort.by="p")
+V.DOX_24.top= topTable(efit4, coef=7, adjust.method="BH", number=Inf, sort.by="p")
+V.EPI_24.top= topTable(efit4, coef=8, adjust.method="BH", number=Inf, sort.by="p")
+V.MTX_24.top= topTable(efit4, coef=9, adjust.method="BH", number=Inf, sort.by="p")
+V.TRZ_24.top= topTable(efit4, coef=10, adjust.method="BH", number=Inf, sort.by="p")
+
+
+plot_filenames <- c("V.DNR_3.top","V.DOX_3.top","V.EPI_3.top","V.MTX_3.top",
+                    "V.TRZ_.top","V.DNR_24.top","V.DOX_24.top","V.EPI_24.top",
+                    "V.MTX_24.top","V.TRZ_24.top")
+plot_files <- c( V.DNR_3.top,V.DOX_3.top,V.EPI_3.top,V.MTX_3.top,
+                    V.TRZ_3.top,V.DNR_24.top,V.DOX_24.top,V.EPI_24.top,
+                    V.MTX_24.top,V.TRZ_24.top)
+
+volcanosig <- function(df, psig.lvl) {
+    df <- df %>% 
+    mutate(threshold = ifelse(adj.P.Val > psig.lvl, "A", ifelse(adj.P.Val <= psig.lvl & logFC<=0,"B","C")))
+      # ifelse(adj.P.Val <= psig.lvl & logFC >= 0,"B", "C")))
+    ##This is where I could add labels, but I have taken out
+    # df <- df %>% mutate(genelabels = "")
+    # df$genelabels[1:topg] <- df$rownames[1:topg]
+    
+  ggplot(df, aes(x=logFC, y=-log10(P.Value))) + 
+    geom_point(aes(color=threshold))+
+    # geom_text_repel(aes(label = genelabels), segment.curvature = -1e-20,force = 1,size=2.5,
+    # arrow = arrow(length = unit(0.015, "npc")), max.overlaps = Inf) +
+    #geom_hline(yintercept = -log10(psig.lvl))+
+    xlab(expression("Log"[2]*" FC"))+
+    ylab(expression("-log"[10]*"P Value"))+
+    scale_color_manual(values = c("black", "red","blue"))+
+    theme_cowplot()+
+    ylim(0,20)+
+    xlim(-6,6)+
+    theme(legend.position = "none",
+              plot.title = element_text(size = rel(1.5), hjust = 0.5),
+              axis.title = element_text(size = rel(0.8))) 
+}
+
+v1 <- volcanosig(V.DNR_3.top, 0.01)+ ggtitle("DNR 3 hour")
+v2 <- volcanosig(V.DNR_24.top, 0.01)+ ggtitle("DNR 24 hour")+ylab("")
+v3 <- volcanosig(V.DOX_3.top, 0.01)+ ggtitle("DOX 3 hour")
+v4 <- volcanosig(V.DOX_24.top, 0.01)+ ggtitle("DOX 24 hour")+ylab("")
+v5 <- volcanosig(V.EPI_3.top, 0.01)+ ggtitle("EPI 3 hour")
+v6 <- volcanosig(V.EPI_24.top, 0.01)+ ggtitle("EPI 24 hour")+ylab("")
+v7 <- volcanosig(V.MTX_3.top, 0.01)+ ggtitle("MTX 3 hour")
+v8 <- volcanosig(V.MTX_24.top, 0.01)+ ggtitle("MTX 24 hour")+ylab("")
+v9 <- volcanosig(V.TRZ_3.top, 0.01)+ ggtitle("TRZ 3 hour")
+v10 <- volcanosig(V.TRZ_24.top, 0.01)+ ggtitle("TRZ 24 hour")+ylab("")
+
+plot_grid(v1,v2,  rel_widths =c(.8,1))
+plot_grid(v3,v4,  rel_widths =c(.8,1))
+plot_grid(v5,v6,  rel_widths =c(.8,1))
+plot_grid(v7,v8,  rel_widths =c(.8,1))
+plot_grid(v9,v10,  rel_widths =c(.8,1))
+
+
+```
+
+```{r making the DAR dataframe}
+### old style way of making the long Toptable i call toplist_ff
 # V.DNR_3.top_ff= topTable(efit4, coef=1, adjust.method="BH", number=Inf, sort.by="p") %>% rownames_to_column("peak")
 # V.DOX_3.top_ff= topTable(efit4, coef=2, adjust.method="BH", number=Inf, sort.by="p")%>% rownames_to_column("peak")
 # V.EPI_3.top_ff= topTable(efit4, coef=3, adjust.method="BH", number=Inf, sort.by="p")%>% rownames_to_column("peak")
@@ -884,252 +949,6 @@ write_csv(median_24_lfc, "data/Final_four_data/median_24_lfc.csv")
 ```
 
 
-#### Correlation of LFC
-```{r LFC correlation, fig.height=6}
-FCmatrix_ff <- subset(efit4$coefficients)
-
-colnames(FCmatrix_ff) <-
-  c("DNR\n3h",
-    "DOX\n3h",
-    "EPI\n3h",
-    "MTX\n3h",
-    "TRZ\n3h",
-    "DNR\n24h",
-    "DOX\n24h",
-    "EPI\n24h",
-    "MTX\n24h",
-    "TRZ\n24h"
-     )
-
-
-mat_col_ff <-
-  data.frame(
-    time = c(rep("3 hours", 5), rep("24 hours", 5)),
-    class = (c(
-      "AC", "AC", "AC", "nAC","nAC",  "AC", "AC", "AC", "nAC","nAC" 
-    )))
-rownames(mat_col_ff) <- colnames(FCmatrix_ff)
-
-mat_colors_ff <-
-  list(
-    time = c("pink", "chocolate4"),
-    class = c("yellow1", "lightgreen"))
-
-names(mat_colors_ff$time) <- unique(mat_col_ff$time)
-names(mat_colors_ff$class) <- unique(mat_col_ff$class)
-# names(mat_colors_FC$TOP2i) <- unique(mat_col_FC$TOP2i)
-corrFC_ff <- cor(FCmatrix_ff)
-
-htanno_ff <-  HeatmapAnnotation(df = mat_col_ff, col = mat_colors_ff)
-Heatmap(corrFC_ff, top_annotation = htanno_ff)
-```
-### LFC Correlation with RNA
-
-```{r addRNA cor, fig.height=5}
-toplistall_RNA <- readRDS("data/other_papers/toplistall_RNA.RDS") 
-toplistall_RNA <- toplistall_RNA %>% 
-  mutate(logFC = logFC*(-1))
-Collapsed_new_peaks <- read_delim("data/Final_four_data/collapsed_new_peaks.txt", delim = "\t", col_names = TRUE)
-
-hr3_RNA <- toplistall_RNA %>% 
-  dplyr::select(time:logFC) %>% 
-  dplyr::filter(time=="3_hours") %>% 
-  pivot_wider(., id_cols=c(ENTREZID,SYMBOL), names_from = id, values_from = logFC) %>% 
-  dplyr::rename(DOX_3_RNA=DOX, DNR_3_RNA=DNR,EPI_3_RNA=EPI,MTX_3_RNA=MTX, TRZ_3_RNA=TRZ)
-  
-
-hr24_RNA <- toplistall_RNA %>% 
-  dplyr::select(time:logFC) %>% 
-  dplyr::filter(time=="24_hours") %>% 
-  pivot_wider(., id_cols=c(ENTREZID,SYMBOL), names_from = id, values_from = logFC) %>% 
-  dplyr::rename(DOX_24_RNA=DOX, DNR_24_RNA=DNR,EPI_24_RNA=EPI,MTX_24_RNA=MTX, TRZ_24_RNA=TRZ)
-RNA_LFC_df <- hr3_RNA %>% 
-  left_join(., hr24_RNA, by=c("SYMBOL"="SYMBOL","ENTREZID"="ENTREZID")) %>% 
-  dplyr::select(ENTREZID:MTX_3_RNA,DNR_24_RNA:MTX_24_RNA)
-  # unite(name,SYMBOL:ENTREZID) %>% 
-  # column_to_rownames("name") %>% 
-  # as.matrix
-
-toplist_ff <- readRDS("data/Final_four_data/toplist_ff.RDS")
-hr3_ATAC <- toplist_ff %>% 
-  dplyr::select(trt:logFC) %>% 
-  dplyr::filter(time=="3 hours") %>% 
-  pivot_wider(., id_cols = c("peak"),names_from = trt,values_from = logFC) %>% 
-   dplyr::rename(DOX_3_ATAC=DOX, DNR_3_ATAC=DNR,EPI_3_ATAC=EPI,MTX_3_ATAC=MTX, TRZ_3_ATAC=TRZ)
-
-hr24_ATAC <- toplist_ff %>% 
-  dplyr::select(trt:logFC) %>% 
-  dplyr::filter(time=="24 hours") %>% 
-  pivot_wider(., id_cols = c("peak"),names_from = trt,values_from = logFC) %>% 
-   dplyr::rename(DOX_24_ATAC=DOX, DNR_24_ATAC=DNR,EPI_24_ATAC=EPI,MTX_24_ATAC=MTX, TRZ_24_ATAC=TRZ)
-
-ATAC_LFC_df <- hr3_ATAC %>% 
-  left_join(., hr24_ATAC, by=c("peak"="peak")) %>%
-   dplyr::select(peak:MTX_3_ATAC,DNR_24_ATAC:MTX_24_ATAC)
-  # column_to_rownames("peak") %>% 
-  # as.matrix()
-  
-
-
-RNA_ATAC_mat <-   Collapsed_new_peaks %>%
-  dplyr::select(Peakid, NCBI_gene,SYMBOL) %>% 
-     # dplyr::filter(grepl(",",SYMBOL)|grepl(":",SYMBOL))
-  separate_longer_delim(c(NCBI_gene), delim = ",") %>% 
- separate_longer_delim(c(NCBI_gene), delim = ":") %>% 
-  separate_longer_delim(c(SYMBOL), delim = ",") %>% 
-     separate_longer_delim(c(SYMBOL), delim = ":") %>%
-  left_join(.,ATAC_LFC_df,by=c("Peakid"="peak")) %>% 
-  left_join(.,RNA_LFC_df,by=c("NCBI_gene"="ENTREZID","SYMBOL"="SYMBOL")) %>% 
-  distinct(SYMBOL,NCBI_gene,.keep_all = TRUE) %>% 
-  unite(name,Peakid:SYMBOL, sep="_") %>% 
-  column_to_rownames("name") %>% 
-  as.matrix() 
-test_cor_mat <- cor(RNA_ATAC_mat,method = "pearson", use = "pairwise.complete.obs")
-  
-# cor_matrix <- matrix(NA, nrow = ncol(RNA_LFC_df), ncol = ncol(ATAC_LFC_df))
-# for(i in 1:ncol(RNA_LFC_df)) {
-#   for(j in 1:ncol(ATAC_LFC_df)) {
-#     cor_matrix[i, j] <- cor(RNA_LFC_df[[i]], ATAC_LFC_df[[j]], method = "pearson")
-#   }
-# }
-
-
-# Cor_matrix <- cor(Cor_RNA_ATAC_mat, method="pearson")
-ComplexHeatmap::Heatmap(test_cor_mat)
-
-```
-##### LFC with H3k27AC and RNA AND ATAC LFC
-
-```{r LFC H3K27ac, fig.height=6}
-
-toplist_ac_lfc <- readRDS("data/Final_four_data/toplist_ac_lfc.RDS")
-hr3_K27 <-
-toplist_ac_lfc %>% 
-  dplyr::filter(time=="3") %>% 
-  dplyr::select(Peakid:logFC) %>% 
-  ###something weird in peaknames... additional numbers? so I will remove them
-   mutate(Peakid=str_replace(Peakid, "\\.\\.\\.[0=9]*","/")) %>% 
-  separate(Peakid, into=c("Geneid",NA),sep="/") %>% 
-  pivot_wider(., id_cols=c(Geneid), names_from = "trt", values_from = "logFC") %>% 
-  dplyr::rename(DOX_3_K27=DOX, DNR_3_K27=DNR,EPI_3_K27=EPI,MTX_3_K27=MTX) 
-  
-overlap_df_ggplot <- readRDS("data/Final_four_data/LFC_ATAC_K27ac.RDS")
-
-bind_frame_ATACK27 <- overlap_df_ggplot %>% 
-  dplyr::select(peakid:Geneid)
-
-hr24_K27 <- toplist_ac_lfc %>% 
-  dplyr::filter(time=="24") %>% 
-  dplyr::select(Peakid:logFC) %>% 
-  ###something weird in peaknames... additional numbers? so I will remove them
-   mutate(Peakid=str_replace(Peakid, "\\.\\.\\.[0=9]*","/")) %>% 
-  separate(Peakid, into=c("Geneid",NA),sep="/") %>% 
-  pivot_wider(., id_cols=c(Geneid), names_from = "trt", values_from = "logFC") %>% 
-  dplyr::rename(DOX_24_K27=DOX, DNR_24_K27=DNR,EPI_24_K27=EPI,MTX_24_K27=MTX)
-
-
-K27_LFC_df <- hr3_K27 %>% 
-  left_join(., hr24_K27, by=c("Geneid"="Geneid")) %>%
-  left_join(.,bind_frame_ATACK27, by=c("Geneid"="Geneid")) 
-
-
-RNA_ATAC_K27_mat <-
- bind_frame_ATACK27 %>% 
-  left_join(.,(Collapsed_new_peaks %>% 
-  dplyr::select(Peakid, NCBI_gene,SYMBOL)), by=c("peakid"="Peakid")) %>%
-  left_join(., K27_LFC_df, by=c("peakid"="peakid", "Geneid"="Geneid")) %>% 
-  separate_longer_delim(c(NCBI_gene), delim = ",") %>% 
-  separate_longer_delim(c(SYMBOL), delim = ",") %>% 
-  left_join(.,ATAC_LFC_df,by=c("peakid"="peak")) %>% 
-  left_join(.,RNA_LFC_df,by=c("NCBI_gene"="ENTREZID","SYMBOL"="SYMBOL"))%>% 
-  distinct(SYMBOL,NCBI_gene,Geneid,.keep_all = TRUE) %>% 
-  unite(name,peakid:SYMBOL, sep="_") %>% 
-  column_to_rownames("name") %>% 
-  as.matrix() 
-
-All_cor_mat <- cor(RNA_ATAC_K27_mat,method = "pearson", use = "pairwise.complete.obs")
-ComplexHeatmap::Heatmap(All_cor_mat)
-
-```
-
-
-```{r Volcanoes}
-
-
-V.DNR_3.top= topTable(efit4, coef=1, adjust.method="BH", number=Inf, sort.by="p")
-V.DOX_3.top= topTable(efit4, coef=2, adjust.method="BH", number=Inf, sort.by="p")
-V.EPI_3.top= topTable(efit4, coef=3, adjust.method="BH", number=Inf, sort.by="p")
-V.MTX_3.top= topTable(efit4, coef=4, adjust.method="BH", number=Inf, sort.by="p")
-V.TRZ_3.top= topTable(efit4, coef=5, adjust.method="BH", number=Inf, sort.by="p")
-V.DNR_24.top= topTable(efit4, coef=6, adjust.method="BH", number=Inf, sort.by="p")
-V.DOX_24.top= topTable(efit4, coef=7, adjust.method="BH", number=Inf, sort.by="p")
-V.EPI_24.top= topTable(efit4, coef=8, adjust.method="BH", number=Inf, sort.by="p")
-V.MTX_24.top= topTable(efit4, coef=9, adjust.method="BH", number=Inf, sort.by="p")
-V.TRZ_24.top= topTable(efit4, coef=10, adjust.method="BH", number=Inf, sort.by="p")
-
-# volcanoplot(efit2,coef = c(1,2,3,4,5,6),style = "p-value",
-#                           # highlight = 8,
-#                           # names = efit2$genes$SYMBOL,
-#                           hl.col = "red",xlab = "Log2 Fold Change",
-#                           ylab = NULL,pch = 16,cex = 0.35,
-#                           main = "test")
-# 
-
-plot_filenames <- c("V.DNR_3.top","V.DOX_3.top","V.EPI_3.top","V.MTX_3.top",
-                    "V.TRZ_.top","V.DNR_24.top","V.DOX_24.top","V.EPI_24.top",
-                    "V.MTX_24.top","V.TRZ_24.top")
-plot_files <- c( V.DNR_3.top,V.DOX_3.top,V.EPI_3.top,V.MTX_3.top,
-                    V.TRZ_3.top,V.DNR_24.top,V.DOX_24.top,V.EPI_24.top,
-                    V.MTX_24.top,V.TRZ_24.top)
-
-volcanosig <- function(df, psig.lvl) {
-    df <- df %>% 
-    mutate(threshold = ifelse(adj.P.Val > psig.lvl, "A", ifelse(adj.P.Val <= psig.lvl & logFC<=0,"B","C")))
-      # ifelse(adj.P.Val <= psig.lvl & logFC >= 0,"B", "C")))
-    ##This is where I could add labels, but I have taken out
-    # df <- df %>% mutate(genelabels = "")
-    # df$genelabels[1:topg] <- df$rownames[1:topg]
-    
-  ggplot(df, aes(x=logFC, y=-log10(P.Value))) + 
-    geom_point(aes(color=threshold))+
-    # geom_text_repel(aes(label = genelabels), segment.curvature = -1e-20,force = 1,size=2.5,
-    # arrow = arrow(length = unit(0.015, "npc")), max.overlaps = Inf) +
-    #geom_hline(yintercept = -log10(psig.lvl))+
-    xlab(expression("Log"[2]*" FC"))+
-    ylab(expression("-log"[10]*"P Value"))+
-    scale_color_manual(values = c("black", "red","blue"))+
-    theme_cowplot()+
-    ylim(0,20)+
-    xlim(-6,6)+
-    theme(legend.position = "none",
-              plot.title = element_text(size = rel(1.5), hjust = 0.5),
-              axis.title = element_text(size = rel(0.8))) 
-}
-#v1<- volcanosig(V.DA24.top, 0.01,0)
-v1 <- volcanosig(V.DNR_3.top, 0.01)+ ggtitle("DNR 3 hour")
-v2 <- volcanosig(V.DNR_24.top, 0.01)+ ggtitle("DNR 24 hour")+ylab("")
-v3 <- volcanosig(V.DOX_3.top, 0.01)+ ggtitle("DOX 3 hour")
-v4 <- volcanosig(V.DOX_24.top, 0.01)+ ggtitle("DOX 24 hour")+ylab("")
-v5 <- volcanosig(V.EPI_3.top, 0.01)+ ggtitle("EPI 3 hour")
-v6 <- volcanosig(V.EPI_24.top, 0.01)+ ggtitle("EPI 24 hour")+ylab("")
-v7 <- volcanosig(V.MTX_3.top, 0.01)+ ggtitle("MTX 3 hour")
-v8 <- volcanosig(V.MTX_24.top, 0.01)+ ggtitle("MTX 24 hour")+ylab("")
-v9 <- volcanosig(V.TRZ_3.top, 0.01)+ ggtitle("TRZ 3 hour")
-v10 <- volcanosig(V.TRZ_24.top, 0.01)+ ggtitle("TRZ 24 hour")+ylab("")
-# volcanoplot(efit2,coef = 10,style = "p-value",
-#                           highlight = 8,
-#                           names = efit2$genes$SYMBOL,
-#                           hl.col = "red",xlab = "Log2 Fold Change",
-#                           ylab = NULL,pch = 16,cex = 0.35,
-#                           main = "Using Trastuzumab 24 hour data and volcanoplot function")
-plot_grid(v1,v2,  rel_widths =c(.8,1))
-plot_grid(v3,v4,  rel_widths =c(.8,1))
-plot_grid(v5,v6,  rel_widths =c(.8,1))
-plot_grid(v7,v8,  rel_widths =c(.8,1))
-plot_grid(v9,v10,  rel_widths =c(.8,1))
-
-
-```
 ### examples of top DAR peaks by treatment
 
 ```{r example 3hr accesibility}
@@ -1241,7 +1060,6 @@ log_filt_ff %>%
 DNR_24_top3_ff <- row.names(V.DNR_24.top[1:3,])
 
 
-# row.names(log_filt_23s) <- row.names(lcpm_h3_23s_filtered)
 log_filt_ff %>% 
   dplyr::filter(row.names(.) %in% DNR_24_top3_ff) %>% 
   mutate(Peak = row.names(.)) %>% 
@@ -1855,26 +1673,6 @@ raodah_fullpeaks <- readRDS( "data/Final_four_data/All_Raodahpeaks.RDS") %>%
 H3K27ac_NG_df <- read.delim("data/Final_four_data/H3K27ac_files/H3K27ac_NG_df.bed")
 ```
 
-```{r H3K27ac neargene file, eval=FALSE, include=FALSE}
-assigned_H3K27ac_TSS <- readGeneric("data/Final_four_data/H3K27ac_files/H3K27ac_NG_byTSS.bed", keep.all.metadata = TRUE) %>% as.data.frame()
-
-H3K27ac_NG_df <- assigned_H3K27ac_TSS %>%
-#  NOTE FOR MYSELF  (are we base 0 or base 1!!!!!)  
-# The peak file names do not match the bed file names due to the 0/1 issue.  This means to match up MRC categories by name, I need to alter the first start position by +1! 
-  mutate(start = start+1) %>% 
-  unite("Geneid",seqnames:end, sep = ".", remove= FALSE) %>% 
-  dplyr::rename("NG_chr"=V7,
-         "NG_start"=V8 ,
-         "NG_end"=V9 ,
-         "ENTREZID"= V10,
-         "ensembl_id"= V11,
-         "SYMBOL"=V12,
-         "dist_to_NG"=V13) %>%
-  dplyr::select(seqnames, start,end, Geneid,NG_chr:dist_to_NG) 
-write_tsv(H3K27ac_NG_df, "data/Final_four_data/H3K27ac_files/H3K27ac_NG_df.bed", col_names = TRUE)
-
-```
-
 ### abs LFC across clusters
 
 ```{r, fig.width=10, fig.height=6}
@@ -1884,7 +1682,6 @@ mean_lfc <-   toplist_ff %>%
   mutate(EAR_close = if_else(peak %in% EAR_close$Peakid, "y", "no")) %>%
   mutate(ESR_open = if_else(peak %in% ESR_open$Peakid, "y", "no")) %>%
   mutate(ESR_close= if_else(peak %in% ESR_close$Peakid, "y", "no")) %>%
-  # mutate(ESR_OC= if_else(peak %in% ESR_OC$Peakid, "y", "no")) %>%
   mutate(ESR_C= if_else(peak %in% ESR_C$Peakid, "y", "no")) %>%
   mutate(ESR_D= if_else(peak %in% ESR_D$Peakid, "y", "no")) %>%
     mutate(LR_open= if_else(peak %in% LR_open$Peakid, "y", "no")) %>%
@@ -1913,16 +1710,7 @@ mean_lfc %>%
   ungroup() %>%
   pivot_longer(!c(trt, time), names_to = "Motif",
                values_to = "meanLFC") %>%
-  # mutate(Set = dplyr::case_match(Motif,
-  #                        "EAR open"~  EAR_op ,
-  #                         EAR_cm ~"EAR close" ,
-  #                         ESR_om ~"ESR open",
-  #                         ESR_cm ~ "ESR close",
-  #                         ESR_ocm ~ "ESR open/close",
-  #                         LR_om~ "LR open",
-  #                         LR_cm~ "LR close",
-  #                         NRm ~ "No Response",
-  #                         .default = Motif)) %>%
+  
   ggplot(., aes(x = time,y = meanLFC,col = trt,
     group = trt
   )) +
@@ -1936,7 +1724,6 @@ mean_lfc %>%
   scale_color_manual(values = drug_pal) +
   ylab(" Avg. Log Fold Change") +
   theme_bw() +
-  # ggtitle(" average |Log Fold| for genes across treatment each motif")+
   theme(
     plot.title = element_text(size = rel(1.0), hjust = 0.5),
     axis.title = element_text(size = 15, color = "black"),
@@ -2020,7 +1807,169 @@ anti_joined_H3k27ac <-Collapsed_H3k27ac_NG%>%
 
 #### Correlations
 
-### Correlation of H3K27ac and ATAC-seq peaks
+
+#### Correlation of LFC
+```{r LFC correlation, fig.height=6}
+FCmatrix_ff <- subset(efit4$coefficients)
+
+colnames(FCmatrix_ff) <-
+  c("DNR\n3h",
+    "DOX\n3h",
+    "EPI\n3h",
+    "MTX\n3h",
+    "TRZ\n3h",
+    "DNR\n24h",
+    "DOX\n24h",
+    "EPI\n24h",
+    "MTX\n24h",
+    "TRZ\n24h"
+     )
+
+
+mat_col_ff <-
+  data.frame(
+    time = c(rep("3 hours", 5), rep("24 hours", 5)),
+    class = (c(
+      "AC", "AC", "AC", "nAC","nAC",  "AC", "AC", "AC", "nAC","nAC" 
+    )))
+rownames(mat_col_ff) <- colnames(FCmatrix_ff)
+
+mat_colors_ff <-
+  list(
+    time = c("pink", "chocolate4"),
+    class = c("yellow1", "lightgreen"))
+
+names(mat_colors_ff$time) <- unique(mat_col_ff$time)
+names(mat_colors_ff$class) <- unique(mat_col_ff$class)
+# names(mat_colors_FC$TOP2i) <- unique(mat_col_FC$TOP2i)
+corrFC_ff <- cor(FCmatrix_ff)
+
+htanno_ff <-  HeatmapAnnotation(df = mat_col_ff, col = mat_colors_ff)
+Heatmap(corrFC_ff, top_annotation = htanno_ff)
+```
+### LFC Correlation with RNA
+
+```{r addRNA cor, fig.height=5}
+toplistall_RNA <- readRDS("data/other_papers/toplistall_RNA.RDS") 
+toplistall_RNA <- toplistall_RNA %>% 
+  mutate(logFC = logFC*(-1))
+Collapsed_new_peaks <- read_delim("data/Final_four_data/collapsed_new_peaks.txt", delim = "\t", col_names = TRUE)
+
+hr3_RNA <- toplistall_RNA %>% 
+  dplyr::select(time:logFC) %>% 
+  dplyr::filter(time=="3_hours") %>% 
+  pivot_wider(., id_cols=c(ENTREZID,SYMBOL), names_from = id, values_from = logFC) %>% 
+  dplyr::rename(DOX_3_RNA=DOX, DNR_3_RNA=DNR,EPI_3_RNA=EPI,MTX_3_RNA=MTX, TRZ_3_RNA=TRZ)
+  
+
+hr24_RNA <- toplistall_RNA %>% 
+  dplyr::select(time:logFC) %>% 
+  dplyr::filter(time=="24_hours") %>% 
+  pivot_wider(., id_cols=c(ENTREZID,SYMBOL), names_from = id, values_from = logFC) %>% 
+  dplyr::rename(DOX_24_RNA=DOX, DNR_24_RNA=DNR,EPI_24_RNA=EPI,MTX_24_RNA=MTX, TRZ_24_RNA=TRZ)
+RNA_LFC_df <- hr3_RNA %>% 
+  left_join(., hr24_RNA, by=c("SYMBOL"="SYMBOL","ENTREZID"="ENTREZID")) %>% 
+  dplyr::select(ENTREZID:MTX_3_RNA,DNR_24_RNA:MTX_24_RNA)
+  # unite(name,SYMBOL:ENTREZID) %>% 
+  # column_to_rownames("name") %>% 
+  # as.matrix
+
+toplist_ff <- readRDS("data/Final_four_data/toplist_ff.RDS")
+hr3_ATAC <- toplist_ff %>% 
+  dplyr::select(trt:logFC) %>% 
+  dplyr::filter(time=="3 hours") %>% 
+  pivot_wider(., id_cols = c("peak"),names_from = trt,values_from = logFC) %>% 
+   dplyr::rename(DOX_3_ATAC=DOX, DNR_3_ATAC=DNR,EPI_3_ATAC=EPI,MTX_3_ATAC=MTX, TRZ_3_ATAC=TRZ)
+
+hr24_ATAC <- toplist_ff %>% 
+  dplyr::select(trt:logFC) %>% 
+  dplyr::filter(time=="24 hours") %>% 
+  pivot_wider(., id_cols = c("peak"),names_from = trt,values_from = logFC) %>% 
+   dplyr::rename(DOX_24_ATAC=DOX, DNR_24_ATAC=DNR,EPI_24_ATAC=EPI,MTX_24_ATAC=MTX, TRZ_24_ATAC=TRZ)
+
+ATAC_LFC_df <- hr3_ATAC %>% 
+  left_join(., hr24_ATAC, by=c("peak"="peak")) %>%
+   dplyr::select(peak:MTX_3_ATAC,DNR_24_ATAC:MTX_24_ATAC)
+  # column_to_rownames("peak") %>% 
+  # as.matrix()
+  
+
+
+RNA_ATAC_mat <-   Collapsed_new_peaks %>%
+  dplyr::select(Peakid, NCBI_gene,SYMBOL) %>% 
+     # dplyr::filter(grepl(",",SYMBOL)|grepl(":",SYMBOL))
+  separate_longer_delim(c(NCBI_gene), delim = ",") %>% 
+ separate_longer_delim(c(NCBI_gene), delim = ":") %>% 
+  separate_longer_delim(c(SYMBOL), delim = ",") %>% 
+     separate_longer_delim(c(SYMBOL), delim = ":") %>%
+  left_join(.,ATAC_LFC_df,by=c("Peakid"="peak")) %>% 
+  left_join(.,RNA_LFC_df,by=c("NCBI_gene"="ENTREZID","SYMBOL"="SYMBOL")) %>% 
+  distinct(SYMBOL,NCBI_gene,.keep_all = TRUE) %>% 
+  unite(name,Peakid:SYMBOL, sep="_") %>% 
+  column_to_rownames("name") %>% 
+  as.matrix() 
+test_cor_mat <- cor(RNA_ATAC_mat,method = "pearson", use = "pairwise.complete.obs")
+  
+
+ComplexHeatmap::Heatmap(test_cor_mat)
+
+```
+##### LFC with H3k27AC and RNA AND ATAC LFC
+
+```{r LFC H3K27ac, fig.height=6}
+
+toplist_ac_lfc <- readRDS("data/Final_four_data/toplist_ac_lfc.RDS")
+hr3_K27 <-
+toplist_ac_lfc %>% 
+  dplyr::filter(time=="3") %>% 
+  dplyr::select(Peakid:logFC) %>% 
+  ###something weird in peaknames... additional numbers? so I will remove them
+   mutate(Peakid=str_replace(Peakid, "\\.\\.\\.[0=9]*","/")) %>% 
+  separate(Peakid, into=c("Geneid",NA),sep="/") %>% 
+  pivot_wider(., id_cols=c(Geneid), names_from = "trt", values_from = "logFC") %>% 
+  dplyr::rename(DOX_3_K27=DOX, DNR_3_K27=DNR,EPI_3_K27=EPI,MTX_3_K27=MTX) 
+  
+overlap_df_ggplot <- readRDS("data/Final_four_data/LFC_ATAC_K27ac.RDS")
+
+bind_frame_ATACK27 <- overlap_df_ggplot %>% 
+  dplyr::select(peakid:Geneid)
+
+hr24_K27 <- toplist_ac_lfc %>% 
+  dplyr::filter(time=="24") %>% 
+  dplyr::select(Peakid:logFC) %>% 
+  ###something weird in peaknames... additional numbers? so I will remove them
+   mutate(Peakid=str_replace(Peakid, "\\.\\.\\.[0=9]*","/")) %>% 
+  separate(Peakid, into=c("Geneid",NA),sep="/") %>% 
+  pivot_wider(., id_cols=c(Geneid), names_from = "trt", values_from = "logFC") %>% 
+  dplyr::rename(DOX_24_K27=DOX, DNR_24_K27=DNR,EPI_24_K27=EPI,MTX_24_K27=MTX)
+
+
+K27_LFC_df <- hr3_K27 %>% 
+  left_join(., hr24_K27, by=c("Geneid"="Geneid")) %>%
+  left_join(.,bind_frame_ATACK27, by=c("Geneid"="Geneid")) 
+
+
+RNA_ATAC_K27_mat <-
+ bind_frame_ATACK27 %>% 
+  left_join(.,(Collapsed_new_peaks %>% 
+  dplyr::select(Peakid, NCBI_gene,SYMBOL)), by=c("peakid"="Peakid")) %>%
+  left_join(., K27_LFC_df, by=c("peakid"="peakid", "Geneid"="Geneid")) %>% 
+  separate_longer_delim(c(NCBI_gene), delim = ",") %>% 
+  separate_longer_delim(c(SYMBOL), delim = ",") %>% 
+  left_join(.,ATAC_LFC_df,by=c("peakid"="peak")) %>% 
+  left_join(.,RNA_LFC_df,by=c("NCBI_gene"="ENTREZID","SYMBOL"="SYMBOL"))%>% 
+  distinct(SYMBOL,NCBI_gene,Geneid,.keep_all = TRUE) %>% 
+  unite(name,peakid:SYMBOL, sep="_") %>% 
+  column_to_rownames("name") %>% 
+  as.matrix() 
+
+All_cor_mat <- cor(RNA_ATAC_K27_mat,method = "pearson", use = "pairwise.complete.obs")
+ComplexHeatmap::Heatmap(All_cor_mat)
+
+```
+
+
+#### Correlation of H3K27ac and ATAC-seq peaks
 added 10/14/2024
 ```{r H3K27ac and ATAC-seq peaks}
 joined_LFC_df %>% 
@@ -2065,7 +2014,7 @@ joined_LFC_df %>%
 ```
 
 
-## Correlation between k27ac/atac shared peak median LFC and RNA median LFC
+#### Correlation between k27ac/atac shared peak median LFC and RNA median LFC
 ```{r correlations shared 2kb}
 
 joined_LFC_df %>% 
@@ -2152,7 +2101,7 @@ ggplot(., aes(x=med_24h_lfc,y=RNA_24h_lfc))+
 ```
 
 
-### Correlation between H3K27-not shared and atac not- shared peak median LFC and RNA median LFC   
+#### Correlation between H3K27-not shared and atac not- shared peak median LFC and RNA median LFC   
 
 2kb
 ```{r correlations not shared 2kb}
@@ -2250,7 +2199,7 @@ ggplot(., aes(x=med_24h_lfc,y=RNA_24h_lfc))+
 
 
 ```
-### Correlations of all peaks within 2kb and RNA 
+#### Correlations of all peaks within 2kb and RNA 
 
 ```{r correlation 2kb filt only data}
 
@@ -2351,7 +2300,7 @@ ggplot(., aes(x=AC_24h_lfc,y=RNA_24h_lfc))+
 ```
 
 
-+### Correlation Heat map
+#### Correlation Heat map
 
 
 ```{r}
