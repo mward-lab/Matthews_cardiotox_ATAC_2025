@@ -1660,27 +1660,6 @@ TE_mrc_status_list %>%
   ggtitle(paste("TE status by MRC and Family",">", per_cov*100,"%"))
 
  
-# TE_counts_nofilt <- TE_mrc_status_list %>% 
-#    mutate(repClass_org = repClass) %>% #copy repClass for storage
-#   mutate(repClass=if_else(##relable repClass with other
-#     repClass_org=="LINE", repClass_org,if_else(repClass_org=="SINE",repClass_org,if_else(repClass_org=="LTR", repClass_org, if_else(repClass_org=="DNA", repClass_org, if_else(repClass_org=="Retroposon",repClass_org,if_else(is.na(repClass_org),repClass_org,"Other"))))))) %>% 
-#    dplyr::select(Peakid,repName,repClass,repFamily,TEstatus, mrc, per_ol) %>% distinct(Peakid, .keep_all = TRUE) %>% 
-#    mutate(mrc="all_peaks") %>% 
-#   rbind((TE_mrc_status_list %>% distinct(Peakid,.keep_all = TRUE))) %>% 
-#   # mutate(repClass=factor(repClass)) %>%
-#    mutate(TEstatus=factor(TEstatus, levels = c("TE_peak","not_TE_peak")))%>% 
-#    dplyr::filter(mrc != "not_mrc") %>% 
-#   mutate(mrc=factor(mrc, levels = c("EAR","ESR", "LR", "NR","all_peaks"))) %>% 
-#      group_by(mrc, TEstatus) %>% 
-#      count() %>% 
-#      pivot_wider(., id_cols = mrc, names_from = TEstatus, values_from = n) %>% 
-#      rowwise() %>% 
-#      mutate(summary= sum(c_across(TE_peak:not_TE_peak))) %>% 
-#      ungroup() %>% 
-#      pivot_longer(., cols= c(TE_peak, not_TE_peak), names_to = c("TEstatus"), values_to = "n") %>% 
-#      mutate(percent_mrc= n/summary*100)
-
-# notinterested_list <- c("Simple_repeat","Satellite","Low_complexity","DNA?","snRNA","tRNA","Unknown","RC","LTR?","srpRNA","scRNA","rRNA","RC?","SINE?")
 
 Lines_Etc <-   TE_mrc_status_list %>%
   mutate(repClass_org = repClass) %>%  
@@ -1730,26 +1709,6 @@ LiSiLTDNRe_TE %>%
   scroll_box(height = "500px")
 
 
-# TE_mrc_status_list %>% 
-#    mutate(repClass_org = repClass) %>% 
-#     mutate(repClass=if_else(##relable repClass with other
-#     repClass_org=="LINE", repClass_org,
-#     if_else(repClass_org=="SINE",repClass_org,
-#             if_else(repClass_org=="LTR", repClass_org, 
-#                     if_else(repClass_org=="DNA", repClass_org,                            if_else(repClass_org=="Retroposon",repClass_org,"Other")))))) %>% 
-#    dplyr::select(Peakid,repName,repClass,repFamily,TEstatus, mrc, per_ol) %>%
-#   distinct(Peakid, .keep_all = TRUE) %>% 
-#   rbind(Lines_Etc) %>% 
-#   dplyr::filter(is.na(per_ol)| per_ol > per_cov) %>% 
-#    mutate(repClass=factor(repClass)) %>% 
-#    mutate(TEstatus=factor(TEstatus, levels = c("TE_peak","not_TE_peak")))%>% 
-#    dplyr::filter(mrc != "not_mrc") %>% 
-#   mutate(mrc=factor(mrc, levels = c("EAR","ESR", "LR", "NR","all_peaks"))) %>% 
-#   ggplot(., aes(x=mrc, fill= TEstatus))+
-#   geom_bar(position="fill", col="black")+
-#   theme_classic()+
-#   ggtitle(paste("TE status by MRC and Family", per_cov), subtitle = "Just LINEs, SINEs,LTRs, DNAs, Retroposons, and all peaks in the MRC families")
-
 ```
 
 
@@ -1758,11 +1717,7 @@ LiSiLTDNRe_TE %>%
 ```{r breakdown by cluster}
 per_cov <- 0.0
  
-# ggline_df <-   Line_repeats %>%
-#   as.data.frame() %>% 
-#  tidyr::unite(Peakid,seqnames:end, sep= ".") %>% 
-#   dplyr::select(Peakid,repName,repClass, repFamily) %>% 
-#   mutate(TEstatus ="TE_peak", mrc="h.genome", per_ol = "NA") %>% 
+
   ggline_df <-   TE_mrc_status_list %>%  
              mutate(TEstatus= if_else(is.na(repClass), "not_TE_peak","TE_peak")) %>%
              dplyr::filter(repClass=="LINE") %>%
@@ -1775,66 +1730,28 @@ ggsine_df <-TE_mrc_status_list %>%
   distinct(Peakid, TEstatus,repClass,.keep_all = TRUE) %>% 
   mutate(mrc="all_peaks")
 
- #  Sine_repeats %>% 
- #  as.data.frame() %>% 
- # tidyr::unite(Peakid,seqnames:end, sep= ".") %>% 
- #  dplyr::select(Peakid,repName,repClass, repFamily) %>% 
- #  mutate(TEstatus ="TE_peak", mrc="h.genome",per_ol = "NA") %>% 
- #    rbind((TE_mrc_status_list %>%  
- #             mutate(TEstatus= if_else(is.na(repClass), "not_TE_peak","TE_peak")) %>%
- #             dplyr::filter(repClass=="SINE"))) %>%
- #  mutate(mrc="all_peaks")
-
+ 
 ggLTR_df <- TE_mrc_status_list %>%  
              mutate(TEstatus= if_else(is.na(repClass), "not_TE_peak","TE_peak")) %>%
              dplyr::filter(repClass=="LTR") %>%
   distinct(Peakid, TEstatus,repClass,.keep_all = TRUE) %>% 
   mutate(mrc="all_peaks")
 
- #  LTR_repeats %>% 
- #  as.data.frame() %>% 
- # tidyr::unite(Peakid,seqnames:end, sep= ".") %>% 
- #  dplyr::select(Peakid,repName,repClass, repFamily) %>% 
- #  mutate(TEstatus ="TE_peak", mrc="h.genome",per_ol = "NA")%>% 
- #    rbind((TE_mrc_status_list %>%  
- #             mutate(TEstatus= if_else(is.na(repClass), "not_TE_peak","TE_peak")) %>%
- #             dplyr::filter(repClass=="LTR"))) %>%
- #  mutate(mrc="all_peaks")
-
-
+ 
 ggDNA_df <-TE_mrc_status_list %>%  
              mutate(TEstatus= if_else(is.na(repClass), "not_TE_peak","TE_peak")) %>%
              dplyr::filter(repClass=="DNA") %>%
   distinct(Peakid, TEstatus,repClass,.keep_all = TRUE) %>% 
   mutate(mrc="all_peaks")
 
- #  DNA_repeats %>% 
- #  as.data.frame() %>% 
- # tidyr::unite(Peakid,seqnames:end, sep= ".") %>% 
- #  dplyr::select(Peakid,repName,repClass, repFamily) %>% 
- #  mutate(TEstatus ="TE_peak", mrc="h.genome",per_ol = "NA")%>% 
- #     rbind((TE_mrc_status_list %>%  
- #             mutate(TEstatus= if_else(is.na(repClass), "not_TE_peak","TE_peak")) %>%
- #             dplyr::filter(repClass=="DNA"))) %>%
- #  mutate(mrc="all_peaks")
-
+ 
 ggretroposon_df <-TE_mrc_status_list %>%  
              mutate(TEstatus= if_else(is.na(repClass), "not_TE_peak","TE_peak")) %>%
              dplyr::filter(repClass=="Retroposons") %>%
   distinct(Peakid, TEstatus,repClass,.keep_all = TRUE) %>% 
   mutate(mrc="all_peaks")
 
-  # retroposon_repeats %>% 
- #  as.data.frame() %>% 
- # tidyr::unite(Peakid,seqnames:end, sep= ".") %>% 
- #  dplyr::select(Peakid,repName,repClass, repFamily) %>% 
- #  mutate(TEstatus ="TE_peak", mrc="h.genome",per_ol = "NA")%>% 
- #     rbind((TE_mrc_status_list %>%  
- #             mutate(TEstatus= if_else(is.na(repClass), "not_TE_peak","TE_peak")) %>%
- #             dplyr::filter(repClass=="Retroposon"))) %>%
- #  mutate(mrc="all_peaks")
-
-
+ 
 plot1 <- TE_mrc_status_list %>% 
   dplyr::filter(repClass=="LINE") %>% 
   dplyr::filter(mrc != "not_mrc") %>% 
@@ -2051,16 +1968,13 @@ Class_status_df <-
                                 if_else(repClass=="DNA","DNA_peak", "not_DNA"))) %>% 
    mutate(Retro_status = if_else(is.na(repClass)&is.na(per_ol),"not_Retro",
                                 if_else(repClass=="Retroposon","Retro_peak", "not_Retro"))) %>% 
-     # mutate(TEstatus=if_else(is.na(repClass),"not_TE_peak","TE_peak")) %>%
      mutate(TEstatus=factor(TEstatus, levels = c("TE_peak","not_TE_peak")))%>% 
-   # dplyr::filter(mrc != "not_mrc") %>%
- mutate(Sine_status=factor(Sine_status, levels = c("sine_peak","not_sine")),
+    mutate(Sine_status=factor(Sine_status, levels = c("sine_peak","not_sine")),
        Line_status=factor(Line_status, levels =c("line_peak","not_line")),
        LTR_status=factor(LTR_status, levels =c("LTR_peak","not_LTR")),
        DNA_status=factor(DNA_status, levels =c("DNA_peak","not_DNA")),
        Retro_status=factor(Retro_status, levels =c("Retro_peak","not_Retro"))) %>% 
-  # dplyr::filter(per_ol>per_cov|is.na(per_ol)) %>% 
-   mutate(mrc=factor(mrc, levels = c("EAR_open","EAR_close","ESR_open", "ESR_close","ESR_opcl","ESR_clop", "LR_open","LR_close","NR","all_peaks")))
+     mutate(mrc=factor(mrc, levels = c("EAR_open","EAR_close","ESR_open", "ESR_close","ESR_opcl","ESR_clop", "LR_open","LR_close","NR","all_peaks")))
 
 
 ```
@@ -2077,7 +1991,7 @@ Class_status_df  %>% distinct(Peakid,.keep_all = TRUE) %>%
 
 cpgislands_df <- read.delim("data/other_papers/cpg_islands.tsv")
 cpg_cCREs_df <- read_delim("data/other_papers/cpg_cCREs.tsv", delim="\t")
-# aligncre <- genomation::readBed("data/enhancerdata/ENCFF867HAD_ENCFF152PBB_ENCFF352YYH_ENCFF252IVK.7group.bed") %>% as.data.frame
+
 
 CPG_promoters_gr <- cpg_cCREs_df %>% 
     dplyr::rename(.,"seqnames"=X1,"start"=X2,"end"=X3,"promotor_name"=X4,"length"=X5,"strand"=X6,"color"=X9) %>% 
@@ -2099,22 +2013,6 @@ Col_fullDF_cug_overlap <- join_overlap_intersect(Col_TSS_data_gr,cpg_island_gr)
 Col_fullDF_cug_overlap <-Col_fullDF_cug_overlap %>% 
   as.data.frame %>% 
   mutate(per_ol=width/cpg_width)
-
-
-# CUG_mrc_status_list <-
-# Col_TSS_data_gr%>% 
-#   as.data.frame() %>%
-#   left_join(., (Col_fullDF_cug_overlap %>% as.data.frame(.)), by =c("seqnames"="seqnames","start"="start","end"="end","Peakid"="Peakid", "NCBI_gene"="NCBI_gene", "ensembl_ID"="ensembl_ID","dist_to_NG"="dist_to_NG",  "SYMBOL" = "SYMBOL", "peak_width"="peak_width")) %>% 
-#   left_join(., (Peaks_v_cpgpromo %>% dplyr::select(promotor_name,Peakid,peak_width)), by=c("peak_width"="peak_width","Peakid"="Peakid")) %>% 
-#   dplyr::select(Peakid, name,cpgNum:promotor_name) %>% 
-#   mutate(cugstatus=if_else(is.na(cpgNum),"not_CGi_peak","CGi_peak")) %>% 
-#   mutate(prom_status= if_else(is.na(promotor_name),"not_CpGpromo","CpGpromo")) %>% 
-#    mutate(mrc=if_else(Peakid %in% EAR_df$id, "EAR",
-#                      if_else(Peakid %in% ESR_df$id,"ESR",
-#                              if_else(Peakid %in% LR_df$id,"LR",
-#                                      if_else(Peakid %in% NR_df$id,"NR","not_mrc"))))) %>% distinct()
-# 
-
 
 CUG_mrc_nine_list <-
 Col_TSS_data_gr%>% as.data.frame() %>%
@@ -2156,41 +2054,7 @@ cpg_island_gr %>%
   ggtitle("Distribution of overlap widths of CGislands ",subtitle = " limited x axis")+
   coord_cartesian(xlim= c(0,2500))
 
-# CUG_mrc_status_list %>% 
-#    mutate(mrc="full_list") %>% 
-#   rbind(., CUG_mrc_status_list) %>% 
-#    mutate(mrc=factor(mrc, levels=c("EAR","ESR","LR","NR","not-mrc","full_list"))) %>% 
-#   dplyr::filter(mrc !="not_mrc") %>% 
-#   dplyr::filter(cugstatus=="CGi_peak") %>% 
-#   ggplot(., aes(x = mrc,  fill = prom_status)) +
-#   geom_bar(position="fill",color = "black")+
-#   theme_bw()+
-#   ggtitle("CG islands promotors vs non-promotor CpGi by mrc", subtitle=paste(length(CUG_mrc_status_list$Peakid )))
 
-
-# promo_count_list <- CUG_mrc_nine_list %>% 
-#   dplyr::filter(mrc !="not_mrc") %>% 
-#   dplyr::filter(cugstatus=="CGi_peak")  %>%
-#   group_by(prom_status) %>% 
-#   tally()
-#   
-
-# CUG_mrc_nine_list %>%
-#    mutate(mrc="full_list") %>%
-#   rbind(., CUG_mrc_nine_list) %>%
-#    mutate(mrc=factor(mrc, levels=c("EAR_open","EAR_close","ESR_open","ESR_close","ESR_OC","LR_open","LR_close","NR","not-mrc","full_list"))) %>%
-#   dplyr::filter(mrc !="not_mrc") %>%
-#   dplyr::filter(cugstatus=="CGi_peak") %>%
-#   ggplot(., aes(x = mrc,  fill = prom_status)) +
-#   geom_bar(position="fill",color = "black")+
-#   theme_bw()+
-#   ggtitle("CG islands promotors vs non-promotor CpGi by mrc", subtitle=paste(promo_count_list[1,1],promo_count_list[1,2],"\n", promo_count_list [2,1],promo_count_list [2,2]))
-#     
-#     
-    
-    
-     
-  
 ```
 
 
@@ -2200,7 +2064,7 @@ cpg_island_gr %>%
 ```{r oddratio matrix Allte}
 ## full peak set as all peaks
 # subsetall_df
-### makeing of nine set
+### making of nine set
 
 TE_mat<- Nine_group_TE %>% 
   mutate(mrc= factor(mrc, levels = c("EAR_open","EAR_close","ESR_open", "ESR_close", "ESR_opcl", "ESR_clop","LR_open","LR_close","NR"))) %>% 
@@ -2481,3 +2345,4 @@ results_or %>%
         
 ```
 
+The final image for Figure2A was created using `code/MRC_clusterlog2cpm.R` script.  This added the BH correction for multiple testing across all tests. (the Odds ratio for TEs above and for cREs)
