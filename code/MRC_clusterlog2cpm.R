@@ -1,6 +1,6 @@
 
 
-###################### combining matrices for paper figure
+###################### combining matrices for paper figure and performing BH multiple testing correction on pvalues
 library(tidyverse)
 library(ComplexHeatmap)
 library(circlize)
