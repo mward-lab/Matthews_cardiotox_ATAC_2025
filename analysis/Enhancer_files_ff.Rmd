@@ -1345,7 +1345,7 @@ results_or_cre %>%
 
         
 ``` 
-
+This part of Figure2A was further processed using an R script called `code/MRC_clusterlog2cpm.R`.  In that script I combine the above data frame with the TE-TSS-CPGi dataframe and correct pvalue for multiple testing using BH.
 
 ### Peaks enhancers and TEs
 
@@ -1907,49 +1907,3 @@ print(results_te_cre) %>%
 
 ```
 
-
-### Top2b
-to be determined.... ignore for now
-```{r Top2b peaks, eval=FALSE, include=FALSE}
-
-### created the marked dataframe with mRC
-Peak_MRC_table <- TSS_NG_data %>%
-    distinct(Peakid, .keep_all = TRUE) %>% 
-    mutate(mrc=if_else(Peakid %in% EAR_df$id, "EAR",
-                     if_else(Peakid %in% ESR_df$id,"ESR",
-                             if_else(Peakid %in% LR_df$id,"LR",
-                                     if_else(peakid %in% NR_df$id,"NR","not_mrc")))))%>%
-    dplyr::select(peakid:end,entrezgene_id:mrc) 
-  
-##overlapping and intersection top2b peaks with my peaks
-top2Boverlap <- join_overlap_intersect(all_peak_gr,Top2b_peaks_gr)
-
-### TAking the list of peaks dataframe by MRC and joining with marked group above so neargenes by TSS are joined thenchecking for distance to neargene across categories
-
-peak_list_all_MRC %>% 
-  dplyr::filter(peakid %in% top2Boverlap$id) %>% 
-  dplyr::select(peakid,MRC) %>% 
-  left_join(.,Peak_MRC_table, by=c("peakid"="peakid")) %>% 
-  ggplot(., aes(x=mrc,y=dist_to_NG))+
-  geom_boxplot()
-peak_list_all_MRC %>% 
-  dplyr::filter(peakid %in% top2Boverlap$id) %>% 
-  dplyr::select(peakid,MRC) %>% 
-  left_join(.,median_24_lfc, by=c("peakid"="peak")) %>% 
-  ggplot(., aes(x=MRC,y=median))+
-  geom_boxplot()  +
-  theme_bw()+
-  ggtitle("24 hr median logFC across response peaks overlapped with TOP2B")+
-  coord_cartesian(ylim= c(-3.5,2))
-
-peak_list_all_MRC %>% 
-  dplyr::filter(peakid %in% top2Boverlap$id) %>% 
-  dplyr::select(peakid,MRC) %>% 
-  left_join(.,median_3_lfc, by=c("peakid"="peak")) %>% 
-  ggplot(., aes(x=MRC,y=median))+
-  geom_boxplot()  +
-   theme_bw()+
-  ggtitle("3 hr median logFC across response peaks overlapped with TOP2B")+
-  coord_cartesian(ylim= c(-3.5,2))
-
-```
