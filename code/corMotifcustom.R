@@ -782,3 +782,4 @@ plotMotifnew<-function(fitted_cormotif,title="")
   text(fitted_cormotif$motif.p+0.15,1:NK,
        labels=floor(fitted_cormotif$motif.p*Ng))
 }
+

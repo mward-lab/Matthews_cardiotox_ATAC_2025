@@ -127,9 +127,9 @@ Schneider_all_SNPS_df <- Schneider_all_SNPS %>%
             ) %>% 
   GRanges() %>% as.data.frame 
 
-schneider_closest_output <- readRDS("data/other_papers/Schneider_closestgene_SNP_file.RDS")
-left_join(., checklist, by=c("ENTREZID"="ENTREZID"))
-dplyr::select(RSID)
+schneider_closest_output <- readRDS("data/other_papers/Schneider_closestgene_SNP_file.RDS") 
+# left_join(., checklist, by=c("ENTREZID"="ENTREZID"))
+# dplyr::select(RSID)
 
 schneider_gr <-Schneider_all_SNPS_df%>%
   dplyr::select(seqnames,start,end,RSID:SOURCE) %>%
@@ -363,103 +363,13 @@ dox_eqtl_SNPs <-
   join_overlap_intersect(ATAC_peaks_gr,dox_eQTL_gr) %>%
   as.data.frame() 
 
-test <- dox_eqtl_SNPs %>% 
-  dplyr::filter(Peakid %in% new_SNP_peak_check_10k$Peakid)
+# test <- dox_eqtl_SNPs %>% 
+#   dplyr::filter(Peakid %in% new_SNP_peak_check_10k$Peakid)
 
 # join_overlap_intersect((new_SNP_peak_check_10k %>% GRanges() ),mar_eQTL_gr) %>%
 #   as.data.frame() 
 ```
 
-
-### All SNP data frame
-```{r All Snps together}
-
-matrix_list_SNP <- readRDS("data/Final_four_data/matrix_list_SNP.RDS")
-gwas_HF <- readRDS("data/gwas_5_dataframe.RDS")
-gwas_DCM <- readRDS("data/other_papers/DCM_gwas.RDS")
-gwas_ARR <- readRDS("data/gwas_2_dataframe.RDS")
-Short_gwas_gr <- gwas_DCM %>% 
-          distinct(SNPS,.keep_all = TRUE) %>%
-          dplyr::select(CHR_ID, CHR_POS,SNPS) %>% 
-          mutate(gwas="DCM") %>% 
-  rbind(gwas_ARR %>% 
-          distinct(SNPS,.keep_all = TRUE) %>%
-          dplyr::select(CHR_ID, CHR_POS,SNPS) %>% 
-          mutate(gwas="ARR")) %>% 
-   rbind(gwas_HF %>% 
-          distinct(SNPS,.keep_all = TRUE) %>%
-          dplyr::select(CHR_ID, CHR_POS,SNPS) %>% 
-          mutate(gwas="HF")) %>% 
-  na.omit() %>% 
- mutate(seqnames=paste0("chr",CHR_ID), CHR_POS=as.numeric(CHR_POS)) %>% 
-  na.omit() %>%
-   mutate(start=CHR_POS, end=CHR_POS, width=1) %>% 
-  GRanges()
-
-
-Short_gwas_5k_gr <- gwas_DCM %>% 
-          distinct(SNPS,.keep_all = TRUE) %>%
-          dplyr::select(CHR_ID, CHR_POS,SNPS) %>% 
-          mutate(gwas="DCM") %>% 
-  rbind(gwas_ARR %>% 
-          distinct(SNPS,.keep_all = TRUE) %>%
-          dplyr::select(CHR_ID, CHR_POS,SNPS) %>% 
-          mutate(gwas="ARR")) %>% 
-   rbind(gwas_HF %>% 
-          distinct(SNPS,.keep_all = TRUE) %>%
-          dplyr::select(CHR_ID, CHR_POS,SNPS) %>% 
-          mutate(gwas="HF")) %>% 
-  na.omit() %>% 
- mutate(seqnames=paste0("chr",CHR_ID), CHR_POS=as.numeric(CHR_POS)) %>% 
-  na.omit() %>%
-   mutate(start=CHR_POS-5000, end=CHR_POS+4999) %>% 
-  GRanges()
-
-
-Short_gwas_20k_gr <- gwas_DCM %>% 
-          distinct(SNPS,.keep_all = TRUE) %>%
-          dplyr::select(CHR_ID, CHR_POS,SNPS) %>% 
-          mutate(gwas="DCM") %>% 
-  rbind(gwas_ARR %>% 
-          distinct(SNPS,.keep_all = TRUE) %>%
-          dplyr::select(CHR_ID, CHR_POS,SNPS) %>% 
-          mutate(gwas="ARR")) %>% 
-   rbind(gwas_HF %>% 
-          distinct(SNPS,.keep_all = TRUE) %>%
-          dplyr::select(CHR_ID, CHR_POS,SNPS) %>% 
-          mutate(gwas="HF")) %>% 
-  na.omit() %>% 
- mutate(seqnames=paste0("chr",CHR_ID), CHR_POS=as.numeric(CHR_POS)) %>% 
-  na.omit() %>%
-  mutate(start=(CHR_POS-10000),end=(CHR_POS+9999), width=20000) %>%
-  distinct() %>% 
-  GRanges()
-
-
-Short_gwas_50k_gr <- gwas_DCM %>% 
-          distinct(SNPS,.keep_all = TRUE) %>%
-          dplyr::select(CHR_ID, CHR_POS,SNPS) %>% 
-          mutate(gwas="DCM") %>% 
-  rbind(gwas_ARR %>% 
-          distinct(SNPS,.keep_all = TRUE) %>%
-          dplyr::select(CHR_ID, CHR_POS,SNPS) %>% 
-          mutate(gwas="ARR")) %>% 
-   rbind(gwas_HF %>% 
-          distinct(SNPS,.keep_all = TRUE) %>%
-          dplyr::select(CHR_ID, CHR_POS,SNPS) %>% 
-          mutate(gwas="HF")) %>% 
-  na.omit() %>% 
- mutate(seqnames=paste0("chr",CHR_ID), CHR_POS=as.numeric(CHR_POS)) %>% 
-  na.omit() %>%
-  mutate(start=(CHR_POS-25000),end=(CHR_POS+24999), width=50000) %>%
-  distinct() %>% 
-  GRanges()
-  # dplyr::filter(grepl(";",SNPS))
-  # separate_longer_delim(.,col= c(CHR_ID,CHR_POS,SNPS), delim= ";")
-
-# GWAS_SNP <- read.csv("data/SNP_GWAS_PEAK_MRC_id.csv")
-
-```
 
 ```{r mast, eval=FALSE, message=FALSE, warning=FALSE, include=FALSE}
 
@@ -776,7 +686,6 @@ draw(simply_map, merge_legend = TRUE, heatmap_legend_side = "bottom",
     annotation_legend_side = "bottom")
   
 ```
-#### GWAS SNP overlap log2cpm
 
 
 ### TTN
@@ -1538,6 +1447,234 @@ plotpanelATAC %>%
 
 ```
 
+Notes to self:  This is me applying the same code from my correlation_of_SNPnPeak.rmd document.  Summary of what I am doing:
+1: create a list of peaks within 40 kb of expressed gene.
+2: creating lists of gwas SNPs that are either 1bp, 10kb, 20kb, or 50kb in length to determine impact of the SNP on surrounding peaks.
+3: overlapping peaks the SNP lists with master peak list to make another list for future use.
+4: 
+### All SNP data frame
+```{r All Snps together}
+peak_40kb_neargenes <-
+  Collapsed_new_peaks %>% 
+    dplyr::filter(dist_to_NG<20000&dist_to_NG>-20000) %>% 
+  distinct(Peakid, .keep_all = TRUE) %>% 
+  dplyr::select(Peakid,NCBI_gene,SYMBOL)
+
+# matrix_list_SNP <- readRDS("data/Final_four_data/matrix_list_SNP.RDS")
+gwas_HF <- readRDS("data/gwas_5_dataframe.RDS")
+# gwas_DCM <- readRDS("data/other_papers/DCM_gwas.RDS")
+gwas_ARR <- readRDS("data/gwas_2_dataframe.RDS")
+Short_gwas_gr <-
+  # gwas_DCM %>%
+#           distinct(SNPS,.keep_all = TRUE) %>%
+#           dplyr::select(CHR_ID, CHR_POS,SNPS) %>% 
+#           mutate(gwas="DCM") %>% 
+#   rbind(
+  gwas_ARR %>% 
+          distinct(SNPS,.keep_all = TRUE) %>%
+          dplyr::select(CHR_ID, CHR_POS,SNPS) %>% 
+          mutate(gwas="ARR") %>% 
+   rbind(gwas_HF %>% 
+          distinct(SNPS,.keep_all = TRUE) %>%
+          dplyr::select(CHR_ID, CHR_POS,SNPS) %>% 
+          mutate(gwas="HF")) %>% 
+  na.omit() %>% 
+ mutate(seqnames=paste0("chr",CHR_ID), CHR_POS=as.numeric(CHR_POS)) %>% 
+  na.omit() %>%
+   mutate(start=CHR_POS, end=CHR_POS, width=1) %>% 
+  GRanges()
+
+
+Short_gwas_5k_gr <- 
+  # gwas_DCM %>% 
+  #         distinct(SNPS,.keep_all = TRUE) %>%
+  #         dplyr::select(CHR_ID, CHR_POS,SNPS) %>% 
+  #         mutate(gwas="DCM") %>% 
+  # rbind(
+    gwas_ARR %>% 
+          distinct(SNPS,.keep_all = TRUE) %>%
+          dplyr::select(CHR_ID, CHR_POS,SNPS) %>% 
+          mutate(gwas="ARR") %>% 
+   rbind(gwas_HF %>% 
+          distinct(SNPS,.keep_all = TRUE) %>%
+          dplyr::select(CHR_ID, CHR_POS,SNPS) %>% 
+          mutate(gwas="HF")) %>% 
+  na.omit() %>% 
+ mutate(seqnames=paste0("chr",CHR_ID), CHR_POS=as.numeric(CHR_POS)) %>% 
+  na.omit() %>%
+   mutate(start=CHR_POS-5000, end=CHR_POS+4999) %>% 
+  GRanges()
+
+
+Short_gwas_20k_gr <- 
+  # gwas_DCM %>% 
+          # distinct(SNPS,.keep_all = TRUE) %>%
+          # dplyr::select(CHR_ID, CHR_POS,SNPS) %>% 
+          # mutate(gwas="DCM") %>% 
+  # rbind(
+    gwas_ARR %>% 
+          distinct(SNPS,.keep_all = TRUE) %>%
+          dplyr::select(CHR_ID, CHR_POS,SNPS) %>% 
+          mutate(gwas="ARR") %>% 
+   rbind(gwas_HF %>% 
+          distinct(SNPS,.keep_all = TRUE) %>%
+          dplyr::select(CHR_ID, CHR_POS,SNPS) %>% 
+          mutate(gwas="HF")) %>% 
+  na.omit() %>% 
+ mutate(seqnames=paste0("chr",CHR_ID), CHR_POS=as.numeric(CHR_POS)) %>% 
+  na.omit() %>%
+  mutate(start=(CHR_POS-10000),end=(CHR_POS+9999), width=20000) %>%
+  distinct() %>% 
+  GRanges()
+
+
+Short_gwas_50k_gr <- 
+  # gwas_DCM %>% 
+  #         distinct(SNPS,.keep_all = TRUE) %>%
+  #         dplyr::select(CHR_ID, CHR_POS,SNPS) %>% 
+  #         mutate(gwas="DCM") %>% 
+  # rbind(
+    gwas_ARR %>% 
+          distinct(SNPS,.keep_all = TRUE) %>%
+          dplyr::select(CHR_ID, CHR_POS,SNPS) %>% 
+          mutate(gwas="ARR") %>% 
+   rbind(gwas_HF %>% 
+          distinct(SNPS,.keep_all = TRUE) %>%
+          dplyr::select(CHR_ID, CHR_POS,SNPS) %>% 
+          mutate(gwas="HF")) %>% 
+  na.omit() %>% 
+ mutate(seqnames=paste0("chr",CHR_ID), CHR_POS=as.numeric(CHR_POS)) %>% 
+  na.omit() %>%
+  mutate(start=(CHR_POS-25000),end=(CHR_POS+24999), width=50000) %>%
+  distinct() %>% 
+  GRanges()
+  # dplyr::filter(grepl(";",SNPS))
+  # separate_longer_delim(.,col= c(CHR_ID,CHR_POS,SNPS), delim= ";")
+
+overlap_gwas_point_gr <- join_overlap_intersect(Short_gwas_gr,ATAC_peaks_gr) 
+ATAC_gwas_point <- overlap_gwas_point_gr %>% as.data.frame() %>% 
+  dplyr::select(SNPS:Peakid,NCBI_gene:dist_to_NG) %>% 
+  tidyr::unite(SNP_Pair,SNPS,Peakid,sep="_",remove =FALSE) %>% 
+  distinct(SNP_Pair,.keep_all = TRUE)
+
+overlap_gwas_5k_gr <- join_overlap_intersect(Short_gwas_5k_gr,ATAC_peaks_gr) 
+ATAC_gwas_5k <- overlap_gwas_5k_gr %>% as.data.frame() %>% 
+  dplyr::select(SNPS:Peakid,NCBI_gene:dist_to_NG) %>% 
+ tidyr::unite(SNP_Pair,SNPS,Peakid,sep="_",remove =FALSE) %>% 
+  distinct(SNP_Pair,.keep_all = TRUE)
+  
+overlap_gwas_20k_gr <- join_overlap_intersect(Short_gwas_20k_gr,ATAC_peaks_gr) 
+ATAC_gwas_20k <- overlap_gwas_20k_gr %>% as.data.frame() %>% 
+  dplyr::select(SNPS:Peakid,NCBI_gene:dist_to_NG) %>% 
+  tidyr::unite(SNP_Pair,SNPS,Peakid,sep="_",remove =FALSE) %>% 
+  distinct(SNP_Pair,.keep_all = TRUE)
+overlap_gwas_50k_gr <- join_overlap_intersect(Short_gwas_50k_gr,ATAC_peaks_gr) 
+ATAC_gwas_50k <- overlap_gwas_50k_gr %>% as.data.frame() %>% 
+  dplyr::select(SNPS:Peakid,NCBI_gene:dist_to_NG) %>% 
+  tidyr::unite(SNP_Pair,SNPS,Peakid,sep="_",remove =FALSE) %>% 
+  distinct(SNP_Pair,.keep_all = TRUE)
+  # GWAS_SNP <- read.csv("data/SNP_GWAS_PEAK_MRC_id.csv")
+
+```
+
+#### GWAS SNP overlap log2cpm
+```{r run for Gwas SnPs}
+overlap_gwas_20k_gr%>% as.data.frame()%>% 
+  dplyr::select(Peakid,SNPS,gwas) %>% 
+  # dplyr::filter(dist_to_NG<20000&dist_to_NG>-20000) %>% 
+  # dplyr::filter(grepl(":",SYMBOL))
+ # dplyr::select(Peakid, NCBI_gene,SYMBOL,SNPS) %>%
+  # separate_longer_delim(SYMBOL,delim=":") %>%
+  dplyr::filter(!is.na(SYMBOL)) %>% 
+  distinct(Peakid,SNPS,.keep_all = TRUE) %>% 
+    left_join(., (ATAC_3_lfc %>%
+                  dplyr::select(peak,med_3h_lfc)),
+              by=c("Peakid"="peak")) %>% 
+  left_join(., (ATAC_24_lfc %>%
+                  dplyr::select(peak,med_24h_lfc)),
+            by=c("Peakid"="peak"))%>%
+  # dplyr::filter(is.na(NCBI_gene))
+  dplyr::filter(!is.na(med_24h_lfc)) %>% 
+  left_join(., RNA_median_3_lfc,by =c("SYMBOL"="SYMBOL")) %>%
+  left_join(., RNA_median_24_lfc,by =c("ENTREZID"="ENTREZID", "SYMBOL"="SYMBOL")) %>% 
+   mutate(reheat=if_else(SYMBOL %in% top_reheat$gene,"reheat_gene","not_reheat_gene")) %>% 
+  
+  # distinct(SNPS&Peakid,.keep_all = TRUE) %>% 
+  dplyr::select(SNPS,Peakid,med_3h_lfc,med_24h_lfc,,RNA_3h_lfc,RNA_24h_lfc, ENTREZID,SYMBOL,reheat) %>% #AC_3h_lfc,AC_24h_lfc) %>% 
+  tidyr::unite(name,SNPS,SYMBOL,Peakid,sep ="_",remove=FALSE) %>%
+  # tidyr::unite(SNP_Pair,SNPS,Peakid,sep="_",remove =FALSE) %>% 
+  # distinct(SNP_Pair) %>% 
+  left_join(.,(match %>% 
+                 group_by(Peakid) %>%
+                 filter(!(TEstatus=="not_TE_peak" & any (TEstatus == "TE_peak"))) %>% 
+                 ungroup() %>%
+                 distinct(TEstatus,Peakid,.keep_all = TRUE)),
+            by = c("Peakid"="Peakid")) %>% 
+  
+ mutate(dist_to_SNP=case_when(
+   Peakid %in% ATAC_gwas_point$Peakid&SNPS%in%ATAC_gwas_point$SNPS~0,
+   Peakid %in% ATAC_gwas_5k$Peakid &SNPS %in% ATAC_gwas_5k$SNPS ~ 10,
+   Peakid %in% ATAC_gwas_20k$Peakid&SNPS %in% ATAC_gwas_20k$SNPS  ~ 20,
+   Peakid %in% ATAC_gwas_50k$Peakid &SNPS %in% ATAC_gwas_50k$SNPS ~ 50,
+   is.na(Peakid) ~ 999)) %>% 
+  group_by(SNPS,Peakid) %>% 
+   summarize(name=unique(name),
+           med_3h_lfc=unique(med_3h_lfc),
+           med_24h_lfc=unique(med_24h_lfc),
+           RNA_3h_lfc=unique(RNA_3h_lfc),
+           RNA_24h_lfc=unique(RNA_24h_lfc),
+          repClass=paste(unique(repClass),collapse=":"),
+           TEstatus=paste(unique(TEstatus),collapse=";"),
+          SYMBOL=paste(unique(SYMBOL),collapse=";"),
+           reheat=paste(unique(reheat),collapse=";"),
+          mrc=unique(mrc),
+          dist_to_SNP=min(dist_to_SNP)) #%>% 
+  # mutate(point_ol=if_else(RSID %in% point_only$RSID,"yes","no")) %>% 
+  # mutate(eQTL=if_else(RSID %in% dox_eqtl_SNPs$SNPS,"yes",if_else(Peakid %in% mar_eqtl_SNPS$Peakid,"yes","no")))
+  
+```
+
+```{r}
+schneider_mat <- schneider_df %>% 
+  ungroup() %>% 
+  dplyr::select(name,med_3h_lfc:RNA_24h_lfc) %>% 
+  column_to_rownames("name") %>% 
+  as.matrix()
+schneider_name_mat <- schneider_df %>% 
+  ungroup() %>% 
+  dplyr::select(name,TEstatus,mrc,reheat,point_ol)
+
+row_anno <- ComplexHeatmap::rowAnnotation(TE_status=schneider_name_mat$TEstatus,reheat_status=schneider_name_mat$reheat,MRC=schneider_name_mat$mrc,direct_overlap=schneider_name_mat$point_ol,col= list(TE_status= c("TE_peak"="goldenrod","TE_peak;not_TE_peak"="goldenrod","not_TE_peak;TE_peak"="goldenrod","not_TE_peak"="lightblue"), 
+                                                                                                MRC = c("EAR_open" = "#F8766D",   "EAR_close" = "#f6483c",
+    "ESR_open" = "#7CAE00",
+    "ESR_close" = "#587b00",
+     "ESR_opcl"="grey40",
+    "ESR_C"="grey40",
+      "ESR_clop"="tan",
+    "ESR_D"="tan",
+     "ESR_OC" = "#6a9500",
+     "LR_open" = "#00BFC4",
+     "LR_close" = "#008d91",
+     "NR" = "#C77CFF",
+    "not_mrc"="black"
+  ),
+  reheat_status=c("reheat_gene"="green","not_reheat_gene"="orange")
+),direct_overlap=c("yes"="red","no"="grey8"))
+mat2 <- schneider_mat  
+rownames(mat2)[1] = paste(c(letters, LETTERS), collapse = "")
+simply_map <- ComplexHeatmap::Heatmap(schneider_mat,
+                        left_annotation = row_anno,
+                        show_row_names = TRUE,
+                        # row_names_side = "left",
+                        row_names_max_width= max_text_width(rownames(schneider_mat),                                                        gp=gpar(fontsize=12)),
+                        heatmap_legend_param = list(direction = "horizontal"),
+                        show_column_names = TRUE,
+                        cluster_rows = FALSE,
+                        cluster_columns = FALSE)
+
+draw(simply_map, merge_legend = TRUE, heatmap_legend_side = "bottom", 
+    annotation_legend_side = "bottom")
 
 
 
+```

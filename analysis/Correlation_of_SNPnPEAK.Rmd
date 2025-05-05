@@ -51,6 +51,8 @@ library(ComplexHeatmap)
 library(cowplot)
 library(smplot2)
 library(readxl)
+library(devtools)
+library(vargen)
 
 ```
 
@@ -98,6 +100,28 @@ checklist <- lt1 %>%
 Schneider_all_SNPS <- read_delim("data/other_papers/Schneider_all_SNPS.txt", 
     delim = "\t", escape_double = FALSE, 
     trim_ws = TRUE)
+
+Wang_SNPS <- read_delim("data/other_papers/wang_bhatia_SNPs.txt", 
+    delim = "\t", escape_double = FALSE, 
+    trim_ws = TRUE)
+
+Wang_SNPS_df <- Wang_SNPS %>% 
+   dplyr::rename("RSID"="#Uploaded_variation") %>% 
+  dplyr::select(RSID,Location,SYMBOL,Gene, SOURCE) %>%
+  # dplyr::filter(SOURCE=="Ensembl") %>%
+  distinct(RSID,Location,SYMBOL,.keep_all = TRUE) %>% 
+  separate_wider_delim(Location,delim=":",names=c("Chr","Coords")) %>% 
+  separate_wider_delim(Coords,delim= "-", names= c("Start","End")) %>% 
+  mutate(Chr=paste0("chr",Chr)) %>% 
+  group_by(RSID) %>% 
+  summarize(Chr=unique(Chr),
+            Start=unique(Start),
+            End=unique(End),
+            SYMBOL=paste(unique(SYMBOL),collapse=";"),
+            Gene=paste(Gene,collapse=";"),
+            SOURCE=paste(SOURCE,collapse=";")
+            ) %>% 
+  GRanges() %>% as.data.frame 
 
 Schneider_all_SNPS_df <- Schneider_all_SNPS %>% 
   dplyr::rename("RSID"="#Uploaded_variation") %>% 
@@ -762,7 +786,7 @@ RNA_counts <- readRDS("data/other_papers/cpmcount.RDS") %>%
 ```
 
 ```{r}
-df_gene_schneider <- data.frame(SYMBOL=c("PRDX6","ANKRD4", "SLC9C2", "TNFSF4", "DARS2", "KLHL20"))
+df_gene_schneider <- data.frame(SYMBOL=c("PRDX6","ANKRD4", "SLC9C2", "TNFSF4", "DARS2", "KLHL20","ZNF460","ZSCAN4", "ROBO2"))
 # ,ENTREZID= c(9585,26051,284525,7292,55157,27252))
 df_gene_schneider_RNA <- df_gene_schneider %>% 
 left_join(., (RNA_median_24_lfc %>% dplyr::select(ENTREZID,SYMBOL)), by = c ("SYMBOL"="SYMBOL")) %>% 
@@ -824,7 +848,7 @@ ATAC_counts %>%
             
 ```
 #### ATAC-seq by peaks
-
+Final plot for paper
 ```{r Paper data, fig.height=15, fig.width=8}
 hm_lfc_df <- SNP_peak_check_20k %>% 
   left_join(., Nine_te_df, by = c("Peakid"="Peakid") ) %>% 
@@ -864,7 +888,7 @@ hm_lfc_mat <-hm_lfc_df %>%
 hm_name_mat <-hm_lfc_df %>% 
   dplyr::select (Peakid, RSID, TEstatus, mrc,dist_to_SNP) %>% 
    tidyr::unite(name, Peakid, RSID, sep = "_")  
-  
+  col_fun <- circlize::colorRamp2(c(-4, 0, 4), c("blue", "white", "red"))
 row_anno_lfc <- ComplexHeatmap::rowAnnotation(
     TE_status=hm_name_mat$TEstatus,
     reheat_status=hm_name_mat$reheat,
@@ -891,6 +915,7 @@ row_anno_lfc <- ComplexHeatmap::rowAnnotation(
                      "50"="grey8")))
 
 simply_map_lfc <- ComplexHeatmap::Heatmap(hm_lfc_mat,
+                                          col = col_fun,
                         left_annotation = row_anno_lfc,
                         show_row_names = TRUE,
                        row_names_max_width= max_text_width(rownames(hm_lfc_mat),                                                        gp=gpar(fontsize=16)),
@@ -905,6 +930,24 @@ draw(simply_map_lfc,
     annotation_legend_side = "bottom")
   
 ```
+
+
+```{r SNP list egenes}
+### for gtex data
+Heart_Left_Ventricle_v10_eGenes <- readRDS("data/other_papers/Heart_Left_Ventricle_v10_eGenes_GTEx.RDS")
+SNPlist <- hm_lfc_df %>% distinct(RSID) %>% ungroup()
+
+SNPlist$HLVgene <- c("DARS2","DARS2","-","-","-","-","-","-","-","-",
+                     "-","-","-","-","-","-","-","-","-","-",
+                     "-","-","-","-","-","-","-","-","-","-",
+                     "-","-","-","PKDREJ","PKDREJ","PKDREJ","PKDREJ","EIF3KP1","EIF3KP1","EIF3KP1",
+"-","EIF3KP1","-","ENSG00000279086","-","-","-","-","-","-",
+"-","-","-","-","-","-","-","-")
+
+# write.csv(SNPlist,"data/other_papers/schneider_eQTL_genes.csv")
+  
+```
+
 ```{r 50kb region around SNP,fig.height=18, fig.width=8}
 
 
@@ -990,5 +1033,37 @@ draw(simply_map_lfc_50,
 #   # dplyr::filter(mrc != "NR") %>%
 #   dplyr::filter(mrc !="not_mrc") %>%
 #   distinct(RSID)
+```
+
+```{r}
+
+overlap_df_ggplot <- readRDS("data/Final_four_data/LFC_ATAC_K27ac.RDS")
+
+overlap_df_ggplot %>% 
+  dplyr::filter(peakid %in% hm_lfc_df$Peakid)
+
+```
+
+```{r, eval=FALSE}
+Wang_df <- Wang_SNPS %>% 
+ dplyr::rename("RSID"="#Uploaded_variation") %>% 
+  dplyr::select(RSID,Location,SYMBOL,Gene, SOURCE) %>%
+  # dplyr::filter(SOURCE=="Ensembl") %>%
+  distinct(RSID,Location,SYMBOL,.keep_all = TRUE) %>% 
+  separate_wider_delim(Location,delim=":",names=c("Chr","Coords")) %>% 
+  separate_wider_delim(Coords,delim= "-", names= c("Start","End")) %>% 
+  mutate(Chr=paste0("chr",Chr)) %>% 
+  group_by(RSID) %>% 
+  summarize(Chr=unique(Chr),
+            Start=unique(Start),
+            End=unique(End),
+            SYMBOL=paste(unique(SYMBOL),collapse=";"),
+            Gene=paste(Gene,collapse=";"),
+            SOURCE=paste(SOURCE,collapse=";")
+            ) %>% 
+  GRanges() %>% as.data.frame 
+# another paper analysis
+
+test_ol %>% as.data.frame()
 ```
 

@@ -1865,51 +1865,6 @@ LiSiLTDNRe_TE %>%
 
 ```
 
-#### Chi square tests
-
-
-```{r chi 4 complete}
-# ##complete counts()
-# print("Chi square tests without filtering")
-# chitest_LRvNRTE_nf <- matrix(c(TE_counts_nofilt$n[5],TE_counts_nofilt$n[6],TE_counts_nofilt$n[7],TE_counts_nofilt$n[8]), ncol=2, byrow=TRUE)
-# chisq.test(chitest_LRvNRTE_nf)
-# 
-# chitest_EARvNRTE_nf <- matrix(c(TE_counts_nofilt$n[1],TE_counts_nofilt$n[2],TE_counts_nofilt$n[7],TE_counts_nofilt$n[8]), ncol=2, byrow=TRUE)
-# chisq.test(chitest_EARvNRTE_nf)
-# 
-# chitest_ESRvNRTE_nf <- matrix(c(TE_counts_nofilt$n[3],TE_counts_nofilt$n[4],TE_counts_nofilt$n[7],TE_counts_nofilt$n[8]), ncol=2, byrow=TRUE)
-# chisq.test(chitest_ESRvNRTE_nf)
-
-### just subsets
-
-# print("chi test on subsets without >50% overlap cut off")
-# chitest_LRvNRTE_nc <- matrix(c(LiSiLTDNRe_TE_no_cut$n[5],LiSiLTDNRe_TE_no_cut$n[6],LiSiLTDNRe_TE_no_cut$n[7],LiSiLTDNRe_TE_no_cut$n[8]), ncol=2, byrow=TRUE)
-# chisq.test(chitest_LRvNRTE_nc)
-# 
-# chitest_EARvNRTE_nc <- matrix(c(LiSiLTDNRe_TE_no_cut$n[1],LiSiLTDNRe_TE_no_cut$n[2],LiSiLTDNRe_TE_no_cut$n[7],LiSiLTDNRe_TE_no_cut$n[8]), ncol=2, byrow=TRUE)
-# chisq.test(chitest_EARvNRTE_nc)
-# 
-# chitest_ESRvNRTE_nc <- matrix(c(LiSiLTDNRe_TE_no_cut$n[3],LiSiLTDNRe_TE_no_cut$n[4],LiSiLTDNRe_TE_no_cut$n[7],LiSiLTDNRe_TE_no_cut$n[8]), ncol=2, byrow=TRUE)
-# chisq.test(chitest_ESRvNRTE_nc)
-
-
-
-##### JUst using the .5 overlap cutoff
-print(" chi tests using >50% cutoff")
-chitest_LRvNRTE <- matrix(c(LiSiLTDNRe_TE$n[5],LiSiLTDNRe_TE$n[6],LiSiLTDNRe_TE$n[7],LiSiLTDNRe_TE$n[8]), ncol=2, byrow=TRUE)
-chisq.test(chitest_LRvNRTE)
-
-chitest_EARvNRTE <- matrix(c(LiSiLTDNRe_TE$n[1],LiSiLTDNRe_TE$n[2],LiSiLTDNRe_TE$n[7],LiSiLTDNRe_TE$n[8]), ncol=2, byrow=TRUE)
-chisq.test(chitest_EARvNRTE)
-
-chitest_ESRvNRTE <- matrix(c(LiSiLTDNRe_TE$n[3],LiSiLTDNRe_TE$n[4],LiSiLTDNRe_TE$n[7],LiSiLTDNRe_TE$n[8]), ncol=2, byrow=TRUE)
-chisq.test(chitest_ESRvNRTE)
-
-```
-
-
-
-
 
 ### Breakdown of Classes by 4 member clusters
 
@@ -3014,6 +2969,12 @@ cpg_island_gr <- cpgislands_df %>%
  makeGRangesFromDataFrame(., keep.extra.columns = TRUE, seqnames.field = "chrom", start.field = "chromStart", end.field = "chromEnd",starts.in.df.are.0based=TRUE)
 Col_TSS_data_gr$peak_width <- width(Col_TSS_data_gr)
 cpg_island_gr$cpg_width <- width(cpg_island_gr)
+
+Col_fullDF_cug_overlap <- join_overlap_intersect(Col_TSS_data_gr,cpg_island_gr)
+Col_fullDF_cug_overlap <-Col_fullDF_cug_overlap %>% 
+  as.data.frame %>% 
+  mutate(per_ol=width/cpg_width)
+
 ``` 
 
 ```{r cug development}

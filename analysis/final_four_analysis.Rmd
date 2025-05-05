@@ -590,11 +590,11 @@ Heatmap(FCmatrix_full, top_annotation = htanno_full)
 ```{r filter log2cpm}
 l4cpm <- cpm(PCA4mat, log=TRUE)  ### for determining the basic cutoffs
 dim(l4cpm)
-
+hist(l4cpm)
 row_means <- rowMeans(l4cpm)
 
 x4_filtered <- PCA4mat[row_means > 0,]
-
+hist(filt4_matrix_lcpm)
 ###  removing chrY (the three rows)
 
 
@@ -664,65 +664,17 @@ for (f in facs) {
 }
 ```
 
-### Comparing the peak sets, old and new
-
-```{r compare old and new sets}
-
+### Overlapping peaks with ATAC-seq heart, left ventricle data, Snyder ENCFF966JZT.
+```{r anno overlap with heart data}
 new_peaks_list <- row.names(filt4_matrix_lcpm) %>% as.data.frame() %>% separate_wider_delim(., cols =.,names=c("chr","start","end"), delim = ".", cols_remove = FALSE) %>%  dplyr::rename("peakid"=4)
 new_peaks_gr <- new_peaks_list %>%
   dplyr::filter(chr!="chrY") %>% 
   GRanges() %>% 
    keepStandardChromosomes(., pruning.mode = "coarse")
 
-stdChr <- standardChromosomes(new_peaks_gr)
-
-peakAnnoList_n45_motif <- readRDS("data/peakAnnoList_n45_motif.RDS")
-old_peaks_gr <- peakAnnoList_n45_motif$background_gr %>% as.GRanges()
-old_peaks_gr$old_width <- width(old_peaks_gr)
-a <- join_overlap_intersect(old_peaks_gr,new_peaks_gr,suffix = c("old", "new")) %>% 
-  as.data.frame()
-
-a %>% 
-  dplyr::select(id,peakid,width,old_width) %>% 
-  mutate(check =if_else(id ==peakid, "TRUE","FALSE")) %>% 
-  dplyr::filter(check=="FALSE") %>% 
-  mutate(width_ol=if_else(width<old_width,"smaller","larger")) %>%
-  dplyr::rename("old_peak_id"="id","new_peak_id"="peakid") %>% 
-  mutate(diff= old_width - width) %>% 
-  kable(., caption = "summary of newpeaks that are smaller than old peaks, but are basically the same") %>% 
-  kable_paper("striped", full_width = FALSE) %>%
-  kable_styling(
-    full_width = FALSE,
-    position = "left",
-    bootstrap_options = c("striped", "hover")
-  ) %>%
-  scroll_box(width = "100%", height = "400px")
-
-b <- filter_by_overlaps(old_peaks_gr,new_peaks_gr)
-b.a <- filter_by_overlaps(new_peaks_gr, old_peaks_gr) 
-b.b <- filter_by_non_overlaps(new_peaks_gr, old_peaks_gr)
-b.c <- filter_by_non_overlaps(old_peaks_gr, new_peaks_gr)
-
-new_peaks_gr %>% as.data.frame %>% summarize(mean =mean(width))
-
-peak_length_df <- new_peaks_gr %>% 
-  as.data.frame %>% 
-  dplyr::select(peakid,width)
-```
-
-
-number of peaks in old data set: `r length(old_peaks_gr)`\
-number of peaks in new data set: `r length(new_peaks_gr)`\
-number of overlaps in between both sets: `r length (a$id)`\
-number of peaks in new set that do not overlap old set: `r length(b.b)`\
-number of peaks in old set that do not overlap new set: `r length(b.c)` \
-
-
-
-### Overlapping peaks with ATAC-seq heart, left ventricle data, Snyder ENCFF966JZT.
-```{r anno overlap with heart data}
 Snyder_41peaks <- read.delim("data/other_papers/ENCFF966JZT_bed_Snyder_41peaks.bed",header=TRUE) %>% 
   GRanges()
+
 # new_peaks_gr <- Collapsed_new_peaks %>% GRanges()
 heart_overlap <- join_overlap_intersect(Snyder_41peaks,new_peaks_gr)
 ol_count <-heart_overlap %>% 
@@ -777,7 +729,6 @@ percent of my peaks overlapping Snyder Heart left ventricle data: `r sprintf("%.
 ### Differential analysis
 
 ```{r DAR of new}
-
 group <- c( rep(c(1,2,3,4,5,6,7,8,9,10,11,12),4))
 group <- factor(group, levels =c("1","2","3","4","5","6","7","8","9","10","11","12"))
 short_names <- paste0(pca_final_four_anno$indv,"_",pca_final_four_anno$trt,"_",pca_final_four_anno$time)
@@ -790,40 +741,45 @@ group_1 <- c(rep(c("DNR_24","DNR_3","DOX_24","DOX_3","EPI_24","EPI_3","MTX_24","
 dge$group$indv <- pca_final_four_anno$indv
 dge$group$time <- pca_final_four_anno$time
 dge$group$trt <- pca_final_four_anno$trt
+dge <- calcNormFactors(dge, method = "TMM")
+dge$samples
+```
 
+
+```{r DAR}
 indv <- pca_final_four_anno$indv
-efit4 <- readRDS("data/Final_four_data/efit4_filt_bl.RDS")
+# efit4 <- readRDS("data/Final_four_data/efit4_filt_bl.RDS")
 mm <- model.matrix(~0 +group_1)
 colnames(mm) <-  c("DNR_24", "DNR_3", "DOX_24","DOX_3","EPI_24", "EPI_3","MTX_24", "MTX_3", "TRZ_24","TRZ_3","VEH_24", "VEH_3")
-# 
-# y <- voom(dge$counts, mm,plot =TRUE)
-# # 
-# corfit <- duplicateCorrelation(y, mm, block = indv)
-# # 
-# v <- voom(dge$counts, mm, block = indv, correlation = corfit$consensus)
-# # # 
-# fit <- lmFit(v, mm, block = indv, correlation = corfit$consensus)
-#
-#
-# cm <- makeContrasts(
-#   DNR_3.VEH_3 = DNR_3-VEH_3,
-#   DOX_3.VEH_3 = DOX_3-VEH_3,
-#   EPI_3.VEH_3 = EPI_3-VEH_3,
-#   MTX_3.VEH_3 = MTX_3-VEH_3,
-#   TRZ_3.VEH_3 = TRZ_3-VEH_3,
-#   DNR_24.VEH_24 =DNR_24-VEH_24,
-#   DOX_24.VEH_24= DOX_24-VEH_24,
-#   EPI_24.VEH_24= EPI_24-VEH_24,
-#   MTX_24.VEH_24= MTX_24-VEH_24,
-#   TRZ_24.VEH_24= TRZ_24-VEH_24,
-#   levels = mm)
+ 
+y <- voom(dge, mm,plot =TRUE)
 
-# vfit <- lmFit(y, mm)
+corfit <- duplicateCorrelation(y, mm, block = indv)
+ 
+v <- voom(dge, mm, block = indv, correlation = corfit$consensus)
 
-# vfit<- contrasts.fit(vfit, contrasts=cm)
+fit <- lmFit(v, mm, block = indv, correlation = corfit$consensus)
+
+cm <- makeContrasts(
+  DNR_3.VEH_3 = DNR_3-VEH_3,
+  DOX_3.VEH_3 = DOX_3-VEH_3,
+  EPI_3.VEH_3 = EPI_3-VEH_3,
+  MTX_3.VEH_3 = MTX_3-VEH_3,
+  TRZ_3.VEH_3 = TRZ_3-VEH_3,
+  DNR_24.VEH_24 =DNR_24-VEH_24,
+  DOX_24.VEH_24= DOX_24-VEH_24,
+  EPI_24.VEH_24= EPI_24-VEH_24,
+  MTX_24.VEH_24= MTX_24-VEH_24,
+  TRZ_24.VEH_24= TRZ_24-VEH_24,
+  levels = mm)
+
+vfit <- lmFit(y, mm)
+
+vfit<- contrasts.fit(vfit, contrasts=cm)
 # 
-# efit4 <- eBayes(vfit)
+efit4 <- eBayes(vfit)
 # saveRDS(efit4,"data/Final_four_data/efit4_filt_bl.RDS")
+# saveRDS(efit4,"data/Final_four_data/efit4_filt_norm.RDS")
 results = decideTests(efit4)
 summary(results)
 
@@ -918,9 +874,10 @@ plot_grid(v9,v10,  rel_widths =c(.8,1))
 #   mutate(trt=factor(trt, levels = c("DOX","EPI","DNR","MTX","TRZ"))) %>%
 #   mutate(time = factor(time, levels = c("3", "24"), labels = c("3 hours", "24 hours")))
 # saveRDS(toplist_ff,"data/Final_four_data/toplist_ff.RDS")
-toplist_ff <- readRDS("data/Final_four_data/toplist_ff.RDS")
-median_3_lfc <- read_csv("data/Final_four_data/median_3_lfc.csv")
-median_24_lfc <- read_csv("data/Final_four_data/median_24_lfc.csv")
+# saveRDS(toplist_ff,"data/Final_four_data/toplist_ff_norm.RDS")
+toplist_ff <- readRDS("data/Final_four_data/toplist_ff_norm.RDS")
+median_3_lfc <- read_csv("data/Final_four_data/median_3_lfc_norm.csv")
+median_24_lfc <- read_csv("data/Final_four_data/median_24_lfc_norm.csv")
 ```
 
 ```{r making median dfs, echo=TRUE, eval=FALSE}
@@ -944,8 +901,8 @@ median_24_lfc <- median_df %>%
   dplyr::select(time, peak,median_lfc) %>% 
   dplyr::rename("med_24h_lfc"=median_lfc)
   
-write_csv(median_3_lfc, "data/Final_four_data/median_3_lfc.csv")
-write_csv(median_24_lfc, "data/Final_four_data/median_24_lfc.csv")
+write_csv(median_3_lfc, "data/Final_four_data/median_3_lfc_norm.csv")
+write_csv(median_24_lfc, "data/Final_four_data/median_24_lfc_norm.csv")
 ```
 
 
@@ -1139,6 +1096,11 @@ log_filt_ff %>%
   scale_fill_manual(values = drug_pal)+
   theme_bw()
 ```
+
+
+
+
+
 #### Correlations of LFC by treatment
 ```{r LFC time and treamtment 20kb}
 hour3_lfc <- toplist_ff %>% 
@@ -1199,27 +1161,27 @@ groupid_ff <- as.numeric(group_fac_ff)
 
 compid_ff <- data.frame(c1= c(2,4,6,8,10,1,3,5,7,9), c2 = c( 12,12,12,12,12,11,11,11,11,11))
 
-y_TMM_cpm_ff <- cpm(x4_filtered, log = TRUE)
+y_TMM_cpm_ff <- cpm(dge, log = TRUE)
 
 colnames(y_TMM_cpm_ff) <- short_names
 # y_TMM_cpm
-set.seed(31415)
+# set.seed(31415)
 # cormotif_initial_ff <- cormotiffit(exprs = y_TMM_cpm_ff, groupid = groupid_ff, compid = compid_ff, K=1:8, max.iter = 500, runtype = "logCPM")
-# 
+
 # saveRDS(cormotif_initial_ff,"data/Final_four_data/cormotif_ff_4_run.RDS")
-# saveRDS(cormotif_initial_ffl,"data/Final_four_data/cormotif_ff_4_run_noY.RDS")
+# saveRDS(cormotif_initial_ff,"data/Final_four_data/cormotif_ff_4_run_norm.RDS")
 
 # cormotif_four_ff <- cormotiffit(exprs = y_TMM_cpm_ff, groupid = groupid_ff, compid = compid_ff, K=4, max.iter = 500, runtype = "logCPM")
 
 # saveRDS(cormotif_four_ff,"data/Final_four_data/cormotif_only4_run.RDS")
 
-cormotif_initial_ff <-  readRDS("data/Final_four_data/cormotif_ff_4_run.RDS")
+cormotif_initial_ff <-  readRDS("data/Final_four_data/cormotif_ff_4_run_norm.RDS")
 gene_prob_tran_ff <- cormotif_initial_ff$bestmotif$p.post
 rownames(gene_prob_tran_ff) <- rownames(x4_filtered)
 motif_prob_ff <- cormotif_initial_ff$bestmotif$clustlike
 rownames(motif_prob_ff) <- rownames(gene_prob_tran_ff)
 # write.csv(motif_prob_n45_he,"data/cormotif_probability_45_list_he.csv")
-# saveRDS(motif_prob_ff,"data/Final_four_data/motif_prob_ff.RDS")
+saveRDS(motif_prob_ff,"data/Final_four_data/motif_prob_ff_norm.RDS")
 
 ```
 
@@ -1236,7 +1198,7 @@ Study breakdown: 1 = DNR_3, 2 = DOX_3, 3 = EPI_3, 4 = MTX_3, 5 = TRZ_3\
 6 = DNR_24, 7 = DOX_24, 8 = EPI_24, 9 = MTX_24, 10 = TRZ_24
 
 ```{r making clusters}
-motif_prob_ff <- readRDS("data/Final_four_data/motif_prob_ff.RDS")
+motif_prob_ff <- readRDS("data/Final_four_data/motif_prob_ff_norm.RDS")
 
 background_peaks <- motif_prob_ff %>% 
   as.data.frame() %>% 
@@ -1251,7 +1213,7 @@ NR_ff <- motif_prob_ff %>%
   dplyr::select(Peakid) %>% 
   separate(Peakid, into=c("chr","start","end"),remove = FALSE)
  
-LR_ff <- motif_prob_ff %>%
+EAR_ff <- motif_prob_ff %>%
    as.data.frame() %>% 
   dplyr::filter(V1<.5 & V2>.5 & V3 <.5& V4<0.5) %>% 
   rownames_to_column("Peakid") %>% 
@@ -1259,7 +1221,7 @@ LR_ff <- motif_prob_ff %>%
   separate(Peakid, into=c("chr","start","end"),remove = FALSE)
  
  
-ESR_ff <- motif_prob_ff %>%
+LR_ff <- motif_prob_ff %>%
   as.data.frame() %>% 
   dplyr::filter(V1<.5 & V2<.5 & V3 >.5& V4<0.5) %>% 
   rownames_to_column("Peakid") %>% 
@@ -1267,7 +1229,7 @@ ESR_ff <- motif_prob_ff %>%
   separate(Peakid, into=c("chr","start","end"),remove = FALSE)
  
 
-EAR_ff <- motif_prob_ff %>%
+ESR_ff <- motif_prob_ff %>%
   as.data.frame() %>% 
   dplyr::filter(V1<.5 & V2<.5 & V3 <.5& V4>0.5) %>% 
   rownames_to_column("Peakid") %>% 
@@ -1301,9 +1263,9 @@ background_gr <- background_peaks %>% GRanges()
 # mylist <- list(EAR_ff_gr,ESR_ff_gr,LR_ff_gr,NR_ff_gr,background_gr)
 # peakAnnoList<- lapply(mylist, annotatePeak, tssRegion =c(-2000,2000), TxDb= txdb)
 # names(peakAnnoList) <- c("EAR","ESR","LR","NR","background")
-# saveRDS(peakAnnoList, "data/Final_four_data/peakAnnoList_ff_motif.RDS")
+# saveRDS(peakAnnoList, "data/Final_four_data/peakAnnoList_ff_motif_norm.RDS")
 
-peakAnnoList_motif <- readRDS("data/Final_four_data/peakAnnoList_ff_motif.RDS")
+peakAnnoList_motif <- readRDS("data/Final_four_data/peakAnnoList_ff_motif_norm.RDS")
 plotAnnoBar(peakAnnoList_motif[c(4,1:3)])+
   ggtitle ("Genomic Feature Distribution, Four groups")
 ```
@@ -1451,8 +1413,8 @@ Collapsed_new_peaks <- TSS_NG_table %>%
 TSS_assigned_NG <- read_delim("data/Final_four_data/TSS_assigned_NG.txt", delim = "\t", col_names = TRUE)
 Collapsed_new_peaks <- read_delim("data/Final_four_data/collapsed_new_peaks.txt", delim = "\t", col_names = TRUE)
 
-median_24_lfc <- read_csv("data/Final_four_data/median_24_lfc.csv") 
-median_3_lfc <- read_csv("data/Final_four_data/median_3_lfc.csv")
+median_24_lfc <- read_csv("data/Final_four_data/median_24_lfc_norm.csv") 
+median_3_lfc <- read_csv("data/Final_four_data/median_3_lfc_norm.csv")
 
 open_3med <- median_3_lfc %>% 
   dplyr::filter(med_3h_lfc > 0)
@@ -1517,25 +1479,25 @@ ESR_close <- ESR_ff %>%
 
 ESR_close_gr <- ESR_close %>% GRanges()
 
-ESR_C <- ESR_ff %>% 
+ESR_opcl <- ESR_ff %>% 
   dplyr::filter(Peakid %in% medC$peak) 
-ESR_C_gr <- ESR_C %>% GRanges()
-ESR_D <- ESR_ff %>% 
+ESR_opcl_gr <- ESR_opcl %>% GRanges()
+ESR_clop <- ESR_ff %>% 
   dplyr::filter(Peakid %in% medD$peak) 
-ESR_D_gr <- ESR_D %>% GRanges()
+ESR_clop_gr <- ESR_clop %>% GRanges()
 
-ESR_OC <- ESR_C %>% 
-  rbind(ESR_D)
-ESR_OC_gr <- ESR_OC %>% GRanges()
+# ESR_OC <- ESR_C %>% 
+#   rbind(ESR_D)
+# ESR_OC_gr <- ESR_OC %>% GRanges()
 
-# mylist_new <- list(EAR_open_gr, EAR_close_gr,ESR_open_gr, ESR_close_gr,ESR_C_gr,ESR_D_gr, LR_open_gr, LR_close_gr,NR_gr, background_gr)
+# mylist_new <- list(EAR_open_gr, EAR_close_gr,ESR_open_gr, ESR_close_gr,ESR_opcl_gr,ESR_clop_gr, LR_open_gr, LR_close_gr,NR_gr, background_gr)
 # names(mylist_new) <- c("EAR_open", "EAR_close","ESR_open", "ESR_close","ESR_opcl","ESR_clop", "LR_open", "LR_close","NR","background")
 # saveRDS(ESR_D,"data/Final_four_data/ESR_D.RDS")
 # peakAnnoList<- lapply(mylist_new, annotatePeak, tssRegion =c(-2000,2000), TxDb= txdb)
 # names(peakAnnoList) <- c("EAR_open", "EAR_close","ESR_open", "ESR_close","ESR_opcl","ESR_clop", "LR_open", "LR_close","NR","background")
-# saveRDS(peakAnnoList, "data/Final_four_data/peakAnnoList_ff_9motif.RDS")
+# saveRDS(peakAnnoList, "data/Final_four_data/peakAnnoList_ff_9motif_norm.RDS")
 peakAnnoList_8_motif <- readRDS("data/Final_four_data/peakAnnoList_ff_8motif.RDS")
-peakAnnoList_9_motif <- readRDS("data/Final_four_data/peakAnnoList_ff_9motif.RDS")
+peakAnnoList_9_motif <- readRDS("data/Final_four_data/peakAnnoList_ff_9motif_norm.RDS")
 plotAnnoBar(peakAnnoList_8_motif[c(8,1,3,5,6,2,4,7)])+
   ggtitle ("Genomic Feature Distribution, eight groups")
 
@@ -1570,11 +1532,11 @@ peak_length_df %>%
     peakid %in% EAR_close$Peakid ~ "EAR_close",
     peakid %in% ESR_open$Peakid ~ "ESR_open",
     peakid %in% ESR_close$Peakid ~ "ESR_close",
-    peakid %in% ESR_C$Peakid ~ "ESR_opcl",
+    peakid %in% ESR_opcl$Peakid ~ "ESR_opcl",
     peakid %in% LR_open$Peakid ~ "LR_open",
     peakid %in% LR_close$Peakid ~ "LR_close",
     peakid %in% NR_ff$Peakid ~ "NR",
-    peakid %in% ESR_D$Peakid ~ "ESR_clop",
+    peakid %in% ESR_clop$Peakid ~ "ESR_clop",
     TRUE ~ "not_mrc"
   )) %>%  
   dplyr::filter(mrc!="not_mrc") %>% 
@@ -1676,14 +1638,14 @@ H3K27ac_NG_df <- read.delim("data/Final_four_data/H3K27ac_files/H3K27ac_NG_df.be
 ### abs LFC across clusters
 
 ```{r, fig.width=10, fig.height=6}
-toplist_ff <- readRDS("data/Final_four_data/toplist_ff.RDS")
+toplist_ff <- readRDS("data/Final_four_data/toplist_ff_norm.RDS")
 mean_lfc <-   toplist_ff %>%
   mutate(EAR_open = if_else(peak %in% EAR_open$Peakid, "y", "no")) %>%
   mutate(EAR_close = if_else(peak %in% EAR_close$Peakid, "y", "no")) %>%
   mutate(ESR_open = if_else(peak %in% ESR_open$Peakid, "y", "no")) %>%
   mutate(ESR_close= if_else(peak %in% ESR_close$Peakid, "y", "no")) %>%
-  mutate(ESR_C= if_else(peak %in% ESR_C$Peakid, "y", "no")) %>%
-  mutate(ESR_D= if_else(peak %in% ESR_D$Peakid, "y", "no")) %>%
+  mutate(ESR_opcl= if_else(peak %in% ESR_opcl$Peakid, "y", "no")) %>%
+  mutate(ESR_clop= if_else(peak %in% ESR_clop$Peakid, "y", "no")) %>%
     mutate(LR_open= if_else(peak %in% LR_open$Peakid, "y", "no")) %>%
     mutate(LR_close= if_else(peak %in% LR_close$Peakid, "y", "no")) %>%
     mutate(NR = if_else(peak %in% NR_ff$Peakid, "y", "no"))%>%
@@ -1697,8 +1659,8 @@ mean_lfc <-   toplist_ff %>%
     ESR_op = mean(absFC[ESR_open == "y"]),
     ESR_cl = mean(absFC[ESR_close == "y"]),
     # ESR_OC = mean(absFC[ESR_OC == "y"]),
-    ESR_c = mean(absFC[ESR_C == "y"]),
-    ESR_d = mean(absFC[ESR_D == "y"]),
+    ESR_opcl = mean(absFC[ESR_opcl == "y"]),
+    ESR_clop = mean(absFC[ESR_clop == "y"]),
     LR_op = mean(absFC[LR_open == "y"]),
     LR_cl = mean(absFC[LR_close == "y"]),
     NR = mean(absFC[NR == "y"])
@@ -1765,8 +1727,8 @@ Collapsed_H3k27ac_NG <- read_delim("data/Final_four_data/H3K27ac_files/Collapsed
 RNA_median_3_lfc <- readRDS("data/other_papers/RNA_median_3_lfc.RDS")
 RNA_median_24_lfc <- readRDS("data/other_papers/RNA_median_24_lfc.RDS")
 overlap_df_ggplot <- readRDS("data/Final_four_data/LFC_ATAC_K27ac.RDS")
-AC_median_3_lfc <- read_csv("data/Final_four_data/AC_median_3_lfc.csv")
-AC_median_24_lfc <- read_csv("data/Final_four_data/AC_median_24_lfc.csv")
+AC_median_3_lfc <- read_csv("data/Final_four_data/median_3_lfc_norm")
+AC_median_24_lfc <- read_csv("data/Final_four_data/median_24_lfc_norm")
 
 anti_joined_lfc <- median_24_lfc %>% 
   dplyr::filter(!peak %in% overlap_df_ggplot$peakid)  %>% 
