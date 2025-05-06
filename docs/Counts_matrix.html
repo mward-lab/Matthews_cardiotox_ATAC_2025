@@ -521,15 +521,15 @@ project makes it easier to run your code on other machines.</p>
 <div class="panel panel-default">
 <div class="panel-heading">
 <p class="panel-title">
-<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcommwardlabMatthewscardiotoxATAC2025tree7c62aac537c6a3a9cd8b074794ddda1f62a7894atargetblank7c62aaca">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcommwardlabMatthewscardiotoxATAC2025treee08ea716dce4a5f1cda61e345c10bb7672be8707targetblanke08ea71a">
 <span class="glyphicon glyphicon-ok text-success"
 aria-hidden="true"></span> <strong>Repository version:</strong>
-<a href="https://github.com/mward-lab/Matthews_cardiotox_ATAC_2025/tree/7c62aac537c6a3a9cd8b074794ddda1f62a7894a" target="_blank">7c62aac</a>
+<a href="https://github.com/mward-lab/Matthews_cardiotox_ATAC_2025/tree/e08ea716dce4a5f1cda61e345c10bb7672be8707" target="_blank">e08ea71</a>
 </a>
 </p>
 </div>
 <div
-id="strongRepositoryversionstrongahrefhttpsgithubcommwardlabMatthewscardiotoxATAC2025tree7c62aac537c6a3a9cd8b074794ddda1f62a7894atargetblank7c62aaca"
+id="strongRepositoryversionstrongahrefhttpsgithubcommwardlabMatthewscardiotoxATAC2025treee08ea716dce4a5f1cda61e345c10bb7672be8707targetblanke08ea71a"
 class="panel-collapse collapse">
 <div class="panel-body">
 <p>
@@ -539,7 +539,7 @@ reproducibility.
 </p>
 <p>
 The results in this page were generated with repository version
-<a href="https://github.com/mward-lab/Matthews_cardiotox_ATAC_2025/tree/7c62aac537c6a3a9cd8b074794ddda1f62a7894a" target="_blank">7c62aac</a>.
+<a href="https://github.com/mward-lab/Matthews_cardiotox_ATAC_2025/tree/e08ea716dce4a5f1cda61e345c10bb7672be8707" target="_blank">e08ea71</a>.
 See the <em>Past versions</em> tab to see a history of the changes made
 to the R Markdown and HTML files.
 </p>
@@ -557,6 +557,7 @@ Ignored files:
     Ignored:    .RData
     Ignored:    .Rhistory
     Ignored:    .Rproj.user/
+    Ignored:    analysis/figure/
     Ignored:    data/ACresp_SNP_table.csv
     Ignored:    data/ARR_SNP_table.csv
     Ignored:    data/All_merged_peaks.tsv
@@ -781,6 +782,40 @@ Message
 Rmd
 </td>
 <td>
+<a href="https://github.com/mward-lab/Matthews_cardiotox_ATAC_2025/blob/e08ea716dce4a5f1cda61e345c10bb7672be8707/analysis/Counts_matrix.Rmd" target="_blank">e08ea71</a>
+</td>
+<td>
+reneeisnowhere
+</td>
+<td>
+2025-05-06
+</td>
+<td>
+updates
+</td>
+</tr>
+<tr>
+<td>
+html
+</td>
+<td>
+<a href="https://rawcdn.githack.com/mward-lab/Matthews_cardiotox_ATAC_2025/193c36d32a17e4892f87c851a8385eed16a76357/docs/Counts_matrix.html" target="_blank">193c36d</a>
+</td>
+<td>
+reneeisnowhere
+</td>
+<td>
+2025-05-06
+</td>
+<td>
+Build site.
+</td>
+</tr>
+<tr>
+<td>
+Rmd
+</td>
+<td>
 <a href="https://github.com/mward-lab/Matthews_cardiotox_ATAC_2025/blob/7c62aac537c6a3a9cd8b074794ddda1f62a7894a/analysis/Counts_matrix.Rmd" target="_blank">7c62aac</a>
 </td>
 <td>
@@ -838,7 +873,10 @@ library(ComplexHeatmap)
 library(cowplot)
 library(smplot2)
 library(data.table)</code></pre>
-<pre class="r"><code>prop_var_percent &lt;- function(pca_result){ 
+<pre class="r"><code>drug_pal &lt;- c(&quot;#8B006D&quot;,&quot;#DF707E&quot;,&quot;#F1B72B&quot;, &quot;#3386DD&quot;,&quot;#707031&quot;,&quot;#41B333&quot;)
+
+
+prop_var_percent &lt;- function(pca_result){ 
   # Ensure the input is a PCA result object
   if (!inherits(pca_result, &quot;prcomp&quot;)) {
     stop(&quot;Input must be a result from prcomp()&quot;)
@@ -852,12 +890,11 @@ library(data.table)</code></pre>
   
   return(proportion_variance)
 }</code></pre>
-<div
-id="this-section-is-the-differential-accessibility-analysis-using-the-featurecounts-matrix-of-the-172481-high-confidence-peaks-mamasterpeak-list"
-class="section level2">
-<h2>This section is the differential accessibility analysis using the
-featurecounts matrix of the 172,481 high confidence peaks mamasterpeak
-list</h2>
+<div id="examining-the-counts-matrix" class="section level2">
+<h2>Examining the counts matrix:</h2>
+<p>This section is using the featureCounts matrix of the 172,481 high
+confidence peaks across all samples called
+“all_four_filtered_counts.txt”.</p>
 <pre class="r"><code>### Load the table
 all_four_filt_counts &lt;- read.delim(&quot;data/all_four_filtered_counts.txt&quot;,header=TRUE) %&gt;% 
   GRanges() %&gt;% 
@@ -891,18 +928,129 @@ hist(raw_counts, main= &quot;Raw counts across samples&quot;,
      xlab = &quot;Raw counts&quot;,
      col=4)</code></pre>
 <p><img src="figure/Counts_matrix.Rmd/rawcounts-1.png" width="768" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-rawcounts-1">
+Past versions of rawcounts-1.png
+</button>
+</p>
+<div id="fig-rawcounts-1" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/mward-lab/Matthews_cardiotox_ATAC_2025/blob/193c36d32a17e4892f87c851a8385eed16a76357/docs/figure/Counts_matrix.Rmd/rawcounts-1.png" target="_blank">193c36d</a>
+</td>
+<td>
+reneeisnowhere
+</td>
+<td>
+2025-05-06
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 <pre class="r"><code>hist(cpm(raw_counts, log=TRUE), 
      main = expression(&quot;Histogram of Log&quot;[2]*&quot; cpm unfiltered&quot;),
      xlab = expression(&quot;Log&quot;[2]*&quot; counts-per-million&quot;),
      col=4)</code></pre>
 <p><img src="figure/Counts_matrix.Rmd/rawcounts-2.png" width="768" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-rawcounts-2">
+Past versions of rawcounts-2.png
+</button>
+</p>
+<div id="fig-rawcounts-2" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/mward-lab/Matthews_cardiotox_ATAC_2025/blob/193c36d32a17e4892f87c851a8385eed16a76357/docs/figure/Counts_matrix.Rmd/rawcounts-2.png" target="_blank">193c36d</a>
+</td>
+<td>
+reneeisnowhere
+</td>
+<td>
+2025-05-06
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 <pre class="r"><code>boxplot(cpm(raw_counts, log=TRUE),
         main=expression(&quot;Boxplot of Log&quot;[2]*&quot; counts-per-million&quot;),
                         col=4,
         names=colnames(raw_counts),
         las=2, cex.axis=.7)</code></pre>
-<p><img src="figure/Counts_matrix.Rmd/rawcounts-3.png" width="768" style="display: block; margin: auto;" />
-Saving a .tsv of the raw unfiltered counts:</p>
+<p><img src="figure/Counts_matrix.Rmd/rawcounts-3.png" width="768" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-rawcounts-3">
+Past versions of rawcounts-3.png
+</button>
+</p>
+<div id="fig-rawcounts-3" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/mward-lab/Matthews_cardiotox_ATAC_2025/blob/193c36d32a17e4892f87c851a8385eed16a76357/docs/figure/Counts_matrix.Rmd/rawcounts-3.png" target="_blank">193c36d</a>
+</td>
+<td>
+reneeisnowhere
+</td>
+<td>
+2025-05-06
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p>Saving a .tsv of the raw unfiltered counts:</p>
 <pre class="r"><code>raw_counts %&gt;% 
   as.data.frame() %&gt;% 
   rownames_to_column(&quot;Peakid&quot;) %&gt;% 
@@ -912,7 +1060,7 @@ Saving a .tsv of the raw unfiltered counts:</p>
 <h3>Heatmap of unfiltered log2 cpm counts</h3>
 <pre class="r"><code>cor_raw_counts &lt;- raw_counts %&gt;% 
   cpm(., log = TRUE) %&gt;% 
-  cor()
+  cor(.,method = &quot;pearson&quot;)
 
 anno_raw_counts &lt;- data.frame(timeset = colnames(cor_raw_counts))
 
@@ -944,6 +1092,43 @@ names(mat_colors$TOP2i) &lt;- unique(counts_corr_mat$TOP2i)
 htanno_full &lt;-  ComplexHeatmap::HeatmapAnnotation(df = counts_corr_mat, col = mat_colors)
 Heatmap(cor_raw_counts, top_annotation = htanno_full)</code></pre>
 <p><img src="figure/Counts_matrix.Rmd/full%20heatmap-1.png" width="960" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-no-spaces-full-heatmap-1">
+Past versions of "full heatmap-1.png"
+</button>
+</p>
+<div id="fig-no-spaces-full-heatmap-1" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/mward-lab/Matthews_cardiotox_ATAC_2025/blob/193c36d32a17e4892f87c851a8385eed16a76357/docs/figure/Counts_matrix.Rmd/full heatmap-1.png" target="_blank">193c36d</a>
+</td>
+<td>
+reneeisnowhere
+</td>
+<td>
+2025-05-06
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 </div>
 <div id="filtering-out-low-counts" class="section level3">
 <h3>Filtering out low counts</h3>
@@ -1043,17 +1228,172 @@ histogram of removed regions.</p>
      xlab = &quot;Raw counts&quot;,
      col=3)</code></pre>
 <p><img src="figure/Counts_matrix.Rmd/unnamed-chunk-3-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-unnamed-chunk-3-1">
+Past versions of unnamed-chunk-3-1.png
+</button>
+</p>
+<div id="fig-unnamed-chunk-3-1" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/mward-lab/Matthews_cardiotox_ATAC_2025/blob/193c36d32a17e4892f87c851a8385eed16a76357/docs/figure/Counts_matrix.Rmd/unnamed-chunk-3-1.png" target="_blank">193c36d</a>
+</td>
+<td>
+reneeisnowhere
+</td>
+<td>
+2025-05-06
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 <pre class="r"><code>hist(cpm(filt_raw_counts_noY, log=TRUE), 
      main = expression(&quot;Histogram of Log&quot;[2]*&quot; cpm filtered counts&quot;),
      xlab = expression(&quot;Log&quot;[2]*&quot; counts-per-million&quot;),
      col=3)</code></pre>
 <p><img src="figure/Counts_matrix.Rmd/unnamed-chunk-3-2.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-unnamed-chunk-3-2">
+Past versions of unnamed-chunk-3-2.png
+</button>
+</p>
+<div id="fig-unnamed-chunk-3-2" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/mward-lab/Matthews_cardiotox_ATAC_2025/blob/193c36d32a17e4892f87c851a8385eed16a76357/docs/figure/Counts_matrix.Rmd/unnamed-chunk-3-2.png" target="_blank">193c36d</a>
+</td>
+<td>
+reneeisnowhere
+</td>
+<td>
+2025-05-06
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 <pre class="r"><code>boxplot(cpm(filt_raw_counts_noY, log=TRUE),
         main=expression(&quot;Boxplot of Log&quot;[2]*&quot; counts-per-million filtered counts&quot;),
                         col=3,
         names=colnames(raw_counts),
         las=2, cex.axis=.7)</code></pre>
 <p><img src="figure/Counts_matrix.Rmd/unnamed-chunk-3-3.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-unnamed-chunk-3-3">
+Past versions of unnamed-chunk-3-3.png
+</button>
+</p>
+<div id="fig-unnamed-chunk-3-3" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/mward-lab/Matthews_cardiotox_ATAC_2025/blob/193c36d32a17e4892f87c851a8385eed16a76357/docs/figure/Counts_matrix.Rmd/unnamed-chunk-3-3.png" target="_blank">193c36d</a>
+</td>
+<td>
+reneeisnowhere
+</td>
+<td>
+2025-05-06
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<div id="pca-analysis" class="section level3">
+<h3>PCA analysis</h3>
+<p>Now to look at the principle components of the data.</p>
+<pre class="r"><code>##get log2cpm of raw filtered counts
+filt4_matrix_lcpm &lt;- cpm(filt_raw_counts_noY , log=TRUE)
+## store PRcomp
+PCA4_info_filter &lt;- (prcomp(t(filt4_matrix_lcpm), scale. = TRUE))
+###make annotation dataframe
+annotation_mat &lt;- data.frame(timeset=colnames(filt_raw_counts_noY)) %&gt;%
+  mutate(sample = timeset) %&gt;% 
+  separate(timeset, into = c(&quot;indv&quot;,&quot;trt&quot;,&quot;time&quot;), sep= &quot;_&quot;) %&gt;% 
+  mutate(time = factor(time, levels = c(&quot;3h&quot;, &quot;24h&quot;), labels= c(&quot;3 hours&quot;,&quot;24 hours&quot;))) %&gt;% 
+  mutate(trt = factor(trt, levels = c(&quot;DOX&quot;,&quot;EPI&quot;, &quot;DNR&quot;, &quot;MTX&quot;, &quot;TRZ&quot;, &quot;VEH&quot;))) 
+### join together for plotting
+pca_final_four_anno &lt;- data.frame(annotation_mat, PCA4_info_filter$x)
+plotting_var_names &lt;- prop_var_percent(PCA4_info_filter)
+
+pca_final_four_anno %&gt;%
+  ggplot(.,aes(x = PC1, y = PC2, col=trt, shape=time, group=indv))+
+  geom_point(size= 5)+
+  scale_color_manual(values=drug_pal)+
+   ggrepel::geom_text_repel(aes(label = indv))+
+   ggtitle(expression(&quot;PCA of log&quot;[2]*&quot;(cpm) filtered peak set&quot;))+
+  theme_bw()+
+  guides(col=&quot;none&quot;, size =4)+
+  labs(y = paste0(&quot;PC 2 (&quot;,round(plotting_var_names[2],1),&quot;%)&quot;)
+       , x =paste0(&quot;PC 1 (&quot;,round(plotting_var_names[1],1),&quot;%)&quot;))+
+  theme(plot.title=element_text(size= 14,hjust = 0.5),
+        axis.title = element_text(size = 12, color = &quot;black&quot;))</code></pre>
+<p><img src="figure/Counts_matrix.Rmd/PCA%20analysis%20of%20filtered%20counts-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>pca_final_four_anno %&gt;%
+  ggplot(.,aes(x = PC3, y = PC4, col=trt, shape=time, group=indv))+
+  geom_point(size= 5)+
+  scale_color_manual(values=drug_pal)+
+   ggrepel::geom_text_repel(aes(label = indv))+
+   ggtitle(expression(&quot;PCA of log&quot;[2]*&quot;(cpm) filtered peak set&quot;))+
+  theme_bw()+
+  guides(col=&quot;none&quot;, size =4)+
+  labs(y = paste0(&quot;PC 4 (&quot;,round(plotting_var_names[4],1),&quot;%)&quot;)
+       , x =paste0(&quot;PC 3 (&quot;,round(plotting_var_names[3],1),&quot;%)&quot;))+
+  theme(plot.title=element_text(size= 14,hjust = 0.5),
+        axis.title = element_text(size = 12, color = &quot;black&quot;))</code></pre>
+<p><img src="figure/Counts_matrix.Rmd/PCA%20analysis%20of%20filtered%20counts-2.png" width="672" style="display: block; margin: auto;" /></p>
 <br>
 <p>
 <button type="button" class="btn btn-default btn-workflowr btn-workflowr-sessioninfo" data-toggle="collapse" data-target="#workflowr-sessioninfo" style="display: block;">
@@ -1148,152 +1488,153 @@ loaded via a namespace (and not attached):
  [14] withr_3.0.2                            
  [15] cli_3.6.4                              
  [16] formatR_1.14                           
- [17] sass_0.4.9                             
- [18] Rsamtools_2.22.0                       
- [19] systemfonts_1.2.1                      
- [20] yulab.utils_0.2.0                      
- [21] foreign_0.8-88                         
- [22] DOSE_4.0.0                             
- [23] svglite_2.1.3                          
- [24] R.utils_2.13.0                         
- [25] sessioninfo_1.2.3                      
- [26] plotrix_3.8-4                          
- [27] pwr_1.3-0                              
- [28] rstudioapi_0.17.1                      
- [29] RSQLite_2.3.9                          
- [30] shape_1.4.6.1                          
- [31] generics_0.1.3                         
- [32] gridGraphics_0.5-1                     
- [33] TxDb.Hsapiens.UCSC.hg19.knownGene_3.2.2
- [34] BiocIO_1.16.0                          
- [35] gtools_3.9.5                           
- [36] car_3.1-3                              
- [37] GO.db_3.20.0                           
- [38] Matrix_1.7-3                           
- [39] abind_1.4-8                            
- [40] R.methodsS3_1.8.2                      
- [41] lifecycle_1.0.4                        
- [42] whisker_0.4.1                          
- [43] yaml_2.3.10                            
- [44] carData_3.0-5                          
- [45] SummarizedExperiment_1.36.0            
- [46] gplots_3.2.0                           
- [47] qvalue_2.38.0                          
- [48] SparseArray_1.6.2                      
- [49] blob_1.2.4                             
- [50] promises_1.3.2                         
- [51] crayon_1.5.3                           
- [52] miniUI_0.1.1.1                         
- [53] ggtangle_0.0.6                         
- [54] lattice_0.22-6                         
- [55] KEGGREST_1.46.0                        
- [56] magick_2.8.5                           
- [57] pillar_1.10.1                          
- [58] knitr_1.49                             
- [59] fgsea_1.32.2                           
- [60] rjson_0.2.23                           
- [61] boot_1.3-31                            
- [62] codetools_0.2-20                       
- [63] fastmatch_1.1-6                        
- [64] glue_1.8.0                             
- [65] getPass_0.2-4                          
- [66] ggfun_0.1.8                            
- [67] remotes_2.5.0                          
- [68] vctrs_0.6.5                            
- [69] png_0.1-8                              
- [70] treeio_1.30.0                          
- [71] gtable_0.3.6                           
- [72] cachem_1.1.0                           
- [73] xfun_0.51                              
- [74] S4Arrays_1.6.0                         
- [75] mime_0.12                              
- [76] iterators_1.0.14                       
- [77] statmod_1.5.0                          
- [78] ellipsis_0.3.2                         
- [79] nlme_3.1-167                           
- [80] ggtree_3.14.0                          
- [81] bit64_4.6.0-1                          
- [82] rprojroot_2.0.4                        
- [83] bslib_0.9.0                            
- [84] rpart_4.1.24                           
- [85] KernSmooth_2.23-26                     
- [86] Hmisc_5.2-2                            
- [87] colorspace_2.1-1                       
- [88] DBI_1.2.3                              
- [89] nnet_7.3-20                            
- [90] tidyselect_1.2.1                       
- [91] processx_3.8.6                         
- [92] bit_4.6.0                              
- [93] compiler_4.4.2                         
- [94] curl_6.2.1                             
- [95] git2r_0.35.0                           
- [96] htmlTable_2.4.3                        
- [97] xml2_1.3.7                             
- [98] DelayedArray_0.32.0                    
- [99] checkmate_2.3.2                        
-[100] caTools_1.18.3                         
-[101] callr_3.7.6                            
-[102] digest_0.6.37                          
-[103] rmarkdown_2.29                         
-[104] XVector_0.46.0                         
-[105] base64enc_0.1-3                        
-[106] htmltools_0.5.8.1                      
-[107] pkgconfig_2.0.3                        
-[108] MatrixGenerics_1.18.1                  
-[109] fastmap_1.2.0                          
-[110] GlobalOptions_0.1.2                    
-[111] rlang_1.1.5                            
-[112] htmlwidgets_1.6.4                      
-[113] UCSC.utils_1.2.0                       
-[114] shiny_1.10.0                           
-[115] farver_2.1.2                           
-[116] jquerylib_0.1.4                        
-[117] zoo_1.8-13                             
-[118] jsonlite_1.9.1                         
-[119] GOSemSim_2.32.0                        
-[120] R.oo_1.27.0                            
-[121] RCurl_1.98-1.16                        
-[122] magrittr_2.0.3                         
-[123] Formula_1.2-5                          
-[124] GenomeInfoDbData_1.2.13                
-[125] ggplotify_0.1.2                        
-[126] patchwork_1.3.0                        
-[127] munsell_0.5.1                          
-[128] Rcpp_1.0.14                            
-[129] ape_5.8-1                              
-[130] stringi_1.8.4                          
-[131] zlibbioc_1.52.0                        
-[132] plyr_1.8.9                             
-[133] pkgbuild_1.4.6                         
-[134] parallel_4.4.2                         
-[135] Biostrings_2.74.1                      
-[136] splines_4.4.2                          
-[137] circlize_0.4.16                        
-[138] hms_1.1.3                              
-[139] locfit_1.5-9.12                        
-[140] ps_1.9.0                               
-[141] igraph_2.1.4                           
-[142] reshape2_1.4.4                         
-[143] pkgload_1.4.0                          
-[144] futile.options_1.0.1                   
-[145] XML_3.99-0.18                          
-[146] evaluate_1.0.3                         
-[147] lambda.r_1.2.4                         
-[148] tzdb_0.4.0                             
-[149] foreach_1.5.2                          
-[150] httpuv_1.6.15                          
-[151] clue_0.3-66                            
-[152] xtable_1.8-4                           
-[153] restfulr_0.0.15                        
-[154] tidytree_0.4.6                         
-[155] rstatix_0.7.2                          
-[156] later_1.4.1                            
-[157] viridisLite_0.4.2                      
-[158] aplot_0.2.5                            
-[159] memoise_2.0.1                          
-[160] GenomicAlignments_1.42.0               
-[161] cluster_2.1.8.1                        
-[162] timechange_0.3.0                       </code></pre>
+ [17] labeling_0.4.3                         
+ [18] sass_0.4.9                             
+ [19] Rsamtools_2.22.0                       
+ [20] systemfonts_1.2.1                      
+ [21] yulab.utils_0.2.0                      
+ [22] foreign_0.8-88                         
+ [23] DOSE_4.0.0                             
+ [24] svglite_2.1.3                          
+ [25] R.utils_2.13.0                         
+ [26] sessioninfo_1.2.3                      
+ [27] plotrix_3.8-4                          
+ [28] pwr_1.3-0                              
+ [29] rstudioapi_0.17.1                      
+ [30] RSQLite_2.3.9                          
+ [31] shape_1.4.6.1                          
+ [32] generics_0.1.3                         
+ [33] gridGraphics_0.5-1                     
+ [34] TxDb.Hsapiens.UCSC.hg19.knownGene_3.2.2
+ [35] BiocIO_1.16.0                          
+ [36] gtools_3.9.5                           
+ [37] car_3.1-3                              
+ [38] GO.db_3.20.0                           
+ [39] Matrix_1.7-3                           
+ [40] abind_1.4-8                            
+ [41] R.methodsS3_1.8.2                      
+ [42] lifecycle_1.0.4                        
+ [43] whisker_0.4.1                          
+ [44] yaml_2.3.10                            
+ [45] carData_3.0-5                          
+ [46] SummarizedExperiment_1.36.0            
+ [47] gplots_3.2.0                           
+ [48] qvalue_2.38.0                          
+ [49] SparseArray_1.6.2                      
+ [50] blob_1.2.4                             
+ [51] promises_1.3.2                         
+ [52] crayon_1.5.3                           
+ [53] miniUI_0.1.1.1                         
+ [54] ggtangle_0.0.6                         
+ [55] lattice_0.22-6                         
+ [56] KEGGREST_1.46.0                        
+ [57] magick_2.8.5                           
+ [58] pillar_1.10.1                          
+ [59] knitr_1.49                             
+ [60] fgsea_1.32.2                           
+ [61] rjson_0.2.23                           
+ [62] boot_1.3-31                            
+ [63] codetools_0.2-20                       
+ [64] fastmatch_1.1-6                        
+ [65] glue_1.8.0                             
+ [66] getPass_0.2-4                          
+ [67] ggfun_0.1.8                            
+ [68] remotes_2.5.0                          
+ [69] vctrs_0.6.5                            
+ [70] png_0.1-8                              
+ [71] treeio_1.30.0                          
+ [72] gtable_0.3.6                           
+ [73] cachem_1.1.0                           
+ [74] xfun_0.51                              
+ [75] S4Arrays_1.6.0                         
+ [76] mime_0.12                              
+ [77] iterators_1.0.14                       
+ [78] statmod_1.5.0                          
+ [79] ellipsis_0.3.2                         
+ [80] nlme_3.1-167                           
+ [81] ggtree_3.14.0                          
+ [82] bit64_4.6.0-1                          
+ [83] rprojroot_2.0.4                        
+ [84] bslib_0.9.0                            
+ [85] rpart_4.1.24                           
+ [86] KernSmooth_2.23-26                     
+ [87] Hmisc_5.2-2                            
+ [88] colorspace_2.1-1                       
+ [89] DBI_1.2.3                              
+ [90] nnet_7.3-20                            
+ [91] tidyselect_1.2.1                       
+ [92] processx_3.8.6                         
+ [93] bit_4.6.0                              
+ [94] compiler_4.4.2                         
+ [95] curl_6.2.1                             
+ [96] git2r_0.35.0                           
+ [97] htmlTable_2.4.3                        
+ [98] xml2_1.3.7                             
+ [99] DelayedArray_0.32.0                    
+[100] checkmate_2.3.2                        
+[101] caTools_1.18.3                         
+[102] callr_3.7.6                            
+[103] digest_0.6.37                          
+[104] rmarkdown_2.29                         
+[105] XVector_0.46.0                         
+[106] base64enc_0.1-3                        
+[107] htmltools_0.5.8.1                      
+[108] pkgconfig_2.0.3                        
+[109] MatrixGenerics_1.18.1                  
+[110] fastmap_1.2.0                          
+[111] GlobalOptions_0.1.2                    
+[112] rlang_1.1.5                            
+[113] htmlwidgets_1.6.4                      
+[114] UCSC.utils_1.2.0                       
+[115] shiny_1.10.0                           
+[116] farver_2.1.2                           
+[117] jquerylib_0.1.4                        
+[118] zoo_1.8-13                             
+[119] jsonlite_1.9.1                         
+[120] GOSemSim_2.32.0                        
+[121] R.oo_1.27.0                            
+[122] RCurl_1.98-1.16                        
+[123] magrittr_2.0.3                         
+[124] Formula_1.2-5                          
+[125] GenomeInfoDbData_1.2.13                
+[126] ggplotify_0.1.2                        
+[127] patchwork_1.3.0                        
+[128] munsell_0.5.1                          
+[129] Rcpp_1.0.14                            
+[130] ape_5.8-1                              
+[131] stringi_1.8.4                          
+[132] zlibbioc_1.52.0                        
+[133] plyr_1.8.9                             
+[134] pkgbuild_1.4.6                         
+[135] parallel_4.4.2                         
+[136] Biostrings_2.74.1                      
+[137] splines_4.4.2                          
+[138] circlize_0.4.16                        
+[139] hms_1.1.3                              
+[140] locfit_1.5-9.12                        
+[141] ps_1.9.0                               
+[142] igraph_2.1.4                           
+[143] reshape2_1.4.4                         
+[144] pkgload_1.4.0                          
+[145] futile.options_1.0.1                   
+[146] XML_3.99-0.18                          
+[147] evaluate_1.0.3                         
+[148] lambda.r_1.2.4                         
+[149] tzdb_0.4.0                             
+[150] foreach_1.5.2                          
+[151] httpuv_1.6.15                          
+[152] clue_0.3-66                            
+[153] xtable_1.8-4                           
+[154] restfulr_0.0.15                        
+[155] tidytree_0.4.6                         
+[156] rstatix_0.7.2                          
+[157] later_1.4.1                            
+[158] viridisLite_0.4.2                      
+[159] aplot_0.2.5                            
+[160] memoise_2.0.1                          
+[161] GenomicAlignments_1.42.0               
+[162] cluster_2.1.8.1                        
+[163] timechange_0.3.0                       </code></pre>
 </div>
 </div>
 </div>
