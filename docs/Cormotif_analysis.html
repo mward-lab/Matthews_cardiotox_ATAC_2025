@@ -1,0 +1,2339 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+
+<meta name="author" content="Renee Matthews" />
+
+<meta name="date" content="2025-05-06" />
+
+<title>Cormotif_analysis</title>
+
+<script src="site_libs/header-attrs-2.29/header-attrs.js"></script>
+<script src="site_libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="site_libs/bootstrap-3.3.5/css/cosmo.min.css" rel="stylesheet" />
+<script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
+<style>h1 {font-size: 34px;}
+       h1.title {font-size: 38px;}
+       h2 {font-size: 30px;}
+       h3 {font-size: 24px;}
+       h4 {font-size: 18px;}
+       h5 {font-size: 16px;}
+       h6 {font-size: 12px;}
+       code {color: inherit; background-color: rgba(0, 0, 0, 0.04);}
+       pre:not([class]) { background-color: white }</style>
+<script src="site_libs/jqueryui-1.13.2/jquery-ui.min.js"></script>
+<link href="site_libs/tocify-1.9.1/jquery.tocify.css" rel="stylesheet" />
+<script src="site_libs/tocify-1.9.1/jquery.tocify.js"></script>
+<script src="site_libs/navigation-1.1/tabsets.js"></script>
+<link href="site_libs/highlightjs-9.12.0/textmate.css" rel="stylesheet" />
+<script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+<link href="site_libs/font-awesome-6.5.2/css/all.min.css" rel="stylesheet" />
+<link href="site_libs/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet" />
+
+<link rel="icon" href="https://github.com/workflowr/workflowr-assets/raw/main/img/reproducible.png">
+<!-- Add a small amount of space between sections. -->
+<style type="text/css">
+div.section {
+  padding-top: 12px;
+}
+</style>
+
+
+
+<style type="text/css">
+  code{white-space: pre-wrap;}
+  span.smallcaps{font-variant: small-caps;}
+  span.underline{text-decoration: underline;}
+  div.column{display: inline-block; vertical-align: top; width: 50%;}
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+  ul.task-list{list-style: none;}
+    </style>
+
+<style type="text/css">code{white-space: pre;}</style>
+<script type="text/javascript">
+if (window.hljs) {
+  hljs.configure({languages: []});
+  hljs.initHighlightingOnLoad();
+  if (document.readyState && document.readyState === "complete") {
+    window.setTimeout(function() { hljs.initHighlighting(); }, 0);
+  }
+}
+</script>
+
+
+
+
+
+
+
+
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+img {
+  max-width:100%;
+}
+.tabbed-pane {
+  padding-top: 12px;
+}
+.html-widget {
+  margin-bottom: 20px;
+}
+button.code-folding-btn:focus {
+  outline: none;
+}
+summary {
+  display: list-item;
+}
+details > summary > p:only-child {
+  display: inline;
+}
+pre code {
+  padding: 0;
+}
+</style>
+
+
+<style type="text/css">
+.dropdown-submenu {
+  position: relative;
+}
+.dropdown-submenu>.dropdown-menu {
+  top: 0;
+  left: 100%;
+  margin-top: -6px;
+  margin-left: -1px;
+  border-radius: 0 6px 6px 6px;
+}
+.dropdown-submenu:hover>.dropdown-menu {
+  display: block;
+}
+.dropdown-submenu>a:after {
+  display: block;
+  content: " ";
+  float: right;
+  width: 0;
+  height: 0;
+  border-color: transparent;
+  border-style: solid;
+  border-width: 5px 0 5px 5px;
+  border-left-color: #cccccc;
+  margin-top: 5px;
+  margin-right: -10px;
+}
+.dropdown-submenu:hover>a:after {
+  border-left-color: #adb5bd;
+}
+.dropdown-submenu.pull-left {
+  float: none;
+}
+.dropdown-submenu.pull-left>.dropdown-menu {
+  left: -100%;
+  margin-left: 10px;
+  border-radius: 6px 0 6px 6px;
+}
+</style>
+
+<script type="text/javascript">
+// manage active state of menu based on current page
+$(document).ready(function () {
+  // active menu anchor
+  href = window.location.pathname
+  href = href.substr(href.lastIndexOf('/') + 1)
+  if (href === "")
+    href = "index.html";
+  var menuAnchor = $('a[href="' + href + '"]');
+
+  // mark the anchor link active (and if it's in a dropdown, also mark that active)
+  var dropdown = menuAnchor.closest('li.dropdown');
+  if (window.bootstrap) { // Bootstrap 4+
+    menuAnchor.addClass('active');
+    dropdown.find('> .dropdown-toggle').addClass('active');
+  } else { // Bootstrap 3
+    menuAnchor.parent().addClass('active');
+    dropdown.addClass('active');
+  }
+
+  // Navbar adjustments
+  var navHeight = $(".navbar").first().height() + 15;
+  var style = document.createElement('style');
+  var pt = "padding-top: " + navHeight + "px; ";
+  var mt = "margin-top: -" + navHeight + "px; ";
+  var css = "";
+  // offset scroll position for anchor links (for fixed navbar)
+  for (var i = 1; i <= 6; i++) {
+    css += ".section h" + i + "{ " + pt + mt + "}\n";
+  }
+  style.innerHTML = "body {" + pt + "padding-bottom: 40px; }\n" + css;
+  document.head.appendChild(style);
+});
+</script>
+
+<!-- tabsets -->
+
+<style type="text/css">
+.tabset-dropdown > .nav-tabs {
+  display: inline-table;
+  max-height: 500px;
+  min-height: 44px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.tabset-dropdown > .nav-tabs > li.active:before, .tabset-dropdown > .nav-tabs.nav-tabs-open:before {
+  content: "\e259";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li.active:before {
+  content: "\e258";
+  font-family: 'Glyphicons Halflings';
+  border: none;
+}
+
+.tabset-dropdown > .nav-tabs > li.active {
+  display: block;
+}
+
+.tabset-dropdown > .nav-tabs > li > a,
+.tabset-dropdown > .nav-tabs > li > a:focus,
+.tabset-dropdown > .nav-tabs > li > a:hover {
+  border: none;
+  display: inline-block;
+  border-radius: 4px;
+  background-color: transparent;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li {
+  display: block;
+  float: none;
+}
+
+.tabset-dropdown > .nav-tabs > li {
+  display: none;
+}
+</style>
+
+<!-- code folding -->
+
+
+
+<style type="text/css">
+
+#TOC {
+  margin: 25px 0px 20px 0px;
+}
+@media (max-width: 768px) {
+#TOC {
+  position: relative;
+  width: 100%;
+}
+}
+
+@media print {
+.toc-content {
+  /* see https://github.com/w3c/csswg-drafts/issues/4434 */
+  float: right;
+}
+}
+
+.toc-content {
+  padding-left: 30px;
+  padding-right: 40px;
+}
+
+div.main-container {
+  max-width: 1200px;
+}
+
+div.tocify {
+  width: 20%;
+  max-width: 260px;
+  max-height: 85%;
+}
+
+@media (min-width: 768px) and (max-width: 991px) {
+  div.tocify {
+    width: 25%;
+  }
+}
+
+@media (max-width: 767px) {
+  div.tocify {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+.tocify ul, .tocify li {
+  line-height: 20px;
+}
+
+.tocify-subheader .tocify-item {
+  font-size: 0.90em;
+}
+
+.tocify .list-group-item {
+  border-radius: 0px;
+}
+
+
+</style>
+
+
+
+</head>
+
+<body>
+
+
+<div class="container-fluid main-container">
+
+
+<!-- setup 3col/9col grid for toc_float and main content  -->
+<div class="row">
+<div class="col-xs-12 col-sm-4 col-md-3">
+<div id="TOC" class="tocify">
+</div>
+</div>
+
+<div class="toc-content col-xs-12 col-sm-8 col-md-9">
+
+
+
+
+<div class="navbar navbar-default  navbar-fixed-top" role="navigation">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-bs-toggle="collapse" data-target="#navbar" data-bs-target="#navbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="index.html">Matthews_cardiotox_ATAC_2025</a>
+    </div>
+    <div id="navbar" class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+        <li>
+  <a href="index.html">Home</a>
+</li>
+<li>
+  <a href="about.html">About</a>
+</li>
+<li>
+  <a href="license.html">License</a>
+</li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        <li>
+  <a href="https://github.com/mward-lab/Matthews_cardiotox_ATAC_2025">
+    <span class="fab fa-github"></span>
+     
+    Source code
+  </a>
+</li>
+      </ul>
+    </div><!--/.nav-collapse -->
+  </div><!--/.container -->
+</div><!--/.navbar -->
+
+<div id="header">
+
+
+
+<h1 class="title toc-ignore">Cormotif_analysis</h1>
+<h4 class="author">Renee Matthews</h4>
+<h4 class="date">2025-05-06</h4>
+
+</div>
+
+
+<p>
+<button type="button" class="btn btn-default btn-workflowr btn-workflowr-report" data-toggle="collapse" data-target="#workflowr-report">
+<span class="glyphicon glyphicon-list" aria-hidden="true"></span>
+workflowr <span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span>
+</button>
+</p>
+<div id="workflowr-report" class="collapse">
+<ul class="nav nav-tabs">
+<li class="active">
+<a data-toggle="tab" href="#summary">Summary</a>
+</li>
+<li>
+<a data-toggle="tab" href="#checks"> Checks <span
+class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span>
+</a>
+</li>
+<li>
+<a data-toggle="tab" href="#versions">Past versions</a>
+</li>
+</ul>
+<div class="tab-content">
+<div id="summary" class="tab-pane fade in active">
+<p>
+<strong>Last updated:</strong> 2025-05-06
+</p>
+<p>
+<strong>Checks:</strong> <span
+class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> 7
+<span class="glyphicon glyphicon-exclamation-sign text-danger"
+aria-hidden="true"></span> 0
+</p>
+<p>
+<strong>Knit directory:</strong> <code>ATAC_learning/</code> <span
+class="glyphicon glyphicon-question-sign" aria-hidden="true"
+title="This is the local directory in which the code in this file was executed.">
+</span>
+</p>
+<p>
+This reproducible <a href="https://rmarkdown.rstudio.com">R Markdown</a>
+analysis was created with <a
+  href="https://github.com/workflowr/workflowr">workflowr</a> (version
+1.7.1). The <em>Checks</em> tab describes the reproducibility checks
+that were applied when the results were created. The <em>Past
+versions</em> tab lists the development history.
+</p>
+<hr>
+</div>
+<div id="checks" class="tab-pane fade">
+<div id="workflowr-checks" class="panel-group">
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRMarkdownfilestronguptodate">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>R Markdown file:</strong> up-to-date
+</a>
+</p>
+</div>
+<div id="strongRMarkdownfilestronguptodate"
+class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great! Since the R Markdown file has been committed to the Git
+repository, you know the exact version of the code that produced these
+results.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongEnvironmentstrongempty">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Environment:</strong> empty </a>
+</p>
+</div>
+<div id="strongEnvironmentstrongempty" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great job! The global environment was empty. Objects defined in the
+global environment can affect the analysis in your R Markdown file in
+unknown ways. For reproduciblity it’s best to always run the code in an
+empty environment.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongSeedstrongcodesetseed20231016code">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Seed:</strong>
+<code>set.seed(20231016)</code> </a>
+</p>
+</div>
+<div id="strongSeedstrongcodesetseed20231016code"
+class="panel-collapse collapse">
+<div class="panel-body">
+<p>The command <code>set.seed(20231016)</code> was run prior to running
+the code in the R Markdown file. Setting a seed ensures that any results
+that rely on randomness, e.g. subsampling or permutations, are
+reproducible.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongSessioninformationstrongrecorded">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Session information:</strong>
+recorded </a>
+</p>
+</div>
+<div id="strongSessioninformationstrongrecorded"
+class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great job! Recording the operating system, R version, and package
+versions is critical for reproducibility.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongCachestrongnone">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Cache:</strong> none </a>
+</p>
+</div>
+<div id="strongCachestrongnone" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Nice! There were no cached chunks for this analysis, so you can be
+confident that you successfully produced the results during this
+run.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongFilepathsstrongrelative">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>File paths:</strong> relative </a>
+</p>
+</div>
+<div id="strongFilepathsstrongrelative" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great job! Using relative paths to the files within your workflowr
+project makes it easier to run your code on other machines.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcommwardlabMatthewscardiotoxATAC2025tree43a493f2689427b159bad7881dc1359ba19a3cfdtargetblank43a493fa">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Repository version:</strong>
+<a href="https://github.com/mward-lab/Matthews_cardiotox_ATAC_2025/tree/43a493f2689427b159bad7881dc1359ba19a3cfd" target="_blank">43a493f</a>
+</a>
+</p>
+</div>
+<div
+id="strongRepositoryversionstrongahrefhttpsgithubcommwardlabMatthewscardiotoxATAC2025tree43a493f2689427b159bad7881dc1359ba19a3cfdtargetblank43a493fa"
+class="panel-collapse collapse">
+<div class="panel-body">
+<p>
+Great! You are using Git for version control. Tracking code development
+and connecting the code version to the results is critical for
+reproducibility.
+</p>
+<p>
+The results in this page were generated with repository version
+<a href="https://github.com/mward-lab/Matthews_cardiotox_ATAC_2025/tree/43a493f2689427b159bad7881dc1359ba19a3cfd" target="_blank">43a493f</a>.
+See the <em>Past versions</em> tab to see a history of the changes made
+to the R Markdown and HTML files.
+</p>
+<p>
+Note that you need to be careful to ensure that all relevant files for
+the analysis have been committed to Git prior to generating the results
+(you can use <code>wflow_publish</code> or
+<code>wflow_git_commit</code>). workflowr only checks the R Markdown
+file, but you know if there are other scripts or data files that it
+depends on. Below is the status of the Git repository when the results
+were generated:
+</p>
+<pre><code>
+Ignored files:
+    Ignored:    .RData
+    Ignored:    .Rhistory
+    Ignored:    .Rproj.user/
+    Ignored:    data/ACresp_SNP_table.csv
+    Ignored:    data/ARR_SNP_table.csv
+    Ignored:    data/All_merged_peaks.tsv
+    Ignored:    data/CAD_gwas_dataframe.RDS
+    Ignored:    data/CTX_SNP_table.csv
+    Ignored:    data/Collapsed_expressed_NG_peak_table.csv
+    Ignored:    data/DEG_toplist_sep_n45.RDS
+    Ignored:    data/FRiP_first_run.txt
+    Ignored:    data/Final_four_data/
+    Ignored:    data/Frip_1_reads.csv
+    Ignored:    data/Frip_2_reads.csv
+    Ignored:    data/Frip_3_reads.csv
+    Ignored:    data/Frip_4_reads.csv
+    Ignored:    data/Frip_5_reads.csv
+    Ignored:    data/Frip_6_reads.csv
+    Ignored:    data/GO_KEGG_analysis/
+    Ignored:    data/HF_SNP_table.csv
+    Ignored:    data/Ind1_75DA24h_dedup_peaks.csv
+    Ignored:    data/Ind1_TSS_peaks.RDS
+    Ignored:    data/Ind1_firstfragment_files.txt
+    Ignored:    data/Ind1_fragment_files.txt
+    Ignored:    data/Ind1_peaks_list.RDS
+    Ignored:    data/Ind1_summary.txt
+    Ignored:    data/Ind2_TSS_peaks.RDS
+    Ignored:    data/Ind2_fragment_files.txt
+    Ignored:    data/Ind2_peaks_list.RDS
+    Ignored:    data/Ind2_summary.txt
+    Ignored:    data/Ind3_TSS_peaks.RDS
+    Ignored:    data/Ind3_fragment_files.txt
+    Ignored:    data/Ind3_peaks_list.RDS
+    Ignored:    data/Ind3_summary.txt
+    Ignored:    data/Ind4_79B24h_dedup_peaks.csv
+    Ignored:    data/Ind4_TSS_peaks.RDS
+    Ignored:    data/Ind4_V24h_fraglength.txt
+    Ignored:    data/Ind4_fragment_files.txt
+    Ignored:    data/Ind4_fragment_filesN.txt
+    Ignored:    data/Ind4_peaks_list.RDS
+    Ignored:    data/Ind4_summary.txt
+    Ignored:    data/Ind5_TSS_peaks.RDS
+    Ignored:    data/Ind5_fragment_files.txt
+    Ignored:    data/Ind5_fragment_filesN.txt
+    Ignored:    data/Ind5_peaks_list.RDS
+    Ignored:    data/Ind5_summary.txt
+    Ignored:    data/Ind6_TSS_peaks.RDS
+    Ignored:    data/Ind6_fragment_files.txt
+    Ignored:    data/Ind6_peaks_list.RDS
+    Ignored:    data/Ind6_summary.txt
+    Ignored:    data/Knowles_4.RDS
+    Ignored:    data/Knowles_5.RDS
+    Ignored:    data/Knowles_6.RDS
+    Ignored:    data/LiSiLTDNRe_TE_df.RDS
+    Ignored:    data/MI_gwas.RDS
+    Ignored:    data/SNP_GWAS_PEAK_MRC_id
+    Ignored:    data/SNP_GWAS_PEAK_MRC_id.csv
+    Ignored:    data/SNP_gene_cat_list.tsv
+    Ignored:    data/SNP_supp_schneider.RDS
+    Ignored:    data/TE_info/
+    Ignored:    data/TFmapnames.RDS
+    Ignored:    data/all_TSSE_scores.RDS
+    Ignored:    data/all_four_filtered_counts.txt
+    Ignored:    data/aln_run1_results.txt
+    Ignored:    data/anno_ind1_DA24h.RDS
+    Ignored:    data/anno_ind4_V24h.RDS
+    Ignored:    data/annotated_gwas_SNPS.csv
+    Ignored:    data/background_n45_he_peaks.RDS
+    Ignored:    data/cardiac_muscle_FRIP.csv
+    Ignored:    data/cardiomyocyte_FRIP.csv
+    Ignored:    data/col_ng_peak.csv
+    Ignored:    data/cormotif_full_4_run.RDS
+    Ignored:    data/cormotif_full_4_run_he.RDS
+    Ignored:    data/cormotif_full_6_run.RDS
+    Ignored:    data/cormotif_full_6_run_he.RDS
+    Ignored:    data/cormotif_probability_45_list.csv
+    Ignored:    data/cormotif_probability_45_list_he.csv
+    Ignored:    data/cormotif_probability_all_6_list.csv
+    Ignored:    data/cormotif_probability_all_6_list_he.csv
+    Ignored:    data/datasave.RDS
+    Ignored:    data/embryo_heart_FRIP.csv
+    Ignored:    data/enhancer_list_ENCFF126UHK.bed
+    Ignored:    data/enhancerdata/
+    Ignored:    data/filt_Peaks_efit2.RDS
+    Ignored:    data/filt_Peaks_efit2_bl.RDS
+    Ignored:    data/filt_Peaks_efit2_n45.RDS
+    Ignored:    data/first_Peaksummarycounts.csv
+    Ignored:    data/first_run_frag_counts.txt
+    Ignored:    data/full_bedfiles/
+    Ignored:    data/gene_ref.csv
+    Ignored:    data/gwas_1_dataframe.RDS
+    Ignored:    data/gwas_2_dataframe.RDS
+    Ignored:    data/gwas_3_dataframe.RDS
+    Ignored:    data/gwas_4_dataframe.RDS
+    Ignored:    data/gwas_5_dataframe.RDS
+    Ignored:    data/high_conf_peak_counts.csv
+    Ignored:    data/high_conf_peak_counts.txt
+    Ignored:    data/high_conf_peaks_bl_counts.txt
+    Ignored:    data/high_conf_peaks_counts.txt
+    Ignored:    data/hits_files/
+    Ignored:    data/hyper_files/
+    Ignored:    data/hypo_files/
+    Ignored:    data/ind1_DA24hpeaks.RDS
+    Ignored:    data/ind1_TSSE.RDS
+    Ignored:    data/ind2_TSSE.RDS
+    Ignored:    data/ind3_TSSE.RDS
+    Ignored:    data/ind4_TSSE.RDS
+    Ignored:    data/ind4_V24hpeaks.RDS
+    Ignored:    data/ind5_TSSE.RDS
+    Ignored:    data/ind6_TSSE.RDS
+    Ignored:    data/initial_complete_stats_run1.txt
+    Ignored:    data/left_ventricle_FRIP.csv
+    Ignored:    data/median_24_lfc.RDS
+    Ignored:    data/median_3_lfc.RDS
+    Ignored:    data/mergedPeads.gff
+    Ignored:    data/mergedPeaks.gff
+    Ignored:    data/motif_list_full
+    Ignored:    data/motif_list_n45
+    Ignored:    data/motif_list_n45.RDS
+    Ignored:    data/multiqc_fastqc_run1.txt
+    Ignored:    data/multiqc_fastqc_run2.txt
+    Ignored:    data/multiqc_genestat_run1.txt
+    Ignored:    data/multiqc_genestat_run2.txt
+    Ignored:    data/my_hc_filt_counts.RDS
+    Ignored:    data/my_hc_filt_counts_n45.RDS
+    Ignored:    data/n45_bedfiles/
+    Ignored:    data/n45_files
+    Ignored:    data/other_papers/
+    Ignored:    data/peakAnnoList_1.RDS
+    Ignored:    data/peakAnnoList_2.RDS
+    Ignored:    data/peakAnnoList_24_full.RDS
+    Ignored:    data/peakAnnoList_24_n45.RDS
+    Ignored:    data/peakAnnoList_3.RDS
+    Ignored:    data/peakAnnoList_3_full.RDS
+    Ignored:    data/peakAnnoList_3_n45.RDS
+    Ignored:    data/peakAnnoList_4.RDS
+    Ignored:    data/peakAnnoList_5.RDS
+    Ignored:    data/peakAnnoList_6.RDS
+    Ignored:    data/peakAnnoList_Eight.RDS
+    Ignored:    data/peakAnnoList_full_motif.RDS
+    Ignored:    data/peakAnnoList_n45_motif.RDS
+    Ignored:    data/siglist_full.RDS
+    Ignored:    data/siglist_n45.RDS
+    Ignored:    data/summarized_peaks_dataframe.txt
+    Ignored:    data/summary_peakIDandReHeat.csv
+    Ignored:    data/test.list.RDS
+    Ignored:    data/testnames.txt
+    Ignored:    data/toplist_6.RDS
+    Ignored:    data/toplist_full.RDS
+    Ignored:    data/toplist_full_DAR_6.RDS
+    Ignored:    data/toplist_n45.RDS
+    Ignored:    data/trimmed_seq_length.csv
+    Ignored:    data/unclassified_full_set_peaks.RDS
+    Ignored:    data/unclassified_n45_set_peaks.RDS
+    Ignored:    data/xstreme/
+
+Untracked files:
+    Untracked:  analysis/Diagnosis-tmm.Rmd
+    Untracked:  analysis/Expressed_RNA_associations.Rmd
+    Untracked:  analysis/LFC_corr.Rmd
+    Untracked:  analysis/QC_on_reads.Rmd
+    Untracked:  analysis/SVA.Rmd
+    Untracked:  analysis/Tan2020.Rmd
+    Untracked:  analysis/making_master_peaks_list.Rmd
+    Untracked:  analysis/my_hc_filt_counts.csv
+    Untracked:  code/IGV_snapshot_code.R
+    Untracked:  code/LongDARlist.R
+    Untracked:  code/just_for_Fun.R
+    Untracked:  output/cormotif_probability_45_list.csv
+    Untracked:  output/cormotif_probability_all_6_list.csv
+    Untracked:  setup.RData
+
+Unstaged changes:
+    Modified:   ATAC_learning.Rproj
+    Modified:   analysis/Counts_matrix.Rmd
+    Modified:   analysis/DEG_analysis.Rmd
+    Modified:   analysis/Jaspar_motif.Rmd
+    Modified:   analysis/Jaspar_motif_ff.Rmd
+    Modified:   analysis/final_four_analysis.Rmd
+
+</code></pre>
+<p>
+Note that any generated files, e.g. HTML, png, CSS, etc., are not
+included in this status report because it is ok for generated content to
+have uncommitted changes.
+</p>
+</div>
+</div>
+</div>
+</div>
+<hr>
+</div>
+<div id="versions" class="tab-pane fade">
+<p>
+These are the previous versions of the repository in which changes were
+made to the R Markdown (<code>analysis/Cormotif_analysis.Rmd</code>) and
+HTML (<code>docs/Cormotif_analysis.html</code>) files. If you’ve
+configured a remote Git repository (see <code>?wflow_git_remote</code>),
+click on the hyperlinks in the table below to view the files as they
+were in that past version.
+</p>
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+File
+</th>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+<th>
+Message
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+Rmd
+</td>
+<td>
+<a href="https://github.com/mward-lab/Matthews_cardiotox_ATAC_2025/blob/43a493f2689427b159bad7881dc1359ba19a3cfd/analysis/Cormotif_analysis.Rmd" target="_blank">43a493f</a>
+</td>
+<td>
+reneeisnowhere
+</td>
+<td>
+2025-05-06
+</td>
+<td>
+updates to analysis
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<hr>
+</div>
+</div>
+</div>
+<style type="text/css">
+pre {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+pre[class] {
+  max-height: 200px;
+}
+</style>
+<pre class="r"><code>library(tidyverse)
+library(kableExtra)
+library(broom)
+library(RColorBrewer)
+library(ChIPseeker)
+library(&quot;TxDb.Hsapiens.UCSC.hg38.knownGene&quot;)
+library(&quot;org.Hs.eg.db&quot;)
+library(rtracklayer)
+library(edgeR)
+library(ggfortify)
+library(limma)
+library(readr)
+library(BiocGenerics)
+library(gridExtra)
+library(VennDiagram)
+library(scales)
+library(Cormotif)
+library(BiocParallel)
+library(ggpubr)
+library(devtools)
+library(eulerr)
+library(genomation)
+library(ggsignif)
+library(plyranges)
+library(ggrepel)
+library(ComplexHeatmap)
+library(cowplot)
+library(smplot2)</code></pre>
+<pre class="r"><code>## Fit limma model using code as it is found in the original cormotif code. It has
+## only been modified to add names to the matrix of t values, as well as the
+## limma fits
+
+limmafit.default &lt;- function(exprs,groupid,compid) {
+  limmafits  &lt;- list()
+  compnum    &lt;- nrow(compid)
+  genenum    &lt;- nrow(exprs)
+  limmat     &lt;- matrix(0,genenum,compnum)
+  limmas2    &lt;- rep(0,compnum)
+  limmadf    &lt;- rep(0,compnum)
+  limmav0    &lt;- rep(0,compnum)
+  limmag1num &lt;- rep(0,compnum)
+  limmag2num &lt;- rep(0,compnum)
+
+  rownames(limmat)  &lt;- rownames(exprs)
+  colnames(limmat)  &lt;- rownames(compid)
+  names(limmas2)    &lt;- rownames(compid)
+  names(limmadf)    &lt;- rownames(compid)
+  names(limmav0)    &lt;- rownames(compid)
+  names(limmag1num) &lt;- rownames(compid)
+  names(limmag2num) &lt;- rownames(compid)
+
+  for(i in 1:compnum) {
+    selid1 &lt;- which(groupid == compid[i,1])
+    selid2 &lt;- which(groupid == compid[i,2])
+    eset   &lt;- new(&quot;ExpressionSet&quot;, exprs=cbind(exprs[,selid1],exprs[,selid2]))
+    g1num  &lt;- length(selid1)
+    g2num  &lt;- length(selid2)
+    designmat &lt;- cbind(base=rep(1,(g1num+g2num)), delta=c(rep(0,g1num),rep(1,g2num)))
+    fit &lt;- lmFit(eset,designmat)
+    fit &lt;- eBayes(fit)
+    limmat[,i] &lt;- fit$t[,2]
+    limmas2[i] &lt;- fit$s2.prior
+    limmadf[i] &lt;- fit$df.prior
+    limmav0[i] &lt;- fit$var.prior[2]
+    limmag1num[i] &lt;- g1num
+    limmag2num[i] &lt;- g2num
+    limmafits[[i]] &lt;- fit
+
+    # log odds
+    # w&lt;-sqrt(1+fit$var.prior[2]/(1/g1num+1/g2num))
+    # log(0.99)+dt(fit$t[1,2],g1num+g2num-2+fit$df.prior,log=TRUE)-log(0.01)-dt(fit$t[1,2]/w, g1num+g2num-2+fit$df.prior, log=TRUE)+log(w)
+  }
+  names(limmafits) &lt;- rownames(compid)
+  limmacompnum&lt;-nrow(compid)
+  result&lt;-list(t       = limmat,
+               v0      = limmav0,
+               df0     = limmadf,
+               s20     = limmas2,
+               g1num   = limmag1num,
+               g2num   = limmag2num,
+               compnum = limmacompnum,
+               fits    = limmafits)
+}
+
+limmafit.counts &lt;-
+  function (exprs, groupid, compid, norm.factor.method = &quot;TMM&quot;, voom.normalize.method = &quot;none&quot;)
+  {
+    limmafits  &lt;- list()
+    compnum    &lt;- nrow(compid)
+    genenum    &lt;- nrow(exprs)
+    limmat     &lt;- matrix(NA,genenum,compnum)
+    limmas2    &lt;- rep(0,compnum)
+    limmadf    &lt;- rep(0,compnum)
+    limmav0    &lt;- rep(0,compnum)
+    limmag1num &lt;- rep(0,compnum)
+    limmag2num &lt;- rep(0,compnum)
+
+    rownames(limmat)  &lt;- rownames(exprs)
+    colnames(limmat)  &lt;- rownames(compid)
+    names(limmas2)    &lt;- rownames(compid)
+    names(limmadf)    &lt;- rownames(compid)
+    names(limmav0)    &lt;- rownames(compid)
+    names(limmag1num) &lt;- rownames(compid)
+    names(limmag2num) &lt;- rownames(compid)
+
+    for (i in 1:compnum) {
+      message(paste(&quot;Running limma for comparision&quot;,i,&quot;/&quot;,compnum))
+      selid1 &lt;- which(groupid == compid[i, 1])
+      selid2 &lt;- which(groupid == compid[i, 2])
+      # make a new count data frame
+      counts &lt;- cbind(exprs[, selid1], exprs[, selid2])
+
+      # remove NAs
+      not.nas &lt;- which(apply(counts, 1, function(x) !any(is.na(x))) == TRUE)
+
+      # runn voom/limma
+      d &lt;- DGEList(counts[not.nas,])
+      d &lt;- calcNormFactors(d, method = norm.factor.method)
+      g1num &lt;- length(selid1)
+      g2num &lt;- length(selid2)
+      designmat &lt;- cbind(base = rep(1, (g1num + g2num)), delta = c(rep(0,
+                                                                       g1num), rep(1, g2num)))
+
+      y &lt;- voom(d, designmat, normalize.method = voom.normalize.method)
+      fit &lt;- lmFit(y, designmat)
+      fit &lt;- eBayes(fit)
+
+      limmafits[[i]] &lt;- fit
+      limmat[not.nas, i] &lt;- fit$t[, 2]
+      limmas2[i] &lt;- fit$s2.prior
+      limmadf[i] &lt;- fit$df.prior
+      limmav0[i] &lt;- fit$var.prior[2]
+      limmag1num[i] &lt;- g1num
+      limmag2num[i] &lt;- g2num
+    }
+    limmacompnum &lt;- nrow(compid)
+    names(limmafits) &lt;- rownames(compid)
+    result &lt;- list(t       = limmat,
+                   v0      = limmav0,
+                   df0     = limmadf,
+                   s20     = limmas2,
+                   g1num   = limmag1num,
+                   g2num   = limmag2num,
+                   compnum = limmacompnum,
+                   fits    = limmafits)
+  }
+
+limmafit.list &lt;-
+  function (fitlist, cmp.idx=2)
+  {
+    compnum    &lt;- length(fitlist)
+
+    genes &lt;- c()
+    for (i in 1:compnum) genes &lt;- unique(c(genes, rownames(fitlist[[i]])))
+
+    genenum    &lt;- length(genes)
+    limmat     &lt;- matrix(NA,genenum,compnum)
+    limmas2    &lt;- rep(0,compnum)
+    limmadf    &lt;- rep(0,compnum)
+    limmav0    &lt;- rep(0,compnum)
+    limmag1num &lt;- rep(0,compnum)
+    limmag2num &lt;- rep(0,compnum)
+
+    rownames(limmat)  &lt;- genes
+    colnames(limmat)  &lt;- names(fitlist)
+    names(limmas2)    &lt;- names(fitlist)
+    names(limmadf)    &lt;- names(fitlist)
+    names(limmav0)    &lt;- names(fitlist)
+    names(limmag1num) &lt;- names(fitlist)
+    names(limmag2num) &lt;- names(fitlist)
+
+    for (i in 1:compnum) {
+      this.t &lt;- fitlist[[i]]$t[,cmp.idx]
+      limmat[names(this.t),i] &lt;- this.t
+
+      limmas2[i]    &lt;- fitlist[[i]]$s2.prior
+      limmadf[i]    &lt;- fitlist[[i]]$df.prior
+      limmav0[i]    &lt;- fitlist[[i]]$var.prior[cmp.idx]
+      limmag1num[i] &lt;- sum(fitlist[[i]]$design[,cmp.idx]==0)
+      limmag2num[i] &lt;- sum(fitlist[[i]]$design[,cmp.idx]==1)
+    }
+
+    limmacompnum &lt;- compnum
+    result &lt;- list(t       = limmat,
+                   v0      = limmav0,
+                   df0     = limmadf,
+                   s20     = limmas2,
+                   g1num   = limmag1num,
+                   g2num   = limmag2num,
+                   compnum = limmacompnum,
+                   fits    = limmafits)
+
+  }
+
+## Rank genes based on statistics
+generank&lt;-function(x) {
+  xcol&lt;-ncol(x)
+  xrow&lt;-nrow(x)
+  result&lt;-matrix(0,xrow,xcol)
+  z&lt;-(1:1:xrow)
+  for(i in 1:xcol) {
+    y&lt;-sort(x[,i],decreasing=TRUE,na.last=TRUE)
+    result[,i]&lt;-match(x[,i],y)
+    result[,i]&lt;-order(result[,i])
+  }
+  result
+}
+
+## Log-likelihood for moderated t under H0
+modt.f0.loglike&lt;-function(x,df) {
+  a&lt;-dt(x, df, log=TRUE)
+  result&lt;-as.vector(a)
+  flag&lt;-which(is.na(result)==TRUE)
+  result[flag]&lt;-0
+  result
+}
+
+## Log-likelihood for moderated t under H1
+## param=c(df,g1num,g2num,v0)
+modt.f1.loglike&lt;-function(x,param) {
+  df&lt;-param[1]
+  g1num&lt;-param[2]
+  g2num&lt;-param[3]
+  v0&lt;-param[4]
+  w&lt;-sqrt(1+v0/(1/g1num+1/g2num))
+  dt(x/w, df, log=TRUE)-log(w)
+  a&lt;-dt(x/w, df, log=TRUE)-log(w)
+  result&lt;-as.vector(a)
+  flag&lt;-which(is.na(result)==TRUE)
+  result[flag]&lt;-0
+  result
+}
+
+## Correlation Motif Fit
+cmfit.X&lt;-function(x, type, K=1, tol=1e-3, max.iter=100) {
+  ## initialize
+  xrow &lt;- nrow(x)
+  xcol &lt;- ncol(x)
+  loglike0 &lt;- list()
+  loglike1 &lt;- list()
+  p &lt;- rep(1, K)/K
+  q &lt;- matrix(runif(K * xcol), K, xcol)
+  q[1, ] &lt;- rep(0.01, xcol)
+  for (i in 1:xcol) {
+    f0 &lt;- type[[i]][[1]]
+    f0param &lt;- type[[i]][[2]]
+    f1 &lt;- type[[i]][[3]]
+    f1param &lt;- type[[i]][[4]]
+    loglike0[[i]] &lt;- f0(x[, i], f0param)
+    loglike1[[i]] &lt;- f1(x[, i], f1param)
+  }
+  condlike &lt;- list()
+  for (i in 1:xcol) {
+    condlike[[i]] &lt;- matrix(0, xrow, K)
+  }
+  loglike.old &lt;- -1e+10
+  for (i.iter in 1:max.iter) {
+    if ((i.iter%%50) == 0) {
+      print(paste(&quot;We have run the first &quot;, i.iter, &quot; iterations for K=&quot;,
+                  K, sep = &quot;&quot;))
+    }
+    err &lt;- tol + 1
+    clustlike &lt;- matrix(0, xrow, K)
+    #templike &lt;- matrix(0, xrow, 2)
+    templike1 &lt;- rep(0, xrow)
+    templike2 &lt;- rep(0, xrow)
+    for (j in 1:K) {
+      for (i in 1:xcol) {
+        templike1 &lt;- log(q[j, i]) + loglike1[[i]]
+        templike2 &lt;- log(1 - q[j, i]) + loglike0[[i]]
+        tempmax &lt;- Rfast::Pmax(templike1, templike2)
+
+        templike1 &lt;- exp(templike1 - tempmax)
+        templike2 &lt;- exp(templike2 - tempmax)
+
+        tempsum &lt;- templike1 + templike2
+        clustlike[, j] &lt;- clustlike[, j] + tempmax +
+          log(tempsum)
+        condlike[[i]][, j] &lt;- templike1/tempsum
+      }
+      clustlike[, j] &lt;- clustlike[, j] + log(p[j])
+    }
+    #tempmax &lt;- apply(clustlike, 1, max)
+    tempmax &lt;- Rfast::rowMaxs(clustlike, value=TRUE)
+    for (j in 1:K) {
+      clustlike[, j] &lt;- exp(clustlike[, j] - tempmax)
+    }
+    #tempsum &lt;- apply(clustlike, 1, sum)
+    tempsum &lt;- Rfast::rowsums(clustlike)
+    for (j in 1:K) {
+      clustlike[, j] &lt;- clustlike[, j]/tempsum
+    }
+    #p.new &lt;- (apply(clustlike, 2, sum) + 1)/(xrow + K)
+    p.new &lt;- (Rfast::colsums(clustlike) + 1)/(xrow + K)
+    q.new &lt;- matrix(0, K, xcol)
+    for (j in 1:K) {
+      clustpsum &lt;- sum(clustlike[, j])
+      for (i in 1:xcol) {
+        q.new[j, i] &lt;- (sum(clustlike[, j] * condlike[[i]][,
+                                                           j]) + 1)/(clustpsum + 2)
+      }
+    }
+    err.p &lt;- max(abs(p.new - p)/p)
+    err.q &lt;- max(abs(q.new - q)/q)
+    err &lt;- max(err.p, err.q)
+    loglike.new &lt;- (sum(tempmax + log(tempsum)) + sum(log(p.new)) +
+                      sum(log(q.new) + log(1 - q.new)))/xrow
+    p &lt;- p.new
+    q &lt;- q.new
+    loglike.old &lt;- loglike.new
+    if (err &lt; tol) {
+      break
+    }
+  }
+  clustlike &lt;- matrix(0, xrow, K)
+  for (j in 1:K) {
+    for (i in 1:xcol) {
+      templike1 &lt;- log(q[j, i]) + loglike1[[i]]
+      templike2 &lt;- log(1 - q[j, i]) + loglike0[[i]]
+      tempmax &lt;- Rfast::Pmax(templike1, templike2)
+
+      templike1 &lt;- exp(templike1 - tempmax)
+      templike2 &lt;- exp(templike2 - tempmax)
+
+      tempsum &lt;- templike1 + templike2
+      clustlike[, j] &lt;- clustlike[, j] + tempmax + log(tempsum)
+      condlike[[i]][, j] &lt;- templike1/tempsum
+    }
+    clustlike[, j] &lt;- clustlike[, j] + log(p[j])
+  }
+  #tempmax &lt;- apply(clustlike, 1, max)
+  tempmax &lt;- Rfast::rowMaxs(clustlike, value=TRUE)
+  for (j in 1:K) {
+    clustlike[, j] &lt;- exp(clustlike[, j] - tempmax)
+  }
+  #tempsum &lt;- apply(clustlike, 1, sum)
+  tempsum &lt;- Rfast::rowsums(clustlike)
+  for (j in 1:K) {
+    clustlike[, j] &lt;- clustlike[, j]/tempsum
+  }
+  p.post &lt;- matrix(0, xrow, xcol)
+  for (j in 1:K) {
+    for (i in 1:xcol) {
+      p.post[, i] &lt;- p.post[, i] + clustlike[, j] * condlike[[i]][,
+                                                                  j]
+    }
+  }
+  loglike.old &lt;- loglike.old - (sum(log(p)) + sum(log(q) +
+                                                    log(1 - q)))/xrow
+  loglike.old &lt;- loglike.old * xrow
+  result &lt;- list(p.post = p.post, motif.prior = p, motif.q = q,
+                 loglike = loglike.old, clustlike=clustlike, condlike=condlike)
+}
+
+## Fit using (0,0,...,0) and (1,1,...,1)
+cmfitall&lt;-function(x, type, tol=1e-3, max.iter=100) {
+  ## initialize
+  xrow&lt;-nrow(x)
+  xcol&lt;-ncol(x)
+  loglike0&lt;-list()
+  loglike1&lt;-list()
+  p&lt;-0.01
+
+  ## compute loglikelihood
+  L0&lt;-matrix(0,xrow,1)
+  L1&lt;-matrix(0,xrow,1)
+  for(i in 1:xcol) {
+    f0&lt;-type[[i]][[1]]
+    f0param&lt;-type[[i]][[2]]
+    f1&lt;-type[[i]][[3]]
+    f1param&lt;-type[[i]][[4]]
+    loglike0[[i]]&lt;-f0(x[,i],f0param)
+    loglike1[[i]]&lt;-f1(x[,i],f1param)
+    L0&lt;-L0+loglike0[[i]]
+    L1&lt;-L1+loglike1[[i]]
+  }
+
+
+  ## EM algorithm to get MLE of p and q
+  loglike.old &lt;- -1e10
+  for(i.iter in 1:max.iter) {
+    if((i.iter%%50) == 0) {
+      print(paste(&quot;We have run the first &quot;, i.iter, &quot; iterations&quot;,sep=&quot;&quot;))
+    }
+    err&lt;-tol+1
+
+    ## compute posterior cluster membership
+    clustlike&lt;-matrix(0,xrow,2)
+    clustlike[,1]&lt;-log(1-p)+L0
+    clustlike[,2]&lt;-log(p)+L1
+
+    tempmax&lt;-apply(clustlike,1,max)
+    for(j in 1:2) {
+      clustlike[,j]&lt;-exp(clustlike[,j]-tempmax)
+    }
+    tempsum&lt;-apply(clustlike,1,sum)
+
+    ## update motif occurrence rate
+    for(j in 1:2) {
+      clustlike[,j]&lt;-clustlike[,j]/tempsum
+    }
+
+    p.new&lt;-(sum(clustlike[,2])+1)/(xrow+2)
+
+    ## evaluate convergence
+    err&lt;-abs(p.new-p)/p
+
+    ## evaluate whether the log.likelihood increases
+    loglike.new&lt;-(sum(tempmax+log(tempsum))+log(p.new)+log(1-p.new))/xrow
+
+    loglike.old&lt;-loglike.new
+    p&lt;-p.new
+
+    if(err&lt;tol) {
+      break;
+    }
+  }
+
+  ## compute posterior p
+  clustlike&lt;-matrix(0,xrow,2)
+  clustlike[,1]&lt;-log(1-p)+L0
+  clustlike[,2]&lt;-log(p)+L1
+
+  tempmax&lt;-apply(clustlike,1,max)
+  for(j in 1:2) {
+    clustlike[,j]&lt;-exp(clustlike[,j]-tempmax)
+  }
+  tempsum&lt;-apply(clustlike,1,sum)
+
+  for(j in 1:2) {
+    clustlike[,j]&lt;-clustlike[,j]/tempsum
+  }
+
+  p.post&lt;-matrix(0,xrow,xcol)
+  for(i in 1:xcol) {
+    p.post[,i]&lt;-clustlike[,2]
+  }
+
+  ## return
+
+  #calculate back loglikelihood
+  loglike.old&lt;-loglike.old-(log(p)+log(1-p))/xrow
+  loglike.old&lt;-loglike.old*xrow
+  result&lt;-list(p.post=p.post, motif.prior=p, loglike=loglike.old)
+}
+
+## Fit each dataset separately
+cmfitsep&lt;-function(x, type, tol=1e-3, max.iter=100) {
+  ## initialize
+  xrow&lt;-nrow(x)
+  xcol&lt;-ncol(x)
+  loglike0&lt;-list()
+  loglike1&lt;-list()
+  p&lt;-0.01*rep(1,xcol)
+  loglike.final&lt;-rep(0,xcol)
+
+  ## compute loglikelihood
+  for(i in 1:xcol) {
+    f0&lt;-type[[i]][[1]]
+    f0param&lt;-type[[i]][[2]]
+    f1&lt;-type[[i]][[3]]
+    f1param&lt;-type[[i]][[4]]
+    loglike0[[i]]&lt;-f0(x[,i],f0param)
+    loglike1[[i]]&lt;-f1(x[,i],f1param)
+  }
+
+  p.post&lt;-matrix(0,xrow,xcol)
+
+  ## EM algorithm to get MLE of p
+  for(coli in 1:xcol) {
+    loglike.old &lt;- -1e10
+    for(i.iter in 1:max.iter) {
+      if((i.iter%%50) == 0) {
+        print(paste(&quot;We have run the first &quot;, i.iter, &quot; iterations&quot;,sep=&quot;&quot;))
+      }
+      err&lt;-tol+1
+
+      ## compute posterior cluster membership
+      clustlike&lt;-matrix(0,xrow,2)
+      clustlike[,1]&lt;-log(1-p[coli])+loglike0[[coli]]
+      clustlike[,2]&lt;-log(p[coli])+loglike1[[coli]]
+
+      tempmax&lt;-apply(clustlike,1,max)
+      for(j in 1:2) {
+        clustlike[,j]&lt;-exp(clustlike[,j]-tempmax)
+      }
+      tempsum&lt;-apply(clustlike,1,sum)
+
+      ## evaluate whether the log.likelihood increases
+      loglike.new&lt;-sum(tempmax+log(tempsum))/xrow
+
+      ## update motif occurrence rate
+      for(j in 1:2) {
+        clustlike[,j]&lt;-clustlike[,j]/tempsum
+      }
+
+      p.new&lt;-(sum(clustlike[,2]))/(xrow)
+
+      ## evaluate convergence
+      err&lt;-abs(p.new-p[coli])/p[coli]
+      loglike.old&lt;-loglike.new
+      p[coli]&lt;-p.new
+
+      if(err&lt;tol) {
+        break;
+      }
+    }
+
+    ## compute posterior p
+    clustlike&lt;-matrix(0,xrow,2)
+    clustlike[,1]&lt;-log(1-p[coli])+loglike0[[coli]]
+    clustlike[,2]&lt;-log(p[coli])+loglike1[[coli]]
+
+    tempmax&lt;-apply(clustlike,1,max)
+    for(j in 1:2) {
+      clustlike[,j]&lt;-exp(clustlike[,j]-tempmax)
+    }
+    tempsum&lt;-apply(clustlike,1,sum)
+
+    for(j in 1:2) {
+      clustlike[,j]&lt;-clustlike[,j]/tempsum
+    }
+
+    p.post[,coli]&lt;-clustlike[,2]
+    loglike.final[coli]&lt;-loglike.old
+  }
+
+
+  ## return
+  loglike.final&lt;-loglike.final*xrow
+  result&lt;-list(p.post=p.post, motif.prior=p, loglike=loglike.final)
+}
+
+## Fit the full model
+cmfitfull&lt;-function(x, type, tol=1e-3, max.iter=100) {
+  ## initialize
+  xrow&lt;-nrow(x)
+  xcol&lt;-ncol(x)
+  loglike0&lt;-list()
+  loglike1&lt;-list()
+  K&lt;-2^xcol
+  p&lt;-rep(1,K)/K
+  pattern&lt;-rep(0,xcol)
+  patid&lt;-matrix(0,K,xcol)
+
+  ## compute loglikelihood
+  for(i in 1:xcol) {
+    f0&lt;-type[[i]][[1]]
+    f0param&lt;-type[[i]][[2]]
+    f1&lt;-type[[i]][[3]]
+    f1param&lt;-type[[i]][[4]]
+    loglike0[[i]]&lt;-f0(x[,i],f0param)
+    loglike1[[i]]&lt;-f1(x[,i],f1param)
+  }
+  L&lt;-matrix(0,xrow,K)
+  for(i in 1:K)
+  {
+    patid[i,]&lt;-pattern
+    for(j in 1:xcol) {
+      if(pattern[j] &lt; 0.5) {
+        L[,i]&lt;-L[,i]+loglike0[[j]]
+      } else {
+        L[,i]&lt;-L[,i]+loglike1[[j]]
+      }
+    }
+
+    if(i &lt; K) {
+      pattern[xcol]&lt;-pattern[xcol]+1
+      j&lt;-xcol
+      while(pattern[j] &gt; 1) {
+        pattern[j]&lt;-0
+        j&lt;-j-1
+        pattern[j]&lt;-pattern[j]+1
+      }
+    }
+  }
+
+  ## EM algorithm to get MLE of p and q
+  loglike.old &lt;- -1e10
+  for(i.iter in 1:max.iter) {
+    if((i.iter%%50) == 0) {
+      print(paste(&quot;We have run the first &quot;, i.iter, &quot; iterations&quot;,sep=&quot;&quot;))
+    }
+    err&lt;-tol+1
+
+    ## compute posterior cluster membership
+    clustlike&lt;-matrix(0,xrow,K)
+    for(j in 1:K) {
+      clustlike[,j]&lt;-log(p[j])+L[,j]
+    }
+
+    tempmax&lt;-apply(clustlike,1,max)
+    for(j in 1:K) {
+      clustlike[,j]&lt;-exp(clustlike[,j]-tempmax)
+    }
+    tempsum&lt;-apply(clustlike,1,sum)
+
+    ## update motif occurrence rate
+    for(j in 1:K) {
+      clustlike[,j]&lt;-clustlike[,j]/tempsum
+    }
+
+    p.new&lt;-(apply(clustlike,2,sum)+1)/(xrow+K)
+
+    ## evaluate convergence
+    err&lt;-max(abs(p.new-p)/p)
+
+    ## evaluate whether the log.likelihood increases
+    loglike.new&lt;-(sum(tempmax+log(tempsum))+sum(log(p.new)))/xrow
+
+    loglike.old&lt;-loglike.new
+    p&lt;-p.new
+
+    if(err&lt;tol) {
+      break;
+    }
+  }
+
+  ## compute posterior p
+  clustlike&lt;-matrix(0,xrow,K)
+  for(j in 1:K) {
+    clustlike[,j]&lt;-log(p[j])+L[,j]
+  }
+
+  tempmax&lt;-apply(clustlike,1,max)
+  for(j in 1:K) {
+    clustlike[,j]&lt;-exp(clustlike[,j]-tempmax)
+  }
+  tempsum&lt;-apply(clustlike,1,sum)
+
+  for(j in 1:K) {
+    clustlike[,j]&lt;-clustlike[,j]/tempsum
+  }
+
+  p.post&lt;-matrix(0,xrow,xcol)
+  for(j in 1:K) {
+    for(i in 1:xcol) {
+      if(patid[j,i] &gt; 0.5) {
+        p.post[,i]&lt;-p.post[,i]+clustlike[,j]
+      }
+    }
+  }
+
+  ## return
+  #calculate back loglikelihood
+  loglike.old&lt;-loglike.old-sum(log(p))/xrow
+  loglike.old&lt;-loglike.old*xrow
+  result&lt;-list(p.post=p.post, motif.prior=p, loglike=loglike.old)
+}
+
+generatetype&lt;-function(limfitted)
+{
+  jtype&lt;-list()
+  df&lt;-limfitted$g1num+limfitted$g2num-2+limfitted$df0
+  for(j in 1:limfitted$compnum)
+  {
+    jtype[[j]]&lt;-list(f0=modt.f0.loglike, f0.param=df[j], f1=modt.f1.loglike, f1.param=c(df[j],limfitted$g1num[j],limfitted$g2num[j],limfitted$v0[j]))
+  }
+  jtype
+}
+
+cormotiffit &lt;- function(exprs, groupid=NULL, compid=NULL, K=1, tol=1e-3,
+                        max.iter=100, BIC=TRUE, norm.factor.method=&quot;TMM&quot;,
+                        voom.normalize.method = &quot;none&quot;, runtype=c(&quot;logCPM&quot;,&quot;counts&quot;,&quot;limmafits&quot;), each=3)
+{
+  # first I want to do some typechecking. Input can be either a normalized
+  # matrix, a count matrix, or a list of limma fits. Dispatch the correct
+  # limmafit accordingly.
+  # todo: add some typechecking here
+  limfitted &lt;- list()
+  if (runtype==&quot;counts&quot;) {
+    limfitted &lt;- limmafit.counts(exprs,groupid,compid, norm.factor.method, voom.normalize.method)
+  } else if (runtype==&quot;logCPM&quot;) {
+    limfitted &lt;- limmafit.default(exprs,groupid,compid)
+  } else if (runtype==&quot;limmafits&quot;) {
+    limfitted &lt;- limmafit.list(exprs)
+  } else {
+    stop(&quot;runtype must be one of &#39;logCPM&#39;, &#39;counts&#39;, or &#39;limmafits&#39;&quot;)
+  }
+
+
+  jtype&lt;-generatetype(limfitted)
+  fitresult&lt;-list()
+  ks &lt;- rep(K, each = each)
+  fitresult &lt;- bplapply(1:length(ks), function(i, x, type, ks, tol, max.iter) {
+    cmfit.X(x, type, K = ks[i], tol = tol, max.iter = max.iter)
+  }, x=limfitted$t, type=jtype, ks=ks, tol=tol, max.iter=max.iter)
+
+  best.fitresults &lt;- list()
+  for (i in 1:length(K)) {
+    w.k &lt;- which(ks==K[i])
+    this.bic &lt;- c()
+    for (j in w.k) this.bic[j] &lt;- -2 * fitresult[[j]]$loglike + (K[i] - 1 + K[i] * limfitted$compnum) * log(dim(limfitted$t)[1])
+    w.min &lt;- which(this.bic == min(this.bic, na.rm = TRUE))[1]
+    best.fitresults[[i]] &lt;- fitresult[[w.min]]
+  }
+  fitresult &lt;- best.fitresults
+
+  bic &lt;- rep(0, length(K))
+  aic &lt;- rep(0, length(K))
+  loglike &lt;- rep(0, length(K))
+  for (i in 1:length(K)) loglike[i] &lt;- fitresult[[i]]$loglike
+  for (i in 1:length(K)) bic[i] &lt;- -2 * fitresult[[i]]$loglike + (K[i] - 1 + K[i] * limfitted$compnum) * log(dim(limfitted$t)[1])
+  for (i in 1:length(K)) aic[i] &lt;- -2 * fitresult[[i]]$loglike + 2 * (K[i] - 1 + K[i] * limfitted$compnum)
+  if(BIC==TRUE) {
+    bestflag=which(bic==min(bic))
+  }
+  else {
+    bestflag=which(aic==min(aic))
+  }
+  result&lt;-list(bestmotif=fitresult[[bestflag]],bic=cbind(K,bic),
+               aic=cbind(K,aic),loglike=cbind(K,loglike), allmotifs=fitresult)
+
+}
+
+cormotiffitall&lt;-function(exprs,groupid,compid, tol=1e-3, max.iter=100)
+{
+  limfitted&lt;-limmafit(exprs,groupid,compid)
+  jtype&lt;-generatetype(limfitted)
+  fitresult&lt;-cmfitall(limfitted$t,type=jtype,tol=1e-3,max.iter=max.iter)
+}
+
+cormotiffitsep&lt;-function(exprs,groupid,compid, tol=1e-3, max.iter=100)
+{
+  limfitted&lt;-limmafit(exprs,groupid,compid)
+  jtype&lt;-generatetype(limfitted)
+  fitresult&lt;-cmfitsep(limfitted$t,type=jtype,tol=1e-3,max.iter=max.iter)
+}
+
+cormotiffitfull&lt;-function(exprs,groupid,compid, tol=1e-3, max.iter=100)
+{
+  limfitted&lt;-limmafit(exprs,groupid,compid)
+  jtype&lt;-generatetype(limfitted)
+  fitresult&lt;-cmfitfull(limfitted$t,type=jtype,tol=1e-3,max.iter=max.iter)
+}
+
+plotIC&lt;-function(fitted_cormotif)
+{
+  oldpar&lt;-par(mfrow=c(1,2))
+  plot(fitted_cormotif$bic[,1], fitted_cormotif$bic[,2], type=&quot;b&quot;,xlab=&quot;Motif Number&quot;, ylab=&quot;BIC&quot;, main=&quot;BIC&quot;)
+  plot(fitted_cormotif$aic[,1], fitted_cormotif$aic[,2], type=&quot;b&quot;,xlab=&quot;Motif Number&quot;, ylab=&quot;AIC&quot;, main=&quot;AIC&quot;)
+}
+
+plotMotif&lt;-function(fitted_cormotif,title=&quot;&quot;)
+{
+  layout(matrix(1:2,ncol=2))
+  u&lt;-1:dim(fitted_cormotif$bestmotif$motif.q)[2]
+  v&lt;-1:dim(fitted_cormotif$bestmotif$motif.q)[1]
+  image(u,v,t(fitted_cormotif$bestmotif$motif.q),
+        col=gray(seq(from=1,to=0,by=-0.1)),xlab=&quot;Study&quot;,yaxt = &quot;n&quot;,
+        ylab=&quot;Corr. Motifs&quot;,main=paste(title,&quot;pattern&quot;,sep=&quot; &quot;))
+  axis(2,at=1:length(v))
+  for(i in 1:(length(u)+1))
+  {
+    abline(v=(i-0.5))
+  }
+  for(i in 1:(length(v)+1))
+  {
+    abline(h=(i-0.5))
+  }
+  Ng=10000
+  if(is.null(fitted_cormotif$bestmotif$p.post)!=TRUE)
+    Ng=nrow(fitted_cormotif$bestmotif$p.post)
+  genecount=floor(fitted_cormotif$bestmotif$motif.p*Ng)
+  NK=nrow(fitted_cormotif$bestmotif$motif.q)
+  plot(0,0.7,pch=&quot;.&quot;,xlim=c(0,1.2),ylim=c(0.75,NK+0.25),
+       frame.plot=FALSE,axes=FALSE,xlab=&quot;No. of genes&quot;,ylab=&quot;&quot;, main=paste(title,&quot;frequency&quot;,sep=&quot; &quot;))
+  segments(0,0.7,fitted_cormotif$bestmotif$motif.p[1],0.7)
+  rect(0,1:NK-0.3,fitted_cormotif$bestmotif$motif.p,1:NK+0.3,
+       col=&quot;dark grey&quot;)
+  mtext(1:NK,at=1:NK,side=2,cex=0.8)
+  text(fitted_cormotif$bestmotif$motif.p+0.15,1:NK,
+       labels=floor(fitted_cormotif$bestmotif$motif.p*Ng))
+}
+
+plotMotifnew&lt;-function(fitted_cormotif,title=&quot;&quot;)
+{
+  layout(matrix(1:2,ncol=2))
+  u&lt;-1:dim(fitted_cormotif$motif.q)[2]
+  v&lt;-1:dim(fitted_cormotif$motif.q)[1]
+  image(u,v,t(fitted_cormotif$motif.q),
+        col=gray(seq(from=1,to=0,by=-0.1)),xlab=&quot;Experiment&quot;,yaxt = &quot;n&quot;,
+        ylab=&quot;Corr. Motifs&quot;,main=paste(title,&quot;pattern&quot;,sep=&quot; &quot;))
+  axis(2,at=1:length(v))
+  for(i in 1:(length(u)+1))
+  {
+    abline(v=(i-0.5))
+  }
+  for(i in 1:(length(v)+1))
+  {
+    abline(h=(i-0.5))
+  }
+  Ng=10000
+  if(is.null(fitted_cormotif$p.post)!=TRUE)
+    Ng=nrow(fitted_cormotif$p.post)
+  genecount=floor(fitted_cormotif$motif.p*Ng)
+  NK=nrow(fitted_cormotif$motif.q)
+  plot(0,0.7,pch=&quot;.&quot;,xlim=c(0,1.2),ylim=c(0.75,NK+0.25),
+       frame.plot=FALSE,axes=FALSE,xlab=&quot;No. of regions&quot;,ylab=&quot;&quot;, main=paste(title,&quot;frequency&quot;,sep=&quot; &quot;))
+  segments(0,0.7,fitted_cormotif$motif.p[1],0.7)
+  rect(0,1:NK-0.3,fitted_cormotif$motif.p,1:NK+0.3,
+       col=&quot;dark grey&quot;)
+  mtext(1:NK,at=1:NK,side=2,cex=0.8)
+  text(fitted_cormotif$motif.p+0.15,1:NK,
+       labels=floor(fitted_cormotif$motif.p*Ng))
+}</code></pre>
+<p>Loading counts matrix and making filtered matrix</p>
+<pre class="r"><code>drug_pal &lt;- c(&quot;#8B006D&quot;,&quot;#DF707E&quot;,&quot;#F1B72B&quot;, &quot;#3386DD&quot;,&quot;#707031&quot;,&quot;#41B333&quot;)
+raw_counts &lt;- read_delim(&quot;data/Final_four_data/re_analysis/Raw_unfiltered_counts.tsv&quot;,delim=&quot;\t&quot;) %&gt;% 
+  column_to_rownames(&quot;Peakid&quot;) %&gt;% 
+  as.matrix()
+
+lcpm &lt;- cpm(raw_counts, log= TRUE)
+  ### for determining the basic cutoffs
+filt_raw_counts &lt;- raw_counts[rowMeans(lcpm)&gt; 0,]
+
+filt_raw_counts_noY &lt;- filt_raw_counts[!grepl(&quot;chrY&quot;,rownames(filt_raw_counts)),]
+dim(filt_raw_counts_noY)</code></pre>
+<pre><code>[1] 155557     48</code></pre>
+<p>Number of filtered regions without the y chromosome = 155557
+regions</p>
+<div id="making-the-metadata-form" class="section level4">
+<h4>making the metadata form</h4>
+<pre class="r"><code>annotation_mat &lt;- data.frame(timeset=colnames(filt_raw_counts_noY)) %&gt;%
+  mutate(sample = timeset) %&gt;% 
+  separate(timeset, into = c(&quot;indv&quot;,&quot;trt&quot;,&quot;time&quot;), sep= &quot;_&quot;) %&gt;% 
+  mutate(time = factor(time, levels = c(&quot;3h&quot;, &quot;24h&quot;))) %&gt;% 
+  mutate(trt = factor(trt, levels = c(&quot;DOX&quot;,&quot;EPI&quot;, &quot;DNR&quot;, &quot;MTX&quot;, &quot;TRZ&quot;, &quot;VEH&quot;))) %&gt;% 
+  mutate(indv=factor(indv, levels = c(&quot;A&quot;,&quot;B&quot;,&quot;C&quot;,&quot;D&quot;))) %&gt;% 
+  mutate(trt_time=paste0(trt,&quot;_&quot;,time))</code></pre>
+<pre class="r"><code>group &lt;- c( rep(c(1,2,3,4,5,6,7,8,9,10,11,12),4))
+group &lt;- factor(group, levels =c(&quot;1&quot;,&quot;2&quot;,&quot;3&quot;,&quot;4&quot;,&quot;5&quot;,&quot;6&quot;,&quot;7&quot;,&quot;8&quot;,&quot;9&quot;,&quot;10&quot;,&quot;11&quot;,&quot;12&quot;))
+dge &lt;-  DGEList.data.frame(counts = filt_raw_counts_noY, group = group, genes = row.names(filt_raw_counts_noY))
+dge &lt;- calcNormFactors(dge)</code></pre>
+<pre class="r"><code>group_fac &lt;- group
+groupid &lt;- as.numeric(group_fac)
+
+compid &lt;- data.frame(c1= c(2,4,6,8,10,1,3,5,7,9), c2 = c( 12,12,12,12,12,11,11,11,11,11))
+compid</code></pre>
+<pre><code>   c1 c2
+1   2 12
+2   4 12
+3   6 12
+4   8 12
+5  10 12
+6   1 11
+7   3 11
+8   5 11
+9   7 11
+10  9 11</code></pre>
+<pre class="r"><code>y_TMM_cpm &lt;- cpm(dge, log = TRUE)
+
+colnames(y_TMM_cpm)</code></pre>
+<pre><code> [1] &quot;D_DNR_24h&quot; &quot;D_DNR_3h&quot;  &quot;D_DOX_24h&quot; &quot;D_DOX_3h&quot;  &quot;D_EPI_24h&quot; &quot;D_EPI_3h&quot; 
+ [7] &quot;D_MTX_24h&quot; &quot;D_MTX_3h&quot;  &quot;D_TRZ_24h&quot; &quot;D_TRZ_3h&quot;  &quot;D_VEH_24h&quot; &quot;D_VEH_3h&quot; 
+[13] &quot;A_DNR_24h&quot; &quot;A_DNR_3h&quot;  &quot;A_DOX_24h&quot; &quot;A_DOX_3h&quot;  &quot;A_EPI_24h&quot; &quot;A_EPI_3h&quot; 
+[19] &quot;A_MTX_24h&quot; &quot;A_MTX_3h&quot;  &quot;A_TRZ_24h&quot; &quot;A_TRZ_3h&quot;  &quot;A_VEH_24h&quot; &quot;A_VEH_3h&quot; 
+[25] &quot;B_DNR_24h&quot; &quot;B_DNR_3h&quot;  &quot;B_DOX_24h&quot; &quot;B_DOX_3h&quot;  &quot;B_EPI_24h&quot; &quot;B_EPI_3h&quot; 
+[31] &quot;B_MTX_24h&quot; &quot;B_MTX_3h&quot;  &quot;B_TRZ_24h&quot; &quot;B_TRZ_3h&quot;  &quot;B_VEH_24h&quot; &quot;B_VEH_3h&quot; 
+[37] &quot;C_DNR_24h&quot; &quot;C_DNR_3h&quot;  &quot;C_DOX_24h&quot; &quot;C_DOX_3h&quot;  &quot;C_EPI_24h&quot; &quot;C_EPI_3h&quot; 
+[43] &quot;C_MTX_24h&quot; &quot;C_MTX_3h&quot;  &quot;C_TRZ_24h&quot; &quot;C_TRZ_3h&quot;  &quot;C_VEH_24h&quot; &quot;C_VEH_3h&quot; </code></pre>
+<p>Now that factors are grouped, We will call the cormotiffit function
+to look at K=1:8.<br />
+This will be saved as an RDS for future use and lack of reruning</p>
+<pre class="r"><code>set.seed(31415)
+cormotif_initial_norm &lt;- cormotiffit(exprs = y_TMM_cpm, groupid = groupid, compid = compid, K=1:8, max.iter = 500, runtype = &quot;logCPM&quot;)
+
+saveRDS(cormotif_initial_norm,&quot;data/Final_four_data/re_analysis/Cormotif_norm_initial.RDS&quot;)
+# saveRDS(cormotif_initial_ff,&quot;data/Final_four_data/cormotif_ff_4_run_norm.RDS&quot;)
+# </code></pre>
+<pre class="r"><code>cormotif_initial_norm &lt;- readRDS(&quot;data/Final_four_data/re_analysis/Cormotif_norm_initial.RDS&quot;)
+
+plotMotif(cormotif_initial_norm)</code></pre>
+<p><img src="figure/Cormotif_analysis.Rmd/examining%20motifs-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>plotIC(cormotif_initial_norm)</code></pre>
+<p><img src="figure/Cormotif_analysis.Rmd/examining%20motifs-2.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>myColors &lt;-  rev(c(&quot;#FFFFFF&quot;, &quot;#E6E6E6&quot; ,&quot;#CCCCCC&quot;, &quot;#B3B3B3&quot;, &quot;#999999&quot;, &quot;#808080&quot;, &quot;#666666&quot;,&quot;#4C4C4C&quot;, &quot;#333333&quot;, &quot;#191919&quot;,&quot;#000000&quot;))
+
+plot.new()
+legend(&#39;center&#39;,fill=myColors, legend =rev(c(&quot;0&quot;, &quot;0.1&quot;, &quot;0.2&quot;, &quot;0.3&quot;, &quot;0.4&quot;,  &quot;0.5&quot;, &quot;0.6&quot;, &quot;0.7&quot;, &quot;0.8&quot;,&quot;0.9&quot;, &quot;1&quot;)), box.col=&quot;white&quot;,title = &quot;Probability\nlegend&quot;, horiz=FALSE,title.cex=.8)
+motif_prob &lt;- cormotif_initial_norm$bestmotif$clustlike
+rownames(motif_prob) &lt;- rownames(y_TMM_cpm)
+# saveRDS(motif_prob,&quot;data/Final_four_data/re_analysis/motif_prob_norm.RDS&quot;)</code></pre>
+<p><img src="figure/Cormotif_analysis.Rmd/examining%20motifs-3.png" width="672" style="display: block; margin: auto;" /></p>
+<p>Four motifs were found, now to generate the lists of regions that
+belong to each motif.</p>
+<pre class="r"><code># motif_prob &lt;- readRDS(&quot;data/Final_four_data/re_analysis/motif_prob_norm.RDS&quot;)
+
+background_peaks &lt;- motif_prob %&gt;% 
+  as.data.frame() %&gt;% 
+  rownames_to_column(&quot;Peakid&quot;) %&gt;% 
+  dplyr::select(Peakid) %&gt;% 
+  separate(Peakid, into=c(&quot;chr&quot;,&quot;start&quot;,&quot;end&quot;),remove = FALSE)
+ 
+NR_ff &lt;- motif_prob %&gt;%
+  as.data.frame() %&gt;% 
+  dplyr::filter(V1&gt;.5 &amp; V2&lt;.5 &amp; V3 &lt;.5&amp; V4&lt;0.5) %&gt;% 
+  rownames_to_column(&quot;Peakid&quot;) %&gt;% 
+  dplyr::select(Peakid) %&gt;% 
+  separate(Peakid, into=c(&quot;chr&quot;,&quot;start&quot;,&quot;end&quot;),remove = FALSE)
+ 
+EAR_ff &lt;- motif_prob %&gt;%
+   as.data.frame() %&gt;% 
+  dplyr::filter(V1&lt;.5 &amp; V2&gt;.5 &amp; V3 &lt;.5&amp; V4&lt;0.5) %&gt;% 
+  rownames_to_column(&quot;Peakid&quot;) %&gt;% 
+  dplyr::select(Peakid) %&gt;% 
+  separate(Peakid, into=c(&quot;chr&quot;,&quot;start&quot;,&quot;end&quot;),remove = FALSE)
+ 
+ 
+LR_ff &lt;- motif_prob %&gt;%
+  as.data.frame() %&gt;% 
+  dplyr::filter(V1&lt;.5 &amp; V2&lt;.5 &amp; V3 &gt;.5&amp; V4&lt;0.5) %&gt;% 
+  rownames_to_column(&quot;Peakid&quot;) %&gt;% 
+  dplyr::select(Peakid) %&gt;% 
+  separate(Peakid, into=c(&quot;chr&quot;,&quot;start&quot;,&quot;end&quot;),remove = FALSE)
+ 
+
+ESR_ff &lt;- motif_prob %&gt;%
+  as.data.frame() %&gt;% 
+  dplyr::filter(V1&lt;.5 &amp; V2&lt;.5 &amp; V3 &lt;.5&amp; V4&gt;0.5) %&gt;% 
+  rownames_to_column(&quot;Peakid&quot;) %&gt;% 
+  dplyr::select(Peakid) %&gt;% 
+  separate(Peakid, into=c(&quot;chr&quot;,&quot;start&quot;,&quot;end&quot;),remove = FALSE)</code></pre>
+<p>-EAR group has 7974 peaks.<br />
+-ESR group has 15128 peaks.<br />
+-LR group has 44227 peaks.<br />
+-NR group has 85154 peaks.<br />
+–Total number of peaks is 155557 –Total number of peaks in clusters is
+152483<br />
+-percent of peaks classified into clusters: 98.0238755<br />
+-number of peaks not classified: 3074</p>
+<p>Now to break into opening and closing motifs by group</p>
+<pre class="r"><code>median_24_lfc &lt;- read_csv(&quot;data/Final_four_data/re_analysis/median_24_lfc_norm.csv&quot;) 
+median_3_lfc &lt;- read_csv(&quot;data/Final_four_data/re_analysis/median_3_lfc_norm.csv&quot;)
+
+open_3med &lt;- median_3_lfc %&gt;% 
+  dplyr::filter(med_3h_lfc &gt; 0)
+
+close_3med &lt;- median_3_lfc %&gt;% 
+  dplyr::filter(med_3h_lfc &lt; 0)
+
+open_24med &lt;- median_24_lfc %&gt;% 
+  dplyr::filter(med_24h_lfc &gt; 0)
+
+close_24med &lt;- median_24_lfc %&gt;% 
+  dplyr::filter(med_24h_lfc &lt; 0)
+
+medA &lt;- median_3_lfc %&gt;% 
+  left_join(median_24_lfc, by=c(&quot;peak&quot;=&quot;peak&quot;)) %&gt;% 
+  dplyr::filter(med_3h_lfc &gt; 0 &amp; med_24h_lfc&gt;0)
+
+medB &lt;- median_3_lfc %&gt;% 
+  left_join(median_24_lfc, by=c(&quot;peak&quot;=&quot;peak&quot;)) %&gt;% 
+  dplyr::filter(med_3h_lfc &lt; 0 &amp; med_24h_lfc &lt; 0)
+ 
+medC &lt;- median_3_lfc %&gt;% 
+  left_join(median_24_lfc, by=c(&quot;peak&quot;=&quot;peak&quot;)) %&gt;% 
+  dplyr::filter(med_3h_lfc &gt; 0&amp; med_24h_lfc &lt;0)
+  
+
+medD &lt;- median_3_lfc %&gt;% 
+ left_join(median_24_lfc, by=c(&quot;peak&quot;=&quot;peak&quot;))%&gt;% 
+  dplyr::filter(med_3h_lfc &lt; 0 &amp; med_24h_lfc &gt; 0)
+ 
+
+EAR_open &lt;- EAR_ff %&gt;%
+  dplyr::filter(Peakid %in% open_3med$peak)
+  
+EAR_open_gr &lt;- EAR_open %&gt;% GRanges()
+
+EAR_close &lt;- EAR_ff %&gt;%
+  dplyr::filter(Peakid %in% close_3med$peak) 
+
+EAR_close_gr &lt;- EAR_close %&gt;% GRanges()
+
+LR_open &lt;- LR_ff %&gt;%
+  dplyr::filter(Peakid %in% open_24med$peak) 
+
+LR_open_gr &lt;- LR_open %&gt;% GRanges()
+
+LR_close &lt;- LR_ff %&gt;%
+  dplyr::filter(Peakid %in% close_24med$peak) 
+
+LR_close_gr &lt;- LR_close %&gt;% GRanges()
+
+NR_gr &lt;- NR_ff %&gt;% 
+   GRanges()
+
+ESR_open &lt;- ESR_ff %&gt;% 
+  dplyr::filter(Peakid %in% medA$peak)  
+ 
+ESR_open_gr &lt;- ESR_open %&gt;% GRanges()
+
+ESR_close &lt;- ESR_ff %&gt;% 
+  dplyr::filter(Peakid %in% medB$peak)  
+
+ESR_close_gr &lt;- ESR_close %&gt;% GRanges()
+
+ESR_opcl &lt;- ESR_ff %&gt;% 
+  dplyr::filter(Peakid %in% medC$peak) 
+ESR_opcl_gr &lt;- ESR_opcl %&gt;% GRanges()
+ESR_clop &lt;- ESR_ff %&gt;% 
+  dplyr::filter(Peakid %in% medD$peak) 
+ESR_clop_gr &lt;- ESR_clop %&gt;% GRanges()
+
+NR &lt;- NR_ff
+NR_gr &lt;- NR %&gt;% GRanges()
+
+background_peaks_gr &lt;- background_peaks %&gt;% GRanges
+
+Motif_list &lt;- list(&quot;EAR_open&quot;=EAR_open, 
+                   &quot;EAR_close&quot;= EAR_close, 
+                   &quot;ESR_open&quot;=ESR_open, 
+                   &quot;ESR_close&quot;=ESR_close, 
+                   &quot;ESR_opcl&quot;=ESR_opcl, 
+                   &quot;ESR_clop&quot;=ESR_clop,
+                   &quot;LR_open&quot;=LR_open, 
+                   &quot;LR_close&quot;=LR_close, 
+                   &quot;NR&quot;=NR_ff,
+                   &quot;all_regions&quot;=background_peaks)
+
+txdb &lt;- TxDb.Hsapiens.UCSC.hg38.knownGene</code></pre>
+<p>Examining the Genomic features around each response motif region
+using Chipseeker</p>
+<pre class="r"><code>##make the Granges list
+Motif_list_gr &lt;- list(&quot;EAR_open&quot;=EAR_open_gr, 
+                   &quot;EAR_close&quot;= EAR_close_gr, 
+                   &quot;ESR_open&quot;=ESR_open_gr, 
+                   &quot;ESR_close&quot;=ESR_close_gr, 
+                   &quot;ESR_opcl&quot;=ESR_opcl_gr, 
+                   &quot;ESR_clop&quot;=ESR_clop_gr,
+                   &quot;LR_open&quot;=LR_open_gr, 
+                   &quot;LR_close&quot;=LR_close_gr, 
+                   &quot;NR&quot;=NR_gr,
+                   &quot;all_regions&quot;=background_peaks_gr)
+peakAnnoList&lt;- lapply(Motif_list_gr, annotatePeak, tssRegion =c(-2000,2000), TxDb= txdb)</code></pre>
+<pre><code>&gt;&gt; preparing features information...         2025-05-06 5:55:56 PM 
+&gt;&gt; identifying nearest features...       2025-05-06 5:55:57 PM 
+&gt;&gt; calculating distance from peak to TSS...  2025-05-06 5:55:58 PM 
+&gt;&gt; assigning genomic annotation...       2025-05-06 5:55:58 PM 
+&gt;&gt; assigning chromosome lengths          2025-05-06 5:56:14 PM 
+&gt;&gt; done...                   2025-05-06 5:56:14 PM 
+&gt;&gt; preparing features information...         2025-05-06 5:56:14 PM 
+&gt;&gt; identifying nearest features...       2025-05-06 5:56:14 PM 
+&gt;&gt; calculating distance from peak to TSS...  2025-05-06 5:56:15 PM 
+&gt;&gt; assigning genomic annotation...       2025-05-06 5:56:15 PM 
+&gt;&gt; assigning chromosome lengths          2025-05-06 5:56:18 PM 
+&gt;&gt; done...                   2025-05-06 5:56:18 PM 
+&gt;&gt; preparing features information...         2025-05-06 5:56:18 PM 
+&gt;&gt; identifying nearest features...       2025-05-06 5:56:18 PM 
+&gt;&gt; calculating distance from peak to TSS...  2025-05-06 5:56:19 PM 
+&gt;&gt; assigning genomic annotation...       2025-05-06 5:56:19 PM 
+&gt;&gt; assigning chromosome lengths          2025-05-06 5:56:22 PM 
+&gt;&gt; done...                   2025-05-06 5:56:22 PM 
+&gt;&gt; preparing features information...         2025-05-06 5:56:22 PM 
+&gt;&gt; identifying nearest features...       2025-05-06 5:56:22 PM 
+&gt;&gt; calculating distance from peak to TSS...  2025-05-06 5:56:22 PM 
+&gt;&gt; assigning genomic annotation...       2025-05-06 5:56:22 PM 
+&gt;&gt; assigning chromosome lengths          2025-05-06 5:56:26 PM 
+&gt;&gt; done...                   2025-05-06 5:56:26 PM 
+&gt;&gt; preparing features information...         2025-05-06 5:56:26 PM 
+&gt;&gt; identifying nearest features...       2025-05-06 5:56:26 PM 
+&gt;&gt; calculating distance from peak to TSS...  2025-05-06 5:56:26 PM 
+&gt;&gt; assigning genomic annotation...       2025-05-06 5:56:26 PM 
+&gt;&gt; assigning chromosome lengths          2025-05-06 5:56:30 PM 
+&gt;&gt; done...                   2025-05-06 5:56:30 PM 
+&gt;&gt; preparing features information...         2025-05-06 5:56:30 PM 
+&gt;&gt; identifying nearest features...       2025-05-06 5:56:30 PM 
+&gt;&gt; calculating distance from peak to TSS...  2025-05-06 5:56:31 PM 
+&gt;&gt; assigning genomic annotation...       2025-05-06 5:56:31 PM 
+&gt;&gt; assigning chromosome lengths          2025-05-06 5:56:34 PM 
+&gt;&gt; done...                   2025-05-06 5:56:34 PM 
+&gt;&gt; preparing features information...         2025-05-06 5:56:34 PM 
+&gt;&gt; identifying nearest features...       2025-05-06 5:56:34 PM 
+&gt;&gt; calculating distance from peak to TSS...  2025-05-06 5:56:34 PM 
+&gt;&gt; assigning genomic annotation...       2025-05-06 5:56:34 PM 
+&gt;&gt; assigning chromosome lengths          2025-05-06 5:56:38 PM 
+&gt;&gt; done...                   2025-05-06 5:56:38 PM 
+&gt;&gt; preparing features information...         2025-05-06 5:56:38 PM 
+&gt;&gt; identifying nearest features...       2025-05-06 5:56:38 PM 
+&gt;&gt; calculating distance from peak to TSS...  2025-05-06 5:56:38 PM 
+&gt;&gt; assigning genomic annotation...       2025-05-06 5:56:38 PM 
+&gt;&gt; assigning chromosome lengths          2025-05-06 5:56:41 PM 
+&gt;&gt; done...                   2025-05-06 5:56:41 PM 
+&gt;&gt; preparing features information...         2025-05-06 5:56:41 PM 
+&gt;&gt; identifying nearest features...       2025-05-06 5:56:41 PM 
+&gt;&gt; calculating distance from peak to TSS...  2025-05-06 5:56:42 PM 
+&gt;&gt; assigning genomic annotation...       2025-05-06 5:56:42 PM 
+&gt;&gt; assigning chromosome lengths          2025-05-06 5:56:46 PM 
+&gt;&gt; done...                   2025-05-06 5:56:46 PM 
+&gt;&gt; preparing features information...         2025-05-06 5:56:46 PM 
+&gt;&gt; identifying nearest features...       2025-05-06 5:56:46 PM 
+&gt;&gt; calculating distance from peak to TSS...  2025-05-06 5:56:47 PM 
+&gt;&gt; assigning genomic annotation...       2025-05-06 5:56:47 PM 
+&gt;&gt; assigning chromosome lengths          2025-05-06 5:56:51 PM 
+&gt;&gt; done...                   2025-05-06 5:56:51 PM </code></pre>
+<pre class="r"><code>plotAnnoBar(peakAnnoList[c(1,3,7,5,2,4,8,6,9)])+
+  ggtitle (&quot;Genomic Feature Distribution, All groups&quot;)</code></pre>
+<p><img src="figure/Cormotif_analysis.Rmd/ChipseekR-1.png" width="672" style="display: block; margin: auto;" /></p>
+</div>
+<div id="looking-at-the-average-logfc-across-clusters"
+class="section level3">
+<h3>Looking at the average logFC across clusters:</h3>
+<pre class="r"><code>save_list &lt;- readRDS(&quot;data/Final_four_data/re_analysis/Toptable_results.RDS&quot;)
+all_results &lt;- bind_rows(save_list, .id = &quot;group&quot;)
+
+mean_lfc &lt;-
+  all_results %&gt;%
+  separate(., group, into=c(&quot;trt&quot;,&quot;time&quot;)) %&gt;% 
+  dplyr::rename(&quot;Peakid&quot;=genes) %&gt;% 
+  dplyr::select(Peakid,trt,time,logFC) %&gt;% 
+  mutate(EAR_open = if_else(Peakid %in% EAR_open$Peakid, &quot;y&quot;, &quot;no&quot;)) %&gt;%
+  mutate(EAR_close = if_else(Peakid %in% EAR_close$Peakid, &quot;y&quot;, &quot;no&quot;)) %&gt;%
+  mutate(ESR_open = if_else(Peakid %in% ESR_open$Peakid, &quot;y&quot;, &quot;no&quot;)) %&gt;%
+  mutate(ESR_close= if_else(Peakid %in% ESR_close$Peakid, &quot;y&quot;, &quot;no&quot;)) %&gt;%
+  mutate(ESR_opcl= if_else(Peakid %in% ESR_opcl$Peakid, &quot;y&quot;, &quot;no&quot;)) %&gt;%
+  mutate(ESR_clop= if_else(Peakid %in% ESR_clop$Peakid, &quot;y&quot;, &quot;no&quot;)) %&gt;%
+    mutate(LR_open= if_else(Peakid %in% LR_open$Peakid, &quot;y&quot;, &quot;no&quot;)) %&gt;%
+    mutate(LR_close= if_else(Peakid %in% LR_close$Peakid, &quot;y&quot;, &quot;no&quot;)) %&gt;%
+    mutate(NR = if_else(Peakid %in% NR_ff$Peakid, &quot;y&quot;, &quot;no&quot;))%&gt;%
+  mutate(trt = factor(trt,levels=c(&quot;DOX&quot;,&quot;EPI&quot;,&quot;DNR&quot;,&quot;MTX&quot;,&quot;TRZ&quot;,&quot;VEH&quot;))) %&gt;%
+  group_by(trt, time) %&gt;%
+  mutate(absFC = (logFC)) %&gt;%  ##I took away abs(logFC) here but did not change code below
+  dplyr::select(trt, time, absFC, EAR_open:NR) %&gt;%
+  dplyr::summarize(
+    EAR_op = mean(absFC[EAR_open == &quot;y&quot;]),
+    EAR_cl = mean(absFC[EAR_close == &quot;y&quot;]),
+    ESR_op = mean(absFC[ESR_open == &quot;y&quot;]),
+    ESR_cl = mean(absFC[ESR_close == &quot;y&quot;]),
+   
+    ESR_opcl = mean(absFC[ESR_opcl == &quot;y&quot;]),
+    ESR_clop = mean(absFC[ESR_clop == &quot;y&quot;]),
+    LR_op = mean(absFC[LR_open == &quot;y&quot;]),
+    LR_cl = mean(absFC[LR_close == &quot;y&quot;]),
+    NR = mean(absFC[NR == &quot;y&quot;])
+  ) %&gt;%
+  as.data.frame()
+
+
+mean_lfc %&gt;%
+  ungroup() %&gt;%
+  pivot_longer(!c(trt, time), names_to = &quot;Motif&quot;,
+               values_to = &quot;meanLFC&quot;) %&gt;%
+  mutate(time=factor(time, levels = c(&quot;3 hours&quot;,&quot;24 hours&quot;))) %&gt;% 
+  
+  ggplot(., aes(x = time,y = meanLFC,col = trt,
+    group = trt
+  )) +
+  geom_point(size = 2) +
+  geom_line(linewidth = 2) +
+  ggpubr::fill_palette(drug_pal) +
+  # guides(fill=guide_legend(title = &quot;Treatment&quot;))+
+  facet_wrap( ~ Motif, nrow = 2) +
+  theme_bw() +
+  xlab(&quot;Time (hours)&quot;) +
+  scale_color_manual(values = drug_pal) +
+  ylab(&quot; Avg. Log Fold Change&quot;) +
+  theme_bw() +
+  theme(
+    plot.title = element_text(size = rel(1.0), hjust = 0.5),
+    axis.title = element_text(size = 15, color = &quot;black&quot;),
+    axis.line = element_line(linewidth = 1.0),
+    strip.background = element_rect(fill = &quot;transparent&quot;),
+    axis.text = element_text(
+      size = 10,
+      color = &quot;black&quot;,
+      angle = 0
+    ),
+    strip.text.x = element_text(
+      size = 11,
+      color = &quot;black&quot;,
+      face = &quot;bold&quot;
+    )
+  )</code></pre>
+<p><img src="figure/Cormotif_analysis.Rmd/unnamed-chunk-3-1.png" width="672" style="display: block; margin: auto;" /></p>
+<br>
+<p>
+<button type="button" class="btn btn-default btn-workflowr btn-workflowr-sessioninfo" data-toggle="collapse" data-target="#workflowr-sessioninfo" style="display: block;">
+<span class="glyphicon glyphicon-wrench" aria-hidden="true"></span>
+Session information
+</button>
+</p>
+<div id="workflowr-sessioninfo" class="collapse">
+<pre class="r"><code>sessionInfo()</code></pre>
+<pre><code>R version 4.4.2 (2024-10-31 ucrt)
+Platform: x86_64-w64-mingw32/x64
+Running under: Windows 11 x64 (build 26100)
+
+Matrix products: default
+
+
+locale:
+[1] LC_COLLATE=English_United States.utf8 
+[2] LC_CTYPE=English_United States.utf8   
+[3] LC_MONETARY=English_United States.utf8
+[4] LC_NUMERIC=C                          
+[5] LC_TIME=English_United States.utf8    
+
+time zone: America/Chicago
+tzcode source: internal
+
+attached base packages:
+[1] grid      stats4    stats     graphics  grDevices utils     datasets 
+[8] methods   base     
+
+other attached packages:
+ [1] smplot2_0.2.5                           
+ [2] cowplot_1.1.3                           
+ [3] ComplexHeatmap_2.22.0                   
+ [4] ggrepel_0.9.6                           
+ [5] plyranges_1.26.0                        
+ [6] ggsignif_0.6.4                          
+ [7] genomation_1.38.0                       
+ [8] eulerr_7.0.2                            
+ [9] devtools_2.4.5                          
+[10] usethis_3.1.0                           
+[11] ggpubr_0.6.0                            
+[12] BiocParallel_1.40.0                     
+[13] Cormotif_1.52.0                         
+[14] affy_1.84.0                             
+[15] scales_1.3.0                            
+[16] VennDiagram_1.7.3                       
+[17] futile.logger_1.4.3                     
+[18] gridExtra_2.3                           
+[19] ggfortify_0.4.17                        
+[20] edgeR_4.4.2                             
+[21] limma_3.62.2                            
+[22] rtracklayer_1.66.0                      
+[23] org.Hs.eg.db_3.20.0                     
+[24] TxDb.Hsapiens.UCSC.hg38.knownGene_3.20.0
+[25] GenomicFeatures_1.58.0                  
+[26] AnnotationDbi_1.68.0                    
+[27] Biobase_2.66.0                          
+[28] GenomicRanges_1.58.0                    
+[29] GenomeInfoDb_1.42.3                     
+[30] IRanges_2.40.1                          
+[31] S4Vectors_0.44.0                        
+[32] BiocGenerics_0.52.0                     
+[33] ChIPseeker_1.42.1                       
+[34] RColorBrewer_1.1-3                      
+[35] broom_1.0.7                             
+[36] kableExtra_1.4.0                        
+[37] lubridate_1.9.4                         
+[38] forcats_1.0.0                           
+[39] stringr_1.5.1                           
+[40] dplyr_1.1.4                             
+[41] purrr_1.0.4                             
+[42] readr_2.1.5                             
+[43] tidyr_1.3.1                             
+[44] tibble_3.2.1                            
+[45] ggplot2_3.5.1                           
+[46] tidyverse_2.0.0                         
+[47] workflowr_1.7.1                         
+
+loaded via a namespace (and not attached):
+  [1] fs_1.6.5                               
+  [2] matrixStats_1.5.0                      
+  [3] bitops_1.0-9                           
+  [4] enrichplot_1.26.6                      
+  [5] doParallel_1.0.17                      
+  [6] httr_1.4.7                             
+  [7] profvis_0.4.0                          
+  [8] tools_4.4.2                            
+  [9] backports_1.5.0                        
+ [10] R6_2.6.1                               
+ [11] lazyeval_0.2.2                         
+ [12] GetoptLong_1.0.5                       
+ [13] urlchecker_1.0.1                       
+ [14] withr_3.0.2                            
+ [15] preprocessCore_1.68.0                  
+ [16] cli_3.6.4                              
+ [17] formatR_1.14                           
+ [18] labeling_0.4.3                         
+ [19] sass_0.4.9                             
+ [20] Rsamtools_2.22.0                       
+ [21] systemfonts_1.2.1                      
+ [22] yulab.utils_0.2.0                      
+ [23] foreign_0.8-88                         
+ [24] DOSE_4.0.0                             
+ [25] svglite_2.1.3                          
+ [26] R.utils_2.13.0                         
+ [27] sessioninfo_1.2.3                      
+ [28] plotrix_3.8-4                          
+ [29] BSgenome_1.74.0                        
+ [30] pwr_1.3-0                              
+ [31] impute_1.80.0                          
+ [32] rstudioapi_0.17.1                      
+ [33] RSQLite_2.3.9                          
+ [34] shape_1.4.6.1                          
+ [35] generics_0.1.3                         
+ [36] gridGraphics_0.5-1                     
+ [37] TxDb.Hsapiens.UCSC.hg19.knownGene_3.2.2
+ [38] BiocIO_1.16.0                          
+ [39] vroom_1.6.5                            
+ [40] gtools_3.9.5                           
+ [41] car_3.1-3                              
+ [42] GO.db_3.20.0                           
+ [43] Matrix_1.7-3                           
+ [44] abind_1.4-8                            
+ [45] R.methodsS3_1.8.2                      
+ [46] lifecycle_1.0.4                        
+ [47] whisker_0.4.1                          
+ [48] yaml_2.3.10                            
+ [49] carData_3.0-5                          
+ [50] SummarizedExperiment_1.36.0            
+ [51] gplots_3.2.0                           
+ [52] qvalue_2.38.0                          
+ [53] SparseArray_1.6.2                      
+ [54] blob_1.2.4                             
+ [55] promises_1.3.2                         
+ [56] crayon_1.5.3                           
+ [57] miniUI_0.1.1.1                         
+ [58] ggtangle_0.0.6                         
+ [59] lattice_0.22-6                         
+ [60] KEGGREST_1.46.0                        
+ [61] pillar_1.10.1                          
+ [62] knitr_1.49                             
+ [63] fgsea_1.32.2                           
+ [64] rjson_0.2.23                           
+ [65] boot_1.3-31                            
+ [66] codetools_0.2-20                       
+ [67] fastmatch_1.1-6                        
+ [68] glue_1.8.0                             
+ [69] getPass_0.2-4                          
+ [70] ggfun_0.1.8                            
+ [71] data.table_1.17.0                      
+ [72] remotes_2.5.0                          
+ [73] vctrs_0.6.5                            
+ [74] png_0.1-8                              
+ [75] treeio_1.30.0                          
+ [76] gtable_0.3.6                           
+ [77] cachem_1.1.0                           
+ [78] xfun_0.51                              
+ [79] S4Arrays_1.6.0                         
+ [80] mime_0.12                              
+ [81] iterators_1.0.14                       
+ [82] statmod_1.5.0                          
+ [83] ellipsis_0.3.2                         
+ [84] nlme_3.1-167                           
+ [85] ggtree_3.14.0                          
+ [86] bit64_4.6.0-1                          
+ [87] rprojroot_2.0.4                        
+ [88] bslib_0.9.0                            
+ [89] affyio_1.76.0                          
+ [90] rpart_4.1.24                           
+ [91] KernSmooth_2.23-26                     
+ [92] Hmisc_5.2-2                            
+ [93] colorspace_2.1-1                       
+ [94] DBI_1.2.3                              
+ [95] nnet_7.3-20                            
+ [96] seqPattern_1.38.0                      
+ [97] tidyselect_1.2.1                       
+ [98] processx_3.8.6                         
+ [99] bit_4.6.0                              
+[100] compiler_4.4.2                         
+[101] curl_6.2.1                             
+[102] git2r_0.35.0                           
+[103] htmlTable_2.4.3                        
+[104] xml2_1.3.7                             
+[105] DelayedArray_0.32.0                    
+[106] checkmate_2.3.2                        
+[107] caTools_1.18.3                         
+[108] callr_3.7.6                            
+[109] digest_0.6.37                          
+[110] rmarkdown_2.29                         
+[111] XVector_0.46.0                         
+[112] base64enc_0.1-3                        
+[113] htmltools_0.5.8.1                      
+[114] pkgconfig_2.0.3                        
+[115] MatrixGenerics_1.18.1                  
+[116] fastmap_1.2.0                          
+[117] GlobalOptions_0.1.2                    
+[118] rlang_1.1.5                            
+[119] htmlwidgets_1.6.4                      
+[120] UCSC.utils_1.2.0                       
+[121] shiny_1.10.0                           
+[122] farver_2.1.2                           
+[123] jquerylib_0.1.4                        
+[124] zoo_1.8-13                             
+[125] jsonlite_1.9.1                         
+[126] GOSemSim_2.32.0                        
+[127] R.oo_1.27.0                            
+[128] RCurl_1.98-1.16                        
+[129] magrittr_2.0.3                         
+[130] Formula_1.2-5                          
+[131] GenomeInfoDbData_1.2.13                
+[132] ggplotify_0.1.2                        
+[133] patchwork_1.3.0                        
+[134] munsell_0.5.1                          
+[135] Rcpp_1.0.14                            
+[136] ape_5.8-1                              
+[137] stringi_1.8.4                          
+[138] zlibbioc_1.52.0                        
+[139] plyr_1.8.9                             
+[140] pkgbuild_1.4.6                         
+[141] parallel_4.4.2                         
+[142] Biostrings_2.74.1                      
+[143] splines_4.4.2                          
+[144] circlize_0.4.16                        
+[145] hms_1.1.3                              
+[146] locfit_1.5-9.12                        
+[147] ps_1.9.0                               
+[148] igraph_2.1.4                           
+[149] reshape2_1.4.4                         
+[150] pkgload_1.4.0                          
+[151] futile.options_1.0.1                   
+[152] XML_3.99-0.18                          
+[153] evaluate_1.0.3                         
+[154] lambda.r_1.2.4                         
+[155] BiocManager_1.30.25                    
+[156] foreach_1.5.2                          
+[157] tzdb_0.4.0                             
+[158] httpuv_1.6.15                          
+[159] clue_0.3-66                            
+[160] gridBase_0.4-7                         
+[161] xtable_1.8-4                           
+[162] restfulr_0.0.15                        
+[163] tidytree_0.4.6                         
+[164] rstatix_0.7.2                          
+[165] later_1.4.1                            
+[166] viridisLite_0.4.2                      
+[167] aplot_0.2.5                            
+[168] memoise_2.0.1                          
+[169] GenomicAlignments_1.42.0               
+[170] cluster_2.1.8.1                        
+[171] timechange_0.3.0                       </code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+
+<!-- Adjust MathJax settings so that all math formulae are shown using
+TeX fonts only; see
+https://docs.mathjax.org/en/latest/web/configuration.html. This will make
+the presentation more consistent at the cost of the webpage sometimes
+taking slightly longer to load. Note that this only works because the
+footer is added to webpages before the MathJax javascript. -->
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    "HTML-CSS": { availableFonts: ["TeX"] }
+  });
+</script>
+
+
+
+
+</div>
+</div>
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+function bootstrapStylePandocTables() {
+  $('tr.odd').parent('tbody').parent('table').addClass('table table-condensed');
+}
+$(document).ready(function () {
+  bootstrapStylePandocTables();
+});
+
+
+</script>
+
+<!-- tabsets -->
+
+<script>
+$(document).ready(function () {
+  window.buildTabsets("TOC");
+});
+
+$(document).ready(function () {
+  $('.tabset-dropdown > .nav-tabs > li').click(function () {
+    $(this).parent().toggleClass('nav-tabs-open');
+  });
+});
+</script>
+
+<!-- code folding -->
+
+<script>
+$(document).ready(function ()  {
+
+    // temporarily add toc-ignore selector to headers for the consistency with Pandoc
+    $('.unlisted.unnumbered').addClass('toc-ignore')
+
+    // move toc-ignore selectors from section div to header
+    $('div.section.toc-ignore')
+        .removeClass('toc-ignore')
+        .children('h1,h2,h3,h4,h5').addClass('toc-ignore');
+
+    // establish options
+    var options = {
+      selectors: "h1,h2,h3",
+      theme: "bootstrap3",
+      context: '.toc-content',
+      hashGenerator: function (text) {
+        return text.replace(/[.\\/?&!#<>]/g, '').replace(/\s/g, '_');
+      },
+      ignoreSelector: ".toc-ignore",
+      scrollTo: 0
+    };
+    options.showAndHide = true;
+    options.smoothScroll = true;
+
+    // tocify
+    var toc = $("#TOC").tocify(options).data("toc-tocify");
+});
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
