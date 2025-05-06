@@ -1,0 +1,250 @@
+---
+title: "DAR_analysis"
+author: "Renee Matthews"
+date: "2025-05-06"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE,
+	warning = FALSE,
+	dev = c("png","pdf")
+)
+```
+
+```{css, echo=FALSE}
+pre {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+pre[class] {
+  max-height: 200px;
+}
+```
+
+```{r packages}
+library(tidyverse)
+library(kableExtra)
+library(broom)
+library(RColorBrewer)
+library(ChIPseeker)
+library("TxDb.Hsapiens.UCSC.hg38.knownGene")
+library("org.Hs.eg.db")
+library(rtracklayer)
+library(edgeR)
+library(ggfortify)
+library(limma)
+library(readr)
+library(BiocGenerics)
+library(gridExtra)
+library(VennDiagram)
+library(scales)
+library(BiocParallel)
+library(ggpubr)
+library(devtools)
+library(eulerr)
+library(ggsignif)
+library(plyranges)
+library(ggrepel)
+library(ComplexHeatmap)
+library(cowplot)
+library(smplot2)
+library(data.table)
+
+```
+
+
+### Differentail analysis
+
+Loading counts matrix and making filtered matrix
+```{r}
+raw_counts <- read_delim("data/Final_four_data/re_analysis/Raw_unfiltered_counts.tsv",delim="\t") %>% 
+  column_to_rownames("Peakid") %>% 
+  as.matrix()
+
+lcpm <- cpm(raw_counts, log= TRUE)
+  ### for determining the basic cutoffs
+filt_raw_counts <- raw_counts[rowMeans(lcpm)> 0,]
+
+filt_raw_counts_noY <- filt_raw_counts[!grepl("chrY",rownames(filt_raw_counts)),]
+dim(filt_raw_counts_noY)
+```
+
+Number of filtered regions without the y chromosome = `r length(rownames(filt_raw_counts_noY))` regions
+
+
+#### making the metadata form
+```{r metadata}
+
+annotation_mat <- data.frame(timeset=colnames(filt_raw_counts_noY)) %>%
+  mutate(sample = timeset) %>% 
+  separate(timeset, into = c("indv","trt","time"), sep= "_") %>% 
+  mutate(time = factor(time, levels = c("3h", "24h"))) %>% 
+  mutate(trt = factor(trt, levels = c("DOX","EPI", "DNR", "MTX", "TRZ", "VEH"))) %>% 
+  mutate(indv=factor(indv, levels = c("A","B","C","D"))) %>% 
+  mutate(trt_time=paste0(trt,"_",time))
+
+```
+
+
+prepare DGE object
+
+```{r dge object}
+group <- c( rep(c(1,2,3,4,5,6,7,8,9,10,11,12),4))
+group <- factor(group, levels =c("1","2","3","4","5","6","7","8","9","10","11","12"))
+dge <-  DGEList.data.frame(counts = filt_raw_counts_noY, group = group, genes = row.names(filt_raw_counts_noY))
+dge <- calcNormFactors(dge)
+
+dge$samples
+```
+Making model matrix
+```{r create mm}
+group_1 <- c(rep(c("DNR_24","DNR_3","DOX_24","DOX_3","EPI_24","EPI_3","MTX_24","MTX_3","TRZ_24","TRZ_3","VEH_24", "VEH_3"),4))
+
+ mm <- model.matrix(~0 +group_1)
+colnames(mm) <-  c("DNR_24", "DNR_3", "DOX_24","DOX_3","EPI_24", "EPI_3","MTX_24", "MTX_3", "TRZ_24","TRZ_3","VEH_24", "VEH_3")
+mm
+```
+
+In this pipeline, I first run voom transformation, then estimate the intra-individual correlation.  Next I do voom again with correlation info.
+I fit the linear model, define contrasts, then apply the contrasts and perform eBayes to get statistics. 
+```{r run pipeline}
+y <- voom(dge, mm,plot =FALSE)
+
+corfit <- duplicateCorrelation(y, mm, block = annotation_mat$indv)
+ 
+v <- voom(dge, mm, block = annotation_mat$indv, correlation = corfit$consensus)
+
+fit <- lmFit(v, mm, block = annotation_mat$indv, correlation = corfit$consensus)
+
+
+cm <- makeContrasts(
+  DNR_3.VEH_3 = DNR_3-VEH_3,
+  DOX_3.VEH_3 = DOX_3-VEH_3,
+  EPI_3.VEH_3 = EPI_3-VEH_3,
+  MTX_3.VEH_3 = MTX_3-VEH_3,
+  TRZ_3.VEH_3 = TRZ_3-VEH_3,
+  DNR_24.VEH_24 =DNR_24-VEH_24,
+  DOX_24.VEH_24= DOX_24-VEH_24,
+  EPI_24.VEH_24= EPI_24-VEH_24,
+  MTX_24.VEH_24= MTX_24-VEH_24,
+  TRZ_24.VEH_24= TRZ_24-VEH_24,
+  levels = mm)
+
+
+fit2<- contrasts.fit(fit, contrasts=cm)
+
+efit2 <- eBayes(fit2)
+
+results = decideTests(efit2)
+
+summary(results)
+
+```
+```{r}
+plotSA(efit2, main="Mean-Variance trend for final model")
+```
+
+```{r Extract info from toptable and store as RDS}
+V.DNR_3.top= topTable(efit2, coef=1, adjust.method="BH", number=Inf, sort.by="p")
+V.DOX_3.top= topTable(efit2, coef=2, adjust.method="BH", number=Inf, sort.by="p")
+V.EPI_3.top= topTable(efit2, coef=3, adjust.method="BH", number=Inf, sort.by="p")
+V.MTX_3.top= topTable(efit2, coef=4, adjust.method="BH", number=Inf, sort.by="p")
+V.TRZ_3.top= topTable(efit2, coef=5, adjust.method="BH", number=Inf, sort.by="p")
+V.DNR_24.top= topTable(efit2, coef=6, adjust.method="BH", number=Inf, sort.by="p")
+V.DOX_24.top= topTable(efit2, coef=7, adjust.method="BH", number=Inf, sort.by="p")
+V.EPI_24.top= topTable(efit2, coef=8, adjust.method="BH", number=Inf, sort.by="p")
+V.MTX_24.top= topTable(efit2, coef=9, adjust.method="BH", number=Inf, sort.by="p")
+V.TRZ_24.top= topTable(efit2, coef=10, adjust.method="BH", number=Inf, sort.by="p")
+
+
+# plot_filenames <- c("V.DNR_3.top","V.DOX_3.top","V.EPI_3.top","V.MTX_3.top",
+#                     "V.TRZ_.top","V.DNR_24.top","V.DOX_24.top","V.EPI_24.top",
+#                     "V.MTX_24.top","V.TRZ_24.top")
+# plot_files <- c( V.DNR_3.top,V.DOX_3.top,V.EPI_3.top,V.MTX_3.top,
+#                     V.TRZ_3.top,V.DNR_24.top,V.DOX_24.top,V.EPI_24.top,
+#                     V.MTX_24.top,V.TRZ_24.top)
+
+save_list <- list("DNR_3"=V.DNR_3.top,"DOX_3"=V.DOX_3.top,"EPI_3"=V.EPI_3.top,"MTX_3"=V.MTX_3.top,"TRZ_3"=V.TRZ_3.top,"DNR_24"=V.DNR_24.top,"DOX_24"=V.DOX_24.top,"EPI_24"=V.EPI_24.top,"MTX_24"= V.MTX_24.top, "TRZ_24"=V.TRZ_24.top)
+
+saveRDS(save_list,"data/Final_four_data/re_analysis/Toptable_results.RDS")
+```
+
+
+```{r Volcano plots}
+volcanosig <- function(df, psig.lvl) {
+    df <- df %>% 
+    mutate(threshold = ifelse(adj.P.Val > psig.lvl, "A", ifelse(adj.P.Val <= psig.lvl & logFC<=0,"B","C")))
+      # ifelse(adj.P.Val <= psig.lvl & logFC >= 0,"B", "C")))
+    ##This is where I could add labels, but I have taken out
+    # df <- df %>% mutate(genelabels = "")
+    # df$genelabels[1:topg] <- df$rownames[1:topg]
+    
+  ggplot(df, aes(x=logFC, y=-log10(P.Value))) + 
+    geom_point(aes(color=threshold))+
+    # geom_text_repel(aes(label = genelabels), segment.curvature = -1e-20,force = 1,size=2.5,
+    # arrow = arrow(length = unit(0.015, "npc")), max.overlaps = Inf) +
+    #geom_hline(yintercept = -log10(psig.lvl))+
+    xlab(expression("Log"[2]*" FC"))+
+    ylab(expression("-log"[10]*"P Value"))+
+    scale_color_manual(values = c("black", "red","blue"))+
+    theme_cowplot()+
+    ylim(0,20)+
+    xlim(-6,6)+
+    theme(legend.position = "none",
+              plot.title = element_text(size = rel(1.5), hjust = 0.5),
+              axis.title = element_text(size = rel(0.8))) 
+}
+
+v1 <- volcanosig(V.DNR_3.top, 0.01)+ ggtitle("DNR 3 hour")
+v2 <- volcanosig(V.DNR_24.top, 0.01)+ ggtitle("DNR 24 hour")+ylab("")
+v3 <- volcanosig(V.DOX_3.top, 0.01)+ ggtitle("DOX 3 hour")
+v4 <- volcanosig(V.DOX_24.top, 0.01)+ ggtitle("DOX 24 hour")+ylab("")
+v5 <- volcanosig(V.EPI_3.top, 0.01)+ ggtitle("EPI 3 hour")
+v6 <- volcanosig(V.EPI_24.top, 0.01)+ ggtitle("EPI 24 hour")+ylab("")
+v7 <- volcanosig(V.MTX_3.top, 0.01)+ ggtitle("MTX 3 hour")
+v8 <- volcanosig(V.MTX_24.top, 0.01)+ ggtitle("MTX 24 hour")+ylab("")
+v9 <- volcanosig(V.TRZ_3.top, 0.01)+ ggtitle("TRZ 3 hour")
+v10 <- volcanosig(V.TRZ_24.top, 0.01)+ ggtitle("TRZ 24 hour")+ylab("")
+
+plot_grid(v1,v2,  rel_widths =c(.9,1))
+plot_grid(v3,v4,  rel_widths =c(.9,1))
+plot_grid(v5,v6,  rel_widths =c(.9,1))
+plot_grid(v7,v8,  rel_widths =c(.9,1))
+plot_grid(v9,v10,  rel_widths =c(.9,1))
+
+```
+
+Making the median dataframes by time.  The files were saved as .csv for future use.
+
+```{r bind all lists, eval=FALSE}
+
+all_results <- bind_rows(save_list, .id = "group")
+
+median_df <- all_results %>% 
+  separate(group, into=c("trt","time"),sep = "_") %>% 
+  pivot_wider(., id_cols=c(time,genes), names_from = trt, values_from = logFC) %>% 
+  rowwise() %>% 
+  mutate(median_ATAC_lfc= median(c_across(DNR:TRZ)))
+
+median_3_lfc <-   median_df %>%
+    dplyr::filter(time == "3") %>% 
+  ungroup() %>% 
+  dplyr::select(time, genes,median_ATAC_lfc) %>% 
+  dplyr::rename("med_3h_lfc"=median_ATAC_lfc, "peak"=genes)
+  
+
+median_24_lfc <- median_df %>%
+    dplyr::filter(time == "24") %>% 
+  ungroup() %>% 
+  dplyr::select(time, genes,median_ATAC_lfc) %>% 
+  dplyr::rename("med_24h_lfc"=median_ATAC_lfc,, "peak"=genes)
+  
+write_csv(median_3_lfc, "data/Final_four_data/re_analysis/median_3_lfc_norm.csv")
+write_csv(median_24_lfc, "data/Final_four_data/re_analysis/median_24_lfc_norm.csv")
+
+```
+
