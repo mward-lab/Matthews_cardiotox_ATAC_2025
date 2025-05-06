@@ -58,6 +58,9 @@ library(data.table)
 
 ```
 ```{r functions}
+drug_pal <- c("#8B006D","#DF707E","#F1B72B", "#3386DD","#707031","#41B333")
+
+
 prop_var_percent <- function(pca_result){ 
   # Ensure the input is a PCA result object
   if (!inherits(pca_result, "prcomp")) {
@@ -75,7 +78,9 @@ prop_var_percent <- function(pca_result){
 
 ```
 
-## This section is the differential accessibility analysis using the featurecounts matrix of the 172,481 high confidence peaks mamasterpeak list
+## Examining the counts matrix:
+
+This section is using the featureCounts matrix of the 172,481 high confidence peaks across all samples called "all_four_filtered_counts.txt".
 
 ```{r}
 ### Load the table
@@ -142,7 +147,7 @@ raw_counts %>%
 ```{r full heatmap, fig.width=10, fig.height=10}
 cor_raw_counts <- raw_counts %>% 
   cpm(., log = TRUE) %>% 
-  cor()
+  cor(.,method = "pearson")
 
 anno_raw_counts <- data.frame(timeset = colnames(cor_raw_counts))
 
@@ -220,4 +225,51 @@ boxplot(cpm(filt_raw_counts_noY, log=TRUE),
 ```
 
 
+### PCA analysis
+
+Now to look at the principle components of the data.
+
+```{r PCA analysis of filtered counts}
+##get log2cpm of raw filtered counts
+filt4_matrix_lcpm <- cpm(filt_raw_counts_noY , log=TRUE)
+## store PRcomp
+PCA4_info_filter <- (prcomp(t(filt4_matrix_lcpm), scale. = TRUE))
+###make annotation dataframe
+annotation_mat <- data.frame(timeset=colnames(filt_raw_counts_noY)) %>%
+  mutate(sample = timeset) %>% 
+  separate(timeset, into = c("indv","trt","time"), sep= "_") %>% 
+  mutate(time = factor(time, levels = c("3h", "24h"), labels= c("3 hours","24 hours"))) %>% 
+  mutate(trt = factor(trt, levels = c("DOX","EPI", "DNR", "MTX", "TRZ", "VEH"))) 
+### join together for plotting
+pca_final_four_anno <- data.frame(annotation_mat, PCA4_info_filter$x)
+plotting_var_names <- prop_var_percent(PCA4_info_filter)
+
+pca_final_four_anno %>%
+  ggplot(.,aes(x = PC1, y = PC2, col=trt, shape=time, group=indv))+
+  geom_point(size= 5)+
+  scale_color_manual(values=drug_pal)+
+   ggrepel::geom_text_repel(aes(label = indv))+
+   ggtitle(expression("PCA of log"[2]*"(cpm) filtered peak set"))+
+  theme_bw()+
+  guides(col="none", size =4)+
+  labs(y = paste0("PC 2 (",round(plotting_var_names[2],1),"%)")
+       , x =paste0("PC 1 (",round(plotting_var_names[1],1),"%)"))+
+  theme(plot.title=element_text(size= 14,hjust = 0.5),
+        axis.title = element_text(size = 12, color = "black"))
+
+pca_final_four_anno %>%
+  ggplot(.,aes(x = PC3, y = PC4, col=trt, shape=time, group=indv))+
+  geom_point(size= 5)+
+  scale_color_manual(values=drug_pal)+
+   ggrepel::geom_text_repel(aes(label = indv))+
+   ggtitle(expression("PCA of log"[2]*"(cpm) filtered peak set"))+
+  theme_bw()+
+  guides(col="none", size =4)+
+  labs(y = paste0("PC 4 (",round(plotting_var_names[4],1),"%)")
+       , x =paste0("PC 3 (",round(plotting_var_names[3],1),"%)"))+
+  theme(plot.title=element_text(size= 14,hjust = 0.5),
+        axis.title = element_text(size = 12, color = "black"))
+
+
+```
 
