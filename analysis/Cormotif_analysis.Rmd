@@ -1,0 +1,389 @@
+---
+title: "Cormotif_analysis"
+author: "Renee Matthews"
+date: "2025-05-06"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE,
+	warning = FALSE,
+	dev = c("png","pdf")
+)
+```
+
+```{css, echo=FALSE}
+pre {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+pre[class] {
+  max-height: 200px;
+}
+```
+
+```{r  package loading}
+library(tidyverse)
+library(kableExtra)
+library(broom)
+library(RColorBrewer)
+library(ChIPseeker)
+library("TxDb.Hsapiens.UCSC.hg38.knownGene")
+library("org.Hs.eg.db")
+library(rtracklayer)
+library(edgeR)
+library(ggfortify)
+library(limma)
+library(readr)
+library(BiocGenerics)
+library(gridExtra)
+library(VennDiagram)
+library(scales)
+library(Cormotif)
+library(BiocParallel)
+library(ggpubr)
+library(devtools)
+library(eulerr)
+library(genomation)
+library(ggsignif)
+library(plyranges)
+library(ggrepel)
+library(ComplexHeatmap)
+library(cowplot)
+library(smplot2)
+```
+
+```{r echo=TRUE, file='code/corMotifcustom.R'}
+
+```
+
+Loading counts matrix and making filtered matrix
+
+```{r loading data}
+drug_pal <- c("#8B006D","#DF707E","#F1B72B", "#3386DD","#707031","#41B333")
+raw_counts <- read_delim("data/Final_four_data/re_analysis/Raw_unfiltered_counts.tsv",delim="\t") %>% 
+  column_to_rownames("Peakid") %>% 
+  as.matrix()
+
+lcpm <- cpm(raw_counts, log= TRUE)
+  ### for determining the basic cutoffs
+filt_raw_counts <- raw_counts[rowMeans(lcpm)> 0,]
+
+filt_raw_counts_noY <- filt_raw_counts[!grepl("chrY",rownames(filt_raw_counts)),]
+dim(filt_raw_counts_noY)
+```
+
+Number of filtered regions without the y chromosome = `r length(rownames(filt_raw_counts_noY))` regions
+
+
+#### making the metadata form
+```{r metadata}
+
+annotation_mat <- data.frame(timeset=colnames(filt_raw_counts_noY)) %>%
+  mutate(sample = timeset) %>% 
+  separate(timeset, into = c("indv","trt","time"), sep= "_") %>% 
+  mutate(time = factor(time, levels = c("3h", "24h"))) %>% 
+  mutate(trt = factor(trt, levels = c("DOX","EPI", "DNR", "MTX", "TRZ", "VEH"))) %>% 
+  mutate(indv=factor(indv, levels = c("A","B","C","D"))) %>% 
+  mutate(trt_time=paste0(trt,"_",time))
+
+```
+
+```{r prepare dge object}
+group <- c( rep(c(1,2,3,4,5,6,7,8,9,10,11,12),4))
+group <- factor(group, levels =c("1","2","3","4","5","6","7","8","9","10","11","12"))
+dge <-  DGEList.data.frame(counts = filt_raw_counts_noY, group = group, genes = row.names(filt_raw_counts_noY))
+dge <- calcNormFactors(dge)
+
+```
+
+
+```{r grouping factors }
+
+group_fac <- group
+groupid <- as.numeric(group_fac)
+
+compid <- data.frame(c1= c(2,4,6,8,10,1,3,5,7,9), c2 = c( 12,12,12,12,12,11,11,11,11,11))
+compid
+y_TMM_cpm <- cpm(dge, log = TRUE)
+
+colnames(y_TMM_cpm)
+```
+Now that factors are grouped,  We will call the cormotiffit function to look at K=1:8.  
+This will be saved as an RDS for future use and lack of reruning
+
+```{r Cormotif run, eval=FALSE}
+set.seed(31415)
+cormotif_initial_norm <- cormotiffit(exprs = y_TMM_cpm, groupid = groupid, compid = compid, K=1:8, max.iter = 500, runtype = "logCPM")
+
+saveRDS(cormotif_initial_norm,"data/Final_four_data/re_analysis/Cormotif_norm_initial.RDS")
+# saveRDS(cormotif_initial_ff,"data/Final_four_data/cormotif_ff_4_run_norm.RDS")
+# 
+```
+
+
+```{r examining motifs}
+cormotif_initial_norm <- readRDS("data/Final_four_data/re_analysis/Cormotif_norm_initial.RDS")
+
+plotMotif(cormotif_initial_norm)
+plotIC(cormotif_initial_norm)
+
+myColors <-  rev(c("#FFFFFF", "#E6E6E6" ,"#CCCCCC", "#B3B3B3", "#999999", "#808080", "#666666","#4C4C4C", "#333333", "#191919","#000000"))
+
+plot.new()
+legend('center',fill=myColors, legend =rev(c("0", "0.1", "0.2", "0.3", "0.4",  "0.5", "0.6", "0.7", "0.8","0.9", "1")), box.col="white",title = "Probability\nlegend", horiz=FALSE,title.cex=.8)
+motif_prob <- cormotif_initial_norm$bestmotif$clustlike
+rownames(motif_prob) <- rownames(y_TMM_cpm)
+# saveRDS(motif_prob,"data/Final_four_data/re_analysis/motif_prob_norm.RDS")
+```
+
+Four motifs were found, now to generate the lists of regions that belong to each motif.
+
+```{r cluster making}
+
+# motif_prob <- readRDS("data/Final_four_data/re_analysis/motif_prob_norm.RDS")
+
+background_peaks <- motif_prob %>% 
+  as.data.frame() %>% 
+  rownames_to_column("Peakid") %>% 
+  dplyr::select(Peakid) %>% 
+  separate(Peakid, into=c("chr","start","end"),remove = FALSE)
+ 
+NR_ff <- motif_prob %>%
+  as.data.frame() %>% 
+  dplyr::filter(V1>.5 & V2<.5 & V3 <.5& V4<0.5) %>% 
+  rownames_to_column("Peakid") %>% 
+  dplyr::select(Peakid) %>% 
+  separate(Peakid, into=c("chr","start","end"),remove = FALSE)
+ 
+EAR_ff <- motif_prob %>%
+   as.data.frame() %>% 
+  dplyr::filter(V1<.5 & V2>.5 & V3 <.5& V4<0.5) %>% 
+  rownames_to_column("Peakid") %>% 
+  dplyr::select(Peakid) %>% 
+  separate(Peakid, into=c("chr","start","end"),remove = FALSE)
+ 
+ 
+LR_ff <- motif_prob %>%
+  as.data.frame() %>% 
+  dplyr::filter(V1<.5 & V2<.5 & V3 >.5& V4<0.5) %>% 
+  rownames_to_column("Peakid") %>% 
+  dplyr::select(Peakid) %>% 
+  separate(Peakid, into=c("chr","start","end"),remove = FALSE)
+ 
+
+ESR_ff <- motif_prob %>%
+  as.data.frame() %>% 
+  dplyr::filter(V1<.5 & V2<.5 & V3 <.5& V4>0.5) %>% 
+  rownames_to_column("Peakid") %>% 
+  dplyr::select(Peakid) %>% 
+  separate(Peakid, into=c("chr","start","end"),remove = FALSE)
+ 
+```
+
+-EAR group has `r unique(length(EAR_ff$Peakid))` peaks.  
+-ESR group has `r unique(length(ESR_ff$Peakid))` peaks.  
+-LR group has `r unique(length(LR_ff$Peakid))` peaks.  
+-NR group has `r unique(length(NR_ff$Peakid))` peaks.  
+--Total number of peaks is `r length(background_peaks$Peakid)`
+--Total number of peaks in clusters is `r sum(length(EAR_ff$Peakid),length(ESR_ff$Peakid),length(LR_ff$Peakid),length(NR_ff$Peakid))`  
+-percent of peaks classified into clusters: `r (length(EAR_ff$Peakid)+length(ESR_ff$Peakid)+length(LR_ff$Peakid)+length(NR_ff$Peakid)) / length(background_peaks$Peakid)*100`   
+-number of peaks not classified: `r length(background_peaks$Peakid)-(length(EAR_ff$Peakid)+length(ESR_ff$Peakid)+length(LR_ff$Peakid)+length(NR_ff$Peakid))`  
+
+
+Now to break into opening and closing motifs by group
+```{r opening and closing motifs}
+
+median_24_lfc <- read_csv("data/Final_four_data/re_analysis/median_24_lfc_norm.csv") 
+median_3_lfc <- read_csv("data/Final_four_data/re_analysis/median_3_lfc_norm.csv")
+
+open_3med <- median_3_lfc %>% 
+  dplyr::filter(med_3h_lfc > 0)
+
+close_3med <- median_3_lfc %>% 
+  dplyr::filter(med_3h_lfc < 0)
+
+open_24med <- median_24_lfc %>% 
+  dplyr::filter(med_24h_lfc > 0)
+
+close_24med <- median_24_lfc %>% 
+  dplyr::filter(med_24h_lfc < 0)
+
+medA <- median_3_lfc %>% 
+  left_join(median_24_lfc, by=c("peak"="peak")) %>% 
+  dplyr::filter(med_3h_lfc > 0 & med_24h_lfc>0)
+
+medB <- median_3_lfc %>% 
+  left_join(median_24_lfc, by=c("peak"="peak")) %>% 
+  dplyr::filter(med_3h_lfc < 0 & med_24h_lfc < 0)
+ 
+medC <- median_3_lfc %>% 
+  left_join(median_24_lfc, by=c("peak"="peak")) %>% 
+  dplyr::filter(med_3h_lfc > 0& med_24h_lfc <0)
+  
+
+medD <- median_3_lfc %>% 
+ left_join(median_24_lfc, by=c("peak"="peak"))%>% 
+  dplyr::filter(med_3h_lfc < 0 & med_24h_lfc > 0)
+ 
+
+EAR_open <- EAR_ff %>%
+  dplyr::filter(Peakid %in% open_3med$peak)
+  
+EAR_open_gr <- EAR_open %>% GRanges()
+
+EAR_close <- EAR_ff %>%
+  dplyr::filter(Peakid %in% close_3med$peak) 
+
+EAR_close_gr <- EAR_close %>% GRanges()
+
+LR_open <- LR_ff %>%
+  dplyr::filter(Peakid %in% open_24med$peak) 
+
+LR_open_gr <- LR_open %>% GRanges()
+
+LR_close <- LR_ff %>%
+  dplyr::filter(Peakid %in% close_24med$peak) 
+
+LR_close_gr <- LR_close %>% GRanges()
+
+NR_gr <- NR_ff %>% 
+   GRanges()
+
+ESR_open <- ESR_ff %>% 
+  dplyr::filter(Peakid %in% medA$peak)  
+ 
+ESR_open_gr <- ESR_open %>% GRanges()
+
+ESR_close <- ESR_ff %>% 
+  dplyr::filter(Peakid %in% medB$peak)  
+
+ESR_close_gr <- ESR_close %>% GRanges()
+
+ESR_opcl <- ESR_ff %>% 
+  dplyr::filter(Peakid %in% medC$peak) 
+ESR_opcl_gr <- ESR_opcl %>% GRanges()
+ESR_clop <- ESR_ff %>% 
+  dplyr::filter(Peakid %in% medD$peak) 
+ESR_clop_gr <- ESR_clop %>% GRanges()
+
+NR <- NR_ff
+NR_gr <- NR %>% GRanges()
+
+background_peaks_gr <- background_peaks %>% GRanges
+
+Motif_list <- list("EAR_open"=EAR_open, 
+                   "EAR_close"= EAR_close, 
+                   "ESR_open"=ESR_open, 
+                   "ESR_close"=ESR_close, 
+                   "ESR_opcl"=ESR_opcl, 
+                   "ESR_clop"=ESR_clop,
+                   "LR_open"=LR_open, 
+                   "LR_close"=LR_close, 
+                   "NR"=NR_ff,
+                   "all_regions"=background_peaks)
+
+txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
+
+```
+Examining the Genomic features around each response motif region using Chipseeker
+
+
+```{r ChipseekR}
+
+##make the Granges list
+Motif_list_gr <- list("EAR_open"=EAR_open_gr, 
+                   "EAR_close"= EAR_close_gr, 
+                   "ESR_open"=ESR_open_gr, 
+                   "ESR_close"=ESR_close_gr, 
+                   "ESR_opcl"=ESR_opcl_gr, 
+                   "ESR_clop"=ESR_clop_gr,
+                   "LR_open"=LR_open_gr, 
+                   "LR_close"=LR_close_gr, 
+                   "NR"=NR_gr,
+                   "all_regions"=background_peaks_gr)
+peakAnnoList<- lapply(Motif_list_gr, annotatePeak, tssRegion =c(-2000,2000), TxDb= txdb)
+
+plotAnnoBar(peakAnnoList[c(1,3,7,5,2,4,8,6,9)])+
+  ggtitle ("Genomic Feature Distribution, All groups")
+```
+
+### Looking at the average logFC across clusters:
+
+```{r}
+save_list <- readRDS("data/Final_four_data/re_analysis/Toptable_results.RDS")
+all_results <- bind_rows(save_list, .id = "group")
+
+mean_lfc <-
+  all_results %>%
+  separate(., group, into=c("trt","time")) %>% 
+  dplyr::rename("Peakid"=genes) %>% 
+  dplyr::select(Peakid,trt,time,logFC) %>% 
+  mutate(EAR_open = if_else(Peakid %in% EAR_open$Peakid, "y", "no")) %>%
+  mutate(EAR_close = if_else(Peakid %in% EAR_close$Peakid, "y", "no")) %>%
+  mutate(ESR_open = if_else(Peakid %in% ESR_open$Peakid, "y", "no")) %>%
+  mutate(ESR_close= if_else(Peakid %in% ESR_close$Peakid, "y", "no")) %>%
+  mutate(ESR_opcl= if_else(Peakid %in% ESR_opcl$Peakid, "y", "no")) %>%
+  mutate(ESR_clop= if_else(Peakid %in% ESR_clop$Peakid, "y", "no")) %>%
+    mutate(LR_open= if_else(Peakid %in% LR_open$Peakid, "y", "no")) %>%
+    mutate(LR_close= if_else(Peakid %in% LR_close$Peakid, "y", "no")) %>%
+    mutate(NR = if_else(Peakid %in% NR_ff$Peakid, "y", "no"))%>%
+  mutate(trt = factor(trt,levels=c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>%
+  group_by(trt, time) %>%
+  mutate(absFC = (logFC)) %>%  ##I took away abs(logFC) here but did not change code below
+  dplyr::select(trt, time, absFC, EAR_open:NR) %>%
+  dplyr::summarize(
+    EAR_op = mean(absFC[EAR_open == "y"]),
+    EAR_cl = mean(absFC[EAR_close == "y"]),
+    ESR_op = mean(absFC[ESR_open == "y"]),
+    ESR_cl = mean(absFC[ESR_close == "y"]),
+   
+    ESR_opcl = mean(absFC[ESR_opcl == "y"]),
+    ESR_clop = mean(absFC[ESR_clop == "y"]),
+    LR_op = mean(absFC[LR_open == "y"]),
+    LR_cl = mean(absFC[LR_close == "y"]),
+    NR = mean(absFC[NR == "y"])
+  ) %>%
+  as.data.frame()
+
+
+mean_lfc %>%
+  ungroup() %>%
+  pivot_longer(!c(trt, time), names_to = "Motif",
+               values_to = "meanLFC") %>%
+  mutate(time=factor(time, levels = c("3 hours","24 hours"))) %>% 
+  
+  ggplot(., aes(x = time,y = meanLFC,col = trt,
+    group = trt
+  )) +
+  geom_point(size = 2) +
+  geom_line(linewidth = 2) +
+  ggpubr::fill_palette(drug_pal) +
+  # guides(fill=guide_legend(title = "Treatment"))+
+  facet_wrap( ~ Motif, nrow = 2) +
+  theme_bw() +
+  xlab("Time (hours)") +
+  scale_color_manual(values = drug_pal) +
+  ylab(" Avg. Log Fold Change") +
+  theme_bw() +
+  theme(
+    plot.title = element_text(size = rel(1.0), hjust = 0.5),
+    axis.title = element_text(size = 15, color = "black"),
+    axis.line = element_line(linewidth = 1.0),
+    strip.background = element_rect(fill = "transparent"),
+    axis.text = element_text(
+      size = 10,
+      color = "black",
+      angle = 0
+    ),
+    strip.text.x = element_text(
+      size = 11,
+      color = "black",
+      face = "bold"
+    )
+  )
+```
+
