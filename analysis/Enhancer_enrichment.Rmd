@@ -1,0 +1,355 @@
+---
+title: "Enhancer_enrichment"
+author: "Renee Matthews"
+date: "2025-05-07"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE,
+	warning = FALSE,
+		dev = c("png","pdf")
+)
+```
+
+```{css, echo=FALSE}
+pre {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+pre[class] {
+  max-height: 200px;
+}
+```
+
+```{r package loading, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(kableExtra)
+library(broom)
+library(RColorBrewer)
+library(ChIPseeker)
+library("TxDb.Hsapiens.UCSC.hg38.knownGene")
+library("org.Hs.eg.db")
+library(rtracklayer)
+library(edgeR)
+library(ggfortify)
+library(limma)
+library(readr)
+library(BiocGenerics)
+library(gridExtra)
+library(VennDiagram)
+library(scales)
+library(BiocParallel)
+library(ggpubr)
+library(devtools)
+library(biomaRt)
+library(eulerr)
+library(smplot2)
+library(genomation)
+library(ggsignif)
+library(plyranges)
+library(ggrepel)
+library(epitools)
+library(circlize)
+
+```
+
+
+
+```{r Loading Cluster locations and full peaks list}
+Collapsed_peaks <- read_delim("data/Final_four_data/collapsed_new_peaks.txt",
+                              delim = "\t", 
+                              escape_double = FALSE, 
+                              trim_ws = TRUE)
+
+Motif_list_gr <- readRDS("data/Final_four_data/re_analysis/Motif_list_granges.RDS")
+##order specific
+df_list <- plyr::llply(Motif_list_gr, as.data.frame)
+### no change motif_list_gr names so they do not overwrite the dataframes
+names(Motif_list_gr) <- paste0(names(Motif_list_gr), "_gr")
+list2env(Motif_list_gr,envir= .GlobalEnv)
+
+list2env(df_list,envir= .GlobalEnv)
+
+mrc_lookup <- bind_rows(
+  (EAR_open  %>% dplyr::select(Peakid) %>% mutate(mrc = "EAR_open")),  
+  (EAR_close %>%  dplyr::select(Peakid) %>%mutate(mrc = "EAR_close")),
+  (ESR_open  %>%  dplyr::select(Peakid) %>%mutate(mrc = "ESR_open")),
+  (ESR_close %>%  dplyr::select(Peakid) %>%mutate(mrc = "ESR_close")),
+  (ESR_opcl   %>%  dplyr::select(Peakid) %>%mutate(mrc = "ESR_opcl")),
+  (ESR_clop   %>%  dplyr::select(Peakid) %>%mutate(mrc = "ESR_clop")),
+  (LR_open   %>%  dplyr::select(Peakid) %>%mutate(mrc = "LR_open")),
+  (LR_close  %>%  dplyr::select(Peakid) %>%mutate(mrc = "LR_close")),
+  (NR        %>%  dplyr::select(Peakid) %>%mutate(mrc = "NR"))
+) %>%
+  distinct(Peakid, mrc) 
+
+final_peaks <- Collapsed_peaks %>% 
+  dplyr::filter(Peakid %in% mcols(all_regions_gr)$Peakid) %>%
+  left_join(.,(mrc_lookup %>% 
+              dplyr::select(Peakid, mrc)), by = "Peakid") %>%
+  GRanges()
+  
+
+```
+
+
+### Enhancers and Response clusters
+
+
+First:  obtained a list of cis Regulatory Elements from Encode Screen
+[(https://screen.encodeproject.org/#)]
+
+
+```{r  enhancers of the heart}
+
+cREs_HLV_46F <- genomation::readBed("data/enhancerdata/ENCFF867HAD_ENCFF152PBB_ENCFF352YYH_ENCFF252IVK.7group.bed")
+
+# cREs_HLV_53F <- genomation::readBed("data/enhancerdata/ENCFF417JSF_ENCFF651XRK_ENCFF320IPT_ENCFF440RUS.7group.bed") 
+ 
+NR_cREs <- join_overlap_intersect(NR_gr,cREs_HLV_46F)
+LR_open_cREs <- join_overlap_intersect(LR_open_gr,cREs_HLV_46F)
+LR_close_cREs <- join_overlap_intersect(LR_close_gr,cREs_HLV_46F)
+ESR_open_cREs <- join_overlap_intersect(ESR_open_gr,cREs_HLV_46F)
+ESR_close_cREs <- join_overlap_intersect(ESR_close_gr,cREs_HLV_46F)
+
+ESR_opcl_cREs <- join_overlap_intersect(ESR_opcl_gr, cREs_HLV_46F)
+ESR_clop_cREs <- join_overlap_intersect(ESR_clop_gr, cREs_HLV_46F)
+EAR_open_cREs <- join_overlap_intersect(EAR_open_gr,cREs_HLV_46F)
+EAR_close_cREs <- join_overlap_intersect(EAR_close_gr,cREs_HLV_46F)
+### These unique peaks are cREs that contain all types of cREs such as
+# [1] "Low-DNase"                "DNase-only"               "CTCF-only,CTCF-bound"    
+#  [4] "PLS,CTCF-bound"           "PLS"                      "dELS"                    
+#  [7] "pELS"                     "DNase-H3K4me3"            "DNase-H3K4me3,CTCF-bound"
+# [10] "dELS,CTCF-bound"          "pELS,CTCF-bound" #### NOT the exact ones I am interested in.      
+ uni_EAR_open  <-  EAR_open_cREs %>% as.data.frame() %>% distinct(Peakid)
+ uni_EAR_close <- EAR_close_cREs %>% as.data.frame() %>% distinct(Peakid)
+ uni_ESR_open <- ESR_open_cREs%>% as.data.frame() %>% distinct(Peakid)
+ uni_ESR_close <- ESR_close_cREs%>% as.data.frame() %>% distinct(Peakid)
+ uni_ESR_opcl <- ESR_opcl_cREs%>% as.data.frame() %>% distinct(Peakid)
+ uni_ESR_clop <- ESR_clop_cREs%>% as.data.frame() %>% distinct(Peakid)
+ uni_LR_open <- LR_open_cREs%>% as.data.frame() %>% distinct(Peakid)
+ uni_LR_close <- LR_close_cREs%>% as.data.frame() %>% distinct(Peakid)
+ uni_NR <- NR_cREs%>% as.data.frame() %>% distinct(Peakid)
+
+
+Whole_peaks <- join_overlap_intersect(final_peaks, cREs_HLV_46F)
+
+
+Whole_peaks %>% 
+  as.data.frame() %>% 
+  left_join(.,mrc_lookup, by = c("Peakid","mrc"))%>% 
+  group_by(blockCount, mrc) %>% 
+  tally %>% 
+  pivot_wider(., id_cols = mrc, names_from = blockCount, values_from = n) %>% 
+  dplyr::select(mrc, PLS:'pELS,CTCF-bound') %>% 
+  kable(., caption="Breakdown of peaks overlapping cREs") %>% 
+  kable_paper("striped", full_width = TRUE) %>%
+  kable_styling(full_width = FALSE, font_size = 14)
+
+```
+
+
+```{r}
+keep_cRE_names <- c("CTCF-only,CTCF-bound" ,"PLS,CTCF-bound","PLS","dELS,CTCF-bound", "pELS","pELS,CTCF-bound","dELS")
+is_cRE <- Whole_peaks %>% 
+  as.data.frame() %>% 
+  dplyr::filter(blockCount %in% keep_cRE_names) %>% 
+  distinct(Peakid,blockCount) 
+
+is_CTCF <- Whole_peaks %>% 
+  as.data.frame() %>% 
+  dplyr::filter(blockCount == "CTCF-only,CTCF-bound") %>% 
+  distinct(Peakid,blockCount) 
+
+is_dELS <- Whole_peaks %>% 
+  as.data.frame() %>% 
+  dplyr::filter(blockCount == "dELS,CTCF-bound"|blockCount == "dELS") %>% 
+  distinct(Peakid,blockCount) 
+is_pELS <- Whole_peaks %>% 
+  as.data.frame() %>% 
+  dplyr::filter(blockCount == "pELS,CTCF-bound"|blockCount == "pELS") %>% 
+  distinct(Peakid,blockCount) 
+is_PLS <- Whole_peaks %>% 
+  as.data.frame() %>% 
+  dplyr::filter(blockCount == "PLS,CTCF-bound"|blockCount == "PLS") %>% 
+  distinct(Peakid,blockCount) 
+
+
+CRE_summary <-final_peaks %>% 
+  as.data.frame() %>% 
+   mutate(cRE_status=if_else(Peakid %in% is_cRE$Peakid,"cRE_peak","not_cRE_peak")) %>% 
+   mutate(CTCF_status=if_else(Peakid %in% is_CTCF$Peakid,"CTCF_peak","not_CTCF_peak")) %>% 
+    mutate(dELS_status=if_else(Peakid %in% is_dELS$Peakid,"dELS_peak","not_dELS_peak")) %>% 
+    mutate(pELS_status=if_else(Peakid %in% is_pELS$Peakid,"pELS_peak","not_pELS_peak")) %>% 
+    mutate(PLS_status=if_else(Peakid %in% is_PLS$Peakid,"PLS_peak","not_PLS_peak")) %>% 
+  dplyr::select(Peakid:PLS_status)
+
+```
+
+```{r}
+cRE_mat<- CRE_summary %>%
+ dplyr::filter(mrc != "not_mrc") %>% 
+  group_by(cRE_status, mrc) %>% 
+  tally %>% 
+ mutate(mrc=factor(mrc, levels = c("EAR_open","ESR_open","LR_open","ESR_opcl", "EAR_close","ESR_close","LR_close","ESR_clop", "NR"))) %>% 
+    pivot_wider(id_cols = mrc, names_from = cRE_status,values_from = n) %>% 
+  column_to_rownames("mrc") %>% 
+  na.omit(.) %>% 
+  as.matrix(.)
+cRE_mat
+
+CTCF_mat<- CRE_summary %>% 
+ dplyr::filter(mrc != "not_mrc") %>% 
+  group_by(CTCF_status, mrc) %>% 
+  tally %>% 
+  mutate(mrc=factor(mrc, levels = c("EAR_open","ESR_open","LR_open","ESR_opcl", "EAR_close","ESR_close","LR_close","ESR_clop", "NR"))) %>% 
+  pivot_wider(id_cols = mrc, names_from = CTCF_status,values_from = n) %>% 
+  column_to_rownames("mrc") %>% 
+  na.omit(.) %>% 
+  as.matrix(.)
+CTCF_mat
+
+dELS_mat<- CRE_summary %>% 
+ dplyr::filter(mrc != "not_mrc") %>% 
+  group_by(dELS_status, mrc) %>% 
+  tally %>% 
+  mutate(mrc=factor(mrc, levels = c("EAR_open","ESR_open","LR_open","ESR_opcl", "EAR_close","ESR_close","LR_close","ESR_clop", "NR"))) %>% 
+  pivot_wider(id_cols = mrc, names_from = dELS_status,values_from = n) %>% 
+  column_to_rownames("mrc") %>% 
+  na.omit(.) %>% 
+  as.matrix(.)
+dELS_mat
+pELS_mat<- CRE_summary %>% 
+ dplyr::filter(mrc != "not_mrc") %>% 
+  group_by(pELS_status, mrc) %>% 
+  tally %>% 
+  mutate(mrc=factor(mrc, levels = c("EAR_open","ESR_open","LR_open","ESR_opcl", "EAR_close","ESR_close","LR_close","ESR_clop", "NR"))) %>% 
+  pivot_wider(id_cols = mrc, names_from = pELS_status,values_from = n) %>% 
+  column_to_rownames("mrc") %>% 
+  na.omit(.) %>% 
+  as.matrix(.)
+pELS_mat
+PLS_mat<- CRE_summary %>% 
+ dplyr::filter(mrc != "not_mrc") %>% 
+  group_by(PLS_status, mrc) %>% 
+  tally %>% 
+  mutate(mrc=factor(mrc, levels = c("EAR_open","ESR_open","LR_open","ESR_opcl", "EAR_close","ESR_close","LR_close","ESR_clop", "NR"))) %>% 
+  pivot_wider(id_cols = mrc, names_from = PLS_status,values_from = n) %>% 
+  column_to_rownames("mrc") %>% 
+  na.omit(.) %>% 
+  as.matrix(.)
+PLS_mat
+
+```
+
+
+### odds ratio results
+```{r odds ratio test}
+matrix_list <- list("All cREs"= cRE_mat,"PLS"=PLS_mat, "dELS"=dELS_mat, "pELS"=pELS_mat,"CTCF"= CTCF_mat)
+
+results_or <- data.frame(Matrix_Name = character(),
+                      Row_Compared = character(),
+                      Odds_Ratio = numeric(),
+                      Lower_CI = numeric(),
+                      Upper_CI = numeric(),
+                      P_Value = numeric(),
+                      stringsAsFactors = FALSE)
+
+# Loop through each matrix in the list
+for (matrix_name in names(matrix_list)) {
+  current_matrix <- matrix_list[[matrix_name]]
+  n_rows <- nrow(current_matrix)
+  
+  # Loop through each row of the current matrix (except the last row)
+  for (i in 1:(n_rows - 1)) {
+    # Perform odds ratio test between row i and the last row using epitools
+    test_result <- tryCatch({
+      contingency_table <- rbind(current_matrix[i, ], current_matrix[n_rows, ])
+      
+      # Check if any row in the contingency table contains only zeros
+      if (any(rowSums(contingency_table) == 0)) {
+        stop("Contingency table contains empty rows.")
+      }
+      
+      oddsratio_result <- oddsratio(contingency_table)
+       # Ensure the oddsratio result has at least 2 rows
+      if (nrow(oddsratio_result$measure) < 2) {
+        stop("oddsratio result does not have enough data.")
+      }
+      
+     list(oddsratio = oddsratio_result, p.value = oddsratio_result$p.value[2,"chi.square"])
+      
+    }, error = function(e) {
+      cat("Error in odds ratio test for row", i, "in matrix", matrix_name, ":", e$message, "\n")
+      return(NULL)
+    })
+    
+    # Only store the result if test_result is valid (i.e., not NULL)
+    if (!is.null(test_result)) {
+      or_value <- test_result$oddsratio$measure[2, "estimate"]
+      lower_ci <- test_result$oddsratio$measure[2, "lower"]
+      upper_ci <- test_result$oddsratio$measure[2, "upper"]
+      p_value <- test_result$oddsratio$p.value[2,"chi.square"]
+      
+      # Check if the values are numeric and valid (not NA)
+      if (!is.na(or_value) && !is.na(lower_ci) && !is.na(upper_ci) && !is.na(p_value)) {
+        # Store the results in the dataframe
+        results_or <- rbind(results_or, data.frame(Matrix_Name = matrix_name,
+                                             Row_Compared = rownames(current_matrix)[i],
+                                             Odds_Ratio = or_value,
+                                             Lower_CI = lower_ci,
+                                             Upper_CI = upper_ci,
+                                             P_Value = p_value))
+      }
+    }
+  }
+}
+
+# Print the resulting dataframe
+print(results_or) %>% 
+  kable(., caption = "Odd ratio results and significance values of TSS and CpG enrichment compared to No response group") %>% 
+  kable_paper("striped", full_width = TRUE) %>%
+  kable_styling(full_width = FALSE, font_size = 14) %>% 
+  scroll_box(width = "100%", height = "400px")
+
+col_fun_OR = colorRamp2(c(0,1,1.5,5), c("blueviolet","white","lightgreen","green3" ))
+sig_mat_OR <- results_or %>% 
+  as.data.frame() %>% 
+  dplyr::select( Matrix_Name,Row_Compared,P_Value) %>%
+  group_by(Row_Compared) %>%
+  mutate(rank_val=rank(P_Value, ties.method = "first")) %>%
+  mutate(BH_correction= p.adjust(P_Value,method= "BH")) %>% 
+  pivot_wider(., id_cols = Matrix_Name, names_from = Row_Compared, values_from = BH_correction) %>% 
+  dplyr::select(Matrix_Name,EAR_open,ESR_open,LR_open,ESR_opcl,EAR_close,ESR_close,LR_close,ESR_clop) %>%
+  column_to_rownames("Matrix_Name") %>% 
+  as.matrix() 
+
+# saveRDS(results_or,"data/Final_four_data/re_analysis/OR_results_cREs_df_1bp.RDS")
+```
+
+
+```{r heatmap of OR results}
+results_or %>% 
+  as.data.frame() %>% 
+  dplyr::select( Matrix_Name,Row_Compared,Odds_Ratio) %>% 
+  pivot_wider(., id_cols = Matrix_Name, names_from = Row_Compared, values_from = Odds_Ratio) %>% 
+  dplyr::select(Matrix_Name,EAR_open,ESR_open,LR_open,ESR_opcl,EAR_close,ESR_close,LR_close,ESR_clop) %>%
+  column_to_rownames("Matrix_Name") %>% 
+  as.matrix() %>% 
+  ComplexHeatmap::Heatmap(. ,col = col_fun_OR, 
+                          cluster_rows=FALSE, 
+                          cluster_columns=FALSE, 
+                          column_names_side = "top", 
+                          column_names_rot = 45,
+                          # na_col = "black",
+                          cell_fun = function(j, i, x, y, width, height, fill) {if (!is.na(sig_mat_OR[i, j]) && sig_mat_OR[i, j] < 0.05  && .[i, j] > 1) {
+            grid.text("*", x, y, gp = gpar(fontsize = 20))}})
+```
+ note, this is not corrected for multiple testing
+
+
+

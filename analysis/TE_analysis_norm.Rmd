@@ -1,0 +1,794 @@
+---
+title: "TE_analysis"
+author: "Renee Matthews"
+date: "2025-05-06"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE,
+	warning = FALSE,
+		dev = c("png","pdf")
+)
+```
+
+```{css, echo=FALSE}
+pre {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+pre[class] {
+  max-height: 200px;
+}
+```
+
+```{r package loading, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(kableExtra)
+library(broom)
+library(RColorBrewer)
+library(ChIPseeker)
+library("TxDb.Hsapiens.UCSC.hg38.knownGene")
+library("org.Hs.eg.db")
+library(rtracklayer)
+library(edgeR)
+library(ggfortify)
+library(limma)
+library(readr)
+library(BiocGenerics)
+library(gridExtra)
+library(VennDiagram)
+library(scales)
+library(BiocParallel)
+library(ggpubr)
+library(devtools)
+library(biomaRt)
+library(eulerr)
+library(smplot2)
+library(genomation)
+library(ggsignif)
+library(plyranges)
+library(ggrepel)
+library(epitools)
+library(circlize)
+
+```
+
+Loading repeatmasker data:
+
+```{r repeatmasker df}
+repeatmasker <- read.delim("data/other_papers/repeatmasker.tsv")
+```
+
+Subsetting repeatmasker for analysis by class/family
+```{r subset repeatmasker}
+reClass_list <- repeatmasker %>% 
+  distinct(repClass)
+
+Line_repeats <- repeatmasker %>% 
+  dplyr::filter(repClass == "LINE") %>% 
+ makeGRangesFromDataFrame(., keep.extra.columns = TRUE, seqnames.field = "genoName", start.field = "genoStart", end.field = "genoEnd",starts.in.df.are.0based=TRUE)
+
+Sine_repeats <- repeatmasker %>% 
+  dplyr::filter(repClass == "SINE") %>% 
+ makeGRangesFromDataFrame(., keep.extra.columns = TRUE, seqnames.field = "genoName", start.field = "genoStart", end.field = "genoEnd",starts.in.df.are.0based=TRUE)
+
+LTR_repeats <- repeatmasker %>% 
+  dplyr::filter(repClass == "LTR") %>% 
+ makeGRangesFromDataFrame(., keep.extra.columns = TRUE, seqnames.field = "genoName", start.field = "genoStart", end.field = "genoEnd",starts.in.df.are.0based=TRUE)
+
+DNA_repeats <- repeatmasker %>% 
+  dplyr::filter(repClass == "DNA") %>% 
+ makeGRangesFromDataFrame(., keep.extra.columns = TRUE, seqnames.field = "genoName", start.field = "genoStart", end.field = "genoEnd",starts.in.df.are.0based=TRUE)
+
+retroposon_repeats <- repeatmasker %>% 
+  dplyr::filter(repClass == "Retroposon") %>% 
+ makeGRangesFromDataFrame(., keep.extra.columns = TRUE, seqnames.field = "genoName", start.field = "genoStart", end.field = "genoEnd",starts.in.df.are.0based=TRUE)
+
+all_TEs_gr <- repeatmasker %>% 
+ makeGRangesFromDataFrame(., keep.extra.columns = TRUE, seqnames.field = "genoName", start.field = "genoStart", end.field = "genoEnd",starts.in.df.are.0based=TRUE)
+
+```
+
+this code contains the fill functions for each of the plots that needed similar colors.
+```{r scale_fills}
+
+
+ # scale fill repeat, 2nd set ----------------------------------------------
+rep_other_names<- repeatmasker %>% 
+  distinct(repClass) %>% 
+  rbind("Other")
+
+scale_fill_repeat <-  function(...){
+  ggplot2:::manual_scale(
+    'fill', 
+    values = setNames(c( "#8DD3C7",
+                         "#FFFFB3",
+                         "#BEBADA" ,
+                         "#FB8072",
+                         "#80B1D3",
+                         "#FDB462",
+                         "#B3DE69",
+                         "#FCCDE5",
+                         "#D9D9D9",
+                         "#BC80BD",
+                         "#CCEBC5",
+                         "pink4",
+                         "cornflowerblue",
+                         "chocolate",
+                         "brown",
+                         "green",
+                         "yellow4",
+                         "purple",
+                         "darkorchid4",
+                         "coral4",
+                         "darkolivegreen4",
+                         "darkorange",
+                         "darkgrey"), unique(rep_other_names$repClass)), 
+    ...
+  )
+}
+
+
+# scale fill LTRs ---------------------------------------------------------
+
+LTR_df <- LTR_repeats %>% 
+  as.data.frame() %>% 
+  mutate(repFamily=factor(repFamily))
+
+
+scale_fill_LTRs <-  function(...){
+  ggplot2:::manual_scale(
+    'fill', 
+    values = setNames(c( "#8DD3C7",
+                         "#FFFFB3",
+                         "#BEBADA" ,
+                         "#FB8072",
+                         "#80B1D3",
+                         "#FDB462",
+                         "#B3DE69",
+                         "#FCCDE5",
+                         "#D9D9D9",
+                         "#BC80BD",
+                         "#CCEBC5",
+                         "pink4",
+                         "cornflowerblue",
+                         "chocolate",
+                         "brown",
+                         "green",
+                         "yellow4",
+                         "purple",
+                         "darkorchid4",
+                         "coral4",
+                         "darkolivegreen4",
+                         "darkorange"), unique(LTR_df$repFamily)), 
+    ...
+  )
+}
+
+
+
+scale_fill_DNA_family <-  function(...){
+  ggplot2:::manual_scale(
+    'fill', 
+    values = setNames(c( "#8DD3C7", "#FFFFB3", "#BEBADA" ,"#FB8072", "#80B1D3", "#FDB462", "#B3DE69", "#FCCDE5", "purple4"), unique(DNA_family$repFamily)), 
+    ...
+  )
+}
+
+
+# scale lines -------------------------------------------------------------
+Line_df <- Line_repeats %>% 
+  as.data.frame() %>% 
+  mutate(repFamily=factor(repFamily))
+
+
+scale_fill_lines <-  function(...){
+  ggplot2:::manual_scale(
+    'fill', 
+    values = setNames(c( "#8DD3C7",
+                         "#FFFFB3",
+                         "#BEBADA" ,
+                         "#FB8072",
+                         "#80B1D3",
+                         "#FDB462",
+                         "#B3DE69",
+                         "#FCCDE5",
+                         "#D9D9D9",
+                         "#BC80BD",
+                         "#CCEBC5",
+                         "pink4",
+                         "cornflowerblue",
+                         "chocolate",
+                         "brown",
+                         "green",
+                         "yellow4",
+                         "purple",
+                         "darkorchid4",
+                         "coral4",
+                         "darkolivegreen4",
+                         "darkorange"), unique(Line_df$repFamily)), 
+    ...
+  )
+}
+
+
+# scale fill L2 family ----------------------------------------------------
+L2_line_df<- Line_df %>% 
+  dplyr::filter(repFamily=="L2")
+
+
+scale_fill_L2 <-  function(...){
+  ggplot2:::manual_scale(
+    'fill', 
+    values = setNames(c( "#8DD3C7",
+                         "#FFFFB3",
+                         "#BEBADA" ,
+                         "#FB8072",
+                         "#80B1D3",
+                         "#FDB462",
+                         "#B3DE69",
+                         "#FCCDE5",
+                         "#D9D9D9",
+                         "#BC80BD",
+                         "#CCEBC5",
+                         "pink4",
+                         "cornflowerblue",
+                         "chocolate",
+                         "brown",
+                         "green",
+                         "yellow4",
+                         "purple",
+                         "darkorchid4",
+                         "coral4",
+                         "darkolivegreen4",
+                         "darkorange"), unique(L2_line_df$repName)), 
+    ...
+  )
+}
+
+# scale fill sines --------------------------------------------------------
+Sine_df <- Sine_repeats %>% 
+  as.data.frame() %>% 
+  mutate(repFamily=factor(repFamily))
+
+
+scale_fill_sines <-  function(...){
+  ggplot2:::manual_scale(
+    'fill', 
+    values = setNames(c( "#8DD3C7",
+                         "#FFFFB3",
+                         "#BEBADA" ,
+                         "#FB8072",
+                         "#80B1D3",
+                         "#FDB462",
+                         "#B3DE69",
+                         "#FCCDE5",
+                         "#D9D9D9",
+                         "#BC80BD",
+                         "#CCEBC5",
+                         "pink4",
+                         "cornflowerblue",
+                         "chocolate",
+                         "brown",
+                         "green",
+                         "yellow4",
+                         "purple",
+                         "darkorchid4",
+                         "coral4",
+                         "darkolivegreen4",
+                         "darkorange"), unique(Sine_df$repFamily)), 
+    ...
+  )
+}
+
+
+# scale fill DNAs ---------------------------------------------------------
+DNA_df <- DNA_repeats %>% 
+  as.data.frame() %>% 
+  mutate(repFamily=factor(repFamily))
+
+
+scale_fill_DNAs <-  function(...){
+  ggplot2:::manual_scale(
+    'fill', 
+    values = setNames(c( "#8DD3C7",
+                         "#FFFFB3",
+                         "#BEBADA" ,
+                         "#FB8072",
+                         "#80B1D3",
+                         "#FDB462",
+                         "#B3DE69",
+                         "#FCCDE5",
+                         "#D9D9D9",
+                         "#BC80BD",
+                         "#CCEBC5",
+                         "pink4",
+                         "cornflowerblue",
+                         "chocolate",
+                         "brown",
+                         "green",
+                         "yellow4",
+                         "purple",
+                         "darkorchid4",
+                         "coral4",
+                         "darkolivegreen4",
+                         "darkorange",
+                         "blue",
+                         "grey",
+                         "lightgrey"), unique(DNA_df$repFamily)), 
+    ...
+  )
+}
+
+
+# scale fill retroposons --------------------------------------------------
+
+retroposon_df <- retroposon_repeats %>% 
+  as.data.frame() %>% 
+  mutate(repName=factor(repName))
+
+scale_fill_retroposons <-  function(...){
+  ggplot2:::manual_scale(
+    'fill', 
+    values = setNames(c( "#8DD3C7",
+                         "#FFFFB3",
+                         "#BEBADA" ,
+                         "#FB8072",
+                         "#80B1D3",
+                         "#FDB462",
+                         "#B3DE69",
+                         "#FCCDE5",
+                         "#D9D9D9",
+                         "#BC80BD",
+                         "#CCEBC5",
+                         "pink4",
+                         "cornflowerblue",
+                         "chocolate",
+                         "brown",
+                         "green",
+                         "yellow4",
+                         "purple",
+                         "darkorchid4",
+                         "coral4",
+                         "darkolivegreen4",
+                         "darkorange"), unique(retroposon_df$repName)), 
+    ...
+  )
+}
+
+``` 
+
+
+Bringing in my granges dataframes for each cluster
+```{r}
+Motif_list_gr <- readRDS("data/Final_four_data/re_analysis/Motif_list_granges.RDS")
+##order specific
+df_list <- plyr::llply(Motif_list_gr, as.data.frame)
+### no change motif_list_gr names so they do not overwrite the dataframes
+names(Motif_list_gr) <- paste0(names(Motif_list_gr), "_gr")
+list2env(Motif_list_gr,envir= .GlobalEnv)
+
+list2env(df_list,envir= .GlobalEnv)
+
+TSS_NG_data <- read_delim("data/Final_four_data/TSS_assigned_NG.txt", 
+    delim = "\t", escape_double = FALSE, 
+    trim_ws = TRUE)
+
+Collapsed_peaks <- read_delim("data/Final_four_data/collapsed_new_peaks.txt",
+                              delim = "\t", 
+                              escape_double = FALSE, 
+                              trim_ws = TRUE)
+### the two data frames below contain all 172,418 peaks.  I was only interested in the 155,557 (without chrY) This code filters out first the chrY reagions, followed by the regions not covered in the filtered log2cpm peaklist.
+TSS_data_gr <- TSS_NG_data %>% 
+  dplyr::filter(chr != "chrY") %>%
+  dplyr::filter(Peakid %in% all_regions$Peakid) %>% 
+  GRanges()
+
+Col_TSS_data_gr <- Collapsed_peaks %>% 
+  dplyr::filter(chr != "chrY") %>%
+  dplyr::filter(Peakid %in% all_regions$Peakid) %>% 
+  GRanges()
+
+
+
+```
+
+### First step: Overlap my peaks with repeatmasker
+```{r firstoverlap}
+all_TEs_gr$TE_width <- width(all_TEs_gr)
+Col_TSS_data_gr$peak_width <- width(Col_TSS_data_gr)
+Col_fullDF_overlap <- join_overlap_intersect(Col_TSS_data_gr,all_TEs_gr)
+Col_fullDF_overlap %>% 
+  as.data.frame() %>% 
+  group_by(repClass) %>%  
+  tally %>% 
+  kable(., caption=" Table 1: Count of peaks by TE class; overlap at least 1 bp; using one:one df ") %>% 
+  kable_paper("striped", full_width = TRUE) %>%
+  kable_styling(full_width = FALSE, font_size = 14)
+
+Col_fullDF_overlap %>% 
+   as.data.frame %>% 
+  mutate(per_ol= width/TE_width) %>% 
+  dplyr::filter(per_ol>0.5) %>%
+  group_by(repClass) %>% 
+  tally() %>% 
+  kable(., caption=" Table 2:Count of peaks by TE class; overlap of >50% of TE; newway ") %>% 
+  kable_paper("striped", full_width = TRUE) %>%
+  kable_styling(full_width = FALSE, font_size = 14)
+
+Filter_TE_list <- Col_fullDF_overlap %>% 
+   as.data.frame %>% 
+  mutate(per_ol= width/TE_width) 
+  # dplyr::filter(per_ol>0.5)
+
+Unique_peak_overlap <- Col_fullDF_overlap %>%
+  as.data.frame() %>%
+  distinct(Peakid)
+
+peak_overlap_50unique <-  Filter_TE_list %>%
+   dplyr::filter(per_ol>0.5) %>% 
+  distinct(Peakid)
+ 
+```
+
+These number reflect the count of all regions that overlap at least one TE class. Many regions can contain more than one TE, and some TEs (such as some LINEs) overlap more than one region. The first table reflects the numbers of overlapping regions and TEs by at least 1 bp.  The second table reflect the numbers of overlapping regions and TEs by at least 50% of the length of the TE.
+
+Summary of Peak information below:
+* Total number of peaks = `r length(Collapsed_peaks$Peakid)` 
+* Total number of peaks overlapping at least 1 TE = `r length(Unique_peak_overlap$Peakid)`  
+* Total number of peaks overlapping by >50% TE length = `r length(peak_overlap_50unique$Peakid)`   
+**note** these numbers include peaks that are not classified into a motif response cluster.
+
+I created a dataframe of all TEs that overlap one peak.  This means the dataframe has many entries for the same peakid, but unique TEs that overlap that peak by at least 1 bp. I then labeled each region-TE pair by the cluster it is assigned to.  Additionally there is a column that contains the ratio of the width of the overlap to the width of the TE.  I stratified all TEs into the following classes: LINEs, SINEs, LTRs, DNAs, Retroposons, and Other using the assigned repClass column from repeatmasker.
+### Create annotated peaks file
+
+```{r}
+anno_TE_region_pairs <- Col_TSS_data_gr %>% 
+  as.data.frame %>% 
+  dplyr::select(Peakid) %>% 
+  left_join(.,(Col_fullDF_overlap %>% 
+                 as.data.frame)) %>% 
+   mutate(mrc = case_when(
+    Peakid %in% EAR_open$Peakid ~ "EAR_open",
+    Peakid %in% EAR_close$Peakid ~ "EAR_close",
+    Peakid %in% ESR_open$Peakid ~ "ESR_open",
+    Peakid %in% ESR_close$Peakid ~ "ESR_close",
+    Peakid %in% ESR_opcl$Peakid ~ "ESR_opcl",
+    Peakid %in% LR_open$Peakid ~ "LR_open",
+    Peakid %in% LR_close$Peakid ~ "LR_close",
+    Peakid %in% NR$Peakid ~ "NR",
+    Peakid %in% ESR_clop$Peakid ~ "ESR_clop",
+    TRUE ~ "not_mrc"
+  )) %>% 
+   mutate(per_ol= width/TE_width) %>% 
+  mutate(repClass_org=repClass) %>% 
+  # mutate(repClass=if_else(per_ol>per_cov, repClass,                          if_else(per_ol<per_cov,NA,repClass))) %>%
+  mutate(TEstatus=if_else(is.na(repClass),"not_TE_peak","TE_peak")) %>%
+  mutate(repClass=factor(repClass)) %>%
+  mutate(repClass=if_else(##relable repClass with other
+    repClass_org=="LINE", repClass_org,
+    if_else(repClass_org=="SINE",repClass_org,
+            if_else(repClass_org=="LTR", repClass_org, 
+                    if_else(repClass_org=="DNA", repClass_org,
+                            if_else(repClass_org=="Retroposon",repClass_org,
+                                    if_else(is.na(repClass_org), repClass_org, "Other"))))))) %>% 
+  dplyr::select(Peakid, repName,repClass,repClass_org, repFamily, width, TEstatus, mrc, per_ol)
+```
+
+There are a total of `r length(anno_TE_region_pairs$Peakid)` region-TE pairs out of a total of `r length(unique(anno_TE_region_pairs$Peakid))` unique regions. 
+Because of this many to many relationship, I needed to create a dataframe that just contained only those peaks that were in a cluster and count how many overlap
+
+```{r Class status df }
+Class_status_df <-
+  anno_TE_region_pairs %>% 
+  dplyr::filter(mrc != "not_mrc") %>%
+  mutate(Sine_status = if_else(is.na(repClass),"not_sine",
+                               if_else(repClass=="SINE","sine_peak", "not_sine"))) %>% 
+   mutate(Line_status = if_else(is.na(repClass),"not_line",
+                                if_else(repClass=="LINE","line_peak", "not_line"))) %>%
+   mutate(LTR_status = if_else(is.na(repClass),"not_LTR",
+                               if_else(repClass=="LTR","LTR_peak", "not_LTR"))) %>% 
+   mutate(DNA_status = if_else(is.na(repClass),"not_DNA",
+                                if_else(repClass=="DNA","DNA_peak", "not_DNA"))) %>% 
+   mutate(Retro_status = if_else(is.na(repClass)&is.na(per_ol),"not_Retro",
+                                if_else(repClass=="Retroposon","Retro_peak", "not_Retro"))) %>% 
+    mutate(TEstatus=factor(TEstatus, levels = c("TE_peak","not_TE_peak")))%>% 
+    mutate(Sine_status=factor(Sine_status, levels = c("sine_peak","not_sine")),
+           Line_status=factor(Line_status, levels =c("line_peak","not_line")),
+           LTR_status=factor(LTR_status, levels =c("LTR_peak","not_LTR")),
+           DNA_status=factor(DNA_status, levels =c("DNA_peak","not_DNA")),
+           Retro_status=factor(Retro_status, levels =c("Retro_peak","not_Retro"))) %>%
+     mutate(mrc=factor(mrc, levels = c("EAR_open","ESR_open","LR_open","ESR_opcl", "EAR_close","ESR_close","LR_close","ESR_clop", "NR")))
+
+```
+
+To get a better count of response cluster region-TE overlap numbers, I created a dataframe that removed the non-cluster peaks and tallied up the remaining numbers.
+Tally up data frames for enrichment counts
+```{r all TE matrix}
+TE_mat<- Class_status_df %>%
+   mutate(mrc=factor(mrc, levels = c("EAR_open","ESR_open","LR_open","ESR_opcl", "EAR_close","ESR_close","LR_close","ESR_clop", "NR"))) %>% 
+ dplyr::filter(mrc != "not_mrc") %>% 
+  group_by(TEstatus, mrc) %>% 
+  distinct(Peakid,TEstatus) %>% 
+  tally %>% 
+  mutate(mrc=factor(mrc, levels = c("EAR_open","ESR_open","LR_open","ESR_opcl", "EAR_close","ESR_close","LR_close","ESR_clop", "NR"))) %>% 
+  pivot_wider(id_cols = mrc, names_from = TEstatus,values_from = n) %>% 
+  column_to_rownames("mrc") %>% 
+  as.matrix(.)
+TE_mat
+```
+```{r Sine matrix}
+SINE_mat<- Class_status_df %>%
+   mutate(mrc=factor(mrc, levels = c("EAR_open","ESR_open","LR_open","ESR_opcl", "EAR_close","ESR_close","LR_close","ESR_clop", "NR"))) %>% 
+ dplyr::filter(mrc != "not_mrc") %>% 
+  group_by(Peakid) %>%
+  summarise(Sine_peak_status = ifelse(any(Sine_status == "sine_peak"), "sine_peak", "not_sine_peak"), mrc=unique(mrc)) %>%
+  ungroup() %>% 
+  group_by(Sine_peak_status, mrc) %>% 
+  tally %>% 
+  mutate(mrc=factor(mrc, levels = c("EAR_open","ESR_open","LR_open","ESR_opcl", "EAR_close","ESR_close","LR_close","ESR_clop", "NR"))) %>% 
+  pivot_wider(id_cols = mrc, names_from = Sine_peak_status,values_from = n) %>% 
+  column_to_rownames("mrc") %>% 
+     na.omit(.) %>% 
+  as.matrix(.)
+SINE_mat
+```
+
+```{r Line matrix}
+LINE_mat<-  Class_status_df %>%
+   mutate(mrc=factor(mrc, levels = c("EAR_open","ESR_open","LR_open","ESR_opcl", "EAR_close","ESR_close","LR_close","ESR_clop", "NR"))) %>% 
+ dplyr::filter(mrc != "not_mrc") %>% 
+  group_by(Peakid) %>%
+  summarise(Line_peak_status = ifelse(any(Line_status == "line_peak"), "line_peak", "not_line_peak"), mrc=unique(mrc)) %>%
+  ungroup() %>% 
+  group_by(Line_peak_status, mrc) %>% 
+  tally %>% 
+  mutate(mrc=factor(mrc, levels = c("EAR_open","ESR_open","LR_open","ESR_opcl", "EAR_close","ESR_close","LR_close","ESR_clop", "NR"))) %>% 
+  pivot_wider(id_cols = mrc, names_from = Line_peak_status,values_from = n) %>% 
+  column_to_rownames("mrc") %>% 
+     na.omit(.) %>% 
+  as.matrix(.)
+LINE_mat
+```
+
+
+```{r LTR matrix}
+LTR_mat<-
+Class_status_df %>%
+   mutate(mrc=factor(mrc, levels = c("EAR_open","ESR_open","LR_open","ESR_opcl", "EAR_close","ESR_close","LR_close","ESR_clop", "NR"))) %>% 
+ dplyr::filter(mrc != "not_mrc") %>% 
+  group_by(Peakid) %>%
+  summarise(LTR_peak_status = ifelse(any(LTR_status == "LTR_peak"), "LTR_peak", "not_LTR_peak"), mrc=unique(mrc)) %>%
+  ungroup() %>% 
+  group_by(LTR_peak_status, mrc) %>% 
+  tally %>% 
+  mutate(mrc=factor(mrc, levels = c("EAR_open","ESR_open","LR_open","ESR_opcl", "EAR_close","ESR_close","LR_close","ESR_clop", "NR"))) %>% 
+  pivot_wider(id_cols = mrc, names_from = LTR_peak_status,values_from = n) %>% 
+  column_to_rownames("mrc") %>% 
+     na.omit(.) %>% 
+  as.matrix(.)
+LTR_mat
+```
+
+
+```{r DNA matrix}
+DNA_mat<-Class_status_df %>%
+   mutate(mrc=factor(mrc, levels = c("EAR_open","ESR_open","LR_open","ESR_opcl", "EAR_close","ESR_close","LR_close","ESR_clop", "NR"))) %>% 
+ dplyr::filter(mrc != "not_mrc") %>% 
+  group_by(Peakid) %>%
+  summarise(DNA_peak_status = ifelse(any(DNA_status == "DNA_peak"), "DNA_peak", "not_DNA_peak"), mrc=unique(mrc)) %>%
+  ungroup() %>% 
+  group_by(DNA_peak_status, mrc) %>% 
+  tally %>% 
+  mutate(mrc=factor(mrc, levels = c("EAR_open","ESR_open","LR_open","ESR_opcl", "EAR_close","ESR_close","LR_close","ESR_clop", "NR"))) %>% 
+  pivot_wider(id_cols = mrc, names_from = DNA_peak_status,values_from = n) %>% 
+  column_to_rownames("mrc") %>% 
+     na.omit(.) %>% 
+  as.matrix(.)
+DNA_mat
+```
+
+
+```{r Retro_SVA matrix}
+Retro_mat<-  Class_status_df %>%
+   mutate(mrc=factor(mrc, levels = c("EAR_open","ESR_open","LR_open","ESR_opcl", "EAR_close","ESR_close","LR_close","ESR_clop", "NR"))) %>% 
+ dplyr::filter(mrc != "not_mrc") %>% 
+  group_by(Peakid) %>%
+  summarise(Retro_peak_status = ifelse(any(Retro_status == "Retro_peak"), "Retro_peak", "not_Retro_peak"), mrc=unique(mrc)) %>%
+  ungroup() %>% 
+  group_by(Retro_peak_status, mrc) %>% 
+  tally %>% 
+  mutate(mrc=factor(mrc, levels = c("EAR_open","ESR_open","LR_open","ESR_opcl", "EAR_close","ESR_close","LR_close","ESR_clop", "NR"))) %>% 
+  pivot_wider(id_cols = mrc, names_from = Retro_peak_status,values_from = n) %>% 
+  column_to_rownames("mrc") %>% 
+     na.omit(.) %>% 
+  as.matrix(.)
+Retro_mat
+```
+
+### odds ratio results
+```{r odds ratio test}
+matrix_list <- list("TE"=TE_mat, "Lines"=LINE_mat,"Sines"=SINE_mat, "DNA"= DNA_mat,"LTR"= LTR_mat,"Retro"= Retro_mat)
+
+results_or <- data.frame(Matrix_Name = character(),
+                      Row_Compared = character(),
+                      Odds_Ratio = numeric(),
+                      Lower_CI = numeric(),
+                      Upper_CI = numeric(),
+                      P_Value = numeric(),
+                      stringsAsFactors = FALSE)
+
+# Loop through each matrix in the list
+for (matrix_name in names(matrix_list)) {
+  current_matrix <- matrix_list[[matrix_name]]
+  n_rows <- nrow(current_matrix)
+  
+  # Loop through each row of the current matrix (except the last row)
+  for (i in 1:(n_rows - 1)) {
+    # Perform odds ratio test between row i and the last row using epitools
+    test_result <- tryCatch({
+      contingency_table <- rbind(current_matrix[i, ], current_matrix[n_rows, ])
+      
+      # Check if any row in the contingency table contains only zeros
+      if (any(rowSums(contingency_table) == 0)) {
+        stop("Contingency table contains empty rows.")
+      }
+      
+      oddsratio_result <- oddsratio(contingency_table)
+       # Ensure the oddsratio result has at least 2 rows
+      if (nrow(oddsratio_result$measure) < 2) {
+        stop("oddsratio result does not have enough data.")
+      }
+      
+     list(oddsratio = oddsratio_result, p.value = oddsratio_result$p.value[2,"chi.square"])
+      
+    }, error = function(e) {
+      cat("Error in odds ratio test for row", i, "in matrix", matrix_name, ":", e$message, "\n")
+      return(NULL)
+    })
+    
+    # Only store the result if test_result is valid (i.e., not NULL)
+    if (!is.null(test_result)) {
+      or_value <- test_result$oddsratio$measure[2, "estimate"]
+      lower_ci <- test_result$oddsratio$measure[2, "lower"]
+      upper_ci <- test_result$oddsratio$measure[2, "upper"]
+      p_value <- test_result$oddsratio$p.value[2,"chi.square"]
+      
+      # Check if the values are numeric and valid (not NA)
+      if (!is.na(or_value) && !is.na(lower_ci) && !is.na(upper_ci) && !is.na(p_value)) {
+        # Store the results in the dataframe
+        results_or <- rbind(results_or, data.frame(Matrix_Name = matrix_name,
+                                             Row_Compared = rownames(current_matrix)[i],
+                                             Odds_Ratio = or_value,
+                                             Lower_CI = lower_ci,
+                                             Upper_CI = upper_ci,
+                                             P_Value = p_value))
+      }
+    }
+  }
+}
+
+# Print the resulting dataframe
+print(results_or) %>% 
+  kable(., caption = "Odd ratio results and significance values of TE enrichment compared to No response group") %>% 
+  kable_paper("striped", full_width = TRUE) %>%
+  kable_styling(full_width = FALSE, font_size = 14) %>% 
+  scroll_box(width = "100%", height = "400px")
+
+col_fun_OR = colorRamp2(c(0,1,1.5,5), c("blueviolet","white","lightgreen","green3" ))
+sig_mat_OR <- results_or %>% 
+  as.data.frame() %>% 
+  dplyr::select( Matrix_Name,Row_Compared,P_Value) %>%
+  group_by(Row_Compared) %>%
+  mutate(rank_val=rank(P_Value, ties.method = "first")) %>%
+  mutate(BH_correction= p.adjust(P_Value,method= "BH")) %>% 
+  pivot_wider(., id_cols = Matrix_Name, names_from = Row_Compared, values_from = BH_correction) %>% 
+  dplyr::select(Matrix_Name,EAR_open,ESR_open,LR_open,ESR_opcl,EAR_close,ESR_close,LR_close,ESR_clop) %>%
+  column_to_rownames("Matrix_Name") %>% 
+  as.matrix() 
+
+# saveRDS(results_or,"data/Final_four_data/re_analysis/OR_results_TE_df_1bp.RDS")
+```
+
+
+```{r heatmap of OR results}
+results_or %>% 
+  as.data.frame() %>% 
+  dplyr::select( Matrix_Name,Row_Compared,Odds_Ratio) %>% 
+  pivot_wider(., id_cols = Matrix_Name, names_from = Row_Compared, values_from = Odds_Ratio) %>% 
+  dplyr::select(Matrix_Name,EAR_open,ESR_open,LR_open,ESR_opcl,EAR_close,ESR_close,LR_close,ESR_clop) %>%
+  column_to_rownames("Matrix_Name") %>% 
+  as.matrix() %>% 
+  ComplexHeatmap::Heatmap(. ,col = col_fun_OR, 
+                          cluster_rows=FALSE, 
+                          cluster_columns=FALSE, 
+                          column_names_side = "top", 
+                          column_names_rot = 45,
+                          # na_col = "black",
+                          cell_fun = function(j, i, x, y, width, height, fill) {if (!is.na(sig_mat_OR[i, j]) && sig_mat_OR[i, j] < 0.05  && .[i, j] > 1) {
+            grid.text("*", x, y, gp = gpar(fontsize = 20))}})
+```
+ note, this is not corrected for multiple testing
+ After correcting for multiple testing across all tests check out the [finalized figure](https://mward-lab.github.io/Matthews_cardiotox_ATAC_2025/BH_correction_fig2.html)  
+ 
+ 
+### Examining the Retroposons (SVAs)
+```{r SVAs}
+ggretroposon_df <-
+  retroposon_df %>%
+  dplyr::filter(repClass=="Retroposon") %>% 
+  tidyr::unite(Peakid,seqnames:end, sep= ".") %>% 
+  dplyr::select(Peakid,repName,repClass, repFamily,width) %>% 
+  mutate(TEstatus ="TE_peak", mrc="h.genome",per_ol = NA) %>%
+  mutate(repClass_org=repClass)
+  
+all_peaks <- anno_TE_region_pairs %>% 
+  dplyr::filter(repClass=="Retroposon") %>% 
+  mutate(mrc="all_peaks")
+
+nine_retro <-
+  anno_TE_region_pairs %>% 
+  dplyr::filter(repClass=="Retroposon") %>% 
+  dplyr::filter(mrc != "not_mrc") %>% 
+  bind_rows(ggretroposon_df) %>%
+    bind_rows(all_peaks) %>% 
+  mutate(repName=factor(repName)) %>% 
+mutate(mrc=factor(mrc, levels = c("h.genome","all_peaks","EAR_open","ESR_open",  "LR_open","ESR_opcl","EAR_close","ESR_close","LR_close","ESR_clop","NR")))  
+
+nine_retro %>% 
+  ggplot(., aes(x=mrc, fill= repName))+
+  geom_bar(position="fill", col="black")+
+  theme_classic()+
+  ggtitle(paste("Retroposon breakdown by nine clusters and Family"))+
+  scale_fill_retroposons()
+
+nine_retro %>% 
+   group_by(mrc,repName) %>% 
+  tally %>% 
+  pivot_wider(., id_cols = mrc, names_from = repName, values_from = n) %>% 
+  rowwise() %>% 
+ mutate(total= sum(c_across(1:6),na.rm =TRUE)) %>%
+  mutate(SVA_D_perc= SVA_D/sum(c_across(1:6),na.rm =TRUE)) %>% 
+  kable(., caption="Breakdown of Retroposon counts by Name") %>% 
+kable_paper("striped", full_width = TRUE) %>%
+  kable_styling(full_width = FALSE, font_size = 14)%>% 
+  scroll_box(height = "500px")
+
+mrc_lookup_table <- data.frame(mrc=c("EAR_open","ESR_open",  "LR_open","ESR_opcl","EAR_close","ESR_close","LR_close","ESR_clop","NR","all_peaks","h.genome"), 
+      peaks = c(length(EAR_open$seqnames),
+                length(ESR_open$seqnames),
+                length(LR_open$seqnames),
+                length(ESR_opcl$seqnames),
+                length(EAR_close$seqnames),
+                length(ESR_close$seqnames),
+                length(LR_close$seqnames),
+                length(ESR_clop$seqnames),
+                length(NR$seqnames),
+                length(Collapsed_peaks$chr),
+                5974))
+
+nine_retro %>% 
+   group_by(mrc,repName) %>% 
+  tally %>% 
+  pivot_wider(., id_cols = mrc, names_from = repName, values_from = n) %>% 
+  rowwise() %>% 
+ mutate(total= sum(c_across(1:6),na.rm =TRUE)) %>%
+  left_join(., mrc_lookup_table, by = c("mrc"="mrc")) %>% 
+   # mutate(percent_of_total = (total/length(paste0(mrc,"$seqnames"))) * 100) %>% 
+  # mutate(SVA_D_perc=sprintf("%.2f",SVA_D_perc))
+  mutate(percent_of_total= total/peaks *100) %>% 
+  # dplyr::select(mrc, SVA_D, total, SVA_D_perc) %>% 
+  # pivot_longer(., cols = SVA_D:SVA_D_perc, names_to = "sum_col",values_to = "values") %>% 
+  # pivot_wider(., id_cols = sum_col, names_from = mrc, values_from = values) %>% 
+  kable(., caption="Breakdown of Retroposon SVA_D counts") %>% 
+kable_paper("striped", full_width = TRUE) %>%
+  kable_styling(full_width = TRUE, font_size = 14)%>% 
+  scroll_box(height = "500px")
+
+```
+
+ 

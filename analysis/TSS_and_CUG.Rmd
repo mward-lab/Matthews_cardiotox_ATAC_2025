@@ -1,0 +1,284 @@
+---
+title: "TSS and CUG overlap"
+author: "Renee Matthews"
+date: "2025-05-07"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE,
+	warning = FALSE,
+		dev = c("png","pdf")
+)
+```
+
+```{css, echo=FALSE}
+pre {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+pre[class] {
+  max-height: 200px;
+}
+```
+
+```{r package loading, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(kableExtra)
+library(broom)
+library(RColorBrewer)
+library(ChIPseeker)
+library("TxDb.Hsapiens.UCSC.hg38.knownGene")
+library("org.Hs.eg.db")
+library(rtracklayer)
+library(edgeR)
+library(ggfortify)
+library(limma)
+library(readr)
+library(BiocGenerics)
+library(gridExtra)
+library(VennDiagram)
+library(scales)
+library(BiocParallel)
+library(ggpubr)
+library(devtools)
+library(biomaRt)
+library(eulerr)
+library(smplot2)
+library(genomation)
+library(ggsignif)
+library(plyranges)
+library(ggrepel)
+library(epitools)
+library(circlize)
+
+```
+
+
+Getting TSS locations for all genes:
+```{r TSS data}
+txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
+tss_gr <- transcripts(txdb)
+tss_gr <- resize(tss_gr, width = 1, fix = "start")  # TSS is start for both strands
+```
+
+Loading CpG-island locations from UCSC and converting to granges
+```{r CpGi data}
+session <- browserSession("UCSC")
+genome(session) <- "hg38"
+cpg_table <- getTable(ucscTableQuery(session, track = "CpG Islands"))
+cpg_gr <- GRanges(seqnames = cpg_table$chrom,
+                  ranges = IRanges(start = cpg_table$chromStart + 1, end = cpg_table$chromEnd),
+                  strand = "*")
+
+```
+
+```{r Loading Cluster locations and full peaks list}
+Collapsed_peaks <- read_delim("data/Final_four_data/collapsed_new_peaks.txt",
+                              delim = "\t", 
+                              escape_double = FALSE, 
+                              trim_ws = TRUE)
+
+Motif_list_gr <- readRDS("data/Final_four_data/re_analysis/Motif_list_granges.RDS")
+##order specific
+df_list <- plyr::llply(Motif_list_gr, as.data.frame)
+### no change motif_list_gr names so they do not overwrite the dataframes
+names(Motif_list_gr) <- paste0(names(Motif_list_gr), "_gr")
+list2env(Motif_list_gr,envir= .GlobalEnv)
+
+list2env(df_list,envir= .GlobalEnv)
+
+final_peaks <- Collapsed_peaks %>% 
+  dplyr::filter(Peakid %in% mcols(all_regions_gr)$Peakid) %>% 
+  GRanges()
+
+
+```
+Assess the overlap between my data sets
+```{r TSS counts}
+peaks_tss_annotated <- final_peaks %>%
+  join_overlap_left(tss_gr) %>%
+  mutate(TSS_status = ifelse(is.na(tx_id), "non-TSS", "TSS"))  
+  
+```
+
+
+```{r CpG counts}
+ 
+olap <- findOverlaps(final_peaks, cpg_gr)
+peak_cpg_status <- rep("non-CpG", length(final_peaks))
+  
+# Mark peaks that overlap CpG islands
+peak_cpg_status[unique(queryHits(olap))] <- "CpG"
+
+final_peaks$CpG_status <- peak_cpg_status
+
+```
+
+```{r join dataframes}
+
+CPG_TSS_status_df <- final_peaks %>% 
+  as.data.frame() %>% 
+  dplyr::select(Peakid,CpG_status) %>% 
+  left_join(.,(peaks_tss_annotated %>% 
+              as.data.frame() %>% 
+  dplyr::select(Peakid,TSS_status) %>% 
+    distinct()), by=c("Peakid"="Peakid")) %>% 
+  mutate(mrc = case_when(
+    Peakid %in% EAR_open$Peakid ~ "EAR_open",
+    Peakid %in% EAR_close$Peakid ~ "EAR_close",
+    Peakid %in% ESR_open$Peakid ~ "ESR_open",
+    Peakid %in% ESR_close$Peakid ~ "ESR_close",
+    Peakid %in% ESR_opcl$Peakid ~ "ESR_opcl",
+    Peakid %in% LR_open$Peakid ~ "LR_open",
+    Peakid %in% LR_close$Peakid ~ "LR_close",
+    Peakid %in% NR$Peakid ~ "NR",
+    Peakid %in% ESR_clop$Peakid ~ "ESR_clop",
+    TRUE ~ "not_mrc"
+  )) 
+
+
+```
+
+```{r CPG mat}
+CpG_mat <- CPG_TSS_status_df %>% 
+ mutate(mrc=factor(mrc, levels = c("EAR_open","ESR_open","LR_open","ESR_opcl", "EAR_close","ESR_close","LR_close","ESR_clop", "NR"))) %>% 
+ dplyr::filter(mrc != "not_mrc") %>% 
+  group_by(Peakid) %>%
+  summarise(CpG_status = ifelse(any(CpG_status == "CpG"), "CpG_peak", "not_CpG_peak"), mrc=unique(mrc)) %>%
+  ungroup() %>% 
+  group_by(CpG_status, mrc) %>% 
+  tally %>% 
+  mutate(mrc=factor(mrc, levels = c("EAR_open","ESR_open","LR_open","ESR_opcl", "EAR_close","ESR_close","LR_close","ESR_clop", "NR"))) %>% 
+  pivot_wider(id_cols = mrc, names_from = CpG_status,values_from = n) %>% 
+  column_to_rownames("mrc") %>% 
+     na.omit(.) %>% 
+  as.matrix(.)
+CpG_mat
+```
+
+```{r tss mat}
+TSS_mat <- CPG_TSS_status_df %>% 
+ mutate(mrc=factor(mrc, levels = c("EAR_open","ESR_open","LR_open","ESR_opcl", "EAR_close","ESR_close","LR_close","ESR_clop", "NR"))) %>% 
+ dplyr::filter(mrc != "not_mrc") %>% 
+  group_by(Peakid) %>%
+  summarise(TSS_status = ifelse(any(TSS_status == "TSS"), "TSS_peak", "not_TSS_peak"), mrc=unique(mrc)) %>%
+  ungroup() %>% 
+  group_by(TSS_status, mrc) %>% 
+  tally %>% 
+  mutate(mrc=factor(mrc, levels = c("EAR_open","ESR_open","LR_open","ESR_opcl", "EAR_close","ESR_close","LR_close","ESR_clop", "NR"))) %>% 
+  pivot_wider(id_cols = mrc, names_from = TSS_status,values_from = n) %>% 
+  column_to_rownames("mrc") %>% 
+     na.omit(.) %>% 
+  as.matrix(.)
+
+TSS_mat
+```
+
+
+### odds ratio results
+```{r odds ratio test}
+matrix_list <- list("CpG"=CpG_mat,"TSS"=TSS_mat)
+
+results_or <- data.frame(Matrix_Name = character(),
+                      Row_Compared = character(),
+                      Odds_Ratio = numeric(),
+                      Lower_CI = numeric(),
+                      Upper_CI = numeric(),
+                      P_Value = numeric(),
+                      stringsAsFactors = FALSE)
+
+# Loop through each matrix in the list
+for (matrix_name in names(matrix_list)) {
+  current_matrix <- matrix_list[[matrix_name]]
+  n_rows <- nrow(current_matrix)
+  
+  # Loop through each row of the current matrix (except the last row)
+  for (i in 1:(n_rows - 1)) {
+    # Perform odds ratio test between row i and the last row using epitools
+    test_result <- tryCatch({
+      contingency_table <- rbind(current_matrix[i, ], current_matrix[n_rows, ])
+      
+      # Check if any row in the contingency table contains only zeros
+      if (any(rowSums(contingency_table) == 0)) {
+        stop("Contingency table contains empty rows.")
+      }
+      
+      oddsratio_result <- oddsratio(contingency_table)
+       # Ensure the oddsratio result has at least 2 rows
+      if (nrow(oddsratio_result$measure) < 2) {
+        stop("oddsratio result does not have enough data.")
+      }
+      
+     list(oddsratio = oddsratio_result, p.value = oddsratio_result$p.value[2,"chi.square"])
+      
+    }, error = function(e) {
+      cat("Error in odds ratio test for row", i, "in matrix", matrix_name, ":", e$message, "\n")
+      return(NULL)
+    })
+    
+    # Only store the result if test_result is valid (i.e., not NULL)
+    if (!is.null(test_result)) {
+      or_value <- test_result$oddsratio$measure[2, "estimate"]
+      lower_ci <- test_result$oddsratio$measure[2, "lower"]
+      upper_ci <- test_result$oddsratio$measure[2, "upper"]
+      p_value <- test_result$oddsratio$p.value[2,"chi.square"]
+      
+      # Check if the values are numeric and valid (not NA)
+      if (!is.na(or_value) && !is.na(lower_ci) && !is.na(upper_ci) && !is.na(p_value)) {
+        # Store the results in the dataframe
+        results_or <- rbind(results_or, data.frame(Matrix_Name = matrix_name,
+                                             Row_Compared = rownames(current_matrix)[i],
+                                             Odds_Ratio = or_value,
+                                             Lower_CI = lower_ci,
+                                             Upper_CI = upper_ci,
+                                             P_Value = p_value))
+      }
+    }
+  }
+}
+
+# Print the resulting dataframe
+print(results_or) %>% 
+  kable(., caption = "Odd ratio results and significance values of TSS and CpG enrichment compared to No response group") %>% 
+  kable_paper("striped", full_width = TRUE) %>%
+  kable_styling(full_width = FALSE, font_size = 14) %>% 
+  scroll_box(width = "100%", height = "400px")
+
+col_fun_OR = colorRamp2(c(0,1,1.5,5), c("blueviolet","white","lightgreen","green3" ))
+sig_mat_OR <- results_or %>% 
+  as.data.frame() %>% 
+  dplyr::select( Matrix_Name,Row_Compared,P_Value) %>%
+  group_by(Row_Compared) %>%
+  mutate(rank_val=rank(P_Value, ties.method = "first")) %>%
+  mutate(BH_correction= p.adjust(P_Value,method= "BH")) %>% 
+  pivot_wider(., id_cols = Matrix_Name, names_from = Row_Compared, values_from = BH_correction) %>% 
+  dplyr::select(Matrix_Name,EAR_open,ESR_open,LR_open,ESR_opcl,EAR_close,ESR_close,LR_close,ESR_clop) %>%
+  column_to_rownames("Matrix_Name") %>% 
+  as.matrix() 
+
+# saveRDS(results_or,"data/Final_four_data/re_analysis/OR_results_TSS_CpG_df_1bp.RDS")
+```
+
+
+```{r heatmap of OR results}
+results_or %>% 
+  as.data.frame() %>% 
+  dplyr::select( Matrix_Name,Row_Compared,Odds_Ratio) %>% 
+  pivot_wider(., id_cols = Matrix_Name, names_from = Row_Compared, values_from = Odds_Ratio) %>% 
+  dplyr::select(Matrix_Name,EAR_open,ESR_open,LR_open,ESR_opcl,EAR_close,ESR_close,LR_close,ESR_clop) %>%
+  column_to_rownames("Matrix_Name") %>% 
+  as.matrix() %>% 
+  ComplexHeatmap::Heatmap(. ,col = col_fun_OR, 
+                          cluster_rows=FALSE, 
+                          cluster_columns=FALSE, 
+                          column_names_side = "top", 
+                          column_names_rot = 45,
+                          # na_col = "black",
+                          cell_fun = function(j, i, x, y, width, height, fill) {if (!is.na(sig_mat_OR[i, j]) && sig_mat_OR[i, j] < 0.05  && .[i, j] > 1) {
+            grid.text("*", x, y, gp = gpar(fontsize = 20))}})
+```
+ note, this is not corrected for multiple testing

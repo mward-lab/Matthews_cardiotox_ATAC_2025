@@ -46,7 +46,6 @@ library(BiocParallel)
 library(ggpubr)
 library(devtools)
 library(eulerr)
-# library(genomation)
 library(ggsignif)
 library(plyranges)
 library(ggrepel)
@@ -54,7 +53,7 @@ library(ComplexHeatmap)
 library(cowplot)
 library(smplot2)
 library(data.table)
-
+library(ChIPpeakAnno)
 
 ```
 ```{r functions}
@@ -270,6 +269,43 @@ pca_final_four_anno %>%
   theme(plot.title=element_text(size= 14,hjust = 0.5),
         axis.title = element_text(size = 12, color = "black"))
 
+
+```
+
+
+### Comparison to realworld data
+To see how this filtered peak set looks compared to other heart data ATAC data, I downloaded ENCFF966JZT from Encode that contains ATAC peaks from the heart: left ventricle of 41 year old female.
+```{r Compare masterpeaks list with Snyder}
+Snyder_41peaks <- read.delim("data/other_papers/ENCFF966JZT_bed_Snyder_41peaks.bed",header=TRUE) %>% 
+  GRanges()
+
+peaks_list <- row.names(filt4_matrix_lcpm) %>% 
+  as.data.frame() %>% 
+  separate_wider_delim(., cols =.,
+                       names=c("chr","start","end"), 
+                       delim = ".", 
+                       cols_remove = FALSE) %>%
+  dplyr::rename("peakid"=4) %>% GRanges()
+
+heart_overlap <- join_overlap_intersect(Snyder_41peaks,peaks_list)
+ol_count <-heart_overlap %>% 
+  as.data.frame %>% 
+  distinct(peakid) %>% tally
+s_ol_count <- heart_overlap %>% 
+  as.data.frame %>% 
+  distinct(name) %>% tally
+
+
+my_peaks <- peaks_list
+snyder_peaks <- Snyder_41peaks %>% as.data.frame()
+heart_overlap_snyder <- heart_overlap %>% as.data.frame() %>% distinct(name)
+heart_overlap_me <- heart_overlap %>% as.data.frame() %>% distinct(peakid)
+fit <- euler(c("This study" = 155557 - 66927,        
+               "Snyder study" = 218982 - 137976,        # Unique to B
+               "This study&Snyder study" = min(66927)))
+plot(fit, fills = list(fill = c("skyblue", "lightcoral"), alpha = 0.6),
+     labels = FALSE, edges = TRUE, quantities = TRUE,
+     main = "Euler diagram between this study and Snyder's study")
 
 ```
 
