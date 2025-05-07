@@ -1,0 +1,2097 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+
+<meta name="author" content="Renee Matthews" />
+
+<meta name="date" content="2025-05-04" />
+
+<title>QC_on_reads</title>
+
+<script src="site_libs/header-attrs-2.29/header-attrs.js"></script>
+<script src="site_libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="site_libs/bootstrap-3.3.5/css/cosmo.min.css" rel="stylesheet" />
+<script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
+<style>h1 {font-size: 34px;}
+       h1.title {font-size: 38px;}
+       h2 {font-size: 30px;}
+       h3 {font-size: 24px;}
+       h4 {font-size: 18px;}
+       h5 {font-size: 16px;}
+       h6 {font-size: 12px;}
+       code {color: inherit; background-color: rgba(0, 0, 0, 0.04);}
+       pre:not([class]) { background-color: white }</style>
+<script src="site_libs/jqueryui-1.13.2/jquery-ui.min.js"></script>
+<link href="site_libs/tocify-1.9.1/jquery.tocify.css" rel="stylesheet" />
+<script src="site_libs/tocify-1.9.1/jquery.tocify.js"></script>
+<script src="site_libs/navigation-1.1/tabsets.js"></script>
+<link href="site_libs/highlightjs-9.12.0/textmate.css" rel="stylesheet" />
+<script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+<link href="site_libs/font-awesome-6.5.2/css/all.min.css" rel="stylesheet" />
+<link href="site_libs/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet" />
+
+<link rel="icon" href="https://github.com/workflowr/workflowr-assets/raw/main/img/reproducible.png">
+<!-- Add a small amount of space between sections. -->
+<style type="text/css">
+div.section {
+  padding-top: 12px;
+}
+</style>
+
+
+
+<style type="text/css">
+  code{white-space: pre-wrap;}
+  span.smallcaps{font-variant: small-caps;}
+  span.underline{text-decoration: underline;}
+  div.column{display: inline-block; vertical-align: top; width: 50%;}
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+  ul.task-list{list-style: none;}
+    </style>
+
+<style type="text/css">code{white-space: pre;}</style>
+<script type="text/javascript">
+if (window.hljs) {
+  hljs.configure({languages: []});
+  hljs.initHighlightingOnLoad();
+  if (document.readyState && document.readyState === "complete") {
+    window.setTimeout(function() { hljs.initHighlighting(); }, 0);
+  }
+}
+</script>
+
+
+
+
+
+
+
+
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+img {
+  max-width:100%;
+}
+.tabbed-pane {
+  padding-top: 12px;
+}
+.html-widget {
+  margin-bottom: 20px;
+}
+button.code-folding-btn:focus {
+  outline: none;
+}
+summary {
+  display: list-item;
+}
+details > summary > p:only-child {
+  display: inline;
+}
+pre code {
+  padding: 0;
+}
+</style>
+
+
+<style type="text/css">
+.dropdown-submenu {
+  position: relative;
+}
+.dropdown-submenu>.dropdown-menu {
+  top: 0;
+  left: 100%;
+  margin-top: -6px;
+  margin-left: -1px;
+  border-radius: 0 6px 6px 6px;
+}
+.dropdown-submenu:hover>.dropdown-menu {
+  display: block;
+}
+.dropdown-submenu>a:after {
+  display: block;
+  content: " ";
+  float: right;
+  width: 0;
+  height: 0;
+  border-color: transparent;
+  border-style: solid;
+  border-width: 5px 0 5px 5px;
+  border-left-color: #cccccc;
+  margin-top: 5px;
+  margin-right: -10px;
+}
+.dropdown-submenu:hover>a:after {
+  border-left-color: #adb5bd;
+}
+.dropdown-submenu.pull-left {
+  float: none;
+}
+.dropdown-submenu.pull-left>.dropdown-menu {
+  left: -100%;
+  margin-left: 10px;
+  border-radius: 6px 0 6px 6px;
+}
+</style>
+
+<script type="text/javascript">
+// manage active state of menu based on current page
+$(document).ready(function () {
+  // active menu anchor
+  href = window.location.pathname
+  href = href.substr(href.lastIndexOf('/') + 1)
+  if (href === "")
+    href = "index.html";
+  var menuAnchor = $('a[href="' + href + '"]');
+
+  // mark the anchor link active (and if it's in a dropdown, also mark that active)
+  var dropdown = menuAnchor.closest('li.dropdown');
+  if (window.bootstrap) { // Bootstrap 4+
+    menuAnchor.addClass('active');
+    dropdown.find('> .dropdown-toggle').addClass('active');
+  } else { // Bootstrap 3
+    menuAnchor.parent().addClass('active');
+    dropdown.addClass('active');
+  }
+
+  // Navbar adjustments
+  var navHeight = $(".navbar").first().height() + 15;
+  var style = document.createElement('style');
+  var pt = "padding-top: " + navHeight + "px; ";
+  var mt = "margin-top: -" + navHeight + "px; ";
+  var css = "";
+  // offset scroll position for anchor links (for fixed navbar)
+  for (var i = 1; i <= 6; i++) {
+    css += ".section h" + i + "{ " + pt + mt + "}\n";
+  }
+  style.innerHTML = "body {" + pt + "padding-bottom: 40px; }\n" + css;
+  document.head.appendChild(style);
+});
+</script>
+
+<!-- tabsets -->
+
+<style type="text/css">
+.tabset-dropdown > .nav-tabs {
+  display: inline-table;
+  max-height: 500px;
+  min-height: 44px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.tabset-dropdown > .nav-tabs > li.active:before, .tabset-dropdown > .nav-tabs.nav-tabs-open:before {
+  content: "\e259";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li.active:before {
+  content: "\e258";
+  font-family: 'Glyphicons Halflings';
+  border: none;
+}
+
+.tabset-dropdown > .nav-tabs > li.active {
+  display: block;
+}
+
+.tabset-dropdown > .nav-tabs > li > a,
+.tabset-dropdown > .nav-tabs > li > a:focus,
+.tabset-dropdown > .nav-tabs > li > a:hover {
+  border: none;
+  display: inline-block;
+  border-radius: 4px;
+  background-color: transparent;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li {
+  display: block;
+  float: none;
+}
+
+.tabset-dropdown > .nav-tabs > li {
+  display: none;
+}
+</style>
+
+<!-- code folding -->
+
+
+
+<style type="text/css">
+
+#TOC {
+  margin: 25px 0px 20px 0px;
+}
+@media (max-width: 768px) {
+#TOC {
+  position: relative;
+  width: 100%;
+}
+}
+
+@media print {
+.toc-content {
+  /* see https://github.com/w3c/csswg-drafts/issues/4434 */
+  float: right;
+}
+}
+
+.toc-content {
+  padding-left: 30px;
+  padding-right: 40px;
+}
+
+div.main-container {
+  max-width: 1200px;
+}
+
+div.tocify {
+  width: 20%;
+  max-width: 260px;
+  max-height: 85%;
+}
+
+@media (min-width: 768px) and (max-width: 991px) {
+  div.tocify {
+    width: 25%;
+  }
+}
+
+@media (max-width: 767px) {
+  div.tocify {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+.tocify ul, .tocify li {
+  line-height: 20px;
+}
+
+.tocify-subheader .tocify-item {
+  font-size: 0.90em;
+}
+
+.tocify .list-group-item {
+  border-radius: 0px;
+}
+
+
+</style>
+
+
+
+</head>
+
+<body>
+
+
+<div class="container-fluid main-container">
+
+
+<!-- setup 3col/9col grid for toc_float and main content  -->
+<div class="row">
+<div class="col-xs-12 col-sm-4 col-md-3">
+<div id="TOC" class="tocify">
+</div>
+</div>
+
+<div class="toc-content col-xs-12 col-sm-8 col-md-9">
+
+
+
+
+<div class="navbar navbar-default  navbar-fixed-top" role="navigation">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-bs-toggle="collapse" data-target="#navbar" data-bs-target="#navbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="index.html">Matthews_cardiotox_ATAC_2025</a>
+    </div>
+    <div id="navbar" class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+        <li>
+  <a href="index.html">Home</a>
+</li>
+<li>
+  <a href="about.html">About</a>
+</li>
+<li>
+  <a href="license.html">License</a>
+</li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        <li>
+  <a href="https://github.com/mward-lab/Matthews_cardiotox_ATAC_2025">
+    <span class="fab fa-github"></span>
+     
+    Source code
+  </a>
+</li>
+      </ul>
+    </div><!--/.nav-collapse -->
+  </div><!--/.container -->
+</div><!--/.navbar -->
+
+<div id="header">
+
+
+
+<h1 class="title toc-ignore">QC_on_reads</h1>
+<h4 class="author">Renee Matthews</h4>
+<h4 class="date">2025-05-04</h4>
+
+</div>
+
+
+<p>
+<button type="button" class="btn btn-default btn-workflowr btn-workflowr-report" data-toggle="collapse" data-target="#workflowr-report">
+<span class="glyphicon glyphicon-list" aria-hidden="true"></span>
+workflowr <span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span>
+</button>
+</p>
+<div id="workflowr-report" class="collapse">
+<ul class="nav nav-tabs">
+<li class="active">
+<a data-toggle="tab" href="#summary">Summary</a>
+</li>
+<li>
+<a data-toggle="tab" href="#checks"> Checks <span
+class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span>
+</a>
+</li>
+<li>
+<a data-toggle="tab" href="#versions">Past versions</a>
+</li>
+</ul>
+<div class="tab-content">
+<div id="summary" class="tab-pane fade in active">
+<p>
+<strong>Last updated:</strong> 2025-05-07
+</p>
+<p>
+<strong>Checks:</strong> <span
+class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> 7
+<span class="glyphicon glyphicon-exclamation-sign text-danger"
+aria-hidden="true"></span> 0
+</p>
+<p>
+<strong>Knit directory:</strong> <code>ATAC_learning/</code> <span
+class="glyphicon glyphicon-question-sign" aria-hidden="true"
+title="This is the local directory in which the code in this file was executed.">
+</span>
+</p>
+<p>
+This reproducible <a href="https://rmarkdown.rstudio.com">R Markdown</a>
+analysis was created with <a
+  href="https://github.com/workflowr/workflowr">workflowr</a> (version
+1.7.1). The <em>Checks</em> tab describes the reproducibility checks
+that were applied when the results were created. The <em>Past
+versions</em> tab lists the development history.
+</p>
+<hr>
+</div>
+<div id="checks" class="tab-pane fade">
+<div id="workflowr-checks" class="panel-group">
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRMarkdownfilestronguptodate">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>R Markdown file:</strong> up-to-date
+</a>
+</p>
+</div>
+<div id="strongRMarkdownfilestronguptodate"
+class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great! Since the R Markdown file has been committed to the Git
+repository, you know the exact version of the code that produced these
+results.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongEnvironmentstrongempty">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Environment:</strong> empty </a>
+</p>
+</div>
+<div id="strongEnvironmentstrongempty" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great job! The global environment was empty. Objects defined in the
+global environment can affect the analysis in your R Markdown file in
+unknown ways. For reproduciblity it’s best to always run the code in an
+empty environment.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongSeedstrongcodesetseed20231016code">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Seed:</strong>
+<code>set.seed(20231016)</code> </a>
+</p>
+</div>
+<div id="strongSeedstrongcodesetseed20231016code"
+class="panel-collapse collapse">
+<div class="panel-body">
+<p>The command <code>set.seed(20231016)</code> was run prior to running
+the code in the R Markdown file. Setting a seed ensures that any results
+that rely on randomness, e.g. subsampling or permutations, are
+reproducible.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongSessioninformationstrongrecorded">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Session information:</strong>
+recorded </a>
+</p>
+</div>
+<div id="strongSessioninformationstrongrecorded"
+class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great job! Recording the operating system, R version, and package
+versions is critical for reproducibility.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongCachestrongnone">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Cache:</strong> none </a>
+</p>
+</div>
+<div id="strongCachestrongnone" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Nice! There were no cached chunks for this analysis, so you can be
+confident that you successfully produced the results during this
+run.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongFilepathsstrongrelative">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>File paths:</strong> relative </a>
+</p>
+</div>
+<div id="strongFilepathsstrongrelative" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great job! Using relative paths to the files within your workflowr
+project makes it easier to run your code on other machines.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcommwardlabMatthewscardiotoxATAC2025tree0c952197c14fb935b7936f10897f3df44f68f5bftargetblank0c95219a">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Repository version:</strong>
+<a href="https://github.com/mward-lab/Matthews_cardiotox_ATAC_2025/tree/0c952197c14fb935b7936f10897f3df44f68f5bf" target="_blank">0c95219</a>
+</a>
+</p>
+</div>
+<div
+id="strongRepositoryversionstrongahrefhttpsgithubcommwardlabMatthewscardiotoxATAC2025tree0c952197c14fb935b7936f10897f3df44f68f5bftargetblank0c95219a"
+class="panel-collapse collapse">
+<div class="panel-body">
+<p>
+Great! You are using Git for version control. Tracking code development
+and connecting the code version to the results is critical for
+reproducibility.
+</p>
+<p>
+The results in this page were generated with repository version
+<a href="https://github.com/mward-lab/Matthews_cardiotox_ATAC_2025/tree/0c952197c14fb935b7936f10897f3df44f68f5bf" target="_blank">0c95219</a>.
+See the <em>Past versions</em> tab to see a history of the changes made
+to the R Markdown and HTML files.
+</p>
+<p>
+Note that you need to be careful to ensure that all relevant files for
+the analysis have been committed to Git prior to generating the results
+(you can use <code>wflow_publish</code> or
+<code>wflow_git_commit</code>). workflowr only checks the R Markdown
+file, but you know if there are other scripts or data files that it
+depends on. Below is the status of the Git repository when the results
+were generated:
+</p>
+<pre><code>
+Ignored files:
+    Ignored:    .RData
+    Ignored:    .Rhistory
+    Ignored:    .Rproj.user/
+    Ignored:    data/ACresp_SNP_table.csv
+    Ignored:    data/ARR_SNP_table.csv
+    Ignored:    data/All_merged_peaks.tsv
+    Ignored:    data/CAD_gwas_dataframe.RDS
+    Ignored:    data/CTX_SNP_table.csv
+    Ignored:    data/Collapsed_expressed_NG_peak_table.csv
+    Ignored:    data/DEG_toplist_sep_n45.RDS
+    Ignored:    data/FRiP_first_run.txt
+    Ignored:    data/Final_four_data/
+    Ignored:    data/Frip_1_reads.csv
+    Ignored:    data/Frip_2_reads.csv
+    Ignored:    data/Frip_3_reads.csv
+    Ignored:    data/Frip_4_reads.csv
+    Ignored:    data/Frip_5_reads.csv
+    Ignored:    data/Frip_6_reads.csv
+    Ignored:    data/GO_KEGG_analysis/
+    Ignored:    data/HF_SNP_table.csv
+    Ignored:    data/Ind1_75DA24h_dedup_peaks.csv
+    Ignored:    data/Ind1_TSS_peaks.RDS
+    Ignored:    data/Ind1_firstfragment_files.txt
+    Ignored:    data/Ind1_fragment_files.txt
+    Ignored:    data/Ind1_peaks_list.RDS
+    Ignored:    data/Ind1_summary.txt
+    Ignored:    data/Ind2_TSS_peaks.RDS
+    Ignored:    data/Ind2_fragment_files.txt
+    Ignored:    data/Ind2_peaks_list.RDS
+    Ignored:    data/Ind2_summary.txt
+    Ignored:    data/Ind3_TSS_peaks.RDS
+    Ignored:    data/Ind3_fragment_files.txt
+    Ignored:    data/Ind3_peaks_list.RDS
+    Ignored:    data/Ind3_summary.txt
+    Ignored:    data/Ind4_79B24h_dedup_peaks.csv
+    Ignored:    data/Ind4_TSS_peaks.RDS
+    Ignored:    data/Ind4_V24h_fraglength.txt
+    Ignored:    data/Ind4_fragment_files.txt
+    Ignored:    data/Ind4_fragment_filesN.txt
+    Ignored:    data/Ind4_peaks_list.RDS
+    Ignored:    data/Ind4_summary.txt
+    Ignored:    data/Ind5_TSS_peaks.RDS
+    Ignored:    data/Ind5_fragment_files.txt
+    Ignored:    data/Ind5_fragment_filesN.txt
+    Ignored:    data/Ind5_peaks_list.RDS
+    Ignored:    data/Ind5_summary.txt
+    Ignored:    data/Ind6_TSS_peaks.RDS
+    Ignored:    data/Ind6_fragment_files.txt
+    Ignored:    data/Ind6_peaks_list.RDS
+    Ignored:    data/Ind6_summary.txt
+    Ignored:    data/Knowles_4.RDS
+    Ignored:    data/Knowles_5.RDS
+    Ignored:    data/Knowles_6.RDS
+    Ignored:    data/LiSiLTDNRe_TE_df.RDS
+    Ignored:    data/MI_gwas.RDS
+    Ignored:    data/SNP_GWAS_PEAK_MRC_id
+    Ignored:    data/SNP_GWAS_PEAK_MRC_id.csv
+    Ignored:    data/SNP_gene_cat_list.tsv
+    Ignored:    data/SNP_supp_schneider.RDS
+    Ignored:    data/TE_info/
+    Ignored:    data/TFmapnames.RDS
+    Ignored:    data/all_TSSE_scores.RDS
+    Ignored:    data/all_four_filtered_counts.txt
+    Ignored:    data/aln_run1_results.txt
+    Ignored:    data/anno_ind1_DA24h.RDS
+    Ignored:    data/anno_ind4_V24h.RDS
+    Ignored:    data/annotated_gwas_SNPS.csv
+    Ignored:    data/background_n45_he_peaks.RDS
+    Ignored:    data/cardiac_muscle_FRIP.csv
+    Ignored:    data/cardiomyocyte_FRIP.csv
+    Ignored:    data/col_ng_peak.csv
+    Ignored:    data/cormotif_full_4_run.RDS
+    Ignored:    data/cormotif_full_4_run_he.RDS
+    Ignored:    data/cormotif_full_6_run.RDS
+    Ignored:    data/cormotif_full_6_run_he.RDS
+    Ignored:    data/cormotif_probability_45_list.csv
+    Ignored:    data/cormotif_probability_45_list_he.csv
+    Ignored:    data/cormotif_probability_all_6_list.csv
+    Ignored:    data/cormotif_probability_all_6_list_he.csv
+    Ignored:    data/datasave.RDS
+    Ignored:    data/embryo_heart_FRIP.csv
+    Ignored:    data/enhancer_list_ENCFF126UHK.bed
+    Ignored:    data/enhancerdata/
+    Ignored:    data/filt_Peaks_efit2.RDS
+    Ignored:    data/filt_Peaks_efit2_bl.RDS
+    Ignored:    data/filt_Peaks_efit2_n45.RDS
+    Ignored:    data/first_Peaksummarycounts.csv
+    Ignored:    data/first_run_frag_counts.txt
+    Ignored:    data/full_bedfiles/
+    Ignored:    data/gene_ref.csv
+    Ignored:    data/gwas_1_dataframe.RDS
+    Ignored:    data/gwas_2_dataframe.RDS
+    Ignored:    data/gwas_3_dataframe.RDS
+    Ignored:    data/gwas_4_dataframe.RDS
+    Ignored:    data/gwas_5_dataframe.RDS
+    Ignored:    data/high_conf_peak_counts.csv
+    Ignored:    data/high_conf_peak_counts.txt
+    Ignored:    data/high_conf_peaks_bl_counts.txt
+    Ignored:    data/high_conf_peaks_counts.txt
+    Ignored:    data/hits_files/
+    Ignored:    data/hyper_files/
+    Ignored:    data/hypo_files/
+    Ignored:    data/ind1_DA24hpeaks.RDS
+    Ignored:    data/ind1_TSSE.RDS
+    Ignored:    data/ind2_TSSE.RDS
+    Ignored:    data/ind3_TSSE.RDS
+    Ignored:    data/ind4_TSSE.RDS
+    Ignored:    data/ind4_V24hpeaks.RDS
+    Ignored:    data/ind5_TSSE.RDS
+    Ignored:    data/ind6_TSSE.RDS
+    Ignored:    data/initial_complete_stats_run1.txt
+    Ignored:    data/left_ventricle_FRIP.csv
+    Ignored:    data/median_24_lfc.RDS
+    Ignored:    data/median_3_lfc.RDS
+    Ignored:    data/mergedPeads.gff
+    Ignored:    data/mergedPeaks.gff
+    Ignored:    data/motif_list_full
+    Ignored:    data/motif_list_n45
+    Ignored:    data/motif_list_n45.RDS
+    Ignored:    data/multiqc_fastqc_run1.txt
+    Ignored:    data/multiqc_fastqc_run2.txt
+    Ignored:    data/multiqc_genestat_run1.txt
+    Ignored:    data/multiqc_genestat_run2.txt
+    Ignored:    data/my_hc_filt_counts.RDS
+    Ignored:    data/my_hc_filt_counts_n45.RDS
+    Ignored:    data/n45_bedfiles/
+    Ignored:    data/n45_files
+    Ignored:    data/other_papers/
+    Ignored:    data/peakAnnoList_1.RDS
+    Ignored:    data/peakAnnoList_2.RDS
+    Ignored:    data/peakAnnoList_24_full.RDS
+    Ignored:    data/peakAnnoList_24_n45.RDS
+    Ignored:    data/peakAnnoList_3.RDS
+    Ignored:    data/peakAnnoList_3_full.RDS
+    Ignored:    data/peakAnnoList_3_n45.RDS
+    Ignored:    data/peakAnnoList_4.RDS
+    Ignored:    data/peakAnnoList_5.RDS
+    Ignored:    data/peakAnnoList_6.RDS
+    Ignored:    data/peakAnnoList_Eight.RDS
+    Ignored:    data/peakAnnoList_full_motif.RDS
+    Ignored:    data/peakAnnoList_n45_motif.RDS
+    Ignored:    data/siglist_full.RDS
+    Ignored:    data/siglist_n45.RDS
+    Ignored:    data/summarized_peaks_dataframe.txt
+    Ignored:    data/summary_peakIDandReHeat.csv
+    Ignored:    data/test.list.RDS
+    Ignored:    data/testnames.txt
+    Ignored:    data/toplist_6.RDS
+    Ignored:    data/toplist_full.RDS
+    Ignored:    data/toplist_full_DAR_6.RDS
+    Ignored:    data/toplist_n45.RDS
+    Ignored:    data/trimmed_seq_length.csv
+    Ignored:    data/unclassified_full_set_peaks.RDS
+    Ignored:    data/unclassified_n45_set_peaks.RDS
+    Ignored:    data/xstreme/
+
+Untracked files:
+    Untracked:  analysis/Diagnosis-tmm.Rmd
+    Untracked:  analysis/Expressed_RNA_associations.Rmd
+    Untracked:  analysis/LFC_corr.Rmd
+    Untracked:  analysis/SVA.Rmd
+    Untracked:  analysis/Tan2020.Rmd
+    Untracked:  analysis/making_master_peaks_list.Rmd
+    Untracked:  analysis/my_hc_filt_counts.csv
+    Untracked:  code/IGV_snapshot_code.R
+    Untracked:  code/LongDARlist.R
+    Untracked:  code/just_for_Fun.R
+    Untracked:  output/cormotif_probability_45_list.csv
+    Untracked:  output/cormotif_probability_all_6_list.csv
+    Untracked:  setup.RData
+
+Unstaged changes:
+    Modified:   ATAC_learning.Rproj
+    Modified:   analysis/DEG_analysis.Rmd
+    Modified:   analysis/Jaspar_motif.Rmd
+    Modified:   analysis/Jaspar_motif_ff.Rmd
+    Modified:   analysis/final_four_analysis.Rmd
+
+</code></pre>
+<p>
+Note that any generated files, e.g. HTML, png, CSS, etc., are not
+included in this status report because it is ok for generated content to
+have uncommitted changes.
+</p>
+</div>
+</div>
+</div>
+</div>
+<hr>
+</div>
+<div id="versions" class="tab-pane fade">
+<p>
+These are the previous versions of the repository in which changes were
+made to the R Markdown (<code>analysis/QC_on_reads.Rmd</code>) and HTML
+(<code>docs/QC_on_reads.html</code>) files. If you’ve configured a
+remote Git repository (see <code>?wflow_git_remote</code>), click on the
+hyperlinks in the table below to view the files as they were in that
+past version.
+</p>
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+File
+</th>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+<th>
+Message
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+Rmd
+</td>
+<td>
+<a href="https://github.com/mward-lab/Matthews_cardiotox_ATAC_2025/blob/0c952197c14fb935b7936f10897f3df44f68f5bf/analysis/QC_on_reads.Rmd" target="_blank">0c95219</a>
+</td>
+<td>
+reneeisnowhere
+</td>
+<td>
+2025-05-07
+</td>
+<td>
+updates
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<hr>
+</div>
+</div>
+</div>
+<style type="text/css">
+pre {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+pre[class] {
+  max-height: 200px;
+}
+</style>
+<pre class="r"><code>library(tidyverse)
+library(kableExtra)
+# library(broom)
+library(RColorBrewer)
+library(ChIPseeker)
+library(&quot;TxDb.Hsapiens.UCSC.hg38.knownGene&quot;)
+library(&quot;org.Hs.eg.db&quot;)
+library(rtracklayer)
+# library(edgeR)
+library(ggfortify)
+# library(limma)
+library(readr)
+library(BiocGenerics)
+library(gridExtra)
+library(VennDiagram)
+library(scales)
+library(BiocParallel)
+library(ggpubr)
+library(devtools)
+library(eulerr)
+# library(genomation)
+library(ggsignif)
+library(plyranges)
+library(ggrepel)
+library(ComplexHeatmap)
+library(cowplot)
+library(smplot2)
+library(data.table)
+library(ATACseqQC)</code></pre>
+<pre class="r"><code>drug_pal &lt;- c(&quot;#8B006D&quot;,&quot;#DF707E&quot;,&quot;#F1B72B&quot;, &quot;#3386DD&quot;,&quot;#707031&quot;,&quot;#41B333&quot;)</code></pre>
+<div id="loading-data" class="section level3">
+<h3>Loading data</h3>
+<pre class="r"><code>Ind1_summary  &lt;- read.csv(&quot;data/Ind1_summary.txt&quot;, row.names = 1) %&gt;% 
+  dplyr::rename(&quot;sample&quot;=X1,&quot;reads&quot;=X2,&quot;mapped&quot;=X3)%&gt;% 
+  mutate(sample=gsub(pattern = &quot;flagstat_first/trimmed_&quot;,&quot;total_&quot;,sample)) %&gt;% 
+  mutate(sample= gsub(pattern= &quot;flagstat_noM/trimmed_&quot;,&quot;nuclear_&quot;,sample)) %&gt;% 
+  mutate(sample=gsub(pattern = &quot;filt_files/trimmed_&quot;,&quot;other_&quot;,sample)) %&gt;% 
+  mutate(sample = gsub(&quot;24h&quot;,&quot;_24h&quot;,sample), 
+       sample = gsub(&quot;3h&quot;,&quot;_3h&quot;,sample)) %&gt;%
+  separate(sample, into=c(&quot;read_type&quot;,&quot;indv&quot;,&quot;trt&quot;,&quot;time&quot;,NA,&quot;neat&quot;)) %&gt;% 
+  mutate(read_type=if_else(read_type==&quot;other&quot;,neat,read_type)) %&gt;% 
+  mutate(trt= gsub(&#39;75DX&#39;,&#39;DOX&#39;,trt),
+         trt= gsub(&#39;75E&#39;,&#39;EPI&#39;, trt),
+         trt=gsub(&#39;75DA&#39;,&#39;DNR&#39;,trt),
+         trt=gsub(&#39;75M&#39;,&#39;MTX&#39;,trt),
+         trt=gsub(&#39;75T&#39;,&#39;TRZ&#39;,trt),
+         trt=gsub(&#39;75V&#39;,&#39;VEH&#39;,trt)) %&gt;% 
+  separate(reads,into=c(&quot;reads&quot;,NA),sep= &quot; &quot;) %&gt;% 
+   mutate(reads=as.numeric(reads)) %&gt;% 
+  separate(mapped, into= c(&quot;mapped_reads&quot;, NA,NA, &quot;percent_mapped_reads&quot;,NA)) %&gt;% 
+  mutate(mapped_reads=as.numeric(mapped_reads)) %&gt;% 
+  tidyr::unite(&quot;sample&quot;,indv:time,sep = &quot;_&quot;,remove = FALSE) %&gt;% 
+  dplyr::select(sample, indv:time, read_type,reads, mapped_reads)
+
+Ind2_summary  &lt;- read.csv(&quot;data/Ind2_summary.txt&quot;, row.names = 1)%&gt;% 
+dplyr::rename(&quot;sample&quot;=X1,&quot;reads&quot;=X2,&quot;mapped&quot;=X3)%&gt;% 
+  mutate(sample=gsub(pattern = &quot;flagstat_first/trimmed_&quot;,&quot;total_&quot;,sample)) %&gt;% 
+  mutate(sample= gsub(pattern= &quot;flagstat_noM/trimmed_&quot;,&quot;nuclear_&quot;,sample)) %&gt;% 
+  mutate(sample=gsub(pattern = &quot;filt_files/trimmed_&quot;,&quot;other_&quot;,sample)) %&gt;% 
+  mutate(sample = gsub(&quot;24h&quot;,&quot;_24h&quot;,sample), 
+       sample = gsub(&quot;3h&quot;,&quot;_3h&quot;,sample)) %&gt;%
+  separate(sample, into=c(&quot;read_type&quot;,&quot;indv&quot;,&quot;trt&quot;,&quot;time&quot;,NA,&quot;neat&quot;)) %&gt;% 
+  mutate(read_type=if_else(read_type==&quot;other&quot;,neat,read_type)) %&gt;% 
+  mutate(trt= gsub(&#39;87DX&#39;,&#39;DOX&#39;,trt),
+         trt= gsub(&#39;87E&#39;,&#39;EPI&#39;, trt),
+         trt=gsub(&#39;87DA&#39;,&#39;DNR&#39;,trt),
+         trt=gsub(&#39;87M&#39;,&#39;MTX&#39;,trt),
+         trt=gsub(&#39;87T&#39;,&#39;TRZ&#39;,trt),
+         trt=gsub(&#39;87V&#39;,&#39;VEH&#39;,trt)) %&gt;% 
+  separate(reads,into=c(&quot;reads&quot;,NA),sep= &quot; &quot;) %&gt;% 
+   mutate(reads=as.numeric(reads)) %&gt;% 
+  separate(mapped, into= c(&quot;mapped_reads&quot;, NA,NA, &quot;percent_mapped_reads&quot;,NA)) %&gt;% 
+  mutate(mapped_reads=as.numeric(mapped_reads)) %&gt;% 
+  tidyr::unite(&quot;sample&quot;,indv:time,sep = &quot;_&quot;,remove = FALSE) %&gt;% 
+  dplyr::select(sample, indv:time, read_type,reads, mapped_reads)
+
+Ind3_summary  &lt;- read.csv(&quot;data/Ind3_summary.txt&quot;, row.names = 1)%&gt;% 
+dplyr::rename(&quot;sample&quot;=X1,&quot;reads&quot;=X2,&quot;mapped&quot;=X3)%&gt;% 
+  mutate(sample=gsub(pattern = &quot;flagstat_first/trimmed_&quot;,&quot;total_&quot;,sample)) %&gt;% 
+  mutate(sample= gsub(pattern= &quot;flagstat_noM/trimmed_&quot;,&quot;nuclear_&quot;,sample)) %&gt;% 
+  mutate(sample=gsub(pattern = &quot;filt_files/trimmed_&quot;,&quot;other_&quot;,sample)) %&gt;% 
+  mutate(sample = gsub(&quot;24h&quot;,&quot;_24h&quot;,sample), 
+       sample = gsub(&quot;3h&quot;,&quot;_3h&quot;,sample)) %&gt;%
+  separate(sample, into=c(&quot;read_type&quot;,&quot;indv&quot;,&quot;trt&quot;,&quot;time&quot;,NA,&quot;neat&quot;)) %&gt;% 
+  mutate(read_type=if_else(read_type==&quot;other&quot;,neat,read_type)) %&gt;% 
+  mutate(trt= gsub(&#39;77DX&#39;,&#39;DOX&#39;,trt),
+         trt= gsub(&#39;77E&#39;,&#39;EPI&#39;, trt),
+         trt=gsub(&#39;77DA&#39;,&#39;DNR&#39;,trt),
+         trt=gsub(&#39;77M&#39;,&#39;MTX&#39;,trt),
+         trt=gsub(&#39;77T&#39;,&#39;TRZ&#39;,trt),
+         trt=gsub(&#39;77V&#39;,&#39;VEH&#39;,trt)) %&gt;% 
+  separate(reads,into=c(&quot;reads&quot;,NA),sep= &quot; &quot;) %&gt;% 
+   mutate(reads=as.numeric(reads)) %&gt;% 
+  separate(mapped, into= c(&quot;mapped_reads&quot;, NA,NA, &quot;percent_mapped_reads&quot;,NA)) %&gt;% 
+  mutate(mapped_reads=as.numeric(mapped_reads)) %&gt;% 
+  tidyr::unite(&quot;sample&quot;,indv:time,sep = &quot;_&quot;,remove = FALSE) %&gt;% 
+  dplyr::select(sample, indv:time, read_type,reads, mapped_reads)
+
+Ind6_summary  &lt;- read.csv(&quot;data/Ind6_summary.txt&quot;, row.names = 1)%&gt;% 
+  dplyr::rename(&quot;sample&quot;=X1,&quot;reads&quot;=X2,&quot;mapped&quot;=X3)%&gt;% 
+  mutate(sample=gsub(pattern = &quot;flagstat_first/trimmed_&quot;,&quot;total_&quot;,sample)) %&gt;% 
+  mutate(sample= gsub(pattern= &quot;flagstat_noM/trimmed_&quot;,&quot;nuclear_&quot;,sample)) %&gt;% 
+  mutate(sample=gsub(pattern = &quot;filt_files/trimmed_&quot;,&quot;other_&quot;,sample)) %&gt;% 
+  mutate(sample = gsub(&quot;24h&quot;,&quot;_24h&quot;,sample), 
+       sample = gsub(&quot;3h&quot;,&quot;_3h&quot;,sample)) %&gt;%
+  separate(sample, into=c(&quot;read_type&quot;,&quot;indv&quot;,&quot;trt&quot;,&quot;time&quot;,NA,&quot;neat&quot;)) %&gt;% 
+  mutate(read_type=if_else(read_type==&quot;other&quot;,neat,read_type)) %&gt;% 
+  mutate(trt= gsub(&#39;71DX&#39;,&#39;DOX&#39;,trt),
+         trt= gsub(&#39;71E&#39;,&#39;EPI&#39;, trt),
+         trt=gsub(&#39;71DA&#39;,&#39;DNR&#39;,trt),
+         trt=gsub(&#39;71M&#39;,&#39;MTX&#39;,trt),
+         trt=gsub(&#39;71T&#39;,&#39;TRZ&#39;,trt),
+         trt=gsub(&#39;71V&#39;,&#39;VEH&#39;,trt)) %&gt;% 
+  separate(reads,into=c(&quot;reads&quot;,NA),sep= &quot; &quot;) %&gt;% 
+   mutate(reads=as.numeric(reads)) %&gt;% 
+  separate(mapped, into= c(&quot;mapped_reads&quot;, NA,NA, &quot;percent_mapped_reads&quot;,NA)) %&gt;% 
+  mutate(mapped_reads=as.numeric(mapped_reads)) %&gt;% 
+  tidyr::unite(&quot;sample&quot;,indv:time,sep = &quot;_&quot;,remove = FALSE) %&gt;% 
+  dplyr::select(sample, indv:time, read_type,reads, mapped_reads)
+
+Final_four_counts &lt;- Ind1_summary %&gt;% rbind(Ind2_summary) %&gt;% rbind(Ind3_summary) %&gt;% rbind(Ind6_summary)
+
+FF_bound &lt;- Final_four_counts %&gt;% 
+  mutate(time=factor(time, levels =c(&quot;3h&quot;,&quot;24h&quot;))) %&gt;% 
+  pivot_longer(cols = reads:mapped_reads, names_to=&quot;count_type&quot;, values_to = &quot;read_num&quot;) %&gt;% 
+  mutate(read_type=case_when(read_type==&quot;fin&quot;~&quot;unique&quot;,.default = read_type)) %&gt;% 
+  tidyr::unite(&quot;Total_reads&quot;,read_type:count_type,sep = &quot;_&quot;, remove = TRUE) %&gt;% 
+  tidyr::unite(&quot;Total_reads_time&quot;,Total_reads:time,sep = &quot;_&quot;, remove = FALSE) %&gt;% 
+  mutate(Total_reads=factor(Total_reads, levels = c(&quot;total_reads&quot;, &quot;total_mapped_reads&quot;,&quot;nuclear_reads&quot;,&quot;nuclear_mapped_reads&quot;,&quot;unique_reads&quot;, &quot;unique_mapped_reads&quot;, &quot;nodup_reads&quot;, &quot;nodup_mapped_reads&quot;))) %&gt;% 
+  dplyr::filter(Total_reads != &quot;nuclear_reads&quot;) %&gt;% 
+dplyr::filter(Total_reads != &quot;nodup_reads&quot;) %&gt;% 
+dplyr::filter(Total_reads != &quot;unique_reads&quot;) %&gt;% 
+  dplyr::mutate(trt=factor(trt, levels = c(&quot;DOX&quot;, &quot;EPI&quot;,&quot;DNR&quot;, &quot;MTX&quot;,&quot;TRZ&quot;,&quot;VEH&quot;)))</code></pre>
+<pre class="r"><code>FF_bound %&gt;% 
+ ggplot(., aes(x=Total_reads, y=read_num, col=indv, group=interaction(time,Total_reads_time)))+
+  geom_boxplot(aes(fill=trt)) + 
+  geom_point(aes(col=indv))+
+   theme_bw()+
+  facet_wrap(~trt+time,nrow = 3, ncol = 6 )+
+  scale_fill_manual(values=drug_pal)+
+  theme(strip.text = 
+          element_text(face = &quot;bold&quot;,  
+                       hjust = 0, 
+                       size = 8),
+        strip.background = 
+          element_rect(fill = &quot;white&quot;,
+                       linetype = &quot;solid&quot;,
+                       color = &quot;black&quot;, 
+                       linewidth = 1),
+        panel.spacing = unit(1, &#39;points&#39;),
+        axis.text.x=
+          element_text(angle = 90, 
+                       vjust = 0.5, 
+                       hjust=1))</code></pre>
+<p><img src="figure/QC_on_reads.Rmd/Plotting%20reads-1.png" width="672" style="display: block; margin: auto;" /></p>
+</div>
+<div id="individual-1-fragment-files" class="section level3">
+<h3>Individual 1 fragment files:</h3>
+<pre class="r"><code>Ind1_frag_files &lt;- read.csv(&quot;data/Ind1_fragment_files.txt&quot;, row.names = 1)
+ 
+Ind1_firstfrag_files &lt;- read.csv(&quot;data/Ind1_firstfragment_files.txt&quot;, row.names = 1)
+Ind1_frag_files %&gt;% 
+  mutate(trt=
+           factor(trt,levels=
+                    c(&quot;DX&quot;,&quot;E&quot;,&quot;DA&quot;,&quot;M&quot;,&quot;T&quot;,&quot;V&quot;), 
+                  labels=
+                c(&quot;DOX&quot;,&quot;EPI&quot;,&quot;DNR&quot;, &quot;MTX&quot;,&quot;TRZ&quot;,&quot;VEH&quot;)))%&gt;% 
+  dplyr::filter(time ==&quot;3h&quot;) %&gt;%
+  ggplot(., aes(y=counts, x=frag_size, group=trt))+
+  geom_line(aes(col=trt))+
+  ggtitle(&quot;Individual 1\n3 hour fragment sizes&quot;)+
+  theme_classic()+
+  facet_wrap(~trt)+
+  scale_color_manual(values=drug_pal)+
+  coord_cartesian(ylim=c(0,300000))</code></pre>
+<p><img src="figure/QC_on_reads.Rmd/fragfiles1-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>Ind1_firstfrag_files %&gt;% 
+  mutate(trt=factor(trt,
+                    levels=c(&quot;DX&quot;,&quot;E&quot;,&quot;DA&quot;,&quot;M&quot;,&quot;T&quot;,&quot;V&quot;),
+                    labels=c(&quot;DOX&quot;,&quot;EPI&quot;, &quot;DNR&quot;,&quot;MTX&quot;,&quot;TRZ&quot; ,&quot;VEH&quot;))) %&gt;%
+  dplyr::filter(time ==&quot;3h&quot;) %&gt;%
+  ggplot(., aes(y=(counts), x=(frag_size), group=trt))+
+  geom_line(aes(col=trt))+
+  ggtitle(&quot;Individual 1\n3 hour fragment sizes BEFORE filtering&quot;)+
+  theme_classic()+
+  facet_wrap(~trt)+
+  scale_color_manual(values=drug_pal)+
+  coord_cartesian(xlim=c(0,1000))</code></pre>
+<p><img src="figure/QC_on_reads.Rmd/fragfiles1-2.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>Ind1_frag_files %&gt;% 
+  mutate(trt=factor(trt, levels=c(&quot;DX&quot;,&quot;E&quot;,&quot;DA&quot;,&quot;M&quot;,&quot;T&quot;,&quot;V&quot;), labels = c(&quot;DOX&quot;,&quot;EPI&quot;,&quot;DNR&quot;,&quot;MTX&quot;,&quot;TRZ&quot;,&quot;VEH&quot;))) %&gt;% 
+  dplyr::filter(time ==&quot;24h&quot;) %&gt;%
+  ggplot(., aes(y=(counts), x=frag_size, group=trt))+
+  geom_line(aes(col=trt))+
+  ggtitle(&quot;Individual 1\n24 hour fragment sizes&quot;)+
+  theme_classic()+
+  facet_wrap(~trt)+
+  scale_color_manual(values=drug_pal)</code></pre>
+<p><img src="figure/QC_on_reads.Rmd/fragfiles1-3.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>Ind1_firstfrag_files %&gt;% 
+  mutate(trt=factor(trt, levels=c(&quot;DX&quot;,&quot;E&quot;,&quot;DA&quot;,&quot;M&quot;,&quot;T&quot;,&quot;V&quot;), labels = c(&quot;DOX&quot;,&quot;EPI&quot;,&quot;DNR&quot;,&quot;MTX&quot;,&quot;TRZ&quot;,&quot;VEH&quot;))) %&gt;% 
+  dplyr::filter(time ==&quot;24h&quot;) %&gt;%
+  ggplot(., aes(y=(counts), x=(frag_size), group=trt))+
+  geom_line(aes(col=trt))+
+  ggtitle(&quot;Individual 1\n24 hour fragment sizes BEFORE filtering&quot;)+
+  theme_classic()+
+   facet_wrap(~trt)+
+  scale_color_manual(values=drug_pal)+
+  coord_cartesian(xlim=c(0,1000))</code></pre>
+<p><img src="figure/QC_on_reads.Rmd/fragfiles1-4.png" width="672" style="display: block; margin: auto;" />
+#### FRiP Individual 1</p>
+<pre class="r"><code>cardiac_muscle_Frip &lt;- read.csv(&quot;data/cardiac_muscle_FRIP.csv&quot;, row.names = 1)
+cardiomyocyte_Frip &lt;- read.csv(&quot;data/cardiomyocyte_FRIP.csv&quot;, row.names = 1)
+left_ventricle_Frip &lt;- read.csv(&quot;data/left_ventricle_FRIP.csv&quot;, row.names = 1)
+embryo_heart_Frip &lt;- read.csv(&quot;data/embryo_heart_FRIP.csv&quot;, row.names = 1)
+
+Frip_1_reads &lt;- read.csv(&quot;data/Frip_1_reads.csv&quot;, row.names = 1)
+
+all_frip1 &lt;- Frip_1_reads %&gt;% 
+ mutate(sample=gsub(&quot;75&quot;,&quot;1_&quot;,sample)) %&gt;% 
+   mutate(sample = gsub(&quot;24h&quot;,&quot;_24h&quot;,sample), 
+       sample = gsub(&quot;3h&quot;,&quot;_3h&quot;,sample)) %&gt;%
+  separate(sample, into = c(&quot;indv&quot;,&quot;trt&quot;,&quot;time&quot;)) %&gt;%
+  mutate(trt=factor(trt, levels=c(&quot;DX&quot;,&quot;E&quot;,&quot;DA&quot;,&quot;M&quot;,&quot;T&quot;,&quot;V&quot;), labels = c(&quot;DOX&quot;,&quot;EPI&quot;,&quot;DNR&quot;,&quot;MTX&quot;,&quot;TRZ&quot;,&quot;VEH&quot;))) %&gt;%  
+  mutate(indv=as.numeric(indv)) %&gt;% 
+  left_join(., (cardiac_muscle_Frip %&gt;% mutate(trt=factor(trt, levels=c(&quot;DOX&quot;,&quot;EPI&quot;,&quot;DNR&quot;,&quot;MTX&quot;,&quot;TRZ&quot;,&quot;VEH&quot;))))) %&gt;% 
+ left_join(., (left_ventricle_Frip %&gt;% mutate(trt=factor(trt, levels=c(&quot;DOX&quot;,&quot;EPI&quot;,&quot;DNR&quot;,&quot;MTX&quot;,&quot;TRZ&quot;,&quot;VEH&quot;))))) %&gt;% 
+    left_join(., (cardiomyocyte_Frip %&gt;% mutate(trt=factor(trt, levels=c(&quot;DOX&quot;,&quot;EPI&quot;,&quot;DNR&quot;,&quot;MTX&quot;,&quot;TRZ&quot;,&quot;VEH&quot;))))) %&gt;% 
+   left_join(., (embryo_heart_Frip %&gt;% mutate(trt=factor(trt, levels=c(&quot;DOX&quot;,&quot;EPI&quot;,&quot;DNR&quot;,&quot;MTX&quot;,&quot;TRZ&quot;,&quot;VEH&quot;))))) %&gt;% 
+  mutate(FRIP_embryo=embryo_counts/dedup_reads *100) %&gt;% 
+  mutate(FRIP_cm=cm_counts/dedup_reads*100) %&gt;% 
+mutate(FRIP_lv=lv_counts/dedup_reads*100) %&gt;% 
+mutate(FRIP_adult=c_muscle_counts/dedup_reads*100)
+
+
+Frip_1_reads %&gt;% 
+  mutate(sample=gsub(&quot;75&quot;,&quot;1_&quot;,sample)) %&gt;% 
+   mutate(sample = gsub(&quot;24h&quot;,&quot;_24h&quot;,sample), 
+       sample = gsub(&quot;3h&quot;,&quot;_3h&quot;,sample)) %&gt;%
+  separate(sample, into = c(&quot;indv&quot;,&quot;trt&quot;,&quot;time&quot;)) %&gt;% 
+  mutate(time=factor(time, levels = c(&quot;3h&quot;,&quot;24h&quot;))) %&gt;% 
+  mutate(trt=factor(trt, levels=c(&quot;DX&quot;,&quot;E&quot;,&quot;DA&quot;,&quot;M&quot;,&quot;T&quot;,&quot;V&quot;), labels = c(&quot;DOX&quot;,&quot;EPI&quot;,&quot;DNR&quot;,&quot;MTX&quot;,&quot;TRZ&quot;,&quot;VEH&quot;))) %&gt;%  
+  ggplot(., aes (x=time, y=FRiP_1, group=trt))+
+  geom_col(position= &quot;dodge&quot;,aes(fill=trt))+
+  geom_hline(yintercept = 20)+
+  geom_hline(yintercept = 30,linetype=3)+
+  facet_wrap(~indv)+
+  theme_classic()+
+  ggtitle(&quot;FRiP Score across each sample for individual 1&quot;)+
+   scale_fill_manual(values=drug_pal)</code></pre>
+<p><img src="figure/QC_on_reads.Rmd/Frip1-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>FRiP_first_run &lt;- read.csv(&quot;data/FRiP_first_run.txt&quot;, row.names = 1)
+FRiP_first_run %&gt;% 
+  mutate(sample=gsub(&quot;75&quot;,&quot;1_&quot;,sample)) %&gt;% 
+  mutate(sample=gsub(&quot;87&quot;,&quot;2_&quot;,sample)) %&gt;% 
+  mutate(sample=gsub(&quot;77&quot;,&quot;3_&quot;,sample)) %&gt;% 
+  mutate(sample=gsub(&quot;79&quot;,&quot;4_&quot;,sample)) %&gt;% 
+  mutate(sample=gsub(&quot;78&quot;,&quot;5_&quot;,sample)) %&gt;% 
+  mutate(sample=gsub(&quot;71&quot;,&quot;6_&quot;,sample)) %&gt;% 
+  mutate(sample = gsub(&quot;24h&quot;,&quot;_24h&quot;,sample), 
+       sample = gsub(&quot;3h&quot;,&quot;_3h&quot;,sample)) %&gt;%
+  separate(sample, into = c(&quot;indv&quot;,&quot;trt&quot;,&quot;time&quot;)) %&gt;% 
+  mutate(time=factor(time, levels = c(&quot;3h&quot;,&quot;24h&quot;))) %&gt;% 
+  mutate(trt=factor(trt, levels=c(&quot;DX&quot;,&quot;E&quot;,&quot;DA&quot;,&quot;M&quot;,&quot;T&quot;,&quot;V&quot;), labels = c(&quot;DOX&quot;,&quot;EPI&quot;,&quot;DNR&quot;,&quot;MTX&quot;,&quot;TRZ&quot;,&quot;VEH&quot;))) %&gt;% 
+  ggplot(., aes (x=time, y=FRiP, group=trt))+
+  geom_col(position= &quot;dodge&quot;,aes(fill=trt))+
+  geom_hline(yintercept = 20)+
+  geom_hline(yintercept = 30,linetype=3)+
+  facet_wrap(~indv)+
+  theme_classic()+
+  ggtitle(&quot;FRiP Score across Ind1 sample&quot;)+
+   scale_fill_manual(values=drug_pal)</code></pre>
+<p><img src="figure/QC_on_reads.Rmd/Frip1-2.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>all_frip1 %&gt;% ggplot(., aes (x=time, y=FRIP_cm, group=trt))+
+  geom_col(position= &quot;dodge&quot;,aes(fill=trt))+
+  geom_hline(yintercept = 20)+
+  geom_hline(yintercept = 30,linetype=3)+
+  facet_wrap(~indv)+
+  theme_classic()+
+  ggtitle(&quot;FRiP Score across Ind1 using cardiomyocyte DNAse peaks&quot;)+
+   scale_fill_manual(values=drug_pal)</code></pre>
+<p><img src="figure/QC_on_reads.Rmd/Frip1-3.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>all_frip1 %&gt;% ggplot(., aes (x=time, y=FRIP_lv, group=trt))+
+  geom_col(position= &quot;dodge&quot;,aes(fill=trt))+
+  geom_hline(yintercept = 20)+
+  geom_hline(yintercept = 30,linetype=3)+
+  facet_wrap(~indv)+
+  theme_classic()+
+  ggtitle(&quot;FRiP Score across Ind1 using left ventricle DNAse peaks&quot;)+
+   scale_fill_manual(values=drug_pal)</code></pre>
+<p><img src="figure/QC_on_reads.Rmd/Frip1-4.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>all_frip1 %&gt;% ggplot(., aes (x=time, y=FRIP_adult, group=trt))+
+  geom_col(position= &quot;dodge&quot;,aes(fill=trt))+
+  geom_hline(yintercept = 20)+
+  geom_hline(yintercept = 30,linetype=3)+
+  facet_wrap(~indv)+
+  theme_classic()+
+  ggtitle(&quot;FRiP Score across Ind1 using adult heart DNAse peaks&quot;)+
+   scale_fill_manual(values=drug_pal)</code></pre>
+<p><img src="figure/QC_on_reads.Rmd/Frip1-5.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>all_frip1 %&gt;% ggplot(., aes (x=time, y=FRIP_embryo, group=trt))+
+  geom_col(position= &quot;dodge&quot;,aes(fill=trt))+
+  geom_hline(yintercept = 20)+
+  geom_hline(yintercept = 30,linetype=3)+
+  facet_wrap(~indv)+
+  theme_classic()+
+  ggtitle(&quot;FRiP Score across Ind1 using embryonic heart DNAse peaks&quot;)+
+   scale_fill_manual(values=drug_pal)</code></pre>
+<p><img src="figure/QC_on_reads.Rmd/Frip1-6.png" width="672" style="display: block; margin: auto;" /></p>
+<p>Horizontal line is at 20%. Individual 4 at 3 hours is not a good
+score. Encode recommends &gt;30% (dotted line).</p>
+</div>
+<div id="individual-2-fragment-files" class="section level3">
+<h3>Individual 2 fragment files:</h3>
+<pre class="r"><code>Ind2_frag_files &lt;- read.csv(&quot;data/Ind2_fragment_files.txt&quot;, row.names = 1)
+Ind2_frag_files %&gt;% 
+  mutate(trt=factor(trt, levels=c(&quot;DX&quot;,&quot;E&quot;,&quot;DA&quot;,&quot;M&quot;,&quot;T&quot;,&quot;V&quot;), labels = c(&quot;DOX&quot;,&quot;EPI&quot;,&quot;DNR&quot;,&quot;MTX&quot;,&quot;TRZ&quot;,&quot;VEH&quot;))) %&gt;% 
+  dplyr::filter(time ==&quot;3h&quot;) %&gt;%
+  ggplot(., aes(y=counts, x=frag_size, group=trt))+
+  # geom_line(aes(col=trt, alpha = 0.5, linewidth=1 ))+
+  geom_line(aes(col=trt))+
+  ggtitle(&quot;Individual 2\n3 hour fragment sizes&quot;)+
+  theme_classic()+
+   facet_wrap(~trt)+
+  scale_color_manual(values=drug_pal)</code></pre>
+<p><img src="figure/QC_on_reads.Rmd/fragfiles2-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>Ind2_frag_files %&gt;% 
+  mutate(trt=factor(trt, levels=c(&quot;DX&quot;,&quot;E&quot;,&quot;DA&quot;,&quot;M&quot;,&quot;T&quot;,&quot;V&quot;), labels = c(&quot;DOX&quot;,&quot;EPI&quot;,&quot;DNR&quot;,&quot;MTX&quot;,&quot;TRZ&quot;,&quot;VEH&quot;))) %&gt;% 
+  dplyr::filter(time ==&quot;24h&quot;) %&gt;%
+  ggplot(., aes(y=counts, x=frag_size, group=trt))+
+  geom_line(aes(col=trt))+
+  ggtitle(&quot;Individual 2\n24 hour fragment sizes&quot;)+
+  theme_classic()+
+  facet_wrap(~trt)+
+  scale_color_manual(values=drug_pal)</code></pre>
+<p><img src="figure/QC_on_reads.Rmd/fragfiles2-2.png" width="672" style="display: block; margin: auto;" /></p>
+<div id="frip-individual-2" class="section level4">
+<h4>FRiP Individual 2</h4>
+<pre class="r"><code>Frip_2_reads &lt;- read.csv(&quot;data/Frip_2_reads.csv&quot;, row.names = 1)
+
+all_frip2 &lt;- Frip_2_reads %&gt;% 
+  mutate(sample=gsub(&quot;87&quot;,&quot;2_&quot;,sample)) %&gt;% 
+   mutate(sample = gsub(&quot;24h&quot;,&quot;_24h&quot;,sample), 
+       sample = gsub(&quot;3h&quot;,&quot;_3h&quot;,sample)) %&gt;%
+  separate(sample, into = c(&quot;indv&quot;,&quot;trt&quot;,&quot;time&quot;)) %&gt;% 
+  mutate(time=factor(time, levels = c(&quot;3h&quot;,&quot;24h&quot;))) %&gt;% 
+  mutate(trt=factor(trt, levels=c(&quot;DX&quot;,&quot;E&quot;,&quot;DA&quot;,&quot;M&quot;,&quot;T&quot;,&quot;V&quot;), labels = c(&quot;DOX&quot;,&quot;EPI&quot;,&quot;DNR&quot;,&quot;MTX&quot;,&quot;TRZ&quot;,&quot;VEH&quot;))) %&gt;%  
+  mutate(indv=as.numeric(indv)) %&gt;% 
+  left_join(., (cardiac_muscle_Frip %&gt;% mutate(trt=factor(trt, levels=c(&quot;DOX&quot;,&quot;EPI&quot;,&quot;DNR&quot;,&quot;MTX&quot;,&quot;TRZ&quot;,&quot;VEH&quot;))))) %&gt;% 
+ left_join(., (left_ventricle_Frip %&gt;% mutate(trt=factor(trt, levels=c(&quot;DOX&quot;,&quot;EPI&quot;,&quot;DNR&quot;,&quot;MTX&quot;,&quot;TRZ&quot;,&quot;VEH&quot;))))) %&gt;% 
+    left_join(., (cardiomyocyte_Frip %&gt;% mutate(trt=factor(trt, levels=c(&quot;DOX&quot;,&quot;EPI&quot;,&quot;DNR&quot;,&quot;MTX&quot;,&quot;TRZ&quot;,&quot;VEH&quot;))))) %&gt;% 
+  left_join(., (embryo_heart_Frip %&gt;% mutate(trt=factor(trt, levels=c(&quot;DOX&quot;,&quot;EPI&quot;,&quot;DNR&quot;,&quot;MTX&quot;,&quot;TRZ&quot;,&quot;VEH&quot;))))) %&gt;% 
+  mutate(FRIP_embryo=embryo_counts/dedup_reads *100) %&gt;% 
+  mutate(FRIP_cm=cm_counts/dedup_reads*100) %&gt;% 
+mutate(FRIP_lv=lv_counts/dedup_reads*100) %&gt;% 
+mutate(FRIP_adult=c_muscle_counts/dedup_reads*100)
+
+Frip_2_reads %&gt;% 
+ mutate(sample=gsub(&quot;87&quot;,&quot;2_&quot;,sample)) %&gt;% 
+   mutate(sample = gsub(&quot;24h&quot;,&quot;_24h&quot;,sample), 
+       sample = gsub(&quot;3h&quot;,&quot;_3h&quot;,sample)) %&gt;%
+  separate(sample, into = c(&quot;indv&quot;,&quot;trt&quot;,&quot;time&quot;)) %&gt;% 
+  mutate(time=factor(time, levels = c(&quot;3h&quot;,&quot;24h&quot;))) %&gt;% 
+  mutate(trt=factor(trt, levels=c(&quot;DX&quot;,&quot;E&quot;,&quot;DA&quot;,&quot;M&quot;,&quot;T&quot;,&quot;V&quot;), labels = c(&quot;DOX&quot;,&quot;EPI&quot;,&quot;DNR&quot;,&quot;MTX&quot;,&quot;TRZ&quot;,&quot;VEH&quot;))) %&gt;%  
+  ggplot(., aes (x=time, y=FRiP_2, group=trt))+
+  geom_col(position= &quot;dodge&quot;,aes(fill=trt))+
+  geom_hline(yintercept = 20)+
+  geom_hline(yintercept = 30,linetype=3)+
+  facet_wrap(~indv)+
+  theme_classic()+
+  ggtitle(&quot;FRiP Score across each sample for individual 2&quot;)+
+   scale_fill_manual(values=drug_pal)</code></pre>
+<p><img src="figure/QC_on_reads.Rmd/Frip2-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>all_frip2 %&gt;% ggplot(., aes (x=time, y=FRIP_cm, group=trt))+
+  geom_col(position= &quot;dodge&quot;,aes(fill=trt))+
+  geom_hline(yintercept = 20)+
+  geom_hline(yintercept = 30,linetype=3)+
+  facet_wrap(~indv)+
+  theme_classic()+
+  ggtitle(&quot;FRiP Score across Ind2 using cardiomyocyte DNAse peaks&quot;)+
+   scale_fill_manual(values=drug_pal)</code></pre>
+<p><img src="figure/QC_on_reads.Rmd/Frip2-2.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>all_frip2 %&gt;% ggplot(., aes (x=time, y=FRIP_lv, group=trt))+
+  geom_col(position= &quot;dodge&quot;,aes(fill=trt))+
+  geom_hline(yintercept = 20)+
+  geom_hline(yintercept = 30,linetype=3)+
+  facet_wrap(~indv)+
+  theme_classic()+
+  ggtitle(&quot;FRiP Score across Ind2  using left ventricle DNAse peaks&quot;)+
+   scale_fill_manual(values=drug_pal)</code></pre>
+<p><img src="figure/QC_on_reads.Rmd/Frip2-3.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>all_frip2 %&gt;% ggplot(., aes (x=time, y=FRIP_adult, group=trt))+
+  geom_col(position= &quot;dodge&quot;,aes(fill=trt))+
+  geom_hline(yintercept = 20)+
+  geom_hline(yintercept = 30,linetype=3)+
+  facet_wrap(~indv)+
+  theme_classic()+
+  ggtitle(&quot;FRiP Score across Ind2  using adult heart DNAse peaks&quot;)+
+   scale_fill_manual(values=drug_pal)</code></pre>
+<p><img src="figure/QC_on_reads.Rmd/Frip2-4.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>all_frip2 %&gt;% ggplot(., aes (x=time, y=FRIP_embryo, group=trt))+
+  geom_col(position= &quot;dodge&quot;,aes(fill=trt))+
+  geom_hline(yintercept = 20)+
+  geom_hline(yintercept = 30,linetype=3)+
+  facet_wrap(~indv)+
+  theme_classic()+
+  ggtitle(&quot;FRiP Score across Ind2 using embryonic heart DNAse peaks&quot;)+
+   scale_fill_manual(values=drug_pal)</code></pre>
+<p><img src="figure/QC_on_reads.Rmd/Frip2-5.png" width="672" style="display: block; margin: auto;" /></p>
+</div>
+</div>
+<div id="individual-3-fragment-files" class="section level3">
+<h3>Individual 3 fragment files:</h3>
+<pre class="r"><code>Ind3_frag_files &lt;- read.csv(&quot;data/Ind3_fragment_files.txt&quot;, row.names = 1)
+Ind3_frag_files %&gt;% 
+  mutate(trt=factor(trt, levels=c(&quot;DX&quot;,&quot;E&quot;,&quot;DA&quot;,&quot;M&quot;,&quot;T&quot;,&quot;V&quot;), labels = c(&quot;DOX&quot;,&quot;EPI&quot;,&quot;DNR&quot;,&quot;MTX&quot;,&quot;TRZ&quot;,&quot;VEH&quot;))) %&gt;% 
+  dplyr::filter(time ==&quot;3h&quot;) %&gt;%
+  ggplot(., aes(y=counts, x=frag_size, group=trt))+
+  # geom_line(aes(col=trt, alpha = 0.5, linewidth=1 ))+
+  geom_line(aes(col=trt))+
+  ggtitle(&quot;Individual 3\n3 hour fragment sizes&quot;)+
+  theme_classic()+
+   facet_wrap(~trt)+
+  scale_color_manual(values=drug_pal)</code></pre>
+<p><img src="figure/QC_on_reads.Rmd/fragfiles3-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>Ind3_frag_files %&gt;% 
+  mutate(trt=factor(trt, levels=c(&quot;DX&quot;,&quot;E&quot;,&quot;DA&quot;,&quot;M&quot;,&quot;T&quot;,&quot;V&quot;), labels = c(&quot;DOX&quot;,&quot;EPI&quot;,&quot;DNR&quot;,&quot;MTX&quot;,&quot;TRZ&quot;,&quot;VEH&quot;))) %&gt;% 
+  dplyr::filter(time ==&quot;24h&quot;) %&gt;%
+  ggplot(., aes(y=counts, x=frag_size, group=trt))+
+  geom_line(aes(col=trt))+
+  ggtitle(&quot;Individual 3\n24 hour fragment sizes&quot;)+
+  theme_classic()+
+  facet_wrap(~trt)+
+  scale_color_manual(values=drug_pal)</code></pre>
+<p><img src="figure/QC_on_reads.Rmd/fragfiles3-2.png" width="672" style="display: block; margin: auto;" /></p>
+<div id="frip-individual-3" class="section level4">
+<h4>FRiP Individual 3</h4>
+<pre class="r"><code>Frip_3_reads &lt;- read.csv(&quot;data/Frip_3_reads.csv&quot;, row.names = 1)
+
+all_frip3 &lt;- Frip_3_reads %&gt;% 
+  mutate(sample=gsub(&quot;77&quot;,&quot;3_&quot;,sample)) %&gt;% 
+   mutate(sample = gsub(&quot;24h&quot;,&quot;_24h&quot;,sample), 
+       sample = gsub(&quot;3h&quot;,&quot;_3h&quot;,sample)) %&gt;%
+  separate(sample, into = c(&quot;indv&quot;,&quot;trt&quot;,&quot;time&quot;)) %&gt;% 
+  mutate(time=factor(time, levels = c(&quot;3h&quot;,&quot;24h&quot;))) %&gt;% 
+ mutate(trt=factor(trt, levels=c(&quot;DX&quot;,&quot;E&quot;,&quot;DA&quot;,&quot;M&quot;,&quot;T&quot;,&quot;V&quot;), labels = c(&quot;DOX&quot;,&quot;EPI&quot;,&quot;DNR&quot;,&quot;MTX&quot;,&quot;TRZ&quot;,&quot;VEH&quot;))) %&gt;%  
+  mutate(indv=as.numeric(indv)) %&gt;% 
+  left_join(., (cardiac_muscle_Frip %&gt;% mutate(trt=factor(trt, levels=c(&quot;DOX&quot;,&quot;EPI&quot;,&quot;DNR&quot;,&quot;MTX&quot;,&quot;TRZ&quot;,&quot;VEH&quot;))))) %&gt;% 
+ left_join(., (left_ventricle_Frip %&gt;% mutate(trt=factor(trt, levels=c(&quot;DOX&quot;,&quot;EPI&quot;,&quot;DNR&quot;,&quot;MTX&quot;,&quot;TRZ&quot;,&quot;VEH&quot;))))) %&gt;% 
+    left_join(., (cardiomyocyte_Frip %&gt;% mutate(trt=factor(trt, levels=c(&quot;DOX&quot;,&quot;EPI&quot;,&quot;DNR&quot;,&quot;MTX&quot;,&quot;TRZ&quot;,&quot;VEH&quot;))))) %&gt;% 
+  left_join(., (embryo_heart_Frip %&gt;% mutate(trt=factor(trt, levels=c(&quot;DOX&quot;,&quot;EPI&quot;,&quot;DNR&quot;,&quot;MTX&quot;,&quot;TRZ&quot;,&quot;VEH&quot;))))) %&gt;% 
+  mutate(FRIP_embryo=embryo_counts/dedup_reads *100) %&gt;% 
+  mutate(FRIP_cm=cm_counts/dedup_reads*100) %&gt;% 
+mutate(FRIP_lv=lv_counts/dedup_reads*100) %&gt;% 
+mutate(FRIP_adult=c_muscle_counts/dedup_reads*100)
+
+
+
+
+
+
+Frip_3_reads %&gt;% 
+  mutate(sample=gsub(&quot;77&quot;,&quot;3_&quot;,sample)) %&gt;% 
+   mutate(sample = gsub(&quot;24h&quot;,&quot;_24h&quot;,sample), 
+       sample = gsub(&quot;3h&quot;,&quot;_3h&quot;,sample)) %&gt;%
+  separate(sample, into = c(&quot;indv&quot;,&quot;trt&quot;,&quot;time&quot;)) %&gt;% 
+  mutate(time=factor(time, levels = c(&quot;3h&quot;,&quot;24h&quot;))) %&gt;% 
+  mutate(trt=factor(trt, levels=c(&quot;DX&quot;,&quot;E&quot;,&quot;DA&quot;,&quot;M&quot;,&quot;T&quot;,&quot;V&quot;), labels = c(&quot;DOX&quot;,&quot;EPI&quot;,&quot;DNR&quot;,&quot;MTX&quot;,&quot;TRZ&quot;,&quot;VEH&quot;))) %&gt;%  
+  ggplot(., aes (x=time, y=FRiP_3, group=trt))+
+  geom_col(position= &quot;dodge&quot;,aes(fill=trt))+
+  geom_hline(yintercept = 20)+
+  geom_hline(yintercept = 30,linetype=3)+
+  facet_wrap(~indv)+
+  theme_classic()+
+  ggtitle(&quot;FRiP Score across each sample for individual 3&quot;)+
+   scale_fill_manual(values=drug_pal)</code></pre>
+<p><img src="figure/QC_on_reads.Rmd/Frip3-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>all_frip3 %&gt;% ggplot(., aes (x=time, y=FRIP_cm, group=trt))+
+  geom_col(position= &quot;dodge&quot;,aes(fill=trt))+
+  geom_hline(yintercept = 20)+
+  geom_hline(yintercept = 30,linetype=3)+
+  facet_wrap(~indv)+
+  theme_classic()+
+  ggtitle(&quot;FRiP Score across Ind3 using cardiomyocyte DNAse peaks&quot;)+
+   scale_fill_manual(values=drug_pal)</code></pre>
+<p><img src="figure/QC_on_reads.Rmd/Frip3-2.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>all_frip3 %&gt;% ggplot(., aes (x=time, y=FRIP_lv, group=trt))+
+  geom_col(position= &quot;dodge&quot;,aes(fill=trt))+
+  geom_hline(yintercept = 20)+
+  geom_hline(yintercept = 30,linetype=3)+
+  facet_wrap(~indv)+
+  theme_classic()+
+  ggtitle(&quot;FRiP Score across Ind3 using left ventricle DNAse peaks&quot;)+
+   scale_fill_manual(values=drug_pal)</code></pre>
+<p><img src="figure/QC_on_reads.Rmd/Frip3-3.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>all_frip3 %&gt;% ggplot(., aes (x=time, y=FRIP_adult, group=trt))+
+  geom_col(position= &quot;dodge&quot;,aes(fill=trt))+
+  geom_hline(yintercept = 20)+
+  geom_hline(yintercept = 30,linetype=3)+
+  facet_wrap(~indv)+
+  theme_classic()+
+  ggtitle(&quot;FRiP Score across Ind3 using adult heart DNAse peaks&quot;)+
+   scale_fill_manual(values=drug_pal)</code></pre>
+<p><img src="figure/QC_on_reads.Rmd/Frip3-4.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>all_frip3 %&gt;% ggplot(., aes (x=time, y=FRIP_embryo, group=trt))+
+  geom_col(position= &quot;dodge&quot;,aes(fill=trt))+
+  geom_hline(yintercept = 20)+
+  geom_hline(yintercept = 30,linetype=3)+
+  facet_wrap(~indv)+
+  theme_classic()+
+  ggtitle(&quot;FRiP Score across Ind3 using embryonic heart DNAse peaks&quot;)+
+   scale_fill_manual(values=drug_pal)</code></pre>
+<p><img src="figure/QC_on_reads.Rmd/Frip3-5.png" width="672" style="display: block; margin: auto;" />
+### Individual 6 fragment files:</p>
+<pre class="r"><code>Ind6_frag_files &lt;- read.csv(&quot;data/Ind6_fragment_files.txt&quot;, row.names = 1)
+Ind6_frag_files %&gt;% 
+  dplyr::filter(time ==&quot;3h&quot;) %&gt;%
+  mutate(trt=factor(trt, levels=c(&quot;DX&quot;,&quot;E&quot;,&quot;DA&quot;,&quot;M&quot;,&quot;T&quot;,&quot;V&quot;), labels = c(&quot;DOX&quot;,&quot;EPI&quot;,&quot;DNR&quot;,&quot;MTX&quot;,&quot;TRZ&quot;,&quot;VEH&quot;))) %&gt;% 
+  ggplot(., aes(y=counts, x=frag_size, group=trt))+
+  # geom_line(aes(col=trt, alpha = 0.5, linewidth=1 ))+
+  geom_line(aes(col=trt))+
+  ggtitle(&quot;Individual 6\n3 hour fragment sizes&quot;)+
+  theme_classic()+
+   facet_wrap(~trt)+
+  scale_color_manual(values=drug_pal)</code></pre>
+<p><img src="figure/QC_on_reads.Rmd/fragfiles6-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>Ind6_frag_files %&gt;% 
+  dplyr::filter(time ==&quot;24h&quot;) %&gt;%
+  mutate(trt=factor(trt, levels=c(&quot;DX&quot;,&quot;E&quot;,&quot;DA&quot;,&quot;M&quot;,&quot;T&quot;,&quot;V&quot;), labels = c(&quot;DOX&quot;,&quot;EPI&quot;,&quot;DNR&quot;,&quot;MTX&quot;,&quot;TRZ&quot;,&quot;VEH&quot;))) %&gt;% 
+  ggplot(., aes(y=counts, x=frag_size, group=trt))+
+  geom_line(aes(col=trt))+
+  ggtitle(&quot;Individual 6\n24 hour fragment sizes&quot;)+
+  theme_classic()+
+  facet_wrap(~trt)+
+  scale_color_manual(values=drug_pal)</code></pre>
+<p><img src="figure/QC_on_reads.Rmd/fragfiles6-2.png" width="672" style="display: block; margin: auto;" />
+#### FRiP Individual 6</p>
+<pre class="r"><code>Frip_6_reads &lt;- read.csv(&quot;data/Frip_6_reads.csv&quot;, row.names = 1)
+
+all_frip6 &lt;- Frip_6_reads %&gt;% 
+  mutate(sample=gsub(&quot;71&quot;,&quot;6_&quot;,sample)) %&gt;% 
+   mutate(sample = gsub(&quot;24h&quot;,&quot;_24h&quot;,sample), 
+       sample = gsub(&quot;3h&quot;,&quot;_3h&quot;,sample)) %&gt;%
+  separate(sample, into = c(&quot;indv&quot;,&quot;trt&quot;,&quot;time&quot;)) %&gt;% 
+  mutate(time=factor(time, levels = c(&quot;3h&quot;,&quot;24h&quot;))) %&gt;% 
+  mutate(trt=factor(trt, levels=c(&quot;DX&quot;,&quot;E&quot;,&quot;DA&quot;,&quot;M&quot;,&quot;T&quot;,&quot;V&quot;), labels = c(&quot;DOX&quot;,&quot;EPI&quot;,&quot;DNR&quot;,&quot;MTX&quot;,&quot;TRZ&quot;,&quot;VEH&quot;))) %&gt;% 
+  mutate(indv=as.numeric(indv)) %&gt;% 
+  left_join(., (cardiac_muscle_Frip %&gt;% mutate(trt=factor(trt, levels=c(&quot;DOX&quot;,&quot;EPI&quot;,&quot;DNR&quot;,&quot;MTX&quot;,&quot;TRZ&quot;,&quot;VEH&quot;))))) %&gt;% 
+ left_join(., (left_ventricle_Frip %&gt;% mutate(trt=factor(trt, levels=c(&quot;DOX&quot;,&quot;EPI&quot;,&quot;DNR&quot;,&quot;MTX&quot;,&quot;TRZ&quot;,&quot;VEH&quot;))))) %&gt;% 
+    left_join(., (cardiomyocyte_Frip %&gt;% mutate(trt=factor(trt, levels=c(&quot;DOX&quot;,&quot;EPI&quot;,&quot;DNR&quot;,&quot;MTX&quot;,&quot;TRZ&quot;,&quot;VEH&quot;))))) %&gt;% 
+  left_join(., (embryo_heart_Frip %&gt;% mutate(trt=factor(trt, levels=c(&quot;DOX&quot;,&quot;EPI&quot;,&quot;DNR&quot;,&quot;MTX&quot;,&quot;TRZ&quot;,&quot;VEH&quot;))))) %&gt;% 
+  mutate(FRIP_embryo=embryo_counts/dedup_reads *100) %&gt;% 
+  mutate(FRIP_cm=cm_counts/dedup_reads*100) %&gt;% 
+mutate(FRIP_lv=lv_counts/dedup_reads*100) %&gt;% 
+mutate(FRIP_adult=c_muscle_counts/dedup_reads*100)
+ 
+
+Frip_6_reads %&gt;% 
+  mutate(sample=gsub(&quot;71&quot;,&quot;6_&quot;,sample)) %&gt;% 
+   mutate(sample = gsub(&quot;24h&quot;,&quot;_24h&quot;,sample), 
+       sample = gsub(&quot;3h&quot;,&quot;_3h&quot;,sample)) %&gt;%
+  separate(sample, into = c(&quot;indv&quot;,&quot;trt&quot;,&quot;time&quot;)) %&gt;% 
+  mutate(time=factor(time, levels = c(&quot;3h&quot;,&quot;24h&quot;))) %&gt;% 
+  mutate(trt=factor(trt, levels=c(&quot;DX&quot;,&quot;E&quot;,&quot;DA&quot;,&quot;M&quot;,&quot;T&quot;,&quot;V&quot;), labels = c(&quot;DOX&quot;,&quot;EPI&quot;,&quot;DNR&quot;,&quot;MTX&quot;,&quot;TRZ&quot;,&quot;VEH&quot;))) %&gt;%  
+  ggplot(., aes (x=time, y=FRiP_6, group=trt))+
+  geom_col(position= &quot;dodge&quot;,aes(fill=trt))+
+  geom_hline(yintercept = 20)+
+  geom_hline(yintercept = 30,linetype=3)+
+  facet_wrap(~indv)+
+  theme_classic()+
+  ggtitle(&quot;FRiP Score across each sample for individual 6&quot;)+
+   scale_fill_manual(values=drug_pal)</code></pre>
+<p><img src="figure/QC_on_reads.Rmd/Frip6-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>all_frip6 %&gt;% ggplot(., aes (x=time, y=FRIP_cm, group=trt))+
+  geom_col(position= &quot;dodge&quot;,aes(fill=trt))+
+  geom_hline(yintercept = 20)+
+  geom_hline(yintercept = 30,linetype=3)+
+  facet_wrap(~indv)+
+  theme_classic()+
+  ggtitle(&quot;FRiP Score  across Ind6 using cardiomyocyte DNAse peaks&quot;)+
+   scale_fill_manual(values=drug_pal)</code></pre>
+<p><img src="figure/QC_on_reads.Rmd/Frip6-2.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>all_frip6 %&gt;% ggplot(., aes (x=time, y=FRIP_lv, group=trt))+
+  geom_col(position= &quot;dodge&quot;,aes(fill=trt))+
+  geom_hline(yintercept = 20)+
+  geom_hline(yintercept = 30,linetype=3)+
+  facet_wrap(~indv)+
+  theme_classic()+
+  ggtitle(&quot;FRiP Score across Ind6 using left ventricle DNAse peaks&quot;)+
+   scale_fill_manual(values=drug_pal)</code></pre>
+<p><img src="figure/QC_on_reads.Rmd/Frip6-3.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>all_frip6 %&gt;% ggplot(., aes (x=time, y=FRIP_adult, group=trt))+
+  geom_col(position= &quot;dodge&quot;,aes(fill=trt))+
+  geom_hline(yintercept = 20)+
+  geom_hline(yintercept = 30,linetype=3)+
+  facet_wrap(~indv)+
+  theme_classic()+
+  ggtitle(&quot;FRiP Score across Ind6 using adult heart DNAse peaks&quot;)+
+   scale_fill_manual(values=drug_pal)</code></pre>
+<p><img src="figure/QC_on_reads.Rmd/Frip6-4.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>all_frip6 %&gt;% ggplot(., aes (x=time, y=FRIP_embryo, group=trt))+
+  geom_col(position= &quot;dodge&quot;,aes(fill=trt))+
+  geom_hline(yintercept = 20)+
+  geom_hline(yintercept = 30,linetype=3)+
+  facet_wrap(~indv)+
+  theme_classic()+
+  ggtitle(&quot;FRiP Score across Ind6 using embryonic heart DNAse peaks&quot;)+
+   scale_fill_manual(values=drug_pal)</code></pre>
+<p><img src="figure/QC_on_reads.Rmd/Frip6-5.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>Peaksummary &lt;- read.csv(&quot;data/first_Peaksummarycounts.csv&quot;,row.names=1)
+Peaksummary %&gt;% 
+  dplyr::filter(sample != &quot;total&quot;) %&gt;% 
+   separate(sample, into=c(NA,&quot;indv&quot;,&quot;sample&quot;,NA,NA,NA)) %&gt;% 
+  mutate(trt=gsub(&quot;[[:digit:]]&quot;, &quot;&quot;,sample)) %&gt;% 
+  # mutate(trt=substr(trt,-1,2))
+  mutate(time = if_else(grepl(&quot;24h$&quot;, sample) ==TRUE, &quot;24_hours&quot;,&quot;3_hours&quot;)) %&gt;% 
+  mutate(trt = case_match(trt,&quot;DAh&quot;~&quot;DNR&quot;,&quot;DXh&quot;~&quot;DOX&quot;,&quot;Eh&quot;~&quot;EPI&quot;, &quot;Mh&quot; ~ &quot;MTX&quot;, &quot;Th&quot; ~ &quot;TRZ&quot;, &quot;Vh&quot; ~&quot;VEH&quot;,.default = trt)) %&gt;% 
+  mutate(indv = factor(indv, levels = c(&quot;Ind1&quot;, &quot;Ind2&quot;, &quot;Ind3&quot;, &quot;Ind4&quot;, &quot;Ind5&quot;, &quot;Ind6&quot;))) %&gt;%
+  mutate(time = factor(time, levels = c(&quot;3_hours&quot;, &quot;24_hours&quot;), labels= c(&quot;3 hours&quot;,&quot;24 hours&quot;))) %&gt;% 
+  mutate(trt = factor(trt, levels =  c(&quot;DOX&quot;,&quot;EPI&quot;, &quot;DNR&quot;, &quot;MTX&quot;, &quot;TRZ&quot;, &quot;VEH&quot;)))%&gt;% 
+  dplyr::filter(indv != &quot;Ind4&quot;) %&gt;% 
+  dplyr::filter(indv != &quot;Ind5&quot;) %&gt;% 
+  ggplot(., aes(x =trt, y=counts,group=trt))+
+  geom_boxplot(aes(fill= trt))+
+  geom_point(aes(col=indv, size =3))+
+  facet_wrap(~time)+
+   scale_fill_manual(values=drug_pal)+
+  scale_color_brewer(palette = &quot;Dark2&quot;)+
+  ggtitle(&quot;Peak counts by treatment&quot;)+
+  theme_bw()</code></pre>
+<p><img src="figure/QC_on_reads.Rmd/peaksummary-1.png" width="672" style="display: block; margin: auto;" /></p>
+</div>
+</div>
+<div id="ind1-peaks" class="section level3">
+<h3>Ind1 Peaks</h3>
+<p>Making the TSS average window code</p>
+<pre class="r"><code># ind4_V24hpeaks_gr &lt;- prepGRangeObj(ind4_V24hpeaks)
+# ind1_DA24hpeaks_gr &lt;- prepGRangeObj((ind1_DA24hpeaks))
+# Epi_list &lt;- GRangesList(ind1_DA24hpeaks_gr, ind4_V24hpeaks_gr)
+# # ##plotting the TSS average window (making an overlap of each using Epi_list as list holder)
+# Epi_list_tagMatrix = lapply(Epi_list, getTagMatrix, windows = TSS)
+# plotAvgProf(Epi_list_tagMatrix, xlim=c(-3000, 3000), ylab = &quot;Count Frequency&quot;)
+#plotPeakProf(Epi_list_tagMatrix, facet = &quot;none&quot;, conf = 0.95)
+
+## What I did here:  I called all my narrowpeak files
+# peakfiles1 &lt;- choose.files()
+
+##these were practice for getting file names and shortening for the for loop below
+# testname &lt;- basename(peakfiles1[1])
+# str_split_i(testname, &quot;_&quot;,3)
+
+##This loop first established a list then (because I already knew the list had 12 files)
+## I then imported each of these onto that list.  Once I had the list, I stored it as
+## an R object, 
+# Ind1_peaks &lt;- list()
+# for (file in 1:12){
+#     testname &lt;- basename(peakfiles1[file])
+#   banana_peel &lt;- str_split_i(testname, &quot;_&quot;,3)
+#  Ind1_peaks[[banana_peel]] &lt;- readPeakFile(peakfiles1[file])
+# }
+# saveRDS(Ind1_peaks, &quot;data/Ind1_peaks_list.RDS&quot;)
+# I then called annotatePeak on that list object, and stored that as a R object for later retrieval.)
+# peakAnnoList_1 &lt;- lapply(Ind1_peaks, annotatePeak, tssRegion =c(-2000,2000), TxDb= txdb)
+# saveRDS(peakAnnoList_1, &quot;data/peakAnnoList_1.RDS&quot;)
+
+peakAnnoList_1 &lt;- readRDS(&quot;data/peakAnnoList_1.RDS&quot;)
+plotAnnoBar(peakAnnoList_1, main = &quot;Genomic Feature Distribution&quot;)</code></pre>
+<p><img src="figure/QC_on_reads.Rmd/Ind1%20inital%20TSS%20setup-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code># saveRDS(Epi_list_tagMatrix, &quot;data/Ind1_TSS_peaks.RDS&quot;)
+
+Ind1_TSS_peaks_plot &lt;- readRDS(&quot;data/Ind1_TSS_peaks.RDS&quot;)
+
+# Epi_list_tagMatrix = lapply(Ind1_peaks, getTagMatrix, windows = TSS)
+
+plotAvgProf(Ind1_TSS_peaks_plot[c(1,3,5,7,9,11)], xlim=c(-3000, 3000), ylab = &quot;Count Frequency&quot;)+ ggtitle(&quot;3 hour Individual 1&quot; )</code></pre>
+<pre><code>&gt;&gt; plotting figure...            2025-05-07 4:45:27 PM </code></pre>
+<p><img src="figure/QC_on_reads.Rmd/Ind1%20inital%20TSS%20setup-2.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code># + coord_cartesian(xlim = c(-100,500))
+
+plotAvgProf(Ind1_TSS_peaks_plot[c(2,4,6,8,10,12)], xlim=c(-3000, 3000),ylab = &quot;Count Frequency&quot;)+ ggtitle(&quot;24 hour Individual 1&quot; )</code></pre>
+<pre><code>&gt;&gt; plotting figure...            2025-05-07 4:45:28 PM </code></pre>
+<p><img src="figure/QC_on_reads.Rmd/Ind1%20inital%20TSS%20setup-3.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code># + coord_cartesian(xlim = c(-100,500))</code></pre>
+</div>
+<div id="ind2-peaks" class="section level3">
+<h3>Ind2 Peaks</h3>
+<pre class="r"><code>## What I did here:  I called all my narrowpeak files
+
+# peakfiles2 &lt;- choose.files()
+
+##This loop first established a list then (because I already knew the list had 12 files)
+## I then imported each of these onto that list.  Once I had the list, I stored it as
+## an R object, 
+# Ind2_peaks &lt;- list()
+# for (file in 1:12){
+#     testname &lt;- basename(peakfiles2[file])
+#   banana_peel &lt;- str_split_i(testname, &quot;_&quot;,3)
+#  Ind2_peaks[[banana_peel]] &lt;- readPeakFile(peakfiles2[file])
+# }
+# saveRDS(Ind2_peaks, &quot;data/Ind2_peaks_list.RDS&quot;)
+# I then called annotatePeak on that list object, and stored that as a R object for later retrieval.)
+
+Ind2_peaks &lt;- readRDS(&quot;data/Ind2_peaks_list.RDS&quot;)
+# peakAnnoList_2 &lt;- lapply(Ind2_peaks, annotatePeak, tssRegion =c(-2000,2000), TxDb= txdb)
+# saveRDS(peakAnnoList_2, &quot;data/peakAnnoList_2.RDS&quot;)
+
+peakAnnoList_2 &lt;- readRDS(&quot;data/peakAnnoList_2.RDS&quot;)
+plotAnnoBar(peakAnnoList_2, main = &quot;Genomic Feature Distribution, Individual 2&quot;)</code></pre>
+<p><img src="figure/QC_on_reads.Rmd/Ind2%20inital%20TSS%20setup-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code># Epi_list_tagMatrix = lapply(Ind2_peaks, getTagMatrix, windows = TSS)
+# saveRDS(Epi_list_tagMatrix, &quot;data/Ind2_TSS_peaks.RDS&quot;)
+
+Ind2_TSS_peaks_plot &lt;- readRDS(&quot;data/Ind2_TSS_peaks.RDS&quot;)
+
+
+
+plotAvgProf(Ind2_TSS_peaks_plot[c(1,3,5,7,9,11)], xlim=c(-3000, 3000), conf = 0.01, ylab = &quot;Count Frequency&quot;)+ ggtitle(&quot;3 hour Individual 2&quot; )</code></pre>
+<pre><code>&gt;&gt; plotting figure...            2025-05-07 4:45:43 PM 
+&gt;&gt; Running bootstrapping for tag matrix...       2025-05-07 4:49:05 PM 
+&gt;&gt; Running bootstrapping for tag matrix...       2025-05-07 4:52:19 PM 
+&gt;&gt; Running bootstrapping for tag matrix...       2025-05-07 4:55:36 PM 
+&gt;&gt; Running bootstrapping for tag matrix...       2025-05-07 4:59:13 PM 
+&gt;&gt; Running bootstrapping for tag matrix...       2025-05-07 5:02:37 PM 
+&gt;&gt; Running bootstrapping for tag matrix...       2025-05-07 5:05:50 PM </code></pre>
+<p><img src="figure/QC_on_reads.Rmd/Ind2%20inital%20TSS%20setup-2.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code># + coord_cartesian(xlim = c(-100,1000))
+
+plotAvgProf(Ind2_TSS_peaks_plot[c(2,4,6,8,10,12)], xlim=c(-3000, 3000),ylab = &quot;Count Frequency&quot;)+ ggtitle(&quot;24 hour Individual 2&quot; )#+ coord_cartesian(xlim = c(-100,500))</code></pre>
+<pre><code>&gt;&gt; plotting figure...            2025-05-07 5:05:51 PM </code></pre>
+<p><img src="figure/QC_on_reads.Rmd/Ind2%20inital%20TSS%20setup-3.png" width="672" style="display: block; margin: auto;" /></p>
+</div>
+<div id="ind3-peaks" class="section level3">
+<h3>Ind3 Peaks</h3>
+<pre class="r"><code>## What I did here:  I called all my narrowpeak files
+
+# peakfiles3 &lt;- choose.files()
+
+##This loop first established a list then (because I already knew the list had 12 files)
+## I then imported each of these onto that list.  Once I had the list, I stored it as
+## an R object, 
+# Ind3_peaks &lt;- list()
+# for (file in 1:12){
+#     testname &lt;- basename(peakfiles3[file])
+#   banana_peel &lt;- str_split_i(testname, &quot;_&quot;,3)
+#  Ind3_peaks[[banana_peel]] &lt;- readPeakFile(peakfiles3[file])
+# }
+# saveRDS(Ind3_peaks, &quot;data/Ind3_peaks_list.RDS&quot;)
+# I then called annotatePeak on that list object, and stored that as a R object for later retrieval.)
+
+Ind3_peaks &lt;- readRDS(&quot;data/Ind3_peaks_list.RDS&quot;)
+# peakAnnoList_3 &lt;- lapply(Ind3_peaks, annotatePeak, tssRegion =c(-2000,2000), TxDb= txdb)
+# saveRDS(peakAnnoList_3, &quot;data/peakAnnoList_3.RDS&quot;)
+
+peakAnnoList_3 &lt;- readRDS(&quot;data/peakAnnoList_3.RDS&quot;)
+plotAnnoBar(peakAnnoList_3, main = &quot;Genomic Feature Distribution, Individual 3&quot;)</code></pre>
+<p><img src="figure/QC_on_reads.Rmd/Ind3%20inital%20TSS%20setup-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code># Epi_list_tagMatrix = lapply(Ind3_peaks, getTagMatrix, windows = TSS)
+# saveRDS(Epi_list_tagMatrix, &quot;data/Ind3_TSS_peaks.RDS&quot;)
+
+Ind3_TSS_peaks_plot &lt;- readRDS(&quot;data/Ind3_TSS_peaks.RDS&quot;)
+
+
+
+plotAvgProf(Ind3_TSS_peaks_plot[c(1,3,5,7,9,11)], xlim=c(-3000, 3000), ylab = &quot;Count Frequency&quot;)+ ggtitle(&quot;3 hour Individual 3&quot; )</code></pre>
+<pre><code>&gt;&gt; plotting figure...            2025-05-07 5:06:01 PM </code></pre>
+<p><img src="figure/QC_on_reads.Rmd/Ind3%20inital%20TSS%20setup-2.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>plotAvgProf(Ind3_TSS_peaks_plot[c(2,4,6,8,10,12)], xlim=c(-3000, 3000),ylab = &quot;Count Frequency&quot;)+ ggtitle(&quot;24 hour Individual 3&quot; )</code></pre>
+<pre><code>&gt;&gt; plotting figure...            2025-05-07 5:06:02 PM </code></pre>
+<p><img src="figure/QC_on_reads.Rmd/Ind3%20inital%20TSS%20setup-3.png" width="672" style="display: block; margin: auto;" /></p>
+</div>
+<div id="ind6-peaks" class="section level3">
+<h3>Ind6 Peaks</h3>
+<pre class="r"><code>## What I did here:  I called all my narrowpeak files
+
+# peakfiles6 &lt;- choose.files()
+# 
+# ##This loop first established a list then (because I already knew the list had 12 files)
+# ## I then imported each of these onto that list.  Once I had the list, I stored it as
+# ## an R object, 
+# Ind6_peaks &lt;- list()
+# for (file in 1:12){
+#     testname &lt;- basename(peakfiles6[file])
+#   banana_peel &lt;- str_split_i(testname, &quot;_&quot;,3)
+#  Ind6_peaks[[banana_peel]] &lt;- readPeakFile(peakfiles6[file])
+# }
+# saveRDS(Ind6_peaks, &quot;data/Ind6_peaks_list.RDS&quot;)
+# I then called annotatePeak on that list object, and stored that as a R object for later retrieval.)
+
+Ind6_peaks &lt;- readRDS(&quot;data/Ind6_peaks_list.RDS&quot;)
+# peakAnnoList_6 &lt;- lapply(Ind6_peaks, annotatePeak, tssRegion =c(-2000,2000), TxDb= txdb)
+# saveRDS(peakAnnoList_6, &quot;data/peakAnnoList_6.RDS&quot;)
+
+peakAnnoList_6 &lt;- readRDS(&quot;data/peakAnnoList_6.RDS&quot;)
+plotAnnoBar(peakAnnoList_6, main = &quot;Genomic Feature Distribution, Individual 6&quot;)+ggtitle (&quot;Genomic Feature Distribution, Individual 6&quot;)</code></pre>
+<p><img src="figure/QC_on_reads.Rmd/Ind6%20inital%20TSS%20setup-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>##Epi_list_tagMatrix title was just because I was too lazy to change the name
+# Epi_list_tagMatrix = lapply(Ind6_peaks, getTagMatrix, windows = TSS)
+# saveRDS(Epi_list_tagMatrix, &quot;data/Ind6_TSS_peaks.RDS&quot;)
+
+Ind6_TSS_peaks_plot &lt;- readRDS(&quot;data/Ind6_TSS_peaks.RDS&quot;)
+
+
+plotAvgProf(Ind6_TSS_peaks_plot[c(1,3,5,7,9,11)], xlim=c(-3000, 3000), ylab = &quot;Count Frequency&quot;)+ ggtitle(&quot;3 hour Individual 6&quot; )</code></pre>
+<pre><code>&gt;&gt; plotting figure...            2025-05-07 5:06:14 PM </code></pre>
+<p><img src="figure/QC_on_reads.Rmd/Ind6%20inital%20TSS%20setup-2.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>plotAvgProf(Ind6_TSS_peaks_plot[c(2,4,6,8,10,12)], xlim=c(-3000, 3000),ylab = &quot;Count Frequency&quot;)+ ggtitle(&quot;24 hour Individual 6&quot; )</code></pre>
+<pre><code>&gt;&gt; plotting figure...            2025-05-07 5:06:15 PM </code></pre>
+<p><img src="figure/QC_on_reads.Rmd/Ind6%20inital%20TSS%20setup-3.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>### for code to calculate the TSSE scores, reference the file &quot;code/TSSE.R&quot;</code></pre>
+<pre class="r"><code>### for code to calculate the TSSE scores, reference the file &quot;code/TSSE.R&quot;
+allTSSE &lt;- readRDS( &quot;data/all_TSSE_scores.RDS&quot;)
+allTSSE %&gt;% as.data.frame() %&gt;% 
+  rownames_to_column(&quot;sample&quot;) %&gt;% 
+  separate(sample, into = c(&quot;indv&quot;,&quot;trt&quot;,&quot;time&quot;), sep= &quot;_&quot;) %&gt;%
+  mutate(trt= factor(trt, levels = c(&quot;DOX&quot;,&quot;EPI&quot;,&quot;DNR&quot;,&quot;MTX&quot;,&quot;TRZ&quot;,&quot;VEH&quot;))) %&gt;% 
+  mutate(time = factor(time, levels = c(&quot;3&quot;,&quot;24&quot;),labels = c(&quot;3 hours&quot;,&quot;24 hours&quot;))) %&gt;% 
+  dplyr::filter(indv !=4 &amp;indv !=5) %&gt;% 
+  ggplot(., aes(x= time, y= V1, group = indv))+
+  geom_jitter(aes(col = trt, size = 1.5, alpha = 0.5) ,
+              position=position_jitter(0.25))+
+  geom_hline(yintercept=5, linetype = 3)+
+  geom_hline(yintercept=7, col = &quot;blue&quot;)+
+  facet_wrap(~indv)+
+  theme_bw()+
+  ggtitle(&quot;TSS enrichment scores&quot;)+
+  scale_color_manual(values=drug_pal)+
+  theme(strip.text = element_text(face = &quot;bold&quot;,  hjust = .5, size = 8),
+        strip.background = element_rect(fill = &quot;white&quot;, linetype = &quot;solid&quot;,
+                                        color = &quot;black&quot;, linewidth = 1))</code></pre>
+<p><img src="figure/QC_on_reads.Rmd/TSS%20enrichment%20part%202-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>#### These Ind1 TSS_peaks were created on the &quot;analysis/Peak_calling.Rmd file  example code:
+# Import in peak files: peakfiles3 &lt;- choose.files()
+###This loop first established a list then (because I already knew the list had 12 files)
+## I then imported each of these onto that list.  Once I had the list, I stored it as
+## an R object, 
+# Ind3_peaks &lt;- list()
+# for (file in 1:12){
+#     testname &lt;- basename(peakfiles3[file])
+#   banana_peel &lt;- str_split_i(testname, &quot;_&quot;,3)
+#  Ind3_peaks[[banana_peel]] &lt;- readPeakFile(peakfiles3[file])
+# }
+# saveRDS(Ind3_peaks, &quot;data/Ind3_peaks_list.RDS&quot;)
+# 
+# I then called annotatePeak on that list object, and stored that as a R object for later retrieval.)
+# peakAnnoList_3 &lt;- lapply(Ind3_peaks, annotatePeak, tssRegion =c(-2000,2000), TxDb= txdb)
+# saveRDS(peakAnnoList_3, &quot;data/peakAnnoList_3.RDS&quot;)
+# Epi_list_tagMatrix = lapply(Ind3_peaks, getTagMatrix, windows = TSS)
+# saveRDS(Epi_list_tagMatrix, &quot;data/Ind3_TSS_peaks.RDS&quot;)
+
+
+Ind1_TSS_peaks_plot &lt;- readRDS(&quot;data/Ind1_TSS_peaks.RDS&quot;)
+Ind2_TSS_peaks_plot &lt;- readRDS(&quot;data/Ind2_TSS_peaks.RDS&quot;)
+Ind3_TSS_peaks_plot &lt;- readRDS(&quot;data/Ind3_TSS_peaks.RDS&quot;)
+Ind6_TSS_peaks_plot &lt;- readRDS(&quot;data/Ind6_TSS_peaks.RDS&quot;)
+
+a1&lt;- plotAvgProf(Ind1_TSS_peaks_plot[c(1,3,5,7,9,11)], xlim=c(-3000, 3000), ylab = &quot;Count Frequency&quot;)+ ggtitle(&quot;3 hour Individual 1&quot; )+coord_cartesian(xlim=c(-2000,2000))</code></pre>
+<pre><code>&gt;&gt; plotting figure...            2025-05-07 5:06:50 PM </code></pre>
+<pre class="r"><code>b1 &lt;- plotAvgProf(Ind2_TSS_peaks_plot[c(1,3,5,7,9,11)], xlim=c(-3000, 3000), ylab = &quot;Count Frequency&quot;)+ ggtitle(&quot;3 hour Individual 2&quot; )+coord_cartesian(xlim=c(-2000,2000))</code></pre>
+<pre><code>&gt;&gt; plotting figure...            2025-05-07 5:06:51 PM </code></pre>
+<pre class="r"><code>c1 &lt;- plotAvgProf(Ind3_TSS_peaks_plot[c(1,3,5,7,9,11)], xlim=c(-3000, 3000), ylab = &quot;Count Frequency&quot;)+ ggtitle(&quot;3 hour Individual 3&quot; )+coord_cartesian(xlim=c(-2000,2000))</code></pre>
+<pre><code>&gt;&gt; plotting figure...            2025-05-07 5:06:52 PM </code></pre>
+<pre class="r"><code>d1 &lt;- plotAvgProf(Ind6_TSS_peaks_plot[c(1,3,5,7,9,11)], xlim=c(-3000, 3000), ylab = &quot;Count Frequency&quot;)+ ggtitle(&quot;3 hour Individual 6&quot; )+coord_cartesian(xlim=c(-2000,2000))</code></pre>
+<pre><code>&gt;&gt; plotting figure...            2025-05-07 5:06:53 PM </code></pre>
+<pre class="r"><code>a2 &lt;- plotAvgProf(Ind1_TSS_peaks_plot[c(2,4,6,8,10,12)], xlim=c(-3000, 3000),ylab = &quot;Count Frequency&quot;)+ ggtitle(&quot;24 hour Individual 1&quot; )+coord_cartesian(xlim=c(-2000,2000))</code></pre>
+<pre><code>&gt;&gt; plotting figure...            2025-05-07 5:06:54 PM </code></pre>
+<pre class="r"><code>b2 &lt;- plotAvgProf(Ind2_TSS_peaks_plot[c(2,4,6,8,10,12)], xlim=c(-3000, 3000),ylab = &quot;Count Frequency&quot;)+ ggtitle(&quot;24 hour Individual 2&quot; )+coord_cartesian(xlim=c(-2000,2000))</code></pre>
+<pre><code>&gt;&gt; plotting figure...            2025-05-07 5:06:55 PM </code></pre>
+<pre class="r"><code>c2 &lt;- plotAvgProf(Ind3_TSS_peaks_plot[c(2,4,6,8,10,12)], xlim=c(-3000, 3000),ylab = &quot;Count Frequency&quot;)+ ggtitle(&quot;24 hour Individual 3&quot; )+coord_cartesian(xlim=c(-2000,2000))</code></pre>
+<pre><code>&gt;&gt; plotting figure...            2025-05-07 5:06:56 PM </code></pre>
+<pre class="r"><code>d2 &lt;- plotAvgProf(Ind6_TSS_peaks_plot[c(2,4,6,8,10,12)], xlim=c(-3000, 3000),ylab = &quot;Count Frequency&quot;)+ ggtitle(&quot;24 hour Individual 6&quot; )+coord_cartesian(xlim=c(-2000,2000))</code></pre>
+<pre><code>&gt;&gt; plotting figure...            2025-05-07 5:06:57 PM </code></pre>
+<pre class="r"><code>plot_grid(a1,a2, b1,b2,c1,c2,d1,d2, axis=&quot;l&quot;,align = &quot;hv&quot;,nrow=4, ncol=2)</code></pre>
+<p><img src="figure/QC_on_reads.Rmd/TSS%20peaks%20plot-1.png" width="768" style="display: block; margin: auto;" /></p>
+</div>
+<div id="creating-the-masterlist-of-high-confidence-regions-masterpeaks"
+class="section level2">
+<h2>Creating the masterlist of high confidence regions
+(masterpeaks)</h2>
+<p>To create this peak set, -First I moved all .narrowPeak files into
+the same folder and ran
+<code>bedtools multiinter -i ./* &gt;log.file.txt</code> to create an
+intersection of all peaks. I then was only interested in segments that
+had a count of more than 4 (intersection existed in at least 4 of the
+data sets) in all files. I filtered column #4 of the
+<code>log.file.txt</code> output by
+<code>awk -F"\t" '$4 &gt; 4 {print $1"\t"$2"\t"$3 }' log.file.txt &gt; all_filt_peaks.bed</code>
+and printed the results of anything &gt;4 in bed format to the
+<code>all_filt_peaks.bed</code> file. Upon further reading of bedtools
+documents, I realized the number of “peaks” was actually fragments of
+peaks that were intersected among all files. This was not the final
+output I wanted so I intersected these high counted segments back with
+the very first initial mergedPeaks.bed file using
+<code>bedtools intersect -a mergedPeaks.bed -b all_filt_peaks.bed -wa -u &gt; merged_filtered_peaks.bed</code>.
+using the <code>-wa -u</code> flags allowed me to filter the first
+mergedPeaks file, keeping only those high confidence peaks that
+overlapped the <code>all_filt_peaks.bed</code> and only reporting the
+unique calls.</p>
+<p>Additionally, I filtered out the blacklisted regions using the
+following code:
+<code>intersectBed -v -a merged_filtered_peaks.bed -b Blacklist/hg38.blacklist.bed.gz &gt; final_bl_filt_peaks.bed</code>
+My final high confidence peaks file contains 172,418 peaks. I used this
+file to collect PE-read counts using
+<code>featureCounts -p -a high_conf_peaks.saf -F SAF -o all_four_filtered_counts.txt ind1/trimmed/filt_files/*nodup.bam ind2/trimmed/filt_files/*nodup.bam ind3/trimmed/filt_files/*nodup.bam ind6/trimmed/filt_files/*nodup.bam</code></p>
+<br>
+<p>
+<button type="button" class="btn btn-default btn-workflowr btn-workflowr-sessioninfo" data-toggle="collapse" data-target="#workflowr-sessioninfo" style="display: block;">
+<span class="glyphicon glyphicon-wrench" aria-hidden="true"></span>
+Session information
+</button>
+</p>
+<div id="workflowr-sessioninfo" class="collapse">
+<pre class="r"><code>sessionInfo()</code></pre>
+<pre><code>R version 4.4.2 (2024-10-31 ucrt)
+Platform: x86_64-w64-mingw32/x64
+Running under: Windows 11 x64 (build 26100)
+
+Matrix products: default
+
+
+locale:
+[1] LC_COLLATE=English_United States.utf8 
+[2] LC_CTYPE=English_United States.utf8   
+[3] LC_MONETARY=English_United States.utf8
+[4] LC_NUMERIC=C                          
+[5] LC_TIME=English_United States.utf8    
+
+time zone: America/Chicago
+tzcode source: internal
+
+attached base packages:
+[1] grid      stats4    stats     graphics  grDevices utils     datasets 
+[8] methods   base     
+
+other attached packages:
+ [1] ATACseqQC_1.30.0                        
+ [2] data.table_1.17.0                       
+ [3] smplot2_0.2.5                           
+ [4] cowplot_1.1.3                           
+ [5] ComplexHeatmap_2.22.0                   
+ [6] ggrepel_0.9.6                           
+ [7] plyranges_1.26.0                        
+ [8] ggsignif_0.6.4                          
+ [9] eulerr_7.0.2                            
+[10] devtools_2.4.5                          
+[11] usethis_3.1.0                           
+[12] ggpubr_0.6.0                            
+[13] BiocParallel_1.40.0                     
+[14] scales_1.3.0                            
+[15] VennDiagram_1.7.3                       
+[16] futile.logger_1.4.3                     
+[17] gridExtra_2.3                           
+[18] ggfortify_0.4.17                        
+[19] rtracklayer_1.66.0                      
+[20] org.Hs.eg.db_3.20.0                     
+[21] TxDb.Hsapiens.UCSC.hg38.knownGene_3.20.0
+[22] GenomicFeatures_1.58.0                  
+[23] AnnotationDbi_1.68.0                    
+[24] Biobase_2.66.0                          
+[25] GenomicRanges_1.58.0                    
+[26] GenomeInfoDb_1.42.3                     
+[27] IRanges_2.40.1                          
+[28] S4Vectors_0.44.0                        
+[29] BiocGenerics_0.52.0                     
+[30] ChIPseeker_1.42.1                       
+[31] RColorBrewer_1.1-3                      
+[32] kableExtra_1.4.0                        
+[33] lubridate_1.9.4                         
+[34] forcats_1.0.0                           
+[35] stringr_1.5.1                           
+[36] dplyr_1.1.4                             
+[37] purrr_1.0.4                             
+[38] readr_2.1.5                             
+[39] tidyr_1.3.1                             
+[40] tibble_3.2.1                            
+[41] ggplot2_3.5.1                           
+[42] tidyverse_2.0.0                         
+[43] workflowr_1.7.1                         
+
+loaded via a namespace (and not attached):
+  [1] R.methodsS3_1.8.2                      
+  [2] progress_1.2.3                         
+  [3] urlchecker_1.0.1                       
+  [4] poweRlaw_1.0.0                         
+  [5] nnet_7.3-20                            
+  [6] Biostrings_2.74.1                      
+  [7] HDF5Array_1.34.0                       
+  [8] vctrs_0.6.5                            
+  [9] ggtangle_0.0.6                         
+ [10] ChIPpeakAnno_3.40.0                    
+ [11] digest_0.6.37                          
+ [12] png_0.1-8                              
+ [13] shape_1.4.6.1                          
+ [14] git2r_0.35.0                           
+ [15] MASS_7.3-65                            
+ [16] reshape2_1.4.4                         
+ [17] httpuv_1.6.15                          
+ [18] foreach_1.5.2                          
+ [19] qvalue_2.38.0                          
+ [20] withr_3.0.2                            
+ [21] xfun_0.51                              
+ [22] ggfun_0.1.8                            
+ [23] ellipsis_0.3.2                         
+ [24] survival_3.8-3                         
+ [25] memoise_2.0.1                          
+ [26] profvis_0.4.0                          
+ [27] systemfonts_1.2.1                      
+ [28] tidytree_0.4.6                         
+ [29] zoo_1.8-13                             
+ [30] GlobalOptions_0.1.2                    
+ [31] gtools_3.9.5                           
+ [32] R.oo_1.27.0                            
+ [33] Formula_1.2-5                          
+ [34] prettyunits_1.2.0                      
+ [35] KEGGREST_1.46.0                        
+ [36] promises_1.3.2                         
+ [37] httr_1.4.7                             
+ [38] rstatix_0.7.2                          
+ [39] restfulr_0.0.15                        
+ [40] rhdf5filters_1.18.1                    
+ [41] ps_1.9.0                               
+ [42] rhdf5_2.50.2                           
+ [43] rstudioapi_0.17.1                      
+ [44] UCSC.utils_1.2.0                       
+ [45] miniUI_0.1.1.1                         
+ [46] generics_0.1.3                         
+ [47] DOSE_4.0.0                             
+ [48] base64enc_0.1-3                        
+ [49] processx_3.8.6                         
+ [50] curl_6.2.1                             
+ [51] zlibbioc_1.52.0                        
+ [52] randomForest_4.7-1.2                   
+ [53] GenomeInfoDbData_1.2.13                
+ [54] SparseArray_1.6.2                      
+ [55] RBGL_1.82.0                            
+ [56] ade4_1.7-23                            
+ [57] xtable_1.8-4                           
+ [58] doParallel_1.0.17                      
+ [59] evaluate_1.0.3                         
+ [60] S4Arrays_1.6.0                         
+ [61] BiocFileCache_2.14.0                   
+ [62] hms_1.1.3                              
+ [63] colorspace_2.1-1                       
+ [64] filelock_1.0.3                         
+ [65] polynom_1.4-1                          
+ [66] magrittr_2.0.3                         
+ [67] later_1.4.1                            
+ [68] ggtree_3.14.0                          
+ [69] lattice_0.22-6                         
+ [70] getPass_0.2-4                          
+ [71] XML_3.99-0.18                          
+ [72] matrixStats_1.5.0                      
+ [73] Hmisc_5.2-2                            
+ [74] pillar_1.10.1                          
+ [75] nlme_3.1-167                           
+ [76] iterators_1.0.14                       
+ [77] pwalign_1.2.0                          
+ [78] caTools_1.18.3                         
+ [79] compiler_4.4.2                         
+ [80] stringi_1.8.4                          
+ [81] SummarizedExperiment_1.36.0            
+ [82] GenomicAlignments_1.42.0               
+ [83] plyr_1.8.9                             
+ [84] crayon_1.5.3                           
+ [85] abind_1.4-8                            
+ [86] BiocIO_1.16.0                          
+ [87] gridGraphics_0.5-1                     
+ [88] locfit_1.5-9.12                        
+ [89] bit_4.6.0                              
+ [90] fastmatch_1.1-6                        
+ [91] whisker_0.4.1                          
+ [92] codetools_0.2-20                       
+ [93] bslib_0.9.0                            
+ [94] TxDb.Hsapiens.UCSC.hg19.knownGene_3.2.2
+ [95] GetoptLong_1.0.5                       
+ [96] multtest_2.62.0                        
+ [97] mime_0.12                              
+ [98] splines_4.4.2                          
+ [99] circlize_0.4.16                        
+[100] Rcpp_1.0.14                            
+[101] dbplyr_2.5.0                           
+[102] knitr_1.49                             
+[103] blob_1.2.4                             
+[104] seqLogo_1.72.0                         
+[105] BiocVersion_3.20.0                     
+[106] clue_0.3-66                            
+[107] AnnotationFilter_1.30.0                
+[108] fs_1.6.5                               
+[109] checkmate_2.3.2                        
+[110] pkgbuild_1.4.6                         
+[111] ggplotify_0.1.2                        
+[112] Matrix_1.7-3                           
+[113] callr_3.7.6                            
+[114] statmod_1.5.0                          
+[115] tzdb_0.4.0                             
+[116] svglite_2.1.3                          
+[117] pkgconfig_2.0.3                        
+[118] tools_4.4.2                            
+[119] cachem_1.1.0                           
+[120] RSQLite_2.3.9                          
+[121] viridisLite_0.4.2                      
+[122] DBI_1.2.3                              
+[123] fastmap_1.2.0                          
+[124] rmarkdown_2.29                         
+[125] Rsamtools_2.22.0                       
+[126] AnnotationHub_3.14.0                   
+[127] broom_1.0.7                            
+[128] sass_0.4.9                             
+[129] patchwork_1.3.0                        
+[130] BiocManager_1.30.25                    
+[131] graph_1.84.1                           
+[132] carData_3.0-5                          
+[133] rpart_4.1.24                           
+[134] farver_2.1.2                           
+[135] yaml_2.3.10                            
+[136] MatrixGenerics_1.18.1                  
+[137] foreign_0.8-88                         
+[138] cli_3.6.4                              
+[139] lifecycle_1.0.4                        
+[140] lambda.r_1.2.4                         
+[141] sessioninfo_1.2.3                      
+[142] backports_1.5.0                        
+[143] annotate_1.84.0                        
+[144] timechange_0.3.0                       
+[145] gtable_0.3.6                           
+[146] rjson_0.2.23                           
+[147] parallel_4.4.2                         
+[148] ape_5.8-1                              
+[149] limma_3.62.2                           
+[150] jsonlite_1.9.1                         
+[151] edgeR_4.4.2                            
+[152] TFBSTools_1.44.0                       
+[153] bitops_1.0-9                           
+[154] bit64_4.6.0-1                          
+[155] pwr_1.3-0                              
+[156] yulab.utils_0.2.0                      
+[157] CNEr_1.42.0                            
+[158] futile.options_1.0.1                   
+[159] jquerylib_0.1.4                        
+[160] GOSemSim_2.32.0                        
+[161] R.utils_2.13.0                         
+[162] lazyeval_0.2.2                         
+[163] shiny_1.10.0                           
+[164] htmltools_0.5.8.1                      
+[165] enrichplot_1.26.6                      
+[166] GO.db_3.20.0                           
+[167] rappdirs_0.3.3                         
+[168] formatR_1.14                           
+[169] ensembldb_2.30.0                       
+[170] glue_1.8.0                             
+[171] TFMPvalue_0.0.9                        
+[172] GenomicScores_2.18.1                   
+[173] httr2_1.1.1                            
+[174] XVector_0.46.0                         
+[175] RCurl_1.98-1.16                        
+[176] InteractionSet_1.34.0                  
+[177] rprojroot_2.0.4                        
+[178] treeio_1.30.0                          
+[179] BSgenome_1.74.0                        
+[180] motifStack_1.50.0                      
+[181] boot_1.3-31                            
+[182] preseqR_4.0.0                          
+[183] universalmotif_1.24.2                  
+[184] igraph_2.1.4                           
+[185] R6_2.6.1                               
+[186] gplots_3.2.0                           
+[187] labeling_0.4.3                         
+[188] cluster_2.1.8.1                        
+[189] pkgload_1.4.0                          
+[190] Rhdf5lib_1.28.0                        
+[191] regioneR_1.38.0                        
+[192] aplot_0.2.5                            
+[193] DirichletMultinomial_1.48.0            
+[194] DelayedArray_0.32.0                    
+[195] tidyselect_1.2.1                       
+[196] plotrix_3.8-4                          
+[197] ProtGenerics_1.38.0                    
+[198] htmlTable_2.4.3                        
+[199] xml2_1.3.7                             
+[200] car_3.1-3                              
+[201] munsell_0.5.1                          
+[202] KernSmooth_2.23-26                     
+[203] htmlwidgets_1.6.4                      
+[204] fgsea_1.32.2                           
+[205] biomaRt_2.62.1                         
+[206] rlang_1.1.5                            
+[207] remotes_2.5.0                          </code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+
+<!-- Adjust MathJax settings so that all math formulae are shown using
+TeX fonts only; see
+https://docs.mathjax.org/en/latest/web/configuration.html. This will make
+the presentation more consistent at the cost of the webpage sometimes
+taking slightly longer to load. Note that this only works because the
+footer is added to webpages before the MathJax javascript. -->
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    "HTML-CSS": { availableFonts: ["TeX"] }
+  });
+</script>
+
+
+
+
+</div>
+</div>
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+function bootstrapStylePandocTables() {
+  $('tr.odd').parent('tbody').parent('table').addClass('table table-condensed');
+}
+$(document).ready(function () {
+  bootstrapStylePandocTables();
+});
+
+
+</script>
+
+<!-- tabsets -->
+
+<script>
+$(document).ready(function () {
+  window.buildTabsets("TOC");
+});
+
+$(document).ready(function () {
+  $('.tabset-dropdown > .nav-tabs > li').click(function () {
+    $(this).parent().toggleClass('nav-tabs-open');
+  });
+});
+</script>
+
+<!-- code folding -->
+
+<script>
+$(document).ready(function ()  {
+
+    // temporarily add toc-ignore selector to headers for the consistency with Pandoc
+    $('.unlisted.unnumbered').addClass('toc-ignore')
+
+    // move toc-ignore selectors from section div to header
+    $('div.section.toc-ignore')
+        .removeClass('toc-ignore')
+        .children('h1,h2,h3,h4,h5').addClass('toc-ignore');
+
+    // establish options
+    var options = {
+      selectors: "h1,h2,h3",
+      theme: "bootstrap3",
+      context: '.toc-content',
+      hashGenerator: function (text) {
+        return text.replace(/[.\\/?&!#<>]/g, '').replace(/\s/g, '_');
+      },
+      ignoreSelector: ".toc-ignore",
+      scrollTo: 0
+    };
+    options.showAndHide = true;
+    options.smoothScroll = true;
+
+    // tocify
+    var toc = $("#TOC").tocify(options).data("toc-tocify");
+});
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
