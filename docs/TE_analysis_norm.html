@@ -1,0 +1,4155 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+
+<meta name="author" content="Renee Matthews" />
+
+<meta name="date" content="2025-05-06" />
+
+<title>TE_analysis</title>
+
+<script src="site_libs/header-attrs-2.29/header-attrs.js"></script>
+<script src="site_libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="site_libs/bootstrap-3.3.5/css/cosmo.min.css" rel="stylesheet" />
+<script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
+<style>h1 {font-size: 34px;}
+       h1.title {font-size: 38px;}
+       h2 {font-size: 30px;}
+       h3 {font-size: 24px;}
+       h4 {font-size: 18px;}
+       h5 {font-size: 16px;}
+       h6 {font-size: 12px;}
+       code {color: inherit; background-color: rgba(0, 0, 0, 0.04);}
+       pre:not([class]) { background-color: white }</style>
+<script src="site_libs/jqueryui-1.13.2/jquery-ui.min.js"></script>
+<link href="site_libs/tocify-1.9.1/jquery.tocify.css" rel="stylesheet" />
+<script src="site_libs/tocify-1.9.1/jquery.tocify.js"></script>
+<script src="site_libs/navigation-1.1/tabsets.js"></script>
+<link href="site_libs/highlightjs-9.12.0/textmate.css" rel="stylesheet" />
+<script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+<script src="site_libs/kePrint-0.0.1/kePrint.js"></script>
+<link href="site_libs/lightable-0.0.1/lightable.css" rel="stylesheet" />
+<link href="site_libs/font-awesome-6.5.2/css/all.min.css" rel="stylesheet" />
+<link href="site_libs/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet" />
+
+<link rel="icon" href="https://github.com/workflowr/workflowr-assets/raw/main/img/reproducible.png">
+<!-- Add a small amount of space between sections. -->
+<style type="text/css">
+div.section {
+  padding-top: 12px;
+}
+</style>
+
+
+
+<style type="text/css">
+  code{white-space: pre-wrap;}
+  span.smallcaps{font-variant: small-caps;}
+  span.underline{text-decoration: underline;}
+  div.column{display: inline-block; vertical-align: top; width: 50%;}
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+  ul.task-list{list-style: none;}
+    </style>
+
+<style type="text/css">code{white-space: pre;}</style>
+<script type="text/javascript">
+if (window.hljs) {
+  hljs.configure({languages: []});
+  hljs.initHighlightingOnLoad();
+  if (document.readyState && document.readyState === "complete") {
+    window.setTimeout(function() { hljs.initHighlighting(); }, 0);
+  }
+}
+</script>
+
+
+
+
+
+
+
+
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+img {
+  max-width:100%;
+}
+.tabbed-pane {
+  padding-top: 12px;
+}
+.html-widget {
+  margin-bottom: 20px;
+}
+button.code-folding-btn:focus {
+  outline: none;
+}
+summary {
+  display: list-item;
+}
+details > summary > p:only-child {
+  display: inline;
+}
+pre code {
+  padding: 0;
+}
+</style>
+
+
+<style type="text/css">
+.dropdown-submenu {
+  position: relative;
+}
+.dropdown-submenu>.dropdown-menu {
+  top: 0;
+  left: 100%;
+  margin-top: -6px;
+  margin-left: -1px;
+  border-radius: 0 6px 6px 6px;
+}
+.dropdown-submenu:hover>.dropdown-menu {
+  display: block;
+}
+.dropdown-submenu>a:after {
+  display: block;
+  content: " ";
+  float: right;
+  width: 0;
+  height: 0;
+  border-color: transparent;
+  border-style: solid;
+  border-width: 5px 0 5px 5px;
+  border-left-color: #cccccc;
+  margin-top: 5px;
+  margin-right: -10px;
+}
+.dropdown-submenu:hover>a:after {
+  border-left-color: #adb5bd;
+}
+.dropdown-submenu.pull-left {
+  float: none;
+}
+.dropdown-submenu.pull-left>.dropdown-menu {
+  left: -100%;
+  margin-left: 10px;
+  border-radius: 6px 0 6px 6px;
+}
+</style>
+
+<script type="text/javascript">
+// manage active state of menu based on current page
+$(document).ready(function () {
+  // active menu anchor
+  href = window.location.pathname
+  href = href.substr(href.lastIndexOf('/') + 1)
+  if (href === "")
+    href = "index.html";
+  var menuAnchor = $('a[href="' + href + '"]');
+
+  // mark the anchor link active (and if it's in a dropdown, also mark that active)
+  var dropdown = menuAnchor.closest('li.dropdown');
+  if (window.bootstrap) { // Bootstrap 4+
+    menuAnchor.addClass('active');
+    dropdown.find('> .dropdown-toggle').addClass('active');
+  } else { // Bootstrap 3
+    menuAnchor.parent().addClass('active');
+    dropdown.addClass('active');
+  }
+
+  // Navbar adjustments
+  var navHeight = $(".navbar").first().height() + 15;
+  var style = document.createElement('style');
+  var pt = "padding-top: " + navHeight + "px; ";
+  var mt = "margin-top: -" + navHeight + "px; ";
+  var css = "";
+  // offset scroll position for anchor links (for fixed navbar)
+  for (var i = 1; i <= 6; i++) {
+    css += ".section h" + i + "{ " + pt + mt + "}\n";
+  }
+  style.innerHTML = "body {" + pt + "padding-bottom: 40px; }\n" + css;
+  document.head.appendChild(style);
+});
+</script>
+
+<!-- tabsets -->
+
+<style type="text/css">
+.tabset-dropdown > .nav-tabs {
+  display: inline-table;
+  max-height: 500px;
+  min-height: 44px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.tabset-dropdown > .nav-tabs > li.active:before, .tabset-dropdown > .nav-tabs.nav-tabs-open:before {
+  content: "\e259";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li.active:before {
+  content: "\e258";
+  font-family: 'Glyphicons Halflings';
+  border: none;
+}
+
+.tabset-dropdown > .nav-tabs > li.active {
+  display: block;
+}
+
+.tabset-dropdown > .nav-tabs > li > a,
+.tabset-dropdown > .nav-tabs > li > a:focus,
+.tabset-dropdown > .nav-tabs > li > a:hover {
+  border: none;
+  display: inline-block;
+  border-radius: 4px;
+  background-color: transparent;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li {
+  display: block;
+  float: none;
+}
+
+.tabset-dropdown > .nav-tabs > li {
+  display: none;
+}
+</style>
+
+<!-- code folding -->
+
+
+
+<style type="text/css">
+
+#TOC {
+  margin: 25px 0px 20px 0px;
+}
+@media (max-width: 768px) {
+#TOC {
+  position: relative;
+  width: 100%;
+}
+}
+
+@media print {
+.toc-content {
+  /* see https://github.com/w3c/csswg-drafts/issues/4434 */
+  float: right;
+}
+}
+
+.toc-content {
+  padding-left: 30px;
+  padding-right: 40px;
+}
+
+div.main-container {
+  max-width: 1200px;
+}
+
+div.tocify {
+  width: 20%;
+  max-width: 260px;
+  max-height: 85%;
+}
+
+@media (min-width: 768px) and (max-width: 991px) {
+  div.tocify {
+    width: 25%;
+  }
+}
+
+@media (max-width: 767px) {
+  div.tocify {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+.tocify ul, .tocify li {
+  line-height: 20px;
+}
+
+.tocify-subheader .tocify-item {
+  font-size: 0.90em;
+}
+
+.tocify .list-group-item {
+  border-radius: 0px;
+}
+
+
+</style>
+
+
+
+</head>
+
+<body>
+
+
+<div class="container-fluid main-container">
+
+
+<!-- setup 3col/9col grid for toc_float and main content  -->
+<div class="row">
+<div class="col-xs-12 col-sm-4 col-md-3">
+<div id="TOC" class="tocify">
+</div>
+</div>
+
+<div class="toc-content col-xs-12 col-sm-8 col-md-9">
+
+
+
+
+<div class="navbar navbar-default  navbar-fixed-top" role="navigation">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-bs-toggle="collapse" data-target="#navbar" data-bs-target="#navbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="index.html">Matthews_cardiotox_ATAC_2025</a>
+    </div>
+    <div id="navbar" class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+        <li>
+  <a href="index.html">Home</a>
+</li>
+<li>
+  <a href="about.html">About</a>
+</li>
+<li>
+  <a href="license.html">License</a>
+</li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        <li>
+  <a href="https://github.com/mward-lab/Matthews_cardiotox_ATAC_2025">
+    <span class="fab fa-github"></span>
+     
+    Source code
+  </a>
+</li>
+      </ul>
+    </div><!--/.nav-collapse -->
+  </div><!--/.container -->
+</div><!--/.navbar -->
+
+<div id="header">
+
+
+
+<h1 class="title toc-ignore">TE_analysis</h1>
+<h4 class="author">Renee Matthews</h4>
+<h4 class="date">2025-05-06</h4>
+
+</div>
+
+
+<p>
+<button type="button" class="btn btn-default btn-workflowr btn-workflowr-report" data-toggle="collapse" data-target="#workflowr-report">
+<span class="glyphicon glyphicon-list" aria-hidden="true"></span>
+workflowr <span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span>
+</button>
+</p>
+<div id="workflowr-report" class="collapse">
+<ul class="nav nav-tabs">
+<li class="active">
+<a data-toggle="tab" href="#summary">Summary</a>
+</li>
+<li>
+<a data-toggle="tab" href="#checks"> Checks <span
+class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span>
+</a>
+</li>
+<li>
+<a data-toggle="tab" href="#versions">Past versions</a>
+</li>
+</ul>
+<div class="tab-content">
+<div id="summary" class="tab-pane fade in active">
+<p>
+<strong>Last updated:</strong> 2025-05-07
+</p>
+<p>
+<strong>Checks:</strong> <span
+class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> 7
+<span class="glyphicon glyphicon-exclamation-sign text-danger"
+aria-hidden="true"></span> 0
+</p>
+<p>
+<strong>Knit directory:</strong> <code>ATAC_learning/</code> <span
+class="glyphicon glyphicon-question-sign" aria-hidden="true"
+title="This is the local directory in which the code in this file was executed.">
+</span>
+</p>
+<p>
+This reproducible <a href="https://rmarkdown.rstudio.com">R Markdown</a>
+analysis was created with <a
+  href="https://github.com/workflowr/workflowr">workflowr</a> (version
+1.7.1). The <em>Checks</em> tab describes the reproducibility checks
+that were applied when the results were created. The <em>Past
+versions</em> tab lists the development history.
+</p>
+<hr>
+</div>
+<div id="checks" class="tab-pane fade">
+<div id="workflowr-checks" class="panel-group">
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRMarkdownfilestronguptodate">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>R Markdown file:</strong> up-to-date
+</a>
+</p>
+</div>
+<div id="strongRMarkdownfilestronguptodate"
+class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great! Since the R Markdown file has been committed to the Git
+repository, you know the exact version of the code that produced these
+results.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongEnvironmentstrongempty">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Environment:</strong> empty </a>
+</p>
+</div>
+<div id="strongEnvironmentstrongempty" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great job! The global environment was empty. Objects defined in the
+global environment can affect the analysis in your R Markdown file in
+unknown ways. For reproduciblity it’s best to always run the code in an
+empty environment.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongSeedstrongcodesetseed20231016code">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Seed:</strong>
+<code>set.seed(20231016)</code> </a>
+</p>
+</div>
+<div id="strongSeedstrongcodesetseed20231016code"
+class="panel-collapse collapse">
+<div class="panel-body">
+<p>The command <code>set.seed(20231016)</code> was run prior to running
+the code in the R Markdown file. Setting a seed ensures that any results
+that rely on randomness, e.g. subsampling or permutations, are
+reproducible.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongSessioninformationstrongrecorded">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Session information:</strong>
+recorded </a>
+</p>
+</div>
+<div id="strongSessioninformationstrongrecorded"
+class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great job! Recording the operating system, R version, and package
+versions is critical for reproducibility.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongCachestrongnone">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Cache:</strong> none </a>
+</p>
+</div>
+<div id="strongCachestrongnone" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Nice! There were no cached chunks for this analysis, so you can be
+confident that you successfully produced the results during this
+run.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongFilepathsstrongrelative">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>File paths:</strong> relative </a>
+</p>
+</div>
+<div id="strongFilepathsstrongrelative" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great job! Using relative paths to the files within your workflowr
+project makes it easier to run your code on other machines.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcommwardlabMatthewscardiotoxATAC2025treed969893e9d577cbba1f4c6a9ab4d3a6ad0bb1fb7targetblankd969893a">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Repository version:</strong>
+<a href="https://github.com/mward-lab/Matthews_cardiotox_ATAC_2025/tree/d969893e9d577cbba1f4c6a9ab4d3a6ad0bb1fb7" target="_blank">d969893</a>
+</a>
+</p>
+</div>
+<div
+id="strongRepositoryversionstrongahrefhttpsgithubcommwardlabMatthewscardiotoxATAC2025treed969893e9d577cbba1f4c6a9ab4d3a6ad0bb1fb7targetblankd969893a"
+class="panel-collapse collapse">
+<div class="panel-body">
+<p>
+Great! You are using Git for version control. Tracking code development
+and connecting the code version to the results is critical for
+reproducibility.
+</p>
+<p>
+The results in this page were generated with repository version
+<a href="https://github.com/mward-lab/Matthews_cardiotox_ATAC_2025/tree/d969893e9d577cbba1f4c6a9ab4d3a6ad0bb1fb7" target="_blank">d969893</a>.
+See the <em>Past versions</em> tab to see a history of the changes made
+to the R Markdown and HTML files.
+</p>
+<p>
+Note that you need to be careful to ensure that all relevant files for
+the analysis have been committed to Git prior to generating the results
+(you can use <code>wflow_publish</code> or
+<code>wflow_git_commit</code>). workflowr only checks the R Markdown
+file, but you know if there are other scripts or data files that it
+depends on. Below is the status of the Git repository when the results
+were generated:
+</p>
+<pre><code>
+Ignored files:
+    Ignored:    .RData
+    Ignored:    .Rhistory
+    Ignored:    .Rproj.user/
+    Ignored:    data/ACresp_SNP_table.csv
+    Ignored:    data/ARR_SNP_table.csv
+    Ignored:    data/All_merged_peaks.tsv
+    Ignored:    data/CAD_gwas_dataframe.RDS
+    Ignored:    data/CTX_SNP_table.csv
+    Ignored:    data/Collapsed_expressed_NG_peak_table.csv
+    Ignored:    data/DEG_toplist_sep_n45.RDS
+    Ignored:    data/FRiP_first_run.txt
+    Ignored:    data/Final_four_data/
+    Ignored:    data/Frip_1_reads.csv
+    Ignored:    data/Frip_2_reads.csv
+    Ignored:    data/Frip_3_reads.csv
+    Ignored:    data/Frip_4_reads.csv
+    Ignored:    data/Frip_5_reads.csv
+    Ignored:    data/Frip_6_reads.csv
+    Ignored:    data/GO_KEGG_analysis/
+    Ignored:    data/HF_SNP_table.csv
+    Ignored:    data/Ind1_75DA24h_dedup_peaks.csv
+    Ignored:    data/Ind1_TSS_peaks.RDS
+    Ignored:    data/Ind1_firstfragment_files.txt
+    Ignored:    data/Ind1_fragment_files.txt
+    Ignored:    data/Ind1_peaks_list.RDS
+    Ignored:    data/Ind1_summary.txt
+    Ignored:    data/Ind2_TSS_peaks.RDS
+    Ignored:    data/Ind2_fragment_files.txt
+    Ignored:    data/Ind2_peaks_list.RDS
+    Ignored:    data/Ind2_summary.txt
+    Ignored:    data/Ind3_TSS_peaks.RDS
+    Ignored:    data/Ind3_fragment_files.txt
+    Ignored:    data/Ind3_peaks_list.RDS
+    Ignored:    data/Ind3_summary.txt
+    Ignored:    data/Ind4_79B24h_dedup_peaks.csv
+    Ignored:    data/Ind4_TSS_peaks.RDS
+    Ignored:    data/Ind4_V24h_fraglength.txt
+    Ignored:    data/Ind4_fragment_files.txt
+    Ignored:    data/Ind4_fragment_filesN.txt
+    Ignored:    data/Ind4_peaks_list.RDS
+    Ignored:    data/Ind4_summary.txt
+    Ignored:    data/Ind5_TSS_peaks.RDS
+    Ignored:    data/Ind5_fragment_files.txt
+    Ignored:    data/Ind5_fragment_filesN.txt
+    Ignored:    data/Ind5_peaks_list.RDS
+    Ignored:    data/Ind5_summary.txt
+    Ignored:    data/Ind6_TSS_peaks.RDS
+    Ignored:    data/Ind6_fragment_files.txt
+    Ignored:    data/Ind6_peaks_list.RDS
+    Ignored:    data/Ind6_summary.txt
+    Ignored:    data/Knowles_4.RDS
+    Ignored:    data/Knowles_5.RDS
+    Ignored:    data/Knowles_6.RDS
+    Ignored:    data/LiSiLTDNRe_TE_df.RDS
+    Ignored:    data/MI_gwas.RDS
+    Ignored:    data/SNP_GWAS_PEAK_MRC_id
+    Ignored:    data/SNP_GWAS_PEAK_MRC_id.csv
+    Ignored:    data/SNP_gene_cat_list.tsv
+    Ignored:    data/SNP_supp_schneider.RDS
+    Ignored:    data/TE_info/
+    Ignored:    data/TFmapnames.RDS
+    Ignored:    data/all_TSSE_scores.RDS
+    Ignored:    data/all_four_filtered_counts.txt
+    Ignored:    data/aln_run1_results.txt
+    Ignored:    data/anno_ind1_DA24h.RDS
+    Ignored:    data/anno_ind4_V24h.RDS
+    Ignored:    data/annotated_gwas_SNPS.csv
+    Ignored:    data/background_n45_he_peaks.RDS
+    Ignored:    data/cardiac_muscle_FRIP.csv
+    Ignored:    data/cardiomyocyte_FRIP.csv
+    Ignored:    data/col_ng_peak.csv
+    Ignored:    data/cormotif_full_4_run.RDS
+    Ignored:    data/cormotif_full_4_run_he.RDS
+    Ignored:    data/cormotif_full_6_run.RDS
+    Ignored:    data/cormotif_full_6_run_he.RDS
+    Ignored:    data/cormotif_probability_45_list.csv
+    Ignored:    data/cormotif_probability_45_list_he.csv
+    Ignored:    data/cormotif_probability_all_6_list.csv
+    Ignored:    data/cormotif_probability_all_6_list_he.csv
+    Ignored:    data/datasave.RDS
+    Ignored:    data/embryo_heart_FRIP.csv
+    Ignored:    data/enhancer_list_ENCFF126UHK.bed
+    Ignored:    data/enhancerdata/
+    Ignored:    data/filt_Peaks_efit2.RDS
+    Ignored:    data/filt_Peaks_efit2_bl.RDS
+    Ignored:    data/filt_Peaks_efit2_n45.RDS
+    Ignored:    data/first_Peaksummarycounts.csv
+    Ignored:    data/first_run_frag_counts.txt
+    Ignored:    data/full_bedfiles/
+    Ignored:    data/gene_ref.csv
+    Ignored:    data/gwas_1_dataframe.RDS
+    Ignored:    data/gwas_2_dataframe.RDS
+    Ignored:    data/gwas_3_dataframe.RDS
+    Ignored:    data/gwas_4_dataframe.RDS
+    Ignored:    data/gwas_5_dataframe.RDS
+    Ignored:    data/high_conf_peak_counts.csv
+    Ignored:    data/high_conf_peak_counts.txt
+    Ignored:    data/high_conf_peaks_bl_counts.txt
+    Ignored:    data/high_conf_peaks_counts.txt
+    Ignored:    data/hits_files/
+    Ignored:    data/hyper_files/
+    Ignored:    data/hypo_files/
+    Ignored:    data/ind1_DA24hpeaks.RDS
+    Ignored:    data/ind1_TSSE.RDS
+    Ignored:    data/ind2_TSSE.RDS
+    Ignored:    data/ind3_TSSE.RDS
+    Ignored:    data/ind4_TSSE.RDS
+    Ignored:    data/ind4_V24hpeaks.RDS
+    Ignored:    data/ind5_TSSE.RDS
+    Ignored:    data/ind6_TSSE.RDS
+    Ignored:    data/initial_complete_stats_run1.txt
+    Ignored:    data/left_ventricle_FRIP.csv
+    Ignored:    data/median_24_lfc.RDS
+    Ignored:    data/median_3_lfc.RDS
+    Ignored:    data/mergedPeads.gff
+    Ignored:    data/mergedPeaks.gff
+    Ignored:    data/motif_list_full
+    Ignored:    data/motif_list_n45
+    Ignored:    data/motif_list_n45.RDS
+    Ignored:    data/multiqc_fastqc_run1.txt
+    Ignored:    data/multiqc_fastqc_run2.txt
+    Ignored:    data/multiqc_genestat_run1.txt
+    Ignored:    data/multiqc_genestat_run2.txt
+    Ignored:    data/my_hc_filt_counts.RDS
+    Ignored:    data/my_hc_filt_counts_n45.RDS
+    Ignored:    data/n45_bedfiles/
+    Ignored:    data/n45_files
+    Ignored:    data/other_papers/
+    Ignored:    data/peakAnnoList_1.RDS
+    Ignored:    data/peakAnnoList_2.RDS
+    Ignored:    data/peakAnnoList_24_full.RDS
+    Ignored:    data/peakAnnoList_24_n45.RDS
+    Ignored:    data/peakAnnoList_3.RDS
+    Ignored:    data/peakAnnoList_3_full.RDS
+    Ignored:    data/peakAnnoList_3_n45.RDS
+    Ignored:    data/peakAnnoList_4.RDS
+    Ignored:    data/peakAnnoList_5.RDS
+    Ignored:    data/peakAnnoList_6.RDS
+    Ignored:    data/peakAnnoList_Eight.RDS
+    Ignored:    data/peakAnnoList_full_motif.RDS
+    Ignored:    data/peakAnnoList_n45_motif.RDS
+    Ignored:    data/siglist_full.RDS
+    Ignored:    data/siglist_n45.RDS
+    Ignored:    data/summarized_peaks_dataframe.txt
+    Ignored:    data/summary_peakIDandReHeat.csv
+    Ignored:    data/test.list.RDS
+    Ignored:    data/testnames.txt
+    Ignored:    data/toplist_6.RDS
+    Ignored:    data/toplist_full.RDS
+    Ignored:    data/toplist_full_DAR_6.RDS
+    Ignored:    data/toplist_n45.RDS
+    Ignored:    data/trimmed_seq_length.csv
+    Ignored:    data/unclassified_full_set_peaks.RDS
+    Ignored:    data/unclassified_n45_set_peaks.RDS
+    Ignored:    data/xstreme/
+
+Untracked files:
+    Untracked:  analysis/Diagnosis-tmm.Rmd
+    Untracked:  analysis/Expressed_RNA_associations.Rmd
+    Untracked:  analysis/LFC_corr.Rmd
+    Untracked:  analysis/SVA.Rmd
+    Untracked:  analysis/Tan2020.Rmd
+    Untracked:  analysis/making_master_peaks_list.Rmd
+    Untracked:  analysis/my_hc_filt_counts.csv
+    Untracked:  code/IGV_snapshot_code.R
+    Untracked:  code/LongDARlist.R
+    Untracked:  code/just_for_Fun.R
+    Untracked:  output/cormotif_probability_45_list.csv
+    Untracked:  output/cormotif_probability_all_6_list.csv
+    Untracked:  setup.RData
+
+Unstaged changes:
+    Modified:   ATAC_learning.Rproj
+    Modified:   analysis/Jaspar_motif.Rmd
+    Modified:   analysis/Jaspar_motif_ff.Rmd
+    Modified:   analysis/final_four_analysis.Rmd
+
+</code></pre>
+<p>
+Note that any generated files, e.g. HTML, png, CSS, etc., are not
+included in this status report because it is ok for generated content to
+have uncommitted changes.
+</p>
+</div>
+</div>
+</div>
+</div>
+<hr>
+</div>
+<div id="versions" class="tab-pane fade">
+<p>
+These are the previous versions of the repository in which changes were
+made to the R Markdown (<code>analysis/TE_analysis_norm.Rmd</code>) and
+HTML (<code>docs/TE_analysis_norm.html</code>) files. If you’ve
+configured a remote Git repository (see <code>?wflow_git_remote</code>),
+click on the hyperlinks in the table below to view the files as they
+were in that past version.
+</p>
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+File
+</th>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+<th>
+Message
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+Rmd
+</td>
+<td>
+<a href="https://github.com/mward-lab/Matthews_cardiotox_ATAC_2025/blob/2db35c7902051323c92c3137ff9713afad84c268/analysis/TE_analysis_norm.Rmd" target="_blank">2db35c7</a>
+</td>
+<td>
+reneeisnowhere
+</td>
+<td>
+2025-05-07
+</td>
+<td>
+updates to analysis
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<hr>
+</div>
+</div>
+</div>
+<style type="text/css">
+pre {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+pre[class] {
+  max-height: 200px;
+}
+</style>
+<pre class="r"><code>library(tidyverse)
+library(kableExtra)
+library(broom)
+library(RColorBrewer)
+library(ChIPseeker)
+library(&quot;TxDb.Hsapiens.UCSC.hg38.knownGene&quot;)
+library(&quot;org.Hs.eg.db&quot;)
+library(rtracklayer)
+library(edgeR)
+library(ggfortify)
+library(limma)
+library(readr)
+library(BiocGenerics)
+library(gridExtra)
+library(VennDiagram)
+library(scales)
+library(BiocParallel)
+library(ggpubr)
+library(devtools)
+library(biomaRt)
+library(eulerr)
+library(smplot2)
+library(genomation)
+library(ggsignif)
+library(plyranges)
+library(ggrepel)
+library(epitools)
+library(circlize)</code></pre>
+<p>Loading repeatmasker data:</p>
+<pre class="r"><code>repeatmasker &lt;- read.delim(&quot;data/other_papers/repeatmasker.tsv&quot;)</code></pre>
+<p>Subsetting repeatmasker for analysis by class/family</p>
+<pre class="r"><code>reClass_list &lt;- repeatmasker %&gt;% 
+  distinct(repClass)
+
+Line_repeats &lt;- repeatmasker %&gt;% 
+  dplyr::filter(repClass == &quot;LINE&quot;) %&gt;% 
+ makeGRangesFromDataFrame(., keep.extra.columns = TRUE, seqnames.field = &quot;genoName&quot;, start.field = &quot;genoStart&quot;, end.field = &quot;genoEnd&quot;,starts.in.df.are.0based=TRUE)
+
+Sine_repeats &lt;- repeatmasker %&gt;% 
+  dplyr::filter(repClass == &quot;SINE&quot;) %&gt;% 
+ makeGRangesFromDataFrame(., keep.extra.columns = TRUE, seqnames.field = &quot;genoName&quot;, start.field = &quot;genoStart&quot;, end.field = &quot;genoEnd&quot;,starts.in.df.are.0based=TRUE)
+
+LTR_repeats &lt;- repeatmasker %&gt;% 
+  dplyr::filter(repClass == &quot;LTR&quot;) %&gt;% 
+ makeGRangesFromDataFrame(., keep.extra.columns = TRUE, seqnames.field = &quot;genoName&quot;, start.field = &quot;genoStart&quot;, end.field = &quot;genoEnd&quot;,starts.in.df.are.0based=TRUE)
+
+DNA_repeats &lt;- repeatmasker %&gt;% 
+  dplyr::filter(repClass == &quot;DNA&quot;) %&gt;% 
+ makeGRangesFromDataFrame(., keep.extra.columns = TRUE, seqnames.field = &quot;genoName&quot;, start.field = &quot;genoStart&quot;, end.field = &quot;genoEnd&quot;,starts.in.df.are.0based=TRUE)
+
+retroposon_repeats &lt;- repeatmasker %&gt;% 
+  dplyr::filter(repClass == &quot;Retroposon&quot;) %&gt;% 
+ makeGRangesFromDataFrame(., keep.extra.columns = TRUE, seqnames.field = &quot;genoName&quot;, start.field = &quot;genoStart&quot;, end.field = &quot;genoEnd&quot;,starts.in.df.are.0based=TRUE)
+
+all_TEs_gr &lt;- repeatmasker %&gt;% 
+ makeGRangesFromDataFrame(., keep.extra.columns = TRUE, seqnames.field = &quot;genoName&quot;, start.field = &quot;genoStart&quot;, end.field = &quot;genoEnd&quot;,starts.in.df.are.0based=TRUE)</code></pre>
+<p>this code contains the fill functions for each of the plots that
+needed similar colors.</p>
+<pre class="r"><code> # scale fill repeat, 2nd set ----------------------------------------------
+rep_other_names&lt;- repeatmasker %&gt;% 
+  distinct(repClass) %&gt;% 
+  rbind(&quot;Other&quot;)
+
+scale_fill_repeat &lt;-  function(...){
+  ggplot2:::manual_scale(
+    &#39;fill&#39;, 
+    values = setNames(c( &quot;#8DD3C7&quot;,
+                         &quot;#FFFFB3&quot;,
+                         &quot;#BEBADA&quot; ,
+                         &quot;#FB8072&quot;,
+                         &quot;#80B1D3&quot;,
+                         &quot;#FDB462&quot;,
+                         &quot;#B3DE69&quot;,
+                         &quot;#FCCDE5&quot;,
+                         &quot;#D9D9D9&quot;,
+                         &quot;#BC80BD&quot;,
+                         &quot;#CCEBC5&quot;,
+                         &quot;pink4&quot;,
+                         &quot;cornflowerblue&quot;,
+                         &quot;chocolate&quot;,
+                         &quot;brown&quot;,
+                         &quot;green&quot;,
+                         &quot;yellow4&quot;,
+                         &quot;purple&quot;,
+                         &quot;darkorchid4&quot;,
+                         &quot;coral4&quot;,
+                         &quot;darkolivegreen4&quot;,
+                         &quot;darkorange&quot;,
+                         &quot;darkgrey&quot;), unique(rep_other_names$repClass)), 
+    ...
+  )
+}
+
+
+# scale fill LTRs ---------------------------------------------------------
+
+LTR_df &lt;- LTR_repeats %&gt;% 
+  as.data.frame() %&gt;% 
+  mutate(repFamily=factor(repFamily))
+
+
+scale_fill_LTRs &lt;-  function(...){
+  ggplot2:::manual_scale(
+    &#39;fill&#39;, 
+    values = setNames(c( &quot;#8DD3C7&quot;,
+                         &quot;#FFFFB3&quot;,
+                         &quot;#BEBADA&quot; ,
+                         &quot;#FB8072&quot;,
+                         &quot;#80B1D3&quot;,
+                         &quot;#FDB462&quot;,
+                         &quot;#B3DE69&quot;,
+                         &quot;#FCCDE5&quot;,
+                         &quot;#D9D9D9&quot;,
+                         &quot;#BC80BD&quot;,
+                         &quot;#CCEBC5&quot;,
+                         &quot;pink4&quot;,
+                         &quot;cornflowerblue&quot;,
+                         &quot;chocolate&quot;,
+                         &quot;brown&quot;,
+                         &quot;green&quot;,
+                         &quot;yellow4&quot;,
+                         &quot;purple&quot;,
+                         &quot;darkorchid4&quot;,
+                         &quot;coral4&quot;,
+                         &quot;darkolivegreen4&quot;,
+                         &quot;darkorange&quot;), unique(LTR_df$repFamily)), 
+    ...
+  )
+}
+
+
+
+scale_fill_DNA_family &lt;-  function(...){
+  ggplot2:::manual_scale(
+    &#39;fill&#39;, 
+    values = setNames(c( &quot;#8DD3C7&quot;, &quot;#FFFFB3&quot;, &quot;#BEBADA&quot; ,&quot;#FB8072&quot;, &quot;#80B1D3&quot;, &quot;#FDB462&quot;, &quot;#B3DE69&quot;, &quot;#FCCDE5&quot;, &quot;purple4&quot;), unique(DNA_family$repFamily)), 
+    ...
+  )
+}
+
+
+# scale lines -------------------------------------------------------------
+Line_df &lt;- Line_repeats %&gt;% 
+  as.data.frame() %&gt;% 
+  mutate(repFamily=factor(repFamily))
+
+
+scale_fill_lines &lt;-  function(...){
+  ggplot2:::manual_scale(
+    &#39;fill&#39;, 
+    values = setNames(c( &quot;#8DD3C7&quot;,
+                         &quot;#FFFFB3&quot;,
+                         &quot;#BEBADA&quot; ,
+                         &quot;#FB8072&quot;,
+                         &quot;#80B1D3&quot;,
+                         &quot;#FDB462&quot;,
+                         &quot;#B3DE69&quot;,
+                         &quot;#FCCDE5&quot;,
+                         &quot;#D9D9D9&quot;,
+                         &quot;#BC80BD&quot;,
+                         &quot;#CCEBC5&quot;,
+                         &quot;pink4&quot;,
+                         &quot;cornflowerblue&quot;,
+                         &quot;chocolate&quot;,
+                         &quot;brown&quot;,
+                         &quot;green&quot;,
+                         &quot;yellow4&quot;,
+                         &quot;purple&quot;,
+                         &quot;darkorchid4&quot;,
+                         &quot;coral4&quot;,
+                         &quot;darkolivegreen4&quot;,
+                         &quot;darkorange&quot;), unique(Line_df$repFamily)), 
+    ...
+  )
+}
+
+
+# scale fill L2 family ----------------------------------------------------
+L2_line_df&lt;- Line_df %&gt;% 
+  dplyr::filter(repFamily==&quot;L2&quot;)
+
+
+scale_fill_L2 &lt;-  function(...){
+  ggplot2:::manual_scale(
+    &#39;fill&#39;, 
+    values = setNames(c( &quot;#8DD3C7&quot;,
+                         &quot;#FFFFB3&quot;,
+                         &quot;#BEBADA&quot; ,
+                         &quot;#FB8072&quot;,
+                         &quot;#80B1D3&quot;,
+                         &quot;#FDB462&quot;,
+                         &quot;#B3DE69&quot;,
+                         &quot;#FCCDE5&quot;,
+                         &quot;#D9D9D9&quot;,
+                         &quot;#BC80BD&quot;,
+                         &quot;#CCEBC5&quot;,
+                         &quot;pink4&quot;,
+                         &quot;cornflowerblue&quot;,
+                         &quot;chocolate&quot;,
+                         &quot;brown&quot;,
+                         &quot;green&quot;,
+                         &quot;yellow4&quot;,
+                         &quot;purple&quot;,
+                         &quot;darkorchid4&quot;,
+                         &quot;coral4&quot;,
+                         &quot;darkolivegreen4&quot;,
+                         &quot;darkorange&quot;), unique(L2_line_df$repName)), 
+    ...
+  )
+}
+
+# scale fill sines --------------------------------------------------------
+Sine_df &lt;- Sine_repeats %&gt;% 
+  as.data.frame() %&gt;% 
+  mutate(repFamily=factor(repFamily))
+
+
+scale_fill_sines &lt;-  function(...){
+  ggplot2:::manual_scale(
+    &#39;fill&#39;, 
+    values = setNames(c( &quot;#8DD3C7&quot;,
+                         &quot;#FFFFB3&quot;,
+                         &quot;#BEBADA&quot; ,
+                         &quot;#FB8072&quot;,
+                         &quot;#80B1D3&quot;,
+                         &quot;#FDB462&quot;,
+                         &quot;#B3DE69&quot;,
+                         &quot;#FCCDE5&quot;,
+                         &quot;#D9D9D9&quot;,
+                         &quot;#BC80BD&quot;,
+                         &quot;#CCEBC5&quot;,
+                         &quot;pink4&quot;,
+                         &quot;cornflowerblue&quot;,
+                         &quot;chocolate&quot;,
+                         &quot;brown&quot;,
+                         &quot;green&quot;,
+                         &quot;yellow4&quot;,
+                         &quot;purple&quot;,
+                         &quot;darkorchid4&quot;,
+                         &quot;coral4&quot;,
+                         &quot;darkolivegreen4&quot;,
+                         &quot;darkorange&quot;), unique(Sine_df$repFamily)), 
+    ...
+  )
+}
+
+
+# scale fill DNAs ---------------------------------------------------------
+DNA_df &lt;- DNA_repeats %&gt;% 
+  as.data.frame() %&gt;% 
+  mutate(repFamily=factor(repFamily))
+
+
+scale_fill_DNAs &lt;-  function(...){
+  ggplot2:::manual_scale(
+    &#39;fill&#39;, 
+    values = setNames(c( &quot;#8DD3C7&quot;,
+                         &quot;#FFFFB3&quot;,
+                         &quot;#BEBADA&quot; ,
+                         &quot;#FB8072&quot;,
+                         &quot;#80B1D3&quot;,
+                         &quot;#FDB462&quot;,
+                         &quot;#B3DE69&quot;,
+                         &quot;#FCCDE5&quot;,
+                         &quot;#D9D9D9&quot;,
+                         &quot;#BC80BD&quot;,
+                         &quot;#CCEBC5&quot;,
+                         &quot;pink4&quot;,
+                         &quot;cornflowerblue&quot;,
+                         &quot;chocolate&quot;,
+                         &quot;brown&quot;,
+                         &quot;green&quot;,
+                         &quot;yellow4&quot;,
+                         &quot;purple&quot;,
+                         &quot;darkorchid4&quot;,
+                         &quot;coral4&quot;,
+                         &quot;darkolivegreen4&quot;,
+                         &quot;darkorange&quot;,
+                         &quot;blue&quot;,
+                         &quot;grey&quot;,
+                         &quot;lightgrey&quot;), unique(DNA_df$repFamily)), 
+    ...
+  )
+}
+
+
+# scale fill retroposons --------------------------------------------------
+
+retroposon_df &lt;- retroposon_repeats %&gt;% 
+  as.data.frame() %&gt;% 
+  mutate(repName=factor(repName))
+
+scale_fill_retroposons &lt;-  function(...){
+  ggplot2:::manual_scale(
+    &#39;fill&#39;, 
+    values = setNames(c( &quot;#8DD3C7&quot;,
+                         &quot;#FFFFB3&quot;,
+                         &quot;#BEBADA&quot; ,
+                         &quot;#FB8072&quot;,
+                         &quot;#80B1D3&quot;,
+                         &quot;#FDB462&quot;,
+                         &quot;#B3DE69&quot;,
+                         &quot;#FCCDE5&quot;,
+                         &quot;#D9D9D9&quot;,
+                         &quot;#BC80BD&quot;,
+                         &quot;#CCEBC5&quot;,
+                         &quot;pink4&quot;,
+                         &quot;cornflowerblue&quot;,
+                         &quot;chocolate&quot;,
+                         &quot;brown&quot;,
+                         &quot;green&quot;,
+                         &quot;yellow4&quot;,
+                         &quot;purple&quot;,
+                         &quot;darkorchid4&quot;,
+                         &quot;coral4&quot;,
+                         &quot;darkolivegreen4&quot;,
+                         &quot;darkorange&quot;), unique(retroposon_df$repName)), 
+    ...
+  )
+}</code></pre>
+<p>Bringing in my granges dataframes for each cluster</p>
+<pre class="r"><code>Motif_list_gr &lt;- readRDS(&quot;data/Final_four_data/re_analysis/Motif_list_granges.RDS&quot;)
+##order specific
+df_list &lt;- plyr::llply(Motif_list_gr, as.data.frame)
+### no change motif_list_gr names so they do not overwrite the dataframes
+names(Motif_list_gr) &lt;- paste0(names(Motif_list_gr), &quot;_gr&quot;)
+list2env(Motif_list_gr,envir= .GlobalEnv)</code></pre>
+<pre><code>&lt;environment: R_GlobalEnv&gt;</code></pre>
+<pre class="r"><code>list2env(df_list,envir= .GlobalEnv)</code></pre>
+<pre><code>&lt;environment: R_GlobalEnv&gt;</code></pre>
+<pre class="r"><code>TSS_NG_data &lt;- read_delim(&quot;data/Final_four_data/TSS_assigned_NG.txt&quot;, 
+    delim = &quot;\t&quot;, escape_double = FALSE, 
+    trim_ws = TRUE)
+
+Collapsed_peaks &lt;- read_delim(&quot;data/Final_four_data/collapsed_new_peaks.txt&quot;,
+                              delim = &quot;\t&quot;, 
+                              escape_double = FALSE, 
+                              trim_ws = TRUE)
+### the two data frames below contain all 172,418 peaks.  I was only interested in the 155,557 (without chrY) This code filters out first the chrY reagions, followed by the regions not covered in the filtered log2cpm peaklist.
+TSS_data_gr &lt;- TSS_NG_data %&gt;% 
+  dplyr::filter(chr != &quot;chrY&quot;) %&gt;%
+  dplyr::filter(Peakid %in% all_regions$Peakid) %&gt;% 
+  GRanges()
+
+Col_TSS_data_gr &lt;- Collapsed_peaks %&gt;% 
+  dplyr::filter(chr != &quot;chrY&quot;) %&gt;%
+  dplyr::filter(Peakid %in% all_regions$Peakid) %&gt;% 
+  GRanges()</code></pre>
+<div id="first-step-overlap-my-peaks-with-repeatmasker"
+class="section level3">
+<h3>First step: Overlap my peaks with repeatmasker</h3>
+<pre class="r"><code>all_TEs_gr$TE_width &lt;- width(all_TEs_gr)
+Col_TSS_data_gr$peak_width &lt;- width(Col_TSS_data_gr)
+Col_fullDF_overlap &lt;- join_overlap_intersect(Col_TSS_data_gr,all_TEs_gr)
+Col_fullDF_overlap %&gt;% 
+  as.data.frame() %&gt;% 
+  group_by(repClass) %&gt;%  
+  tally %&gt;% 
+  kable(., caption=&quot; Table 1: Count of peaks by TE class; overlap at least 1 bp; using one:one df &quot;) %&gt;% 
+  kable_paper(&quot;striped&quot;, full_width = TRUE) %&gt;%
+  kable_styling(full_width = FALSE, font_size = 14)</code></pre>
+<table class=" lightable-paper lightable-striped table" style="font-family: &quot;Arial Narrow&quot;, arial, helvetica, sans-serif; margin-left: auto; margin-right: auto; font-size: 14px; width: auto !important; margin-left: auto; margin-right: auto;">
+<caption style="font-size: initial !important;">
+Table 1: Count of peaks by TE class; overlap at least 1 bp; using
+one:one df
+</caption>
+<thead>
+<tr>
+<th style="text-align:left;">
+repClass
+</th>
+<th style="text-align:right;">
+n
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+DNA
+</td>
+<td style="text-align:right;">
+16960
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+DNA?
+</td>
+<td style="text-align:right;">
+138
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+LINE
+</td>
+<td style="text-align:right;">
+40440
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+LTR
+</td>
+<td style="text-align:right;">
+27844
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+LTR?
+</td>
+<td style="text-align:right;">
+257
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Low_complexity
+</td>
+<td style="text-align:right;">
+5731
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+RC
+</td>
+<td style="text-align:right;">
+52
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+RC?
+</td>
+<td style="text-align:right;">
+9
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+RNA
+</td>
+<td style="text-align:right;">
+28
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Retroposon
+</td>
+<td style="text-align:right;">
+295
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+SINE
+</td>
+<td style="text-align:right;">
+52755
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+SINE?
+</td>
+<td style="text-align:right;">
+1
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Satellite
+</td>
+<td style="text-align:right;">
+191
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Simple_repeat
+</td>
+<td style="text-align:right;">
+30184
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Unknown
+</td>
+<td style="text-align:right;">
+288
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+rRNA
+</td>
+<td style="text-align:right;">
+54
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+scRNA
+</td>
+<td style="text-align:right;">
+32
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+snRNA
+</td>
+<td style="text-align:right;">
+144
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+srpRNA
+</td>
+<td style="text-align:right;">
+44
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+tRNA
+</td>
+<td style="text-align:right;">
+302
+</td>
+</tr>
+</tbody>
+</table>
+<pre class="r"><code>Col_fullDF_overlap %&gt;% 
+   as.data.frame %&gt;% 
+  mutate(per_ol= width/TE_width) %&gt;% 
+  dplyr::filter(per_ol&gt;0.5) %&gt;%
+  group_by(repClass) %&gt;% 
+  tally() %&gt;% 
+  kable(., caption=&quot; Table 2:Count of peaks by TE class; overlap of &gt;50% of TE; newway &quot;) %&gt;% 
+  kable_paper(&quot;striped&quot;, full_width = TRUE) %&gt;%
+  kable_styling(full_width = FALSE, font_size = 14)</code></pre>
+<table class=" lightable-paper lightable-striped table" style="font-family: &quot;Arial Narrow&quot;, arial, helvetica, sans-serif; margin-left: auto; margin-right: auto; font-size: 14px; width: auto !important; margin-left: auto; margin-right: auto;">
+<caption style="font-size: initial !important;">
+Table 2:Count of peaks by TE class; overlap of &gt;50% of TE; newway
+</caption>
+<thead>
+<tr>
+<th style="text-align:left;">
+repClass
+</th>
+<th style="text-align:right;">
+n
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+DNA
+</td>
+<td style="text-align:right;">
+11821
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+DNA?
+</td>
+<td style="text-align:right;">
+118
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+LINE
+</td>
+<td style="text-align:right;">
+25548
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+LTR
+</td>
+<td style="text-align:right;">
+18403
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+LTR?
+</td>
+<td style="text-align:right;">
+199
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Low_complexity
+</td>
+<td style="text-align:right;">
+5305
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+RC
+</td>
+<td style="text-align:right;">
+41
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+RC?
+</td>
+<td style="text-align:right;">
+7
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+RNA
+</td>
+<td style="text-align:right;">
+22
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Retroposon
+</td>
+<td style="text-align:right;">
+81
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+SINE
+</td>
+<td style="text-align:right;">
+31936
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+SINE?
+</td>
+<td style="text-align:right;">
+1
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Satellite
+</td>
+<td style="text-align:right;">
+81
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Simple_repeat
+</td>
+<td style="text-align:right;">
+28143
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Unknown
+</td>
+<td style="text-align:right;">
+242
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+rRNA
+</td>
+<td style="text-align:right;">
+44
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+scRNA
+</td>
+<td style="text-align:right;">
+24
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+snRNA
+</td>
+<td style="text-align:right;">
+124
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+srpRNA
+</td>
+<td style="text-align:right;">
+31
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+tRNA
+</td>
+<td style="text-align:right;">
+291
+</td>
+</tr>
+</tbody>
+</table>
+<pre class="r"><code>Filter_TE_list &lt;- Col_fullDF_overlap %&gt;% 
+   as.data.frame %&gt;% 
+  mutate(per_ol= width/TE_width) 
+  # dplyr::filter(per_ol&gt;0.5)
+
+Unique_peak_overlap &lt;- Col_fullDF_overlap %&gt;%
+  as.data.frame() %&gt;%
+  distinct(Peakid)
+
+peak_overlap_50unique &lt;-  Filter_TE_list %&gt;%
+   dplyr::filter(per_ol&gt;0.5) %&gt;% 
+  distinct(Peakid)</code></pre>
+<p>These number reflect the count of all regions that overlap at least
+one TE class. Many regions can contain more than one TE, and some TEs
+(such as some LINEs) overlap more than one region. The first table
+reflects the numbers of overlapping regions and TEs by at least 1 bp.
+The second table reflect the numbers of overlapping regions and TEs by
+at least 50% of the length of the TE.</p>
+<p>Summary of Peak information below: * Total number of peaks = 172481 *
+Total number of peaks overlapping at least 1 TE = 104149<br />
+* Total number of peaks overlapping by &gt;50% TE length = 81185<br />
+<strong>note</strong> these numbers include peaks that are not
+classified into a motif response cluster.</p>
+<p>I created a dataframe of all TEs that overlap one peak. This means
+the dataframe has many entries for the same peakid, but unique TEs that
+overlap that peak by at least 1 bp. I then labeled each region-TE pair
+by the cluster it is assigned to. Additionally there is a column that
+contains the ratio of the width of the overlap to the width of the TE. I
+stratified all TEs into the following classes: LINEs, SINEs, LTRs, DNAs,
+Retroposons, and Other using the assigned repClass column from
+repeatmasker. ### Create annotated peaks file</p>
+<pre class="r"><code>anno_TE_region_pairs &lt;- Col_TSS_data_gr %&gt;% 
+  as.data.frame %&gt;% 
+  dplyr::select(Peakid) %&gt;% 
+  left_join(.,(Col_fullDF_overlap %&gt;% 
+                 as.data.frame)) %&gt;% 
+   mutate(mrc = case_when(
+    Peakid %in% EAR_open$Peakid ~ &quot;EAR_open&quot;,
+    Peakid %in% EAR_close$Peakid ~ &quot;EAR_close&quot;,
+    Peakid %in% ESR_open$Peakid ~ &quot;ESR_open&quot;,
+    Peakid %in% ESR_close$Peakid ~ &quot;ESR_close&quot;,
+    Peakid %in% ESR_opcl$Peakid ~ &quot;ESR_opcl&quot;,
+    Peakid %in% LR_open$Peakid ~ &quot;LR_open&quot;,
+    Peakid %in% LR_close$Peakid ~ &quot;LR_close&quot;,
+    Peakid %in% NR$Peakid ~ &quot;NR&quot;,
+    Peakid %in% ESR_clop$Peakid ~ &quot;ESR_clop&quot;,
+    TRUE ~ &quot;not_mrc&quot;
+  )) %&gt;% 
+   mutate(per_ol= width/TE_width) %&gt;% 
+  mutate(repClass_org=repClass) %&gt;% 
+  # mutate(repClass=if_else(per_ol&gt;per_cov, repClass,                          if_else(per_ol&lt;per_cov,NA,repClass))) %&gt;%
+  mutate(TEstatus=if_else(is.na(repClass),&quot;not_TE_peak&quot;,&quot;TE_peak&quot;)) %&gt;%
+  mutate(repClass=factor(repClass)) %&gt;%
+  mutate(repClass=if_else(##relable repClass with other
+    repClass_org==&quot;LINE&quot;, repClass_org,
+    if_else(repClass_org==&quot;SINE&quot;,repClass_org,
+            if_else(repClass_org==&quot;LTR&quot;, repClass_org, 
+                    if_else(repClass_org==&quot;DNA&quot;, repClass_org,
+                            if_else(repClass_org==&quot;Retroposon&quot;,repClass_org,
+                                    if_else(is.na(repClass_org), repClass_org, &quot;Other&quot;))))))) %&gt;% 
+  dplyr::select(Peakid, repName,repClass,repClass_org, repFamily, width, TEstatus, mrc, per_ol)</code></pre>
+<p>There are a total of 227157 region-TE pairs out of a total of 155557
+unique regions. Because of this many to many relationship, I needed to
+create a dataframe that just contained only those peaks that were in a
+cluster and count how many overlap</p>
+<pre class="r"><code>Class_status_df &lt;-
+  anno_TE_region_pairs %&gt;% 
+  dplyr::filter(mrc != &quot;not_mrc&quot;) %&gt;%
+  mutate(Sine_status = if_else(is.na(repClass),&quot;not_sine&quot;,
+                               if_else(repClass==&quot;SINE&quot;,&quot;sine_peak&quot;, &quot;not_sine&quot;))) %&gt;% 
+   mutate(Line_status = if_else(is.na(repClass),&quot;not_line&quot;,
+                                if_else(repClass==&quot;LINE&quot;,&quot;line_peak&quot;, &quot;not_line&quot;))) %&gt;%
+   mutate(LTR_status = if_else(is.na(repClass),&quot;not_LTR&quot;,
+                               if_else(repClass==&quot;LTR&quot;,&quot;LTR_peak&quot;, &quot;not_LTR&quot;))) %&gt;% 
+   mutate(DNA_status = if_else(is.na(repClass),&quot;not_DNA&quot;,
+                                if_else(repClass==&quot;DNA&quot;,&quot;DNA_peak&quot;, &quot;not_DNA&quot;))) %&gt;% 
+   mutate(Retro_status = if_else(is.na(repClass)&amp;is.na(per_ol),&quot;not_Retro&quot;,
+                                if_else(repClass==&quot;Retroposon&quot;,&quot;Retro_peak&quot;, &quot;not_Retro&quot;))) %&gt;% 
+    mutate(TEstatus=factor(TEstatus, levels = c(&quot;TE_peak&quot;,&quot;not_TE_peak&quot;)))%&gt;% 
+    mutate(Sine_status=factor(Sine_status, levels = c(&quot;sine_peak&quot;,&quot;not_sine&quot;)),
+           Line_status=factor(Line_status, levels =c(&quot;line_peak&quot;,&quot;not_line&quot;)),
+           LTR_status=factor(LTR_status, levels =c(&quot;LTR_peak&quot;,&quot;not_LTR&quot;)),
+           DNA_status=factor(DNA_status, levels =c(&quot;DNA_peak&quot;,&quot;not_DNA&quot;)),
+           Retro_status=factor(Retro_status, levels =c(&quot;Retro_peak&quot;,&quot;not_Retro&quot;))) %&gt;%
+     mutate(mrc=factor(mrc, levels = c(&quot;EAR_open&quot;,&quot;ESR_open&quot;,&quot;LR_open&quot;,&quot;ESR_opcl&quot;, &quot;EAR_close&quot;,&quot;ESR_close&quot;,&quot;LR_close&quot;,&quot;ESR_clop&quot;, &quot;NR&quot;)))</code></pre>
+<p>To get a better count of response cluster region-TE overlap numbers,
+I created a dataframe that removed the non-cluster peaks and tallied up
+the remaining numbers. Tally up data frames for enrichment counts</p>
+<pre class="r"><code>TE_mat&lt;- Class_status_df %&gt;%
+   mutate(mrc=factor(mrc, levels = c(&quot;EAR_open&quot;,&quot;ESR_open&quot;,&quot;LR_open&quot;,&quot;ESR_opcl&quot;, &quot;EAR_close&quot;,&quot;ESR_close&quot;,&quot;LR_close&quot;,&quot;ESR_clop&quot;, &quot;NR&quot;))) %&gt;% 
+ dplyr::filter(mrc != &quot;not_mrc&quot;) %&gt;% 
+  group_by(TEstatus, mrc) %&gt;% 
+  distinct(Peakid,TEstatus) %&gt;% 
+  tally %&gt;% 
+  mutate(mrc=factor(mrc, levels = c(&quot;EAR_open&quot;,&quot;ESR_open&quot;,&quot;LR_open&quot;,&quot;ESR_opcl&quot;, &quot;EAR_close&quot;,&quot;ESR_close&quot;,&quot;LR_close&quot;,&quot;ESR_clop&quot;, &quot;NR&quot;))) %&gt;% 
+  pivot_wider(id_cols = mrc, names_from = TEstatus,values_from = n) %&gt;% 
+  column_to_rownames(&quot;mrc&quot;) %&gt;% 
+  as.matrix(.)
+TE_mat</code></pre>
+<pre><code>          TE_peak not_TE_peak
+EAR_open     3192        1707
+ESR_open     4262        2015
+LR_open     18064        7553
+ESR_opcl      136          67
+EAR_close    1991        1084
+ESR_close    5024        2910
+LR_close    12206        6404
+ESR_clop      497         217
+NR          56815       28339</code></pre>
+<pre class="r"><code>SINE_mat&lt;- Class_status_df %&gt;%
+   mutate(mrc=factor(mrc, levels = c(&quot;EAR_open&quot;,&quot;ESR_open&quot;,&quot;LR_open&quot;,&quot;ESR_opcl&quot;, &quot;EAR_close&quot;,&quot;ESR_close&quot;,&quot;LR_close&quot;,&quot;ESR_clop&quot;, &quot;NR&quot;))) %&gt;% 
+ dplyr::filter(mrc != &quot;not_mrc&quot;) %&gt;% 
+  group_by(Peakid) %&gt;%
+  summarise(Sine_peak_status = ifelse(any(Sine_status == &quot;sine_peak&quot;), &quot;sine_peak&quot;, &quot;not_sine_peak&quot;), mrc=unique(mrc)) %&gt;%
+  ungroup() %&gt;% 
+  group_by(Sine_peak_status, mrc) %&gt;% 
+  tally %&gt;% 
+  mutate(mrc=factor(mrc, levels = c(&quot;EAR_open&quot;,&quot;ESR_open&quot;,&quot;LR_open&quot;,&quot;ESR_opcl&quot;, &quot;EAR_close&quot;,&quot;ESR_close&quot;,&quot;LR_close&quot;,&quot;ESR_clop&quot;, &quot;NR&quot;))) %&gt;% 
+  pivot_wider(id_cols = mrc, names_from = Sine_peak_status,values_from = n) %&gt;% 
+  column_to_rownames(&quot;mrc&quot;) %&gt;% 
+     na.omit(.) %&gt;% 
+  as.matrix(.)
+SINE_mat</code></pre>
+<pre><code>          not_sine_peak sine_peak
+EAR_open           3661      1238
+ESR_open           4634      1643
+LR_open           17547      8070
+ESR_opcl            143        60
+EAR_close          2205       870
+ESR_close          5869      2065
+LR_close          13774      4836
+ESR_clop            473       241
+NR                62146     23008</code></pre>
+<pre class="r"><code>LINE_mat&lt;-  Class_status_df %&gt;%
+   mutate(mrc=factor(mrc, levels = c(&quot;EAR_open&quot;,&quot;ESR_open&quot;,&quot;LR_open&quot;,&quot;ESR_opcl&quot;, &quot;EAR_close&quot;,&quot;ESR_close&quot;,&quot;LR_close&quot;,&quot;ESR_clop&quot;, &quot;NR&quot;))) %&gt;% 
+ dplyr::filter(mrc != &quot;not_mrc&quot;) %&gt;% 
+  group_by(Peakid) %&gt;%
+  summarise(Line_peak_status = ifelse(any(Line_status == &quot;line_peak&quot;), &quot;line_peak&quot;, &quot;not_line_peak&quot;), mrc=unique(mrc)) %&gt;%
+  ungroup() %&gt;% 
+  group_by(Line_peak_status, mrc) %&gt;% 
+  tally %&gt;% 
+  mutate(mrc=factor(mrc, levels = c(&quot;EAR_open&quot;,&quot;ESR_open&quot;,&quot;LR_open&quot;,&quot;ESR_opcl&quot;, &quot;EAR_close&quot;,&quot;ESR_close&quot;,&quot;LR_close&quot;,&quot;ESR_clop&quot;, &quot;NR&quot;))) %&gt;% 
+  pivot_wider(id_cols = mrc, names_from = Line_peak_status,values_from = n) %&gt;% 
+  column_to_rownames(&quot;mrc&quot;) %&gt;% 
+     na.omit(.) %&gt;% 
+  as.matrix(.)
+LINE_mat</code></pre>
+<pre><code>          line_peak not_line_peak
+EAR_open        958          3941
+ESR_open       1385          4892
+LR_open        6421         19196
+ESR_opcl         54           149
+EAR_close       685          2390
+ESR_close      1660          6274
+LR_close       4224         14386
+ESR_clop        161           553
+NR            17945         67209</code></pre>
+<pre class="r"><code>LTR_mat&lt;-
+Class_status_df %&gt;%
+   mutate(mrc=factor(mrc, levels = c(&quot;EAR_open&quot;,&quot;ESR_open&quot;,&quot;LR_open&quot;,&quot;ESR_opcl&quot;, &quot;EAR_close&quot;,&quot;ESR_close&quot;,&quot;LR_close&quot;,&quot;ESR_clop&quot;, &quot;NR&quot;))) %&gt;% 
+ dplyr::filter(mrc != &quot;not_mrc&quot;) %&gt;% 
+  group_by(Peakid) %&gt;%
+  summarise(LTR_peak_status = ifelse(any(LTR_status == &quot;LTR_peak&quot;), &quot;LTR_peak&quot;, &quot;not_LTR_peak&quot;), mrc=unique(mrc)) %&gt;%
+  ungroup() %&gt;% 
+  group_by(LTR_peak_status, mrc) %&gt;% 
+  tally %&gt;% 
+  mutate(mrc=factor(mrc, levels = c(&quot;EAR_open&quot;,&quot;ESR_open&quot;,&quot;LR_open&quot;,&quot;ESR_opcl&quot;, &quot;EAR_close&quot;,&quot;ESR_close&quot;,&quot;LR_close&quot;,&quot;ESR_clop&quot;, &quot;NR&quot;))) %&gt;% 
+  pivot_wider(id_cols = mrc, names_from = LTR_peak_status,values_from = n) %&gt;% 
+  column_to_rownames(&quot;mrc&quot;) %&gt;% 
+     na.omit(.) %&gt;% 
+  as.matrix(.)
+LTR_mat</code></pre>
+<pre><code>          LTR_peak not_LTR_peak
+EAR_open       560         4339
+ESR_open       804         5473
+LR_open       4484        21133
+ESR_opcl        30          173
+EAR_close      490         2585
+ESR_close     1102         6832
+LR_close      2906        15704
+ESR_clop       123          591
+NR           11755        73399</code></pre>
+<pre class="r"><code>DNA_mat&lt;-Class_status_df %&gt;%
+   mutate(mrc=factor(mrc, levels = c(&quot;EAR_open&quot;,&quot;ESR_open&quot;,&quot;LR_open&quot;,&quot;ESR_opcl&quot;, &quot;EAR_close&quot;,&quot;ESR_close&quot;,&quot;LR_close&quot;,&quot;ESR_clop&quot;, &quot;NR&quot;))) %&gt;% 
+ dplyr::filter(mrc != &quot;not_mrc&quot;) %&gt;% 
+  group_by(Peakid) %&gt;%
+  summarise(DNA_peak_status = ifelse(any(DNA_status == &quot;DNA_peak&quot;), &quot;DNA_peak&quot;, &quot;not_DNA_peak&quot;), mrc=unique(mrc)) %&gt;%
+  ungroup() %&gt;% 
+  group_by(DNA_peak_status, mrc) %&gt;% 
+  tally %&gt;% 
+  mutate(mrc=factor(mrc, levels = c(&quot;EAR_open&quot;,&quot;ESR_open&quot;,&quot;LR_open&quot;,&quot;ESR_opcl&quot;, &quot;EAR_close&quot;,&quot;ESR_close&quot;,&quot;LR_close&quot;,&quot;ESR_clop&quot;, &quot;NR&quot;))) %&gt;% 
+  pivot_wider(id_cols = mrc, names_from = DNA_peak_status,values_from = n) %&gt;% 
+  column_to_rownames(&quot;mrc&quot;) %&gt;% 
+     na.omit(.) %&gt;% 
+  as.matrix(.)
+DNA_mat</code></pre>
+<pre><code>          DNA_peak not_DNA_peak
+EAR_open       436         4463
+ESR_open       602         5675
+LR_open       3008        22609
+ESR_opcl        18          185
+EAR_close      256         2819
+ESR_close      660         7274
+LR_close      1778        16832
+ESR_clop        80          634
+NR            7980        77174</code></pre>
+<pre class="r"><code>Retro_mat&lt;-  Class_status_df %&gt;%
+   mutate(mrc=factor(mrc, levels = c(&quot;EAR_open&quot;,&quot;ESR_open&quot;,&quot;LR_open&quot;,&quot;ESR_opcl&quot;, &quot;EAR_close&quot;,&quot;ESR_close&quot;,&quot;LR_close&quot;,&quot;ESR_clop&quot;, &quot;NR&quot;))) %&gt;% 
+ dplyr::filter(mrc != &quot;not_mrc&quot;) %&gt;% 
+  group_by(Peakid) %&gt;%
+  summarise(Retro_peak_status = ifelse(any(Retro_status == &quot;Retro_peak&quot;), &quot;Retro_peak&quot;, &quot;not_Retro_peak&quot;), mrc=unique(mrc)) %&gt;%
+  ungroup() %&gt;% 
+  group_by(Retro_peak_status, mrc) %&gt;% 
+  tally %&gt;% 
+  mutate(mrc=factor(mrc, levels = c(&quot;EAR_open&quot;,&quot;ESR_open&quot;,&quot;LR_open&quot;,&quot;ESR_opcl&quot;, &quot;EAR_close&quot;,&quot;ESR_close&quot;,&quot;LR_close&quot;,&quot;ESR_clop&quot;, &quot;NR&quot;))) %&gt;% 
+  pivot_wider(id_cols = mrc, names_from = Retro_peak_status,values_from = n) %&gt;% 
+  column_to_rownames(&quot;mrc&quot;) %&gt;% 
+     na.omit(.) %&gt;% 
+  as.matrix(.)
+Retro_mat</code></pre>
+<pre><code>          Retro_peak not_Retro_peak
+EAR_open          26           4873
+ESR_open          43           6234
+LR_open           28          25589
+EAR_close          6           3069
+ESR_close         10           7924
+LR_close          26          18584
+ESR_clop           2            712
+NR               144          85010</code></pre>
+</div>
+<div id="odds-ratio-results" class="section level3">
+<h3>odds ratio results</h3>
+<pre class="r"><code>matrix_list &lt;- list(&quot;TE&quot;=TE_mat, &quot;Lines&quot;=LINE_mat,&quot;Sines&quot;=SINE_mat, &quot;DNA&quot;= DNA_mat,&quot;LTR&quot;= LTR_mat,&quot;Retro&quot;= Retro_mat)
+
+results_or &lt;- data.frame(Matrix_Name = character(),
+                      Row_Compared = character(),
+                      Odds_Ratio = numeric(),
+                      Lower_CI = numeric(),
+                      Upper_CI = numeric(),
+                      P_Value = numeric(),
+                      stringsAsFactors = FALSE)
+
+# Loop through each matrix in the list
+for (matrix_name in names(matrix_list)) {
+  current_matrix &lt;- matrix_list[[matrix_name]]
+  n_rows &lt;- nrow(current_matrix)
+  
+  # Loop through each row of the current matrix (except the last row)
+  for (i in 1:(n_rows - 1)) {
+    # Perform odds ratio test between row i and the last row using epitools
+    test_result &lt;- tryCatch({
+      contingency_table &lt;- rbind(current_matrix[i, ], current_matrix[n_rows, ])
+      
+      # Check if any row in the contingency table contains only zeros
+      if (any(rowSums(contingency_table) == 0)) {
+        stop(&quot;Contingency table contains empty rows.&quot;)
+      }
+      
+      oddsratio_result &lt;- oddsratio(contingency_table)
+       # Ensure the oddsratio result has at least 2 rows
+      if (nrow(oddsratio_result$measure) &lt; 2) {
+        stop(&quot;oddsratio result does not have enough data.&quot;)
+      }
+      
+     list(oddsratio = oddsratio_result, p.value = oddsratio_result$p.value[2,&quot;chi.square&quot;])
+      
+    }, error = function(e) {
+      cat(&quot;Error in odds ratio test for row&quot;, i, &quot;in matrix&quot;, matrix_name, &quot;:&quot;, e$message, &quot;\n&quot;)
+      return(NULL)
+    })
+    
+    # Only store the result if test_result is valid (i.e., not NULL)
+    if (!is.null(test_result)) {
+      or_value &lt;- test_result$oddsratio$measure[2, &quot;estimate&quot;]
+      lower_ci &lt;- test_result$oddsratio$measure[2, &quot;lower&quot;]
+      upper_ci &lt;- test_result$oddsratio$measure[2, &quot;upper&quot;]
+      p_value &lt;- test_result$oddsratio$p.value[2,&quot;chi.square&quot;]
+      
+      # Check if the values are numeric and valid (not NA)
+      if (!is.na(or_value) &amp;&amp; !is.na(lower_ci) &amp;&amp; !is.na(upper_ci) &amp;&amp; !is.na(p_value)) {
+        # Store the results in the dataframe
+        results_or &lt;- rbind(results_or, data.frame(Matrix_Name = matrix_name,
+                                             Row_Compared = rownames(current_matrix)[i],
+                                             Odds_Ratio = or_value,
+                                             Lower_CI = lower_ci,
+                                             Upper_CI = upper_ci,
+                                             P_Value = p_value))
+      }
+    }
+  }
+}
+
+# Print the resulting dataframe
+print(results_or) %&gt;% 
+  kable(., caption = &quot;Odd ratio results and significance values of TE enrichment compared to No response group&quot;) %&gt;% 
+  kable_paper(&quot;striped&quot;, full_width = TRUE) %&gt;%
+  kable_styling(full_width = FALSE, font_size = 14) %&gt;% 
+  scroll_box(width = &quot;100%&quot;, height = &quot;400px&quot;)</code></pre>
+<pre><code>           Matrix_Name Row_Compared Odds_Ratio  Lower_CI  Upper_CI      P_Value
+estimate            TE     EAR_open  0.9326787 0.8780874 0.9909838 2.395768e-02
+estimate1           TE     ESR_open  1.0549822 0.9987804 1.1146568 5.571991e-02
+estimate2           TE      LR_open  1.1929009 1.1572304 1.2297991 5.238448e-30
+estimate3           TE     ESR_opcl  1.0111986 0.7574587 1.3631835 9.338637e-01
+estimate4           TE    EAR_close  0.9160869 0.8497805 0.9880173 2.266358e-02
+estimate5           TE    ESR_close  0.8611254 0.8209623 0.9033995 8.792275e-10
+estimate6           TE     LR_close  0.9506916 0.9194616 0.9830436 3.036327e-03
+estimate7           TE     ESR_clop  1.1419134 0.9744285 1.3426138 1.029132e-01
+estimate8        Lines     EAR_open  0.9105479 0.8464440 0.9785537 1.114943e-02
+estimate9        Lines     ESR_open  1.0604542 0.9964684 1.1278305 6.346780e-02
+estimate10       Lines      LR_open  1.2527944 1.2124434 1.2943884 1.137332e-41
+estimate11       Lines     ESR_opcl  1.3600053 0.9871474 1.8454560 5.381909e-02
+estimate12       Lines    EAR_close  1.0736151 0.9839662 1.1698953 1.083677e-01
+estimate13       Lines    ESR_close  0.9910085 0.9362787 1.0483962 7.524273e-01
+estimate14       Lines     LR_close  1.0997115 1.0585766 1.1422609 9.775393e-07
+estimate15       Lines     ESR_clop  1.0911885 0.9120647 1.2981719 3.358181e-01
+estimate16       Sines     EAR_open  1.0947373 1.0249381 1.1700605 7.286595e-03
+estimate17       Sines     ESR_open  1.0441363 0.9852478 1.1070514 1.457169e-01
+estimate18       Sines      LR_open  0.8049678 0.7809147 0.8298772 1.485141e-44
+estimate19       Sines     ESR_opcl  0.8809862 0.6548222 1.2000122 4.161619e-01
+estimate20       Sines    EAR_close  0.9382318 0.8665187 1.0167132 1.184253e-01
+estimate21       Sines    ESR_close  1.0521907 0.9986320 1.1089562 5.676177e-02
+estimate22       Sines     LR_close  1.0544723 1.0171765 1.0933143 3.954249e-03
+estimate23       Sines     ESR_clop  0.7264128 0.6222574 0.8501009 5.513223e-05
+estimate24         DNA     EAR_open  0.9450687 0.8531861 1.0442670 2.702500e-01
+estimate25         DNA     ESR_open  1.0261196 0.9396783 1.1185537 5.653075e-01
+estimate26         DNA      LR_open  1.2866976 1.2305515 1.3450635 8.915919e-29
+estimate27         DNA     ESR_opcl  0.9487322 0.5634886 1.4964237 8.054871e-01
+estimate28         DNA    EAR_close  0.8787484 0.7698564 0.9986291 5.013071e-02
+estimate29         DNA    ESR_close  0.8776729 0.8071411 0.9528443 1.998671e-03
+estimate30         DNA     LR_close  1.0216361 0.9676373 1.0780728 4.390901e-01
+estimate31         DNA     ESR_clop  1.2224984 0.9606228 1.5343006 9.439746e-02
+estimate32         LTR     EAR_open  0.8060693 0.7358503 0.8812810 2.579325e-06
+estimate33         LTR     ESR_open  0.9174259 0.8492514 0.9897909 2.698604e-02
+estimate34         LTR      LR_open  1.3248650 1.2758442 1.3755778 8.924898e-49
+estimate35         LTR     ESR_opcl  1.0876923 0.7233397 1.5783317 6.878557e-01
+estimate36         LTR    EAR_close  1.1838902 1.0717159 1.3051632 7.872200e-04
+estimate37         LTR    ESR_close  1.0072998 0.9420227 1.0761214 8.333988e-01
+estimate38         LTR     LR_close  1.1555020 1.1054908 1.2074049 1.320922e-10
+estimate39         LTR     ESR_clop  1.3009137 1.0655474 1.5752845 8.343178e-03
+estimate40       Retro     EAR_open  3.1660969 2.0358902 4.7268818 1.427357e-08
+estimate41       Retro     ESR_open  4.0828533 2.8671676 5.6932145 2.509287e-18
+estimate42       Retro      LR_open  0.6490465 0.4238958 0.9574074 3.305715e-02
+estimate43       Retro    EAR_close  1.1841032 0.4606255 2.4544033 7.308222e-01
+estimate44       Retro    ESR_close  0.7563959 0.3711631 1.3630688 3.666472e-01
+estimate45       Retro     LR_close  0.8302167 0.5341918 1.2386154 3.690614e-01
+estimate46       Retro     ESR_clop  1.7851551 0.2751350 5.5793445 4.734000e-01</code></pre>
+<div
+style="border: 1px solid #ddd; padding: 0px; overflow-y: scroll; height:400px; overflow-x: scroll; width:100%; ">
+<table class=" lightable-paper lightable-striped table" style="font-family: &quot;Arial Narrow&quot;, arial, helvetica, sans-serif; margin-left: auto; margin-right: auto; font-size: 14px; width: auto !important; margin-left: auto; margin-right: auto;">
+<caption style="font-size: initial !important;">
+Odd ratio results and significance values of TE enrichment compared to
+No response group
+</caption>
+<thead>
+<tr>
+<th style="text-align:left;position: sticky; top:0; background-color: #FFFFFF;">
+</th>
+<th style="text-align:left;position: sticky; top:0; background-color: #FFFFFF;">
+Matrix_Name
+</th>
+<th style="text-align:left;position: sticky; top:0; background-color: #FFFFFF;">
+Row_Compared
+</th>
+<th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;">
+Odds_Ratio
+</th>
+<th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;">
+Lower_CI
+</th>
+<th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;">
+Upper_CI
+</th>
+<th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;">
+P_Value
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+estimate
+</td>
+<td style="text-align:left;">
+TE
+</td>
+<td style="text-align:left;">
+EAR_open
+</td>
+<td style="text-align:right;">
+0.9326787
+</td>
+<td style="text-align:right;">
+0.8780874
+</td>
+<td style="text-align:right;">
+0.9909838
+</td>
+<td style="text-align:right;">
+0.0239577
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+estimate1
+</td>
+<td style="text-align:left;">
+TE
+</td>
+<td style="text-align:left;">
+ESR_open
+</td>
+<td style="text-align:right;">
+1.0549822
+</td>
+<td style="text-align:right;">
+0.9987804
+</td>
+<td style="text-align:right;">
+1.1146568
+</td>
+<td style="text-align:right;">
+0.0557199
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+estimate2
+</td>
+<td style="text-align:left;">
+TE
+</td>
+<td style="text-align:left;">
+LR_open
+</td>
+<td style="text-align:right;">
+1.1929009
+</td>
+<td style="text-align:right;">
+1.1572304
+</td>
+<td style="text-align:right;">
+1.2297991
+</td>
+<td style="text-align:right;">
+0.0000000
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+estimate3
+</td>
+<td style="text-align:left;">
+TE
+</td>
+<td style="text-align:left;">
+ESR_opcl
+</td>
+<td style="text-align:right;">
+1.0111986
+</td>
+<td style="text-align:right;">
+0.7574587
+</td>
+<td style="text-align:right;">
+1.3631835
+</td>
+<td style="text-align:right;">
+0.9338637
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+estimate4
+</td>
+<td style="text-align:left;">
+TE
+</td>
+<td style="text-align:left;">
+EAR_close
+</td>
+<td style="text-align:right;">
+0.9160869
+</td>
+<td style="text-align:right;">
+0.8497805
+</td>
+<td style="text-align:right;">
+0.9880173
+</td>
+<td style="text-align:right;">
+0.0226636
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+estimate5
+</td>
+<td style="text-align:left;">
+TE
+</td>
+<td style="text-align:left;">
+ESR_close
+</td>
+<td style="text-align:right;">
+0.8611254
+</td>
+<td style="text-align:right;">
+0.8209623
+</td>
+<td style="text-align:right;">
+0.9033995
+</td>
+<td style="text-align:right;">
+0.0000000
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+estimate6
+</td>
+<td style="text-align:left;">
+TE
+</td>
+<td style="text-align:left;">
+LR_close
+</td>
+<td style="text-align:right;">
+0.9506916
+</td>
+<td style="text-align:right;">
+0.9194616
+</td>
+<td style="text-align:right;">
+0.9830436
+</td>
+<td style="text-align:right;">
+0.0030363
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+estimate7
+</td>
+<td style="text-align:left;">
+TE
+</td>
+<td style="text-align:left;">
+ESR_clop
+</td>
+<td style="text-align:right;">
+1.1419134
+</td>
+<td style="text-align:right;">
+0.9744285
+</td>
+<td style="text-align:right;">
+1.3426138
+</td>
+<td style="text-align:right;">
+0.1029132
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+estimate8
+</td>
+<td style="text-align:left;">
+Lines
+</td>
+<td style="text-align:left;">
+EAR_open
+</td>
+<td style="text-align:right;">
+0.9105479
+</td>
+<td style="text-align:right;">
+0.8464440
+</td>
+<td style="text-align:right;">
+0.9785537
+</td>
+<td style="text-align:right;">
+0.0111494
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+estimate9
+</td>
+<td style="text-align:left;">
+Lines
+</td>
+<td style="text-align:left;">
+ESR_open
+</td>
+<td style="text-align:right;">
+1.0604542
+</td>
+<td style="text-align:right;">
+0.9964684
+</td>
+<td style="text-align:right;">
+1.1278305
+</td>
+<td style="text-align:right;">
+0.0634678
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+estimate10
+</td>
+<td style="text-align:left;">
+Lines
+</td>
+<td style="text-align:left;">
+LR_open
+</td>
+<td style="text-align:right;">
+1.2527944
+</td>
+<td style="text-align:right;">
+1.2124434
+</td>
+<td style="text-align:right;">
+1.2943884
+</td>
+<td style="text-align:right;">
+0.0000000
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+estimate11
+</td>
+<td style="text-align:left;">
+Lines
+</td>
+<td style="text-align:left;">
+ESR_opcl
+</td>
+<td style="text-align:right;">
+1.3600053
+</td>
+<td style="text-align:right;">
+0.9871474
+</td>
+<td style="text-align:right;">
+1.8454560
+</td>
+<td style="text-align:right;">
+0.0538191
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+estimate12
+</td>
+<td style="text-align:left;">
+Lines
+</td>
+<td style="text-align:left;">
+EAR_close
+</td>
+<td style="text-align:right;">
+1.0736151
+</td>
+<td style="text-align:right;">
+0.9839662
+</td>
+<td style="text-align:right;">
+1.1698953
+</td>
+<td style="text-align:right;">
+0.1083677
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+estimate13
+</td>
+<td style="text-align:left;">
+Lines
+</td>
+<td style="text-align:left;">
+ESR_close
+</td>
+<td style="text-align:right;">
+0.9910085
+</td>
+<td style="text-align:right;">
+0.9362787
+</td>
+<td style="text-align:right;">
+1.0483962
+</td>
+<td style="text-align:right;">
+0.7524273
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+estimate14
+</td>
+<td style="text-align:left;">
+Lines
+</td>
+<td style="text-align:left;">
+LR_close
+</td>
+<td style="text-align:right;">
+1.0997115
+</td>
+<td style="text-align:right;">
+1.0585766
+</td>
+<td style="text-align:right;">
+1.1422609
+</td>
+<td style="text-align:right;">
+0.0000010
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+estimate15
+</td>
+<td style="text-align:left;">
+Lines
+</td>
+<td style="text-align:left;">
+ESR_clop
+</td>
+<td style="text-align:right;">
+1.0911885
+</td>
+<td style="text-align:right;">
+0.9120647
+</td>
+<td style="text-align:right;">
+1.2981719
+</td>
+<td style="text-align:right;">
+0.3358181
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+estimate16
+</td>
+<td style="text-align:left;">
+Sines
+</td>
+<td style="text-align:left;">
+EAR_open
+</td>
+<td style="text-align:right;">
+1.0947373
+</td>
+<td style="text-align:right;">
+1.0249381
+</td>
+<td style="text-align:right;">
+1.1700605
+</td>
+<td style="text-align:right;">
+0.0072866
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+estimate17
+</td>
+<td style="text-align:left;">
+Sines
+</td>
+<td style="text-align:left;">
+ESR_open
+</td>
+<td style="text-align:right;">
+1.0441363
+</td>
+<td style="text-align:right;">
+0.9852478
+</td>
+<td style="text-align:right;">
+1.1070514
+</td>
+<td style="text-align:right;">
+0.1457169
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+estimate18
+</td>
+<td style="text-align:left;">
+Sines
+</td>
+<td style="text-align:left;">
+LR_open
+</td>
+<td style="text-align:right;">
+0.8049678
+</td>
+<td style="text-align:right;">
+0.7809147
+</td>
+<td style="text-align:right;">
+0.8298772
+</td>
+<td style="text-align:right;">
+0.0000000
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+estimate19
+</td>
+<td style="text-align:left;">
+Sines
+</td>
+<td style="text-align:left;">
+ESR_opcl
+</td>
+<td style="text-align:right;">
+0.8809862
+</td>
+<td style="text-align:right;">
+0.6548222
+</td>
+<td style="text-align:right;">
+1.2000122
+</td>
+<td style="text-align:right;">
+0.4161619
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+estimate20
+</td>
+<td style="text-align:left;">
+Sines
+</td>
+<td style="text-align:left;">
+EAR_close
+</td>
+<td style="text-align:right;">
+0.9382318
+</td>
+<td style="text-align:right;">
+0.8665187
+</td>
+<td style="text-align:right;">
+1.0167132
+</td>
+<td style="text-align:right;">
+0.1184253
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+estimate21
+</td>
+<td style="text-align:left;">
+Sines
+</td>
+<td style="text-align:left;">
+ESR_close
+</td>
+<td style="text-align:right;">
+1.0521907
+</td>
+<td style="text-align:right;">
+0.9986320
+</td>
+<td style="text-align:right;">
+1.1089562
+</td>
+<td style="text-align:right;">
+0.0567618
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+estimate22
+</td>
+<td style="text-align:left;">
+Sines
+</td>
+<td style="text-align:left;">
+LR_close
+</td>
+<td style="text-align:right;">
+1.0544723
+</td>
+<td style="text-align:right;">
+1.0171765
+</td>
+<td style="text-align:right;">
+1.0933143
+</td>
+<td style="text-align:right;">
+0.0039542
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+estimate23
+</td>
+<td style="text-align:left;">
+Sines
+</td>
+<td style="text-align:left;">
+ESR_clop
+</td>
+<td style="text-align:right;">
+0.7264128
+</td>
+<td style="text-align:right;">
+0.6222574
+</td>
+<td style="text-align:right;">
+0.8501009
+</td>
+<td style="text-align:right;">
+0.0000551
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+estimate24
+</td>
+<td style="text-align:left;">
+DNA
+</td>
+<td style="text-align:left;">
+EAR_open
+</td>
+<td style="text-align:right;">
+0.9450687
+</td>
+<td style="text-align:right;">
+0.8531861
+</td>
+<td style="text-align:right;">
+1.0442670
+</td>
+<td style="text-align:right;">
+0.2702500
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+estimate25
+</td>
+<td style="text-align:left;">
+DNA
+</td>
+<td style="text-align:left;">
+ESR_open
+</td>
+<td style="text-align:right;">
+1.0261196
+</td>
+<td style="text-align:right;">
+0.9396783
+</td>
+<td style="text-align:right;">
+1.1185537
+</td>
+<td style="text-align:right;">
+0.5653075
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+estimate26
+</td>
+<td style="text-align:left;">
+DNA
+</td>
+<td style="text-align:left;">
+LR_open
+</td>
+<td style="text-align:right;">
+1.2866976
+</td>
+<td style="text-align:right;">
+1.2305515
+</td>
+<td style="text-align:right;">
+1.3450635
+</td>
+<td style="text-align:right;">
+0.0000000
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+estimate27
+</td>
+<td style="text-align:left;">
+DNA
+</td>
+<td style="text-align:left;">
+ESR_opcl
+</td>
+<td style="text-align:right;">
+0.9487322
+</td>
+<td style="text-align:right;">
+0.5634886
+</td>
+<td style="text-align:right;">
+1.4964237
+</td>
+<td style="text-align:right;">
+0.8054871
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+estimate28
+</td>
+<td style="text-align:left;">
+DNA
+</td>
+<td style="text-align:left;">
+EAR_close
+</td>
+<td style="text-align:right;">
+0.8787484
+</td>
+<td style="text-align:right;">
+0.7698564
+</td>
+<td style="text-align:right;">
+0.9986291
+</td>
+<td style="text-align:right;">
+0.0501307
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+estimate29
+</td>
+<td style="text-align:left;">
+DNA
+</td>
+<td style="text-align:left;">
+ESR_close
+</td>
+<td style="text-align:right;">
+0.8776729
+</td>
+<td style="text-align:right;">
+0.8071411
+</td>
+<td style="text-align:right;">
+0.9528443
+</td>
+<td style="text-align:right;">
+0.0019987
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+estimate30
+</td>
+<td style="text-align:left;">
+DNA
+</td>
+<td style="text-align:left;">
+LR_close
+</td>
+<td style="text-align:right;">
+1.0216361
+</td>
+<td style="text-align:right;">
+0.9676373
+</td>
+<td style="text-align:right;">
+1.0780728
+</td>
+<td style="text-align:right;">
+0.4390901
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+estimate31
+</td>
+<td style="text-align:left;">
+DNA
+</td>
+<td style="text-align:left;">
+ESR_clop
+</td>
+<td style="text-align:right;">
+1.2224984
+</td>
+<td style="text-align:right;">
+0.9606228
+</td>
+<td style="text-align:right;">
+1.5343006
+</td>
+<td style="text-align:right;">
+0.0943975
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+estimate32
+</td>
+<td style="text-align:left;">
+LTR
+</td>
+<td style="text-align:left;">
+EAR_open
+</td>
+<td style="text-align:right;">
+0.8060693
+</td>
+<td style="text-align:right;">
+0.7358503
+</td>
+<td style="text-align:right;">
+0.8812810
+</td>
+<td style="text-align:right;">
+0.0000026
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+estimate33
+</td>
+<td style="text-align:left;">
+LTR
+</td>
+<td style="text-align:left;">
+ESR_open
+</td>
+<td style="text-align:right;">
+0.9174259
+</td>
+<td style="text-align:right;">
+0.8492514
+</td>
+<td style="text-align:right;">
+0.9897909
+</td>
+<td style="text-align:right;">
+0.0269860
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+estimate34
+</td>
+<td style="text-align:left;">
+LTR
+</td>
+<td style="text-align:left;">
+LR_open
+</td>
+<td style="text-align:right;">
+1.3248650
+</td>
+<td style="text-align:right;">
+1.2758442
+</td>
+<td style="text-align:right;">
+1.3755778
+</td>
+<td style="text-align:right;">
+0.0000000
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+estimate35
+</td>
+<td style="text-align:left;">
+LTR
+</td>
+<td style="text-align:left;">
+ESR_opcl
+</td>
+<td style="text-align:right;">
+1.0876923
+</td>
+<td style="text-align:right;">
+0.7233397
+</td>
+<td style="text-align:right;">
+1.5783317
+</td>
+<td style="text-align:right;">
+0.6878557
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+estimate36
+</td>
+<td style="text-align:left;">
+LTR
+</td>
+<td style="text-align:left;">
+EAR_close
+</td>
+<td style="text-align:right;">
+1.1838902
+</td>
+<td style="text-align:right;">
+1.0717159
+</td>
+<td style="text-align:right;">
+1.3051632
+</td>
+<td style="text-align:right;">
+0.0007872
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+estimate37
+</td>
+<td style="text-align:left;">
+LTR
+</td>
+<td style="text-align:left;">
+ESR_close
+</td>
+<td style="text-align:right;">
+1.0072998
+</td>
+<td style="text-align:right;">
+0.9420227
+</td>
+<td style="text-align:right;">
+1.0761214
+</td>
+<td style="text-align:right;">
+0.8333988
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+estimate38
+</td>
+<td style="text-align:left;">
+LTR
+</td>
+<td style="text-align:left;">
+LR_close
+</td>
+<td style="text-align:right;">
+1.1555020
+</td>
+<td style="text-align:right;">
+1.1054908
+</td>
+<td style="text-align:right;">
+1.2074049
+</td>
+<td style="text-align:right;">
+0.0000000
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+estimate39
+</td>
+<td style="text-align:left;">
+LTR
+</td>
+<td style="text-align:left;">
+ESR_clop
+</td>
+<td style="text-align:right;">
+1.3009137
+</td>
+<td style="text-align:right;">
+1.0655474
+</td>
+<td style="text-align:right;">
+1.5752845
+</td>
+<td style="text-align:right;">
+0.0083432
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+estimate40
+</td>
+<td style="text-align:left;">
+Retro
+</td>
+<td style="text-align:left;">
+EAR_open
+</td>
+<td style="text-align:right;">
+3.1660969
+</td>
+<td style="text-align:right;">
+2.0358902
+</td>
+<td style="text-align:right;">
+4.7268818
+</td>
+<td style="text-align:right;">
+0.0000000
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+estimate41
+</td>
+<td style="text-align:left;">
+Retro
+</td>
+<td style="text-align:left;">
+ESR_open
+</td>
+<td style="text-align:right;">
+4.0828533
+</td>
+<td style="text-align:right;">
+2.8671676
+</td>
+<td style="text-align:right;">
+5.6932145
+</td>
+<td style="text-align:right;">
+0.0000000
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+estimate42
+</td>
+<td style="text-align:left;">
+Retro
+</td>
+<td style="text-align:left;">
+LR_open
+</td>
+<td style="text-align:right;">
+0.6490465
+</td>
+<td style="text-align:right;">
+0.4238958
+</td>
+<td style="text-align:right;">
+0.9574074
+</td>
+<td style="text-align:right;">
+0.0330571
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+estimate43
+</td>
+<td style="text-align:left;">
+Retro
+</td>
+<td style="text-align:left;">
+EAR_close
+</td>
+<td style="text-align:right;">
+1.1841032
+</td>
+<td style="text-align:right;">
+0.4606255
+</td>
+<td style="text-align:right;">
+2.4544033
+</td>
+<td style="text-align:right;">
+0.7308222
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+estimate44
+</td>
+<td style="text-align:left;">
+Retro
+</td>
+<td style="text-align:left;">
+ESR_close
+</td>
+<td style="text-align:right;">
+0.7563959
+</td>
+<td style="text-align:right;">
+0.3711631
+</td>
+<td style="text-align:right;">
+1.3630688
+</td>
+<td style="text-align:right;">
+0.3666472
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+estimate45
+</td>
+<td style="text-align:left;">
+Retro
+</td>
+<td style="text-align:left;">
+LR_close
+</td>
+<td style="text-align:right;">
+0.8302167
+</td>
+<td style="text-align:right;">
+0.5341918
+</td>
+<td style="text-align:right;">
+1.2386154
+</td>
+<td style="text-align:right;">
+0.3690614
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+estimate46
+</td>
+<td style="text-align:left;">
+Retro
+</td>
+<td style="text-align:left;">
+ESR_clop
+</td>
+<td style="text-align:right;">
+1.7851551
+</td>
+<td style="text-align:right;">
+0.2751350
+</td>
+<td style="text-align:right;">
+5.5793445
+</td>
+<td style="text-align:right;">
+0.4734000
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<pre class="r"><code>col_fun_OR = colorRamp2(c(0,1,1.5,5), c(&quot;blueviolet&quot;,&quot;white&quot;,&quot;lightgreen&quot;,&quot;green3&quot; ))
+sig_mat_OR &lt;- results_or %&gt;% 
+  as.data.frame() %&gt;% 
+  dplyr::select( Matrix_Name,Row_Compared,P_Value) %&gt;%
+  group_by(Row_Compared) %&gt;%
+  mutate(rank_val=rank(P_Value, ties.method = &quot;first&quot;)) %&gt;%
+  mutate(BH_correction= p.adjust(P_Value,method= &quot;BH&quot;)) %&gt;% 
+  pivot_wider(., id_cols = Matrix_Name, names_from = Row_Compared, values_from = BH_correction) %&gt;% 
+  dplyr::select(Matrix_Name,EAR_open,ESR_open,LR_open,ESR_opcl,EAR_close,ESR_close,LR_close,ESR_clop) %&gt;%
+  column_to_rownames(&quot;Matrix_Name&quot;) %&gt;% 
+  as.matrix() 
+
+# saveRDS(results_or,&quot;data/Final_four_data/re_analysis/OR_results_TE_df_1bp.RDS&quot;)</code></pre>
+<pre class="r"><code>results_or %&gt;% 
+  as.data.frame() %&gt;% 
+  dplyr::select( Matrix_Name,Row_Compared,Odds_Ratio) %&gt;% 
+  pivot_wider(., id_cols = Matrix_Name, names_from = Row_Compared, values_from = Odds_Ratio) %&gt;% 
+  dplyr::select(Matrix_Name,EAR_open,ESR_open,LR_open,ESR_opcl,EAR_close,ESR_close,LR_close,ESR_clop) %&gt;%
+  column_to_rownames(&quot;Matrix_Name&quot;) %&gt;% 
+  as.matrix() %&gt;% 
+  ComplexHeatmap::Heatmap(. ,col = col_fun_OR, 
+                          cluster_rows=FALSE, 
+                          cluster_columns=FALSE, 
+                          column_names_side = &quot;top&quot;, 
+                          column_names_rot = 45,
+                          # na_col = &quot;black&quot;,
+                          cell_fun = function(j, i, x, y, width, height, fill) {if (!is.na(sig_mat_OR[i, j]) &amp;&amp; sig_mat_OR[i, j] &lt; 0.05  &amp;&amp; .[i, j] &gt; 1) {
+            grid.text(&quot;*&quot;, x, y, gp = gpar(fontsize = 20))}})</code></pre>
+<p><img src="figure/TE_analysis_norm.Rmd/heatmap%20of%20OR%20results-1.png" width="672" style="display: block; margin: auto;" />
+note, this is not corrected for multiple testing After correcting for
+multiple testing across all tests check out the <a
+href="https://mward-lab.github.io/Matthews_cardiotox_ATAC_2025/BH_correction_fig2.html">finalized
+figure</a></p>
+</div>
+<div id="examining-the-retroposons-svas" class="section level3">
+<h3>Examining the Retroposons (SVAs)</h3>
+<pre class="r"><code>ggretroposon_df &lt;-
+  retroposon_df %&gt;%
+  dplyr::filter(repClass==&quot;Retroposon&quot;) %&gt;% 
+  tidyr::unite(Peakid,seqnames:end, sep= &quot;.&quot;) %&gt;% 
+  dplyr::select(Peakid,repName,repClass, repFamily,width) %&gt;% 
+  mutate(TEstatus =&quot;TE_peak&quot;, mrc=&quot;h.genome&quot;,per_ol = NA) %&gt;%
+  mutate(repClass_org=repClass)
+  
+all_peaks &lt;- anno_TE_region_pairs %&gt;% 
+  dplyr::filter(repClass==&quot;Retroposon&quot;) %&gt;% 
+  mutate(mrc=&quot;all_peaks&quot;)
+
+nine_retro &lt;-
+  anno_TE_region_pairs %&gt;% 
+  dplyr::filter(repClass==&quot;Retroposon&quot;) %&gt;% 
+  dplyr::filter(mrc != &quot;not_mrc&quot;) %&gt;% 
+  bind_rows(ggretroposon_df) %&gt;%
+    bind_rows(all_peaks) %&gt;% 
+  mutate(repName=factor(repName)) %&gt;% 
+mutate(mrc=factor(mrc, levels = c(&quot;h.genome&quot;,&quot;all_peaks&quot;,&quot;EAR_open&quot;,&quot;ESR_open&quot;,  &quot;LR_open&quot;,&quot;ESR_opcl&quot;,&quot;EAR_close&quot;,&quot;ESR_close&quot;,&quot;LR_close&quot;,&quot;ESR_clop&quot;,&quot;NR&quot;)))  
+
+nine_retro %&gt;% 
+  ggplot(., aes(x=mrc, fill= repName))+
+  geom_bar(position=&quot;fill&quot;, col=&quot;black&quot;)+
+  theme_classic()+
+  ggtitle(paste(&quot;Retroposon breakdown by nine clusters and Family&quot;))+
+  scale_fill_retroposons()</code></pre>
+<p><img src="figure/TE_analysis_norm.Rmd/SVAs-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>nine_retro %&gt;% 
+   group_by(mrc,repName) %&gt;% 
+  tally %&gt;% 
+  pivot_wider(., id_cols = mrc, names_from = repName, values_from = n) %&gt;% 
+  rowwise() %&gt;% 
+ mutate(total= sum(c_across(1:6),na.rm =TRUE)) %&gt;%
+  mutate(SVA_D_perc= SVA_D/sum(c_across(1:6),na.rm =TRUE)) %&gt;% 
+  kable(., caption=&quot;Breakdown of Retroposon counts by Name&quot;) %&gt;% 
+kable_paper(&quot;striped&quot;, full_width = TRUE) %&gt;%
+  kable_styling(full_width = FALSE, font_size = 14)%&gt;% 
+  scroll_box(height = &quot;500px&quot;)</code></pre>
+<div
+style="border: 1px solid #ddd; padding: 0px; overflow-y: scroll; height:500px; ">
+<table class=" lightable-paper lightable-striped table" style="font-family: &quot;Arial Narrow&quot;, arial, helvetica, sans-serif; margin-left: auto; margin-right: auto; font-size: 14px; width: auto !important; margin-left: auto; margin-right: auto;">
+<caption style="font-size: initial !important;">
+Breakdown of Retroposon counts by Name
+</caption>
+<thead>
+<tr>
+<th style="text-align:left;position: sticky; top:0; background-color: #FFFFFF;">
+mrc
+</th>
+<th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;">
+SVA_A
+</th>
+<th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;">
+SVA_B
+</th>
+<th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;">
+SVA_C
+</th>
+<th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;">
+SVA_D
+</th>
+<th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;">
+SVA_E
+</th>
+<th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;">
+SVA_F
+</th>
+<th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;">
+total
+</th>
+<th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;">
+SVA_D_perc
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+h.genome
+</td>
+<td style="text-align:right;">
+1172
+</td>
+<td style="text-align:right;">
+885
+</td>
+<td style="text-align:right;">
+536
+</td>
+<td style="text-align:right;">
+1601
+</td>
+<td style="text-align:right;">
+726
+</td>
+<td style="text-align:right;">
+1054
+</td>
+<td style="text-align:right;">
+5974
+</td>
+<td style="text-align:right;">
+0.2679946
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+all_peaks
+</td>
+<td style="text-align:right;">
+50
+</td>
+<td style="text-align:right;">
+44
+</td>
+<td style="text-align:right;">
+25
+</td>
+<td style="text-align:right;">
+121
+</td>
+<td style="text-align:right;">
+19
+</td>
+<td style="text-align:right;">
+36
+</td>
+<td style="text-align:right;">
+295
+</td>
+<td style="text-align:right;">
+0.4101695
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+EAR_open
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+14
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+9
+</td>
+<td style="text-align:right;">
+27
+</td>
+<td style="text-align:right;">
+0.5185185
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+ESR_open
+</td>
+<td style="text-align:right;">
+5
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+4
+</td>
+<td style="text-align:right;">
+24
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+8
+</td>
+<td style="text-align:right;">
+44
+</td>
+<td style="text-align:right;">
+0.5454545
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+LR_open
+</td>
+<td style="text-align:right;">
+8
+</td>
+<td style="text-align:right;">
+4
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+12
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+3
+</td>
+<td style="text-align:right;">
+29
+</td>
+<td style="text-align:right;">
+0.4137931
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+EAR_close
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+NA
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+NA
+</td>
+<td style="text-align:right;">
+6
+</td>
+<td style="text-align:right;">
+0.3333333
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+ESR_close
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+NA
+</td>
+<td style="text-align:right;">
+4
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+10
+</td>
+<td style="text-align:right;">
+0.4000000
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+LR_close
+</td>
+<td style="text-align:right;">
+10
+</td>
+<td style="text-align:right;">
+6
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+4
+</td>
+<td style="text-align:right;">
+3
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+26
+</td>
+<td style="text-align:right;">
+0.1538462
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+ESR_clop
+</td>
+<td style="text-align:right;">
+NA
+</td>
+<td style="text-align:right;">
+NA
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+NA
+</td>
+<td style="text-align:right;">
+NA
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+0.5000000
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+NR
+</td>
+<td style="text-align:right;">
+22
+</td>
+<td style="text-align:right;">
+27
+</td>
+<td style="text-align:right;">
+16
+</td>
+<td style="text-align:right;">
+57
+</td>
+<td style="text-align:right;">
+11
+</td>
+<td style="text-align:right;">
+12
+</td>
+<td style="text-align:right;">
+145
+</td>
+<td style="text-align:right;">
+0.3931034
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<pre class="r"><code>mrc_lookup_table &lt;- data.frame(mrc=c(&quot;EAR_open&quot;,&quot;ESR_open&quot;,  &quot;LR_open&quot;,&quot;ESR_opcl&quot;,&quot;EAR_close&quot;,&quot;ESR_close&quot;,&quot;LR_close&quot;,&quot;ESR_clop&quot;,&quot;NR&quot;,&quot;all_peaks&quot;,&quot;h.genome&quot;), 
+      peaks = c(length(EAR_open$seqnames),
+                length(ESR_open$seqnames),
+                length(LR_open$seqnames),
+                length(ESR_opcl$seqnames),
+                length(EAR_close$seqnames),
+                length(ESR_close$seqnames),
+                length(LR_close$seqnames),
+                length(ESR_clop$seqnames),
+                length(NR$seqnames),
+                length(Collapsed_peaks$chr),
+                5974))
+
+nine_retro %&gt;% 
+   group_by(mrc,repName) %&gt;% 
+  tally %&gt;% 
+  pivot_wider(., id_cols = mrc, names_from = repName, values_from = n) %&gt;% 
+  rowwise() %&gt;% 
+ mutate(total= sum(c_across(1:6),na.rm =TRUE)) %&gt;%
+  left_join(., mrc_lookup_table, by = c(&quot;mrc&quot;=&quot;mrc&quot;)) %&gt;% 
+   # mutate(percent_of_total = (total/length(paste0(mrc,&quot;$seqnames&quot;))) * 100) %&gt;% 
+  # mutate(SVA_D_perc=sprintf(&quot;%.2f&quot;,SVA_D_perc))
+  mutate(percent_of_total= total/peaks *100) %&gt;% 
+  # dplyr::select(mrc, SVA_D, total, SVA_D_perc) %&gt;% 
+  # pivot_longer(., cols = SVA_D:SVA_D_perc, names_to = &quot;sum_col&quot;,values_to = &quot;values&quot;) %&gt;% 
+  # pivot_wider(., id_cols = sum_col, names_from = mrc, values_from = values) %&gt;% 
+  kable(., caption=&quot;Breakdown of Retroposon SVA_D counts&quot;) %&gt;% 
+kable_paper(&quot;striped&quot;, full_width = TRUE) %&gt;%
+  kable_styling(full_width = TRUE, font_size = 14)%&gt;% 
+  scroll_box(height = &quot;500px&quot;)</code></pre>
+<div
+style="border: 1px solid #ddd; padding: 0px; overflow-y: scroll; height:500px; ">
+<table class=" lightable-paper lightable-striped table" style="font-family: &quot;Arial Narrow&quot;, arial, helvetica, sans-serif; margin-left: auto; margin-right: auto; font-size: 14px; margin-left: auto; margin-right: auto;">
+<caption style="font-size: initial !important;">
+Breakdown of Retroposon SVA_D counts
+</caption>
+<thead>
+<tr>
+<th style="text-align:left;position: sticky; top:0; background-color: #FFFFFF;">
+mrc
+</th>
+<th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;">
+SVA_A
+</th>
+<th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;">
+SVA_B
+</th>
+<th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;">
+SVA_C
+</th>
+<th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;">
+SVA_D
+</th>
+<th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;">
+SVA_E
+</th>
+<th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;">
+SVA_F
+</th>
+<th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;">
+total
+</th>
+<th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;">
+peaks
+</th>
+<th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;">
+percent_of_total
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+h.genome
+</td>
+<td style="text-align:right;">
+1172
+</td>
+<td style="text-align:right;">
+885
+</td>
+<td style="text-align:right;">
+536
+</td>
+<td style="text-align:right;">
+1601
+</td>
+<td style="text-align:right;">
+726
+</td>
+<td style="text-align:right;">
+1054
+</td>
+<td style="text-align:right;">
+5974
+</td>
+<td style="text-align:right;">
+5974
+</td>
+<td style="text-align:right;">
+100.0000000
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+all_peaks
+</td>
+<td style="text-align:right;">
+50
+</td>
+<td style="text-align:right;">
+44
+</td>
+<td style="text-align:right;">
+25
+</td>
+<td style="text-align:right;">
+121
+</td>
+<td style="text-align:right;">
+19
+</td>
+<td style="text-align:right;">
+36
+</td>
+<td style="text-align:right;">
+295
+</td>
+<td style="text-align:right;">
+172481
+</td>
+<td style="text-align:right;">
+0.1710333
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+EAR_open
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+14
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+9
+</td>
+<td style="text-align:right;">
+27
+</td>
+<td style="text-align:right;">
+4899
+</td>
+<td style="text-align:right;">
+0.5511329
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+ESR_open
+</td>
+<td style="text-align:right;">
+5
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+4
+</td>
+<td style="text-align:right;">
+24
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+8
+</td>
+<td style="text-align:right;">
+44
+</td>
+<td style="text-align:right;">
+6277
+</td>
+<td style="text-align:right;">
+0.7009718
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+LR_open
+</td>
+<td style="text-align:right;">
+8
+</td>
+<td style="text-align:right;">
+4
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+12
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+3
+</td>
+<td style="text-align:right;">
+29
+</td>
+<td style="text-align:right;">
+25617
+</td>
+<td style="text-align:right;">
+0.1132061
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+EAR_close
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+NA
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+NA
+</td>
+<td style="text-align:right;">
+6
+</td>
+<td style="text-align:right;">
+3075
+</td>
+<td style="text-align:right;">
+0.1951220
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+ESR_close
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+NA
+</td>
+<td style="text-align:right;">
+4
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+10
+</td>
+<td style="text-align:right;">
+7934
+</td>
+<td style="text-align:right;">
+0.1260398
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+LR_close
+</td>
+<td style="text-align:right;">
+10
+</td>
+<td style="text-align:right;">
+6
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+4
+</td>
+<td style="text-align:right;">
+3
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+26
+</td>
+<td style="text-align:right;">
+18610
+</td>
+<td style="text-align:right;">
+0.1397098
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+ESR_clop
+</td>
+<td style="text-align:right;">
+NA
+</td>
+<td style="text-align:right;">
+NA
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+NA
+</td>
+<td style="text-align:right;">
+NA
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+714
+</td>
+<td style="text-align:right;">
+0.2801120
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+NR
+</td>
+<td style="text-align:right;">
+22
+</td>
+<td style="text-align:right;">
+27
+</td>
+<td style="text-align:right;">
+16
+</td>
+<td style="text-align:right;">
+57
+</td>
+<td style="text-align:right;">
+11
+</td>
+<td style="text-align:right;">
+12
+</td>
+<td style="text-align:right;">
+145
+</td>
+<td style="text-align:right;">
+85154
+</td>
+<td style="text-align:right;">
+0.1702797
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<br>
+<p>
+<button type="button" class="btn btn-default btn-workflowr btn-workflowr-sessioninfo" data-toggle="collapse" data-target="#workflowr-sessioninfo" style="display: block;">
+<span class="glyphicon glyphicon-wrench" aria-hidden="true"></span>
+Session information
+</button>
+</p>
+<div id="workflowr-sessioninfo" class="collapse">
+<pre class="r"><code>sessionInfo()</code></pre>
+<pre><code>R version 4.4.2 (2024-10-31 ucrt)
+Platform: x86_64-w64-mingw32/x64
+Running under: Windows 11 x64 (build 26100)
+
+Matrix products: default
+
+
+locale:
+[1] LC_COLLATE=English_United States.utf8 
+[2] LC_CTYPE=English_United States.utf8   
+[3] LC_MONETARY=English_United States.utf8
+[4] LC_NUMERIC=C                          
+[5] LC_TIME=English_United States.utf8    
+
+time zone: America/Chicago
+tzcode source: internal
+
+attached base packages:
+[1] grid      stats4    stats     graphics  grDevices utils     datasets 
+[8] methods   base     
+
+other attached packages:
+ [1] circlize_0.4.16                         
+ [2] epitools_0.5-10.1                       
+ [3] ggrepel_0.9.6                           
+ [4] plyranges_1.26.0                        
+ [5] ggsignif_0.6.4                          
+ [6] genomation_1.38.0                       
+ [7] smplot2_0.2.5                           
+ [8] eulerr_7.0.2                            
+ [9] biomaRt_2.62.1                          
+[10] devtools_2.4.5                          
+[11] usethis_3.1.0                           
+[12] ggpubr_0.6.0                            
+[13] BiocParallel_1.40.0                     
+[14] scales_1.3.0                            
+[15] VennDiagram_1.7.3                       
+[16] futile.logger_1.4.3                     
+[17] gridExtra_2.3                           
+[18] ggfortify_0.4.17                        
+[19] edgeR_4.4.2                             
+[20] limma_3.62.2                            
+[21] rtracklayer_1.66.0                      
+[22] org.Hs.eg.db_3.20.0                     
+[23] TxDb.Hsapiens.UCSC.hg38.knownGene_3.20.0
+[24] GenomicFeatures_1.58.0                  
+[25] AnnotationDbi_1.68.0                    
+[26] Biobase_2.66.0                          
+[27] GenomicRanges_1.58.0                    
+[28] GenomeInfoDb_1.42.3                     
+[29] IRanges_2.40.1                          
+[30] S4Vectors_0.44.0                        
+[31] BiocGenerics_0.52.0                     
+[32] ChIPseeker_1.42.1                       
+[33] RColorBrewer_1.1-3                      
+[34] broom_1.0.7                             
+[35] kableExtra_1.4.0                        
+[36] lubridate_1.9.4                         
+[37] forcats_1.0.0                           
+[38] stringr_1.5.1                           
+[39] dplyr_1.1.4                             
+[40] purrr_1.0.4                             
+[41] readr_2.1.5                             
+[42] tidyr_1.3.1                             
+[43] tibble_3.2.1                            
+[44] ggplot2_3.5.1                           
+[45] tidyverse_2.0.0                         
+[46] workflowr_1.7.1                         
+
+loaded via a namespace (and not attached):
+  [1] fs_1.6.5                               
+  [2] matrixStats_1.5.0                      
+  [3] bitops_1.0-9                           
+  [4] enrichplot_1.26.6                      
+  [5] doParallel_1.0.17                      
+  [6] httr_1.4.7                             
+  [7] profvis_0.4.0                          
+  [8] tools_4.4.2                            
+  [9] backports_1.5.0                        
+ [10] R6_2.6.1                               
+ [11] lazyeval_0.2.2                         
+ [12] GetoptLong_1.0.5                       
+ [13] urlchecker_1.0.1                       
+ [14] withr_3.0.2                            
+ [15] prettyunits_1.2.0                      
+ [16] cli_3.6.4                              
+ [17] formatR_1.14                           
+ [18] labeling_0.4.3                         
+ [19] sass_0.4.9                             
+ [20] Rsamtools_2.22.0                       
+ [21] systemfonts_1.2.1                      
+ [22] yulab.utils_0.2.0                      
+ [23] foreign_0.8-88                         
+ [24] DOSE_4.0.0                             
+ [25] svglite_2.1.3                          
+ [26] R.utils_2.13.0                         
+ [27] sessioninfo_1.2.3                      
+ [28] plotrix_3.8-4                          
+ [29] BSgenome_1.74.0                        
+ [30] pwr_1.3-0                              
+ [31] impute_1.80.0                          
+ [32] rstudioapi_0.17.1                      
+ [33] RSQLite_2.3.9                          
+ [34] shape_1.4.6.1                          
+ [35] generics_0.1.3                         
+ [36] gridGraphics_0.5-1                     
+ [37] TxDb.Hsapiens.UCSC.hg19.knownGene_3.2.2
+ [38] BiocIO_1.16.0                          
+ [39] vroom_1.6.5                            
+ [40] gtools_3.9.5                           
+ [41] car_3.1-3                              
+ [42] GO.db_3.20.0                           
+ [43] Matrix_1.7-3                           
+ [44] abind_1.4-8                            
+ [45] R.methodsS3_1.8.2                      
+ [46] lifecycle_1.0.4                        
+ [47] whisker_0.4.1                          
+ [48] yaml_2.3.10                            
+ [49] carData_3.0-5                          
+ [50] SummarizedExperiment_1.36.0            
+ [51] gplots_3.2.0                           
+ [52] qvalue_2.38.0                          
+ [53] SparseArray_1.6.2                      
+ [54] BiocFileCache_2.14.0                   
+ [55] blob_1.2.4                             
+ [56] promises_1.3.2                         
+ [57] crayon_1.5.3                           
+ [58] miniUI_0.1.1.1                         
+ [59] ggtangle_0.0.6                         
+ [60] lattice_0.22-6                         
+ [61] cowplot_1.1.3                          
+ [62] KEGGREST_1.46.0                        
+ [63] magick_2.8.5                           
+ [64] ComplexHeatmap_2.22.0                  
+ [65] pillar_1.10.1                          
+ [66] knitr_1.49                             
+ [67] fgsea_1.32.2                           
+ [68] rjson_0.2.23                           
+ [69] boot_1.3-31                            
+ [70] codetools_0.2-20                       
+ [71] fastmatch_1.1-6                        
+ [72] glue_1.8.0                             
+ [73] getPass_0.2-4                          
+ [74] ggfun_0.1.8                            
+ [75] data.table_1.17.0                      
+ [76] remotes_2.5.0                          
+ [77] vctrs_0.6.5                            
+ [78] png_0.1-8                              
+ [79] treeio_1.30.0                          
+ [80] gtable_0.3.6                           
+ [81] cachem_1.1.0                           
+ [82] xfun_0.51                              
+ [83] S4Arrays_1.6.0                         
+ [84] mime_0.12                              
+ [85] iterators_1.0.14                       
+ [86] statmod_1.5.0                          
+ [87] ellipsis_0.3.2                         
+ [88] nlme_3.1-167                           
+ [89] ggtree_3.14.0                          
+ [90] bit64_4.6.0-1                          
+ [91] filelock_1.0.3                         
+ [92] progress_1.2.3                         
+ [93] rprojroot_2.0.4                        
+ [94] bslib_0.9.0                            
+ [95] rpart_4.1.24                           
+ [96] KernSmooth_2.23-26                     
+ [97] Hmisc_5.2-2                            
+ [98] colorspace_2.1-1                       
+ [99] DBI_1.2.3                              
+[100] seqPattern_1.38.0                      
+[101] nnet_7.3-20                            
+[102] tidyselect_1.2.1                       
+[103] processx_3.8.6                         
+[104] bit_4.6.0                              
+[105] compiler_4.4.2                         
+[106] curl_6.2.1                             
+[107] git2r_0.35.0                           
+[108] httr2_1.1.1                            
+[109] htmlTable_2.4.3                        
+[110] xml2_1.3.7                             
+[111] DelayedArray_0.32.0                    
+[112] checkmate_2.3.2                        
+[113] caTools_1.18.3                         
+[114] callr_3.7.6                            
+[115] rappdirs_0.3.3                         
+[116] digest_0.6.37                          
+[117] rmarkdown_2.29                         
+[118] XVector_0.46.0                         
+[119] base64enc_0.1-3                        
+[120] htmltools_0.5.8.1                      
+[121] pkgconfig_2.0.3                        
+[122] MatrixGenerics_1.18.1                  
+[123] dbplyr_2.5.0                           
+[124] fastmap_1.2.0                          
+[125] GlobalOptions_0.1.2                    
+[126] rlang_1.1.5                            
+[127] htmlwidgets_1.6.4                      
+[128] UCSC.utils_1.2.0                       
+[129] shiny_1.10.0                           
+[130] farver_2.1.2                           
+[131] jquerylib_0.1.4                        
+[132] zoo_1.8-13                             
+[133] jsonlite_1.9.1                         
+[134] GOSemSim_2.32.0                        
+[135] R.oo_1.27.0                            
+[136] RCurl_1.98-1.16                        
+[137] magrittr_2.0.3                         
+[138] Formula_1.2-5                          
+[139] GenomeInfoDbData_1.2.13                
+[140] ggplotify_0.1.2                        
+[141] patchwork_1.3.0                        
+[142] munsell_0.5.1                          
+[143] Rcpp_1.0.14                            
+[144] ape_5.8-1                              
+[145] stringi_1.8.4                          
+[146] zlibbioc_1.52.0                        
+[147] plyr_1.8.9                             
+[148] pkgbuild_1.4.6                         
+[149] parallel_4.4.2                         
+[150] Biostrings_2.74.1                      
+[151] splines_4.4.2                          
+[152] hms_1.1.3                              
+[153] locfit_1.5-9.12                        
+[154] ps_1.9.0                               
+[155] igraph_2.1.4                           
+[156] reshape2_1.4.4                         
+[157] pkgload_1.4.0                          
+[158] futile.options_1.0.1                   
+[159] XML_3.99-0.18                          
+[160] evaluate_1.0.3                         
+[161] lambda.r_1.2.4                         
+[162] foreach_1.5.2                          
+[163] tzdb_0.4.0                             
+[164] httpuv_1.6.15                          
+[165] clue_0.3-66                            
+[166] gridBase_0.4-7                         
+[167] xtable_1.8-4                           
+[168] restfulr_0.0.15                        
+[169] tidytree_0.4.6                         
+[170] rstatix_0.7.2                          
+[171] later_1.4.1                            
+[172] viridisLite_0.4.2                      
+[173] aplot_0.2.5                            
+[174] memoise_2.0.1                          
+[175] GenomicAlignments_1.42.0               
+[176] cluster_2.1.8.1                        
+[177] timechange_0.3.0                       </code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+
+<!-- Adjust MathJax settings so that all math formulae are shown using
+TeX fonts only; see
+https://docs.mathjax.org/en/latest/web/configuration.html. This will make
+the presentation more consistent at the cost of the webpage sometimes
+taking slightly longer to load. Note that this only works because the
+footer is added to webpages before the MathJax javascript. -->
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    "HTML-CSS": { availableFonts: ["TeX"] }
+  });
+</script>
+
+
+
+
+</div>
+</div>
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+function bootstrapStylePandocTables() {
+  $('tr.odd').parent('tbody').parent('table').addClass('table table-condensed');
+}
+$(document).ready(function () {
+  bootstrapStylePandocTables();
+});
+
+
+</script>
+
+<!-- tabsets -->
+
+<script>
+$(document).ready(function () {
+  window.buildTabsets("TOC");
+});
+
+$(document).ready(function () {
+  $('.tabset-dropdown > .nav-tabs > li').click(function () {
+    $(this).parent().toggleClass('nav-tabs-open');
+  });
+});
+</script>
+
+<!-- code folding -->
+
+<script>
+$(document).ready(function ()  {
+
+    // temporarily add toc-ignore selector to headers for the consistency with Pandoc
+    $('.unlisted.unnumbered').addClass('toc-ignore')
+
+    // move toc-ignore selectors from section div to header
+    $('div.section.toc-ignore')
+        .removeClass('toc-ignore')
+        .children('h1,h2,h3,h4,h5').addClass('toc-ignore');
+
+    // establish options
+    var options = {
+      selectors: "h1,h2,h3",
+      theme: "bootstrap3",
+      context: '.toc-content',
+      hashGenerator: function (text) {
+        return text.replace(/[.\\/?&!#<>]/g, '').replace(/\s/g, '_');
+      },
+      ignoreSelector: ".toc-ignore",
+      scrollTo: 0
+    };
+    options.showAndHide = true;
+    options.smoothScroll = true;
+
+    // tocify
+    var toc = $("#TOC").tocify(options).data("toc-tocify");
+});
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
