@@ -1,0 +1,474 @@
+---
+title: "RNA_association_GO_analyis"
+author: "Renee Matthews"
+date: "2025-05-08"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE,
+	warning = FALSE,
+	dev = c("png","pdf")
+)
+```
+
+```{css, echo=FALSE}
+pre {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+pre[class] {
+  max-height: 200px;
+}
+```
+
+package loading
+```{r  package loading}
+library(tidyverse)
+library(kableExtra)
+library(broom)
+library(RColorBrewer)
+library(gprofiler2)
+library(ChIPseeker)
+library("TxDb.Hsapiens.UCSC.hg38.knownGene")
+library("org.Hs.eg.db")
+library(rtracklayer)
+library(edgeR)
+library(ggfortify)
+library(limma)
+library(readr)
+library(BiocGenerics)
+library(gridExtra)
+library(VennDiagram)
+library(scales)
+library(ggVennDiagram)
+library(BiocParallel)
+library(ggpubr)
+library(biomaRt)
+```
+
+
+Loading RNA-seq data and ATAC region data
+
+```{r loading dataframes}
+Collapsed_peaks <- read_delim("data/Final_four_data/collapsed_new_peaks.txt",
+                              delim = "\t", 
+                              escape_double = FALSE, 
+                              trim_ws = TRUE)
+
+Motif_list_gr <- readRDS("data/Final_four_data/re_analysis/Motif_list_granges.RDS")
+##order specific
+df_list <- plyr::llply(Motif_list_gr, as.data.frame)
+### no change motif_list_gr names so they do not overwrite the dataframes
+names(Motif_list_gr) <- paste0(names(Motif_list_gr), "_gr")
+list2env(Motif_list_gr,envir= .GlobalEnv)
+
+list2env(df_list,envir= .GlobalEnv)
+
+final_peaks_gr <- Collapsed_peaks %>% 
+  dplyr::filter(Peakid %in% mcols(all_regions_gr)$Peakid) %>% 
+  GRanges()
+
+final_peaks <- Collapsed_peaks %>% 
+  dplyr::filter(Peakid %in% mcols(all_regions_gr)$Peakid) 
+
+mrc_lookup <- bind_rows(
+  (EAR_open  %>% dplyr::select(Peakid) %>% mutate(mrc = "EAR_open")),  
+  (EAR_close %>%  dplyr::select(Peakid) %>%mutate(mrc = "EAR_close")),
+  (ESR_open  %>%  dplyr::select(Peakid) %>%mutate(mrc = "ESR_open")),
+  (ESR_close %>%  dplyr::select(Peakid) %>%mutate(mrc = "ESR_close")),
+  (ESR_opcl   %>%  dplyr::select(Peakid) %>%mutate(mrc = "ESR_opcl")),
+  (ESR_clop   %>%  dplyr::select(Peakid) %>%mutate(mrc = "ESR_clop")),
+  (LR_open   %>%  dplyr::select(Peakid) %>%mutate(mrc = "LR_open")),
+  (LR_close  %>%  dplyr::select(Peakid) %>%mutate(mrc = "LR_close")),
+  (NR        %>%  dplyr::select(Peakid) %>%mutate(mrc = "NR"))
+) %>%
+  distinct(Peakid, mrc) 
+
+Collapsed_peaks %>% 
+  left_join(., mrc_lookup, by = c("Peakid"="Peakid"))
+
+RNA_exp_genes <- read.csv("data/other_papers/S13Table_Matthews2024.csv") %>% 
+  dplyr::select(ENTREZID,SYMBOL)
+
+
+
+```
+
+
+```{r Assigning expressed NGs by TSS, eval=FALSE, include=TRUE}
+#### HOw I assigned expressed NG TSS to new peak file
+### export final peak
+a4gr <- all_four_filt_counts %>% 
+  dplyr::select(seqnames:Geneid) %>% 
+  dplyr::rename("Peakid"=Geneid) %>% 
+  GRanges()
+
+###export as bedfile for analysis
+export(a4gr, "data/Final_four_data/all_four_filt.bed", format = "BED")
+
+###Import S13Table of exspressed RNA genes from Plos Genet. 2024 paper  
+expressed_Genes <- S13Table_Matthews2024 %>% dplyr::select(ENTREZID,SYMBOL)
+###Do the same with Grab the TSS file from biomart and export as bed file
+ ensembl <- useEnsembl(biomart = "genes", dataset = "hsapiens_gene_ensembl")
+my_attributes <- c('chromosome_name', 'start_position', 'end_position','entrezgene_id', 'hgnc_symbol')
+# searchAttributes(mart = ensembl, pattern = "refseq")
+# searchDatasets(mart=ensembl,pattern="NCBI")
+gene_list <- getBM(attributes=my_attributes,
+      filters = "hgnc_symbol",
+        values = expressed_Genes$SYMBOL,
+      mart = ensembl)
+gene_list_Final <- gene_list %>% 
+  dplyr::filter(!is.na(entrezgene_id)) %>%
+  mutate(chr = if_else(chromosome_name == "X", "chrX",
+      if_else(chromosome_name == "Y", "chrY", paste0("chr",chromosome_name)))) %>% 
+  mutate(chromosome_name=as.numeric(chromosome_name)) %>% 
+  mutate(chromosome_name=if_else(!is.na(chromosome_name),chr,
+   if_else(nchar(chr)<5,chr,"NA_character"))) %>% 
+  dplyr::filter(chromosome_name!="NA_character")
+  
+# saveRDS(gene_list_Final,"data/other_papers/RNA_expressed_gene_list_final.RDS")
+
+# write.csv(gene_ref,"data/gene_ref.csv")
+# listFilters(ensembl)
+####
+# gene_ref <- read.csv("data/gene_ref.csv")
+# gene_full_list <- gene_list %>% 
+#   mutate(chromosome_name=as.numeric(chromosome_name))%>% 
+#   # filter(!is.na(chromosome_name)) #%>% 
+#   na.omit(.)
+#   dplyr::select(chromosome_name,start_position,end_position,entrezgene_id,ensembl_gene_id)
+
+
+
+### I performed the bedtools using cli. I moved the files to the correct directory on my hardrive to do this.
+# bedtools closest -a all_four_filt.bed -b All_TSS_NGs.bed -D b >assigned_newNGbyTSS.bed
+#### This file only has the tss, I had to link the geneIDs and symbols and names using the lookup_table (contains TSS, Start and end, ENTREZID, ensembl_id,and SYMBOL)
+## I did learn a better way later, but the information was the same so I keep using the old file
+
+ lookup_table <- read.csv("data/Final_four_data/expressedgene_lookuptable.csv", row.names = 1)
+ # saveRDS(lt1,"data/Final_four_data/updated_RNA_gene_lookuptable")
+lt1<- readRDS("data/Final_four_data/updated_RNA_gene_lookuptable")
+ # lt1 <- gene_list_Final %>%
+ #   group_by(chromosome_name,start_position) %>%
+ # summarise(NG_end=paste(min(end_position)),
+ #            ENTREZID=paste(unique(entrezgene_id),collapse=":"),
+ #            SYMBOL=paste(unique(hgnc_symbol),collapse=":"),.groups="drop") %>%  #add_row(chromosome_name="chr11",start_position=1995165,NG_end="2004552",ENTREZID="283120",SYMBOL="H19") %>%
+ #   add_row(chromosome_name="chr16",start_position=18571161,NG_end="18571162",ENTREZID="653190",SYMBOL="ABCC6P1") %>%
+ #   add_row(chromosome_name="chr1",start_position=69217759,NG_end="69217760",ENTREZID="64946",SYMBOL="CENPH")
+
+NG_assigned_table <- read_delim("data/Final_four_data/assigned_newNGbyTSS.bed", col_names = FALSE)
+lt1_gr <- lt1 %>% 
+  dplyr::rename("seqnames"="chromosome_name", "start"="start_position", "end"= "NG_end") %>% GRanges()
+  
+
+          
+TSS_NG_table <- NG_assigned_table %>% 
+  dplyr::rename("chr"=X1,
+         "start"=X2,
+         "end"= X3,
+         "Peakid"=X6,
+         "NG_chr"=X7,
+         "NG_start"=X8 ,
+         "NG_end"=X9 ,
+         "dist_to_NG"=X13) %>% 
+  ##dropping the other columns
+    dplyr::select(chr:end,Peakid:NG_end,dist_to_NG) %>% 
+  ###removing a doubling of a Peakid and choosing the row with the smallest distance
+  group_by(Peakid) %>% 
+   slice_min(dist_to_NG)
+
+# anti_table <- lookup_table %>% ###56 ENTREZGENEIDS
+#   mutate(ENTREZID=as.numeric(ENTREZID)) %>% 
+#   dplyr::filter(!ENTREZID %in%gene_list_Final$entrezgene_id)
+  # anti_join(gene_list_Final, by=c("NG_chr"="chromosome_name", "NG_start"="start_position", 'NG_end'= "end_position", "ENTREZID"="entrezgene_id")) #%>% 
+  # dplyr::select(NG_chr:SYMBOL)
+     # dplyr::filter(ENTREZID!=entrezgene_id)
+ # rbind(lookup_table %>% mutate(ENTREZID=as.numeric(ENTREZID)) %>% 
+  # anti_join(gene_list_Final, by=c("NG_chr"="chromosome_name", "NG_start"="start_position", 'NG_end'= "end_position", "ENTREZID"="entrezgene_id")))
+  
+  
+  
+collapsed_lookup_table <-   lookup_table %>% group_by(NG_chr,NG_start,SYMBOL) %>% 
+     summarize(NG_end=min(NG_end),
+               ENTREZID=paste(unique(ENTREZID),collapse=":"),
+                 SYMBOL=paste(unique(SYMBOL),collapse=":"), .groups="drop") 
+  
+
+not_matched <- TSS_NG_table %>% 
+  GRanges()
+    # left_join(., lt1, by= c("NG_chr"="chromosome_name","NG_end"="start_position")) %>% 
+    # dplyr::filter(is.na(SYMBOL))  
+   
+ retest <- join_overlap_intersect(not_matched,lt1_gr)
+# lookup_table_match <- 
+  test <- not_matched %>% 
+   dplyr::select(chr:dist_to_NG) %>%
+    ungroup() %>% 
+      # dplyr::filter(NG_start %in% lt1$start_position) %>% 
+       left_join(., collapsed_lookup_table, by=c("NG_chr"="NG_chr","NG_start"="NG_start"))
+  
+  retest %>% 
+    as.data.frame  %>% 
+    group_by(Peakid) %>% 
+    tally %>% 
+    filter(n>1)
+  
+
+matched_up <- TSS_NG_table %>% 
+    left_join(., lt1, by= c("NG_chr"="chromosome_name","NG_end"="start_position")) %>% 
+  left_join(., collapsed_lookup_table,by=c("NG_chr"="NG_chr", "NG_start"="NG_end"))
+    
+TSS_NG_table <- matched_up %>% 
+  dplyr::rename("NG_end"="NG_end.y", "NG_TSS"=NG_end) %>% ungroup() %>% 
+  mutate(SYMBOL= if_else(!is.na(SYMBOL.x)&!is.na(SYMBOL.y),paste0(SYMBOL.x,":",SYMBOL.y), if_else(!is.na(SYMBOL.x) & is.na(SYMBOL.y),SYMBOL.x,if_else(is.na(SYMBOL.x)&!is.na(SYMBOL.y),SYMBOL.x,SYMBOL.y)))) %>% 
+  mutate(ENTREZID= if_else(!is.na(ENTREZID.x)&!is.na(ENTREZID.y),paste0(ENTREZID.x,":",ENTREZID.y), if_else(!is.na(ENTREZID.x) & is.na(ENTREZID.y),ENTREZID.x,if_else(is.na(ENTREZID.x)&!is.na(ENTREZID.y),ENTREZID.x,ENTREZID.y)))) %>% 
+  dplyr::select(chr:NG_start,NG_end,NG_TSS,ENTREZID,SYMBOL,dist_to_NG) #%>%
+  # write_delim(.,"data/Final_four_data/TSS_assigned_NG.txt",delim = "\t",col_names = TRUE)
+
+### Collapsing the table to only one entry per region (some regions have more than one gene assigned)    
+
+
+Collapsed_new_peaks <- TSS_NG_table %>% 
+  group_by(chr, start, end, Peakid) %>%
+    summarise(chr=paste(unique(chr)),
+              start=paste(unique(start)),
+              end=paste(unique(end)),
+              NG_chr=paste(NG_chr,collapse=":"),
+              NG_start=paste(NG_start,collapse=":"),
+              NG_end=paste(NG_end,collapse=":"),
+              NG_TSS=paste(NG_TSS,collapse=":"),
+              NCBI_gene = paste(unique(ENTREZID),collapse=","),
+              # ensembl_ID= paste(unique(ensembl_id),collapse = ","),
+              SYMBOL= paste(unique(SYMBOL),collapse = ",") , 
+              dist_to_NG =min(dist_to_NG))
+ write_delim(Collapsed_new_peaks,"data/Final_four_data/collapsed_new_peaks.txt",delim = "\t",col_names = TRUE)
+```
+
+### First step was to get an idea if response clusters had a pattern or enrichments of GO:Biological Processes that are interesting for us.
+
+```{r GO and NG isolation}
+near_Genes <- final_peaks %>% 
+  left_join(., mrc_lookup, by = c("Peakid"="Peakid"))
+
+EAR_open_genes <- near_Genes %>% 
+  dplyr::filter(mrc=="EAR_open") %>% 
+  dplyr::filter(dist_to_NG >-2000 & dist_to_NG<2000) %>% 
+  distinct(NCBI_gene) %>% 
+  separate_rows(NCBI_gene, sep=",")%>% 
+  separate_rows(NCBI_gene, sep=":")%>% 
+  distinct()
+EAR_close_genes <- near_Genes %>% 
+  dplyr::filter(mrc=="EAR_close") %>% 
+  dplyr::filter(dist_to_NG >-2000 & dist_to_NG<2000) %>% 
+  distinct(NCBI_gene) %>% 
+  separate_rows(NCBI_gene, sep=",")%>% 
+  separate_rows(NCBI_gene, sep=":")%>% 
+  distinct()
+ESR_open_genes <- near_Genes %>% 
+  dplyr::filter(mrc=="ESR_open") %>% 
+  dplyr::filter(dist_to_NG >-2000 & dist_to_NG<2000) %>% 
+  distinct(NCBI_gene) %>% 
+  separate_rows(NCBI_gene, sep=",")%>% 
+  separate_rows(NCBI_gene, sep=":")%>% 
+  distinct()
+ESR_close_genes <- near_Genes %>% 
+  dplyr::filter(mrc=="ESR_close") %>% 
+  dplyr::filter(dist_to_NG >-2000 & dist_to_NG<2000) %>% 
+  distinct(NCBI_gene) %>% 
+  separate_rows(NCBI_gene, sep=",")%>% 
+  separate_rows(NCBI_gene, sep=":")%>% 
+  distinct()
+ESR_clop_genes <- near_Genes %>% 
+  dplyr::filter(mrc=="ESR_clop") %>% 
+ dplyr::filter(dist_to_NG >-2000 & dist_to_NG<2000) %>% 
+  distinct(NCBI_gene) %>% 
+  separate_rows(NCBI_gene, sep=",")%>% 
+  separate_rows(NCBI_gene, sep=":")%>% 
+  distinct()
+ESR_opcl_genes <- near_Genes %>% 
+  dplyr::filter(mrc=="ESR_opcl") %>% 
+  dplyr::filter(dist_to_NG >-2000 & dist_to_NG<2000) %>% 
+  distinct(NCBI_gene) %>% 
+  separate_rows(NCBI_gene, sep=",")%>% 
+  separate_rows(NCBI_gene, sep=":")%>% 
+  distinct()
+LR_open_genes <- near_Genes %>% 
+  dplyr::filter(mrc=="LR_open") %>% 
+  dplyr::filter(dist_to_NG >-2000&dist_to_NG<2000) %>% 
+  distinct(NCBI_gene) %>% 
+  separate_rows(NCBI_gene, sep=",")%>% 
+  separate_rows(NCBI_gene, sep=":")%>% 
+  distinct()
+
+LR_close_genes <- near_Genes %>% 
+  dplyr::filter(mrc=="LR_close") %>% 
+  dplyr::filter(dist_to_NG >-2000&dist_to_NG<2000) %>% 
+  distinct(NCBI_gene) %>% 
+  separate_rows(NCBI_gene, sep=",")%>% 
+  separate_rows(NCBI_gene, sep=":")%>% 
+  distinct()
+  
+
+NR_genes <- near_Genes %>% 
+  dplyr::filter(mrc=="NR") %>% 
+   dplyr::filter(dist_to_NG >-2000&dist_to_NG<2000) %>% 
+  distinct(NCBI_gene) %>% 
+  separate_rows(NCBI_gene, sep=",")%>% 
+  separate_rows(NCBI_gene, sep=":")%>% 
+  distinct()
+  
+```
+
+
+```{r Running goprofiler2, eval=FALSE}
+LR_close_2kresgenes <- gost(query = LR_close_genes$NCBI_gene,
+                    organism = "hsapiens",
+                    significant = FALSE,
+                    ordered_query = FALSE,
+                    domain_scope = "custom",
+                    measure_underrepresentation = FALSE,
+                    evcodes = FALSE,
+                    user_threshold = 0.05,
+                    correction_method = c("fdr"),
+                    custom_bg = RNA_exp_genes$ENTREZID,
+                    sources=c("GO:BP","KEGG"))
+
+
+
+saveRDS(LR_close_2kresgenes,"data/Final_four_data/re_analysis/GO_analysis/LR_close_2kresgenes.RDS")
+
+
+```
+
+
+
+```{r}
+EAR_open_2kresgenes <- readRDS("data/Final_four_data/re_analysis/GO_analysis/EAR_open_2kresgenes.RDS")
+ESR_open_2kresgenes <- readRDS("data/Final_four_data/re_analysis/GO_analysis/ESR_open_2kresgenes.RDS")
+LR_open_2kresgenes <- readRDS("data/Final_four_data/re_analysis/GO_analysis/LR_open_2kresgenes.RDS")
+EAR_close_2kresgenes <- readRDS("data/Final_four_data/re_analysis/GO_analysis/EAR_close_2kresgenes.RDS")
+ESR_close_2kresgenes <- readRDS("data/Final_four_data/re_analysis/GO_analysis/ESR_close_2kresgenes.RDS")
+LR_close_2kresgenes <- readRDS("data/Final_four_data/re_analysis/GO_analysis/LR_close_2kresgenes.RDS")
+
+ESR_clop_2kresgenes <- readRDS("data/Final_four_data/re_analysis/GO_analysis/ESR_clop_2kresgenes.RDS")
+ESR_opcl_2kresgenes <- readRDS("data/Final_four_data/re_analysis/GO_analysis/ESR_opcl_2kresgenes.RDS")
+
+NR_2kresgenes <- readRDS("data/Final_four_data/re_analysis/GO_analysis/NR_2kresgenes.RDS")
+```
+
+
+
+```{r table function}
+GO_KEGG_analysis <- function(df,type, setp_value=1){
+# Extract the name of the dataframe
+  a <- deparse(substitute(df)) %>% 
+  gsub("_2kresgenes","",.)
+
+ # Prepare the table output
+  df_nomtable <-  df$result %>% 
+  dplyr::select(c(source, term_id,
+                  term_name,intersection_size, 
+                   term_size, p_value))
+# Create a color palette for different dataframe names
+  # You can customize this color palette as needed  
+  
+  mrc_palette <- c(
+    "EAR_open" = "#F8766D",
+    "EAR_close" = "#f6483c",
+    "ESR_open" = "#7CAE00",
+    "ESR_close" = "#587b00",
+    "ESR_opcl" = "cornflowerblue",
+    "ESR_clop"= "grey60",
+     "LR_open" = "#00BFC4",
+     "LR_close" = "#008d91",
+     "NR" = "#C77CFF"
+  )
+   # Use the dataframe name as the fill color (fallback to black if name is not in the palette)
+   fill_color <- mrc_palette[a] %||% "darkgrey"
+   
+table <- df_nomtable %>%
+  dplyr::filter(source==type) %>% 
+  dplyr::filter(p_value < setp_value) %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(.,caption = paste0("Significant (p < ",setp_value," ) ",type," terms found in ",a," neargenes")) %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
+# plot the table as ggplot object
+plot <- df_nomtable %>%
+  filter(source==type) %>% 
+  # slice_head(n=10) %>% 
+    dplyr::filter(p_value < setp_value) %>% 
+  mutate(log10_p=(-log(p_value, base=10))) %>% 
+  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
+    geom_col(fill=fill_color)+
+  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
+  theme_bw()+
+  ylab("")+
+  xlab(paste0("-log10 p-value"))+
+  guides(fill="none")+
+  theme(axis.text.y = element_text(color="black"),
+        base_size=18)+
+  ggtitle(paste0("(p < ",setp_value," ) ",type," terms found in\n ",a," neargenes"))
+
+
+print(table)
+print(plot)
+}
+```
+
+
+```{r just BP, fig.height=7}
+GO_KEGG_analysis(EAR_open_2kresgenes,"GO:BP", setp_value=0.05)
+GO_KEGG_analysis(EAR_close_2kresgenes,"GO:BP", setp_value=0.05)
+GO_KEGG_analysis(ESR_open_2kresgenes,"GO:BP", setp_value=0.05)
+GO_KEGG_analysis(ESR_close_2kresgenes,"GO:BP", setp_value=0.05)
+GO_KEGG_analysis(ESR_opcl_2kresgenes,"GO:BP", setp_value=0.05)
+GO_KEGG_analysis(ESR_clop_2kresgenes,"GO:BP", setp_value=0.05)
+
+GO_KEGG_analysis(LR_open_2kresgenes,"GO:BP", setp_value=0.05)
+GO_KEGG_analysis(LR_close_2kresgenes,"GO:BP", setp_value=0.05)
+GO_KEGG_analysis(NR_2kresgenes,"GO:BP", setp_value=0.05)
+```
+
+
+
+
+
+
+```{r just KEGG, fig.height=8}
+GO_KEGG_analysis(EAR_open_2kresgenes,"KEGG", setp_value=0.05)
+GO_KEGG_analysis(EAR_close_2kresgenes,"KEGG", setp_value=0.05)
+GO_KEGG_analysis(ESR_open_2kresgenes,"KEGG", setp_value=0.05)
+GO_KEGG_analysis(ESR_close_2kresgenes,"KEGG", setp_value=0.05)
+GO_KEGG_analysis(ESR_opcl_2kresgenes,"KEGG", setp_value=0.05)
+GO_KEGG_analysis(ESR_clop_2kresgenes,"KEGG", setp_value=0.05)
+
+GO_KEGG_analysis(LR_open_2kresgenes,"KEGG", setp_value=0.05)
+GO_KEGG_analysis(LR_close_2kresgenes,"KEGG", setp_value=0.05)
+GO_KEGG_analysis(NR_2kresgenes,"KEGG", setp_value=0.05)
+```
+
+
+
+
+
+
+
+
+
+### RNA-seq genes and ATAC data
+after assigning expressed genes to nearest peaks and collecting differences, I also wanted to look at LFC between associated ATAC peaks and nearby expressed genes.
+```{r}
+
+```
+
