@@ -247,4 +247,43 @@ write_csv(median_3_lfc, "data/Final_four_data/re_analysis/median_3_lfc_norm.csv"
 write_csv(median_24_lfc, "data/Final_four_data/re_analysis/median_24_lfc_norm.csv")
 
 ```
+Correlation of LFC between treatments
+```{r LFC correlation}
+FCmatrix_ff <- subset(efit2$coefficients)
+
+colnames(FCmatrix_ff) <-
+  c("DNR\n3h",
+    "DOX\n3h",
+    "EPI\n3h",
+    "MTX\n3h",
+    "TRZ\n3h",
+    "DNR\n24h",
+    "DOX\n24h",
+    "EPI\n24h",
+    "MTX\n24h",
+    "TRZ\n24h"
+     )
+
+
+mat_col_ff <-
+  data.frame(
+    time = c(rep("3 hours", 5), rep("24 hours", 5)),
+    class = (c(
+      "AC", "AC", "AC", "nAC","nAC",  "AC", "AC", "AC", "nAC","nAC" 
+    )))
+rownames(mat_col_ff) <- colnames(FCmatrix_ff)
+
+mat_colors_ff <-
+  list(
+    time = c("pink", "chocolate4"),
+    class = c("yellow1", "lightgreen"))
+
+names(mat_colors_ff$time) <- unique(mat_col_ff$time)
+names(mat_colors_ff$class) <- unique(mat_col_ff$class)
+# names(mat_colors_FC$TOP2i) <- unique(mat_col_FC$TOP2i)
+corrFC_ff <- cor(FCmatrix_ff)
+
+htanno_ff <-  HeatmapAnnotation(df = mat_col_ff, col = mat_colors_ff)
+Heatmap(corrFC_ff, top_annotation = htanno_ff)
+```
 

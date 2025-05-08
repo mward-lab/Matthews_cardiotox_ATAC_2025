@@ -389,3 +389,23 @@ mean_lfc %>%
   )
 ```
 
+```{r bed export, eval=FALSE}
+# Folder with input BED files
+
+output_dir <- "data/Final_four_data/re_analysis/motif_beds_centered"
+
+# Create output folder if needed
+dir.create(output_dir, showWarnings = FALSE)
+
+# Loop through each BED file
+for (name in names(Motif_list_gr)) {
+  gr <- Motif_list_gr[[name]]
+  
+  # Recenter each region to 200 bp around its midpoint
+  gr_centered <- resize(gr, width = 200, fix = "center")
+  
+  # Export to BED (auto converts to 0-based)
+  export(gr_centered, con = file.path(output_dir, paste0(name, "_centered.bed")), format = "BED")
+}
+```
+
