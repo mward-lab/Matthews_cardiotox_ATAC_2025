@@ -1,0 +1,3194 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+
+<meta name="author" content="Renee Matthews" />
+
+<meta name="date" content="2025-05-08" />
+
+<title>RNA_association_GO_analyis</title>
+
+<script src="site_libs/header-attrs-2.29/header-attrs.js"></script>
+<script src="site_libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="site_libs/bootstrap-3.3.5/css/cosmo.min.css" rel="stylesheet" />
+<script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
+<style>h1 {font-size: 34px;}
+       h1.title {font-size: 38px;}
+       h2 {font-size: 30px;}
+       h3 {font-size: 24px;}
+       h4 {font-size: 18px;}
+       h5 {font-size: 16px;}
+       h6 {font-size: 12px;}
+       code {color: inherit; background-color: rgba(0, 0, 0, 0.04);}
+       pre:not([class]) { background-color: white }</style>
+<script src="site_libs/jqueryui-1.13.2/jquery-ui.min.js"></script>
+<link href="site_libs/tocify-1.9.1/jquery.tocify.css" rel="stylesheet" />
+<script src="site_libs/tocify-1.9.1/jquery.tocify.js"></script>
+<script src="site_libs/navigation-1.1/tabsets.js"></script>
+<link href="site_libs/highlightjs-9.12.0/textmate.css" rel="stylesheet" />
+<script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+<link href="site_libs/font-awesome-6.5.2/css/all.min.css" rel="stylesheet" />
+<link href="site_libs/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet" />
+
+<link rel="icon" href="https://github.com/workflowr/workflowr-assets/raw/main/img/reproducible.png">
+<!-- Add a small amount of space between sections. -->
+<style type="text/css">
+div.section {
+  padding-top: 12px;
+}
+</style>
+
+
+
+<style type="text/css">
+  code{white-space: pre-wrap;}
+  span.smallcaps{font-variant: small-caps;}
+  span.underline{text-decoration: underline;}
+  div.column{display: inline-block; vertical-align: top; width: 50%;}
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+  ul.task-list{list-style: none;}
+    </style>
+
+<style type="text/css">code{white-space: pre;}</style>
+<script type="text/javascript">
+if (window.hljs) {
+  hljs.configure({languages: []});
+  hljs.initHighlightingOnLoad();
+  if (document.readyState && document.readyState === "complete") {
+    window.setTimeout(function() { hljs.initHighlighting(); }, 0);
+  }
+}
+</script>
+
+
+
+
+
+
+
+
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+img {
+  max-width:100%;
+}
+.tabbed-pane {
+  padding-top: 12px;
+}
+.html-widget {
+  margin-bottom: 20px;
+}
+button.code-folding-btn:focus {
+  outline: none;
+}
+summary {
+  display: list-item;
+}
+details > summary > p:only-child {
+  display: inline;
+}
+pre code {
+  padding: 0;
+}
+</style>
+
+
+<style type="text/css">
+.dropdown-submenu {
+  position: relative;
+}
+.dropdown-submenu>.dropdown-menu {
+  top: 0;
+  left: 100%;
+  margin-top: -6px;
+  margin-left: -1px;
+  border-radius: 0 6px 6px 6px;
+}
+.dropdown-submenu:hover>.dropdown-menu {
+  display: block;
+}
+.dropdown-submenu>a:after {
+  display: block;
+  content: " ";
+  float: right;
+  width: 0;
+  height: 0;
+  border-color: transparent;
+  border-style: solid;
+  border-width: 5px 0 5px 5px;
+  border-left-color: #cccccc;
+  margin-top: 5px;
+  margin-right: -10px;
+}
+.dropdown-submenu:hover>a:after {
+  border-left-color: #adb5bd;
+}
+.dropdown-submenu.pull-left {
+  float: none;
+}
+.dropdown-submenu.pull-left>.dropdown-menu {
+  left: -100%;
+  margin-left: 10px;
+  border-radius: 6px 0 6px 6px;
+}
+</style>
+
+<script type="text/javascript">
+// manage active state of menu based on current page
+$(document).ready(function () {
+  // active menu anchor
+  href = window.location.pathname
+  href = href.substr(href.lastIndexOf('/') + 1)
+  if (href === "")
+    href = "index.html";
+  var menuAnchor = $('a[href="' + href + '"]');
+
+  // mark the anchor link active (and if it's in a dropdown, also mark that active)
+  var dropdown = menuAnchor.closest('li.dropdown');
+  if (window.bootstrap) { // Bootstrap 4+
+    menuAnchor.addClass('active');
+    dropdown.find('> .dropdown-toggle').addClass('active');
+  } else { // Bootstrap 3
+    menuAnchor.parent().addClass('active');
+    dropdown.addClass('active');
+  }
+
+  // Navbar adjustments
+  var navHeight = $(".navbar").first().height() + 15;
+  var style = document.createElement('style');
+  var pt = "padding-top: " + navHeight + "px; ";
+  var mt = "margin-top: -" + navHeight + "px; ";
+  var css = "";
+  // offset scroll position for anchor links (for fixed navbar)
+  for (var i = 1; i <= 6; i++) {
+    css += ".section h" + i + "{ " + pt + mt + "}\n";
+  }
+  style.innerHTML = "body {" + pt + "padding-bottom: 40px; }\n" + css;
+  document.head.appendChild(style);
+});
+</script>
+
+<!-- tabsets -->
+
+<style type="text/css">
+.tabset-dropdown > .nav-tabs {
+  display: inline-table;
+  max-height: 500px;
+  min-height: 44px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.tabset-dropdown > .nav-tabs > li.active:before, .tabset-dropdown > .nav-tabs.nav-tabs-open:before {
+  content: "\e259";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li.active:before {
+  content: "\e258";
+  font-family: 'Glyphicons Halflings';
+  border: none;
+}
+
+.tabset-dropdown > .nav-tabs > li.active {
+  display: block;
+}
+
+.tabset-dropdown > .nav-tabs > li > a,
+.tabset-dropdown > .nav-tabs > li > a:focus,
+.tabset-dropdown > .nav-tabs > li > a:hover {
+  border: none;
+  display: inline-block;
+  border-radius: 4px;
+  background-color: transparent;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li {
+  display: block;
+  float: none;
+}
+
+.tabset-dropdown > .nav-tabs > li {
+  display: none;
+}
+</style>
+
+<!-- code folding -->
+
+
+
+<style type="text/css">
+
+#TOC {
+  margin: 25px 0px 20px 0px;
+}
+@media (max-width: 768px) {
+#TOC {
+  position: relative;
+  width: 100%;
+}
+}
+
+@media print {
+.toc-content {
+  /* see https://github.com/w3c/csswg-drafts/issues/4434 */
+  float: right;
+}
+}
+
+.toc-content {
+  padding-left: 30px;
+  padding-right: 40px;
+}
+
+div.main-container {
+  max-width: 1200px;
+}
+
+div.tocify {
+  width: 20%;
+  max-width: 260px;
+  max-height: 85%;
+}
+
+@media (min-width: 768px) and (max-width: 991px) {
+  div.tocify {
+    width: 25%;
+  }
+}
+
+@media (max-width: 767px) {
+  div.tocify {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+.tocify ul, .tocify li {
+  line-height: 20px;
+}
+
+.tocify-subheader .tocify-item {
+  font-size: 0.90em;
+}
+
+.tocify .list-group-item {
+  border-radius: 0px;
+}
+
+
+</style>
+
+
+
+</head>
+
+<body>
+
+
+<div class="container-fluid main-container">
+
+
+<!-- setup 3col/9col grid for toc_float and main content  -->
+<div class="row">
+<div class="col-xs-12 col-sm-4 col-md-3">
+<div id="TOC" class="tocify">
+</div>
+</div>
+
+<div class="toc-content col-xs-12 col-sm-8 col-md-9">
+
+
+
+
+<div class="navbar navbar-default  navbar-fixed-top" role="navigation">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-bs-toggle="collapse" data-target="#navbar" data-bs-target="#navbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="index.html">Matthews_cardiotox_ATAC_2025</a>
+    </div>
+    <div id="navbar" class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+        <li>
+  <a href="index.html">Home</a>
+</li>
+<li>
+  <a href="about.html">About</a>
+</li>
+<li>
+  <a href="license.html">License</a>
+</li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        <li>
+  <a href="https://github.com/mward-lab/Matthews_cardiotox_ATAC_2025">
+    <span class="fab fa-github"></span>
+     
+    Source code
+  </a>
+</li>
+      </ul>
+    </div><!--/.nav-collapse -->
+  </div><!--/.container -->
+</div><!--/.navbar -->
+
+<div id="header">
+
+
+
+<h1 class="title toc-ignore">RNA_association_GO_analyis</h1>
+<h4 class="author">Renee Matthews</h4>
+<h4 class="date">2025-05-08</h4>
+
+</div>
+
+
+<p>
+<button type="button" class="btn btn-default btn-workflowr btn-workflowr-report" data-toggle="collapse" data-target="#workflowr-report">
+<span class="glyphicon glyphicon-list" aria-hidden="true"></span>
+workflowr <span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span>
+</button>
+</p>
+<div id="workflowr-report" class="collapse">
+<ul class="nav nav-tabs">
+<li class="active">
+<a data-toggle="tab" href="#summary">Summary</a>
+</li>
+<li>
+<a data-toggle="tab" href="#checks"> Checks <span
+class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span>
+</a>
+</li>
+<li>
+<a data-toggle="tab" href="#versions">Past versions</a>
+</li>
+</ul>
+<div class="tab-content">
+<div id="summary" class="tab-pane fade in active">
+<p>
+<strong>Last updated:</strong> 2025-05-08
+</p>
+<p>
+<strong>Checks:</strong> <span
+class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> 7
+<span class="glyphicon glyphicon-exclamation-sign text-danger"
+aria-hidden="true"></span> 0
+</p>
+<p>
+<strong>Knit directory:</strong> <code>ATAC_learning/</code> <span
+class="glyphicon glyphicon-question-sign" aria-hidden="true"
+title="This is the local directory in which the code in this file was executed.">
+</span>
+</p>
+<p>
+This reproducible <a href="https://rmarkdown.rstudio.com">R Markdown</a>
+analysis was created with <a
+  href="https://github.com/workflowr/workflowr">workflowr</a> (version
+1.7.1). The <em>Checks</em> tab describes the reproducibility checks
+that were applied when the results were created. The <em>Past
+versions</em> tab lists the development history.
+</p>
+<hr>
+</div>
+<div id="checks" class="tab-pane fade">
+<div id="workflowr-checks" class="panel-group">
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRMarkdownfilestronguptodate">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>R Markdown file:</strong> up-to-date
+</a>
+</p>
+</div>
+<div id="strongRMarkdownfilestronguptodate"
+class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great! Since the R Markdown file has been committed to the Git
+repository, you know the exact version of the code that produced these
+results.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongEnvironmentstrongempty">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Environment:</strong> empty </a>
+</p>
+</div>
+<div id="strongEnvironmentstrongempty" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great job! The global environment was empty. Objects defined in the
+global environment can affect the analysis in your R Markdown file in
+unknown ways. For reproduciblity it’s best to always run the code in an
+empty environment.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongSeedstrongcodesetseed20231016code">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Seed:</strong>
+<code>set.seed(20231016)</code> </a>
+</p>
+</div>
+<div id="strongSeedstrongcodesetseed20231016code"
+class="panel-collapse collapse">
+<div class="panel-body">
+<p>The command <code>set.seed(20231016)</code> was run prior to running
+the code in the R Markdown file. Setting a seed ensures that any results
+that rely on randomness, e.g. subsampling or permutations, are
+reproducible.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongSessioninformationstrongrecorded">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Session information:</strong>
+recorded </a>
+</p>
+</div>
+<div id="strongSessioninformationstrongrecorded"
+class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great job! Recording the operating system, R version, and package
+versions is critical for reproducibility.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongCachestrongnone">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Cache:</strong> none </a>
+</p>
+</div>
+<div id="strongCachestrongnone" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Nice! There were no cached chunks for this analysis, so you can be
+confident that you successfully produced the results during this
+run.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongFilepathsstrongrelative">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>File paths:</strong> relative </a>
+</p>
+</div>
+<div id="strongFilepathsstrongrelative" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great job! Using relative paths to the files within your workflowr
+project makes it easier to run your code on other machines.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcommwardlabMatthewscardiotoxATAC2025tree4ecab874d6123f14ba31af37dd7621bd4b5996eatargetblank4ecab87a">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Repository version:</strong>
+<a href="https://github.com/mward-lab/Matthews_cardiotox_ATAC_2025/tree/4ecab874d6123f14ba31af37dd7621bd4b5996ea" target="_blank">4ecab87</a>
+</a>
+</p>
+</div>
+<div
+id="strongRepositoryversionstrongahrefhttpsgithubcommwardlabMatthewscardiotoxATAC2025tree4ecab874d6123f14ba31af37dd7621bd4b5996eatargetblank4ecab87a"
+class="panel-collapse collapse">
+<div class="panel-body">
+<p>
+Great! You are using Git for version control. Tracking code development
+and connecting the code version to the results is critical for
+reproducibility.
+</p>
+<p>
+The results in this page were generated with repository version
+<a href="https://github.com/mward-lab/Matthews_cardiotox_ATAC_2025/tree/4ecab874d6123f14ba31af37dd7621bd4b5996ea" target="_blank">4ecab87</a>.
+See the <em>Past versions</em> tab to see a history of the changes made
+to the R Markdown and HTML files.
+</p>
+<p>
+Note that you need to be careful to ensure that all relevant files for
+the analysis have been committed to Git prior to generating the results
+(you can use <code>wflow_publish</code> or
+<code>wflow_git_commit</code>). workflowr only checks the R Markdown
+file, but you know if there are other scripts or data files that it
+depends on. Below is the status of the Git repository when the results
+were generated:
+</p>
+<pre><code>
+Ignored files:
+    Ignored:    .RData
+    Ignored:    .Rhistory
+    Ignored:    .Rproj.user/
+    Ignored:    data/ACresp_SNP_table.csv
+    Ignored:    data/ARR_SNP_table.csv
+    Ignored:    data/All_merged_peaks.tsv
+    Ignored:    data/CAD_gwas_dataframe.RDS
+    Ignored:    data/CTX_SNP_table.csv
+    Ignored:    data/Collapsed_expressed_NG_peak_table.csv
+    Ignored:    data/DEG_toplist_sep_n45.RDS
+    Ignored:    data/FRiP_first_run.txt
+    Ignored:    data/Final_four_data/
+    Ignored:    data/Frip_1_reads.csv
+    Ignored:    data/Frip_2_reads.csv
+    Ignored:    data/Frip_3_reads.csv
+    Ignored:    data/Frip_4_reads.csv
+    Ignored:    data/Frip_5_reads.csv
+    Ignored:    data/Frip_6_reads.csv
+    Ignored:    data/GO_KEGG_analysis/
+    Ignored:    data/HF_SNP_table.csv
+    Ignored:    data/Ind1_75DA24h_dedup_peaks.csv
+    Ignored:    data/Ind1_TSS_peaks.RDS
+    Ignored:    data/Ind1_firstfragment_files.txt
+    Ignored:    data/Ind1_fragment_files.txt
+    Ignored:    data/Ind1_peaks_list.RDS
+    Ignored:    data/Ind1_summary.txt
+    Ignored:    data/Ind2_TSS_peaks.RDS
+    Ignored:    data/Ind2_fragment_files.txt
+    Ignored:    data/Ind2_peaks_list.RDS
+    Ignored:    data/Ind2_summary.txt
+    Ignored:    data/Ind3_TSS_peaks.RDS
+    Ignored:    data/Ind3_fragment_files.txt
+    Ignored:    data/Ind3_peaks_list.RDS
+    Ignored:    data/Ind3_summary.txt
+    Ignored:    data/Ind4_79B24h_dedup_peaks.csv
+    Ignored:    data/Ind4_TSS_peaks.RDS
+    Ignored:    data/Ind4_V24h_fraglength.txt
+    Ignored:    data/Ind4_fragment_files.txt
+    Ignored:    data/Ind4_fragment_filesN.txt
+    Ignored:    data/Ind4_peaks_list.RDS
+    Ignored:    data/Ind4_summary.txt
+    Ignored:    data/Ind5_TSS_peaks.RDS
+    Ignored:    data/Ind5_fragment_files.txt
+    Ignored:    data/Ind5_fragment_filesN.txt
+    Ignored:    data/Ind5_peaks_list.RDS
+    Ignored:    data/Ind5_summary.txt
+    Ignored:    data/Ind6_TSS_peaks.RDS
+    Ignored:    data/Ind6_fragment_files.txt
+    Ignored:    data/Ind6_peaks_list.RDS
+    Ignored:    data/Ind6_summary.txt
+    Ignored:    data/Knowles_4.RDS
+    Ignored:    data/Knowles_5.RDS
+    Ignored:    data/Knowles_6.RDS
+    Ignored:    data/LiSiLTDNRe_TE_df.RDS
+    Ignored:    data/MI_gwas.RDS
+    Ignored:    data/SNP_GWAS_PEAK_MRC_id
+    Ignored:    data/SNP_GWAS_PEAK_MRC_id.csv
+    Ignored:    data/SNP_gene_cat_list.tsv
+    Ignored:    data/SNP_supp_schneider.RDS
+    Ignored:    data/TE_info/
+    Ignored:    data/TFmapnames.RDS
+    Ignored:    data/all_TSSE_scores.RDS
+    Ignored:    data/all_four_filtered_counts.txt
+    Ignored:    data/aln_run1_results.txt
+    Ignored:    data/anno_ind1_DA24h.RDS
+    Ignored:    data/anno_ind4_V24h.RDS
+    Ignored:    data/annotated_gwas_SNPS.csv
+    Ignored:    data/background_n45_he_peaks.RDS
+    Ignored:    data/cardiac_muscle_FRIP.csv
+    Ignored:    data/cardiomyocyte_FRIP.csv
+    Ignored:    data/col_ng_peak.csv
+    Ignored:    data/cormotif_full_4_run.RDS
+    Ignored:    data/cormotif_full_4_run_he.RDS
+    Ignored:    data/cormotif_full_6_run.RDS
+    Ignored:    data/cormotif_full_6_run_he.RDS
+    Ignored:    data/cormotif_probability_45_list.csv
+    Ignored:    data/cormotif_probability_45_list_he.csv
+    Ignored:    data/cormotif_probability_all_6_list.csv
+    Ignored:    data/cormotif_probability_all_6_list_he.csv
+    Ignored:    data/datasave.RDS
+    Ignored:    data/embryo_heart_FRIP.csv
+    Ignored:    data/enhancer_list_ENCFF126UHK.bed
+    Ignored:    data/enhancerdata/
+    Ignored:    data/filt_Peaks_efit2.RDS
+    Ignored:    data/filt_Peaks_efit2_bl.RDS
+    Ignored:    data/filt_Peaks_efit2_n45.RDS
+    Ignored:    data/first_Peaksummarycounts.csv
+    Ignored:    data/first_run_frag_counts.txt
+    Ignored:    data/full_bedfiles/
+    Ignored:    data/gene_ref.csv
+    Ignored:    data/gwas_1_dataframe.RDS
+    Ignored:    data/gwas_2_dataframe.RDS
+    Ignored:    data/gwas_3_dataframe.RDS
+    Ignored:    data/gwas_4_dataframe.RDS
+    Ignored:    data/gwas_5_dataframe.RDS
+    Ignored:    data/high_conf_peak_counts.csv
+    Ignored:    data/high_conf_peak_counts.txt
+    Ignored:    data/high_conf_peaks_bl_counts.txt
+    Ignored:    data/high_conf_peaks_counts.txt
+    Ignored:    data/hits_files/
+    Ignored:    data/hyper_files/
+    Ignored:    data/hypo_files/
+    Ignored:    data/ind1_DA24hpeaks.RDS
+    Ignored:    data/ind1_TSSE.RDS
+    Ignored:    data/ind2_TSSE.RDS
+    Ignored:    data/ind3_TSSE.RDS
+    Ignored:    data/ind4_TSSE.RDS
+    Ignored:    data/ind4_V24hpeaks.RDS
+    Ignored:    data/ind5_TSSE.RDS
+    Ignored:    data/ind6_TSSE.RDS
+    Ignored:    data/initial_complete_stats_run1.txt
+    Ignored:    data/left_ventricle_FRIP.csv
+    Ignored:    data/median_24_lfc.RDS
+    Ignored:    data/median_3_lfc.RDS
+    Ignored:    data/mergedPeads.gff
+    Ignored:    data/mergedPeaks.gff
+    Ignored:    data/motif_list_full
+    Ignored:    data/motif_list_n45
+    Ignored:    data/motif_list_n45.RDS
+    Ignored:    data/multiqc_fastqc_run1.txt
+    Ignored:    data/multiqc_fastqc_run2.txt
+    Ignored:    data/multiqc_genestat_run1.txt
+    Ignored:    data/multiqc_genestat_run2.txt
+    Ignored:    data/my_hc_filt_counts.RDS
+    Ignored:    data/my_hc_filt_counts_n45.RDS
+    Ignored:    data/n45_bedfiles/
+    Ignored:    data/n45_files
+    Ignored:    data/other_papers/
+    Ignored:    data/peakAnnoList_1.RDS
+    Ignored:    data/peakAnnoList_2.RDS
+    Ignored:    data/peakAnnoList_24_full.RDS
+    Ignored:    data/peakAnnoList_24_n45.RDS
+    Ignored:    data/peakAnnoList_3.RDS
+    Ignored:    data/peakAnnoList_3_full.RDS
+    Ignored:    data/peakAnnoList_3_n45.RDS
+    Ignored:    data/peakAnnoList_4.RDS
+    Ignored:    data/peakAnnoList_5.RDS
+    Ignored:    data/peakAnnoList_6.RDS
+    Ignored:    data/peakAnnoList_Eight.RDS
+    Ignored:    data/peakAnnoList_full_motif.RDS
+    Ignored:    data/peakAnnoList_n45_motif.RDS
+    Ignored:    data/siglist_full.RDS
+    Ignored:    data/siglist_n45.RDS
+    Ignored:    data/summarized_peaks_dataframe.txt
+    Ignored:    data/summary_peakIDandReHeat.csv
+    Ignored:    data/test.list.RDS
+    Ignored:    data/testnames.txt
+    Ignored:    data/toplist_6.RDS
+    Ignored:    data/toplist_full.RDS
+    Ignored:    data/toplist_full_DAR_6.RDS
+    Ignored:    data/toplist_n45.RDS
+    Ignored:    data/trimmed_seq_length.csv
+    Ignored:    data/unclassified_full_set_peaks.RDS
+    Ignored:    data/unclassified_n45_set_peaks.RDS
+    Ignored:    data/xstreme/
+
+Untracked files:
+    Untracked:  RNA_seq_integration.Rmd
+    Untracked:  analysis/Diagnosis-tmm.Rmd
+    Untracked:  analysis/Expressed_RNA_associations.Rmd
+    Untracked:  analysis/LFC_corr.Rmd
+    Untracked:  analysis/SVA.Rmd
+    Untracked:  analysis/Tan2020.Rmd
+    Untracked:  analysis/making_master_peaks_list.Rmd
+    Untracked:  analysis/my_hc_filt_counts.csv
+    Untracked:  code/IGV_snapshot_code.R
+    Untracked:  code/LongDARlist.R
+    Untracked:  code/just_for_Fun.R
+    Untracked:  output/cormotif_probability_45_list.csv
+    Untracked:  output/cormotif_probability_all_6_list.csv
+    Untracked:  setup.RData
+
+Unstaged changes:
+    Modified:   ATAC_learning.Rproj
+    Modified:   analysis/Jaspar_motif.Rmd
+    Modified:   analysis/Jaspar_motif_ff.Rmd
+    Modified:   analysis/final_four_analysis.Rmd
+    Modified:   analysis/index.Rmd
+
+</code></pre>
+<p>
+Note that any generated files, e.g. HTML, png, CSS, etc., are not
+included in this status report because it is ok for generated content to
+have uncommitted changes.
+</p>
+</div>
+</div>
+</div>
+</div>
+<hr>
+</div>
+<div id="versions" class="tab-pane fade">
+<p>
+These are the previous versions of the repository in which changes were
+made to the R Markdown (<code>analysis/RNA_seq_integration.Rmd</code>)
+and HTML (<code>docs/RNA_seq_integration.html</code>) files. If you’ve
+configured a remote Git repository (see <code>?wflow_git_remote</code>),
+click on the hyperlinks in the table below to view the files as they
+were in that past version.
+</p>
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+File
+</th>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+<th>
+Message
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+Rmd
+</td>
+<td>
+<a href="https://github.com/mward-lab/Matthews_cardiotox_ATAC_2025/blob/4ecab874d6123f14ba31af37dd7621bd4b5996ea/analysis/RNA_seq_integration.Rmd" target="_blank">4ecab87</a>
+</td>
+<td>
+reneeisnowhere
+</td>
+<td>
+2025-05-08
+</td>
+<td>
+new go analysis
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<hr>
+</div>
+</div>
+</div>
+<style type="text/css">
+pre {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+pre[class] {
+  max-height: 200px;
+}
+</style>
+<p>package loading</p>
+<pre class="r"><code>library(tidyverse)
+library(kableExtra)
+library(broom)
+library(RColorBrewer)
+library(gprofiler2)
+library(ChIPseeker)
+library(&quot;TxDb.Hsapiens.UCSC.hg38.knownGene&quot;)
+library(&quot;org.Hs.eg.db&quot;)
+library(rtracklayer)
+library(edgeR)
+library(ggfortify)
+library(limma)
+library(readr)
+library(BiocGenerics)
+library(gridExtra)
+library(VennDiagram)
+library(scales)
+library(ggVennDiagram)
+library(BiocParallel)
+library(ggpubr)
+library(biomaRt)</code></pre>
+<p>Loading RNA-seq data and ATAC region data</p>
+<pre class="r"><code>Collapsed_peaks &lt;- read_delim(&quot;data/Final_four_data/collapsed_new_peaks.txt&quot;,
+                              delim = &quot;\t&quot;, 
+                              escape_double = FALSE, 
+                              trim_ws = TRUE)
+
+Motif_list_gr &lt;- readRDS(&quot;data/Final_four_data/re_analysis/Motif_list_granges.RDS&quot;)
+##order specific
+df_list &lt;- plyr::llply(Motif_list_gr, as.data.frame)
+### no change motif_list_gr names so they do not overwrite the dataframes
+names(Motif_list_gr) &lt;- paste0(names(Motif_list_gr), &quot;_gr&quot;)
+list2env(Motif_list_gr,envir= .GlobalEnv)</code></pre>
+<pre><code>&lt;environment: R_GlobalEnv&gt;</code></pre>
+<pre class="r"><code>list2env(df_list,envir= .GlobalEnv)</code></pre>
+<pre><code>&lt;environment: R_GlobalEnv&gt;</code></pre>
+<pre class="r"><code>final_peaks_gr &lt;- Collapsed_peaks %&gt;% 
+  dplyr::filter(Peakid %in% mcols(all_regions_gr)$Peakid) %&gt;% 
+  GRanges()
+
+final_peaks &lt;- Collapsed_peaks %&gt;% 
+  dplyr::filter(Peakid %in% mcols(all_regions_gr)$Peakid) 
+
+mrc_lookup &lt;- bind_rows(
+  (EAR_open  %&gt;% dplyr::select(Peakid) %&gt;% mutate(mrc = &quot;EAR_open&quot;)),  
+  (EAR_close %&gt;%  dplyr::select(Peakid) %&gt;%mutate(mrc = &quot;EAR_close&quot;)),
+  (ESR_open  %&gt;%  dplyr::select(Peakid) %&gt;%mutate(mrc = &quot;ESR_open&quot;)),
+  (ESR_close %&gt;%  dplyr::select(Peakid) %&gt;%mutate(mrc = &quot;ESR_close&quot;)),
+  (ESR_opcl   %&gt;%  dplyr::select(Peakid) %&gt;%mutate(mrc = &quot;ESR_opcl&quot;)),
+  (ESR_clop   %&gt;%  dplyr::select(Peakid) %&gt;%mutate(mrc = &quot;ESR_clop&quot;)),
+  (LR_open   %&gt;%  dplyr::select(Peakid) %&gt;%mutate(mrc = &quot;LR_open&quot;)),
+  (LR_close  %&gt;%  dplyr::select(Peakid) %&gt;%mutate(mrc = &quot;LR_close&quot;)),
+  (NR        %&gt;%  dplyr::select(Peakid) %&gt;%mutate(mrc = &quot;NR&quot;))
+) %&gt;%
+  distinct(Peakid, mrc) 
+
+Collapsed_peaks %&gt;% 
+  left_join(., mrc_lookup, by = c(&quot;Peakid&quot;=&quot;Peakid&quot;))</code></pre>
+<pre><code># A tibble: 172,481 × 12
+   chr    start    end Peakid     NG_chr NG_start NG_end NG_TSS NCBI_gene SYMBOL
+   &lt;chr&gt;  &lt;dbl&gt;  &lt;dbl&gt; &lt;chr&gt;      &lt;chr&gt;  &lt;chr&gt;    &lt;chr&gt;  &lt;chr&gt;  &lt;chr&gt;     &lt;chr&gt; 
+ 1 chr1  180766 180946 chr1.1807… chr1   825137   868835 825138 643837    LINC0…
+ 2 chr1  181330 181576 chr1.1813… chr1   825137   868835 825138 643837    LINC0…
+ 3 chr1  191314 191869 chr1.1913… chr1   825137   868835 825138 643837    LINC0…
+ 4 chr1  267952 268047 chr1.2679… chr1   825137   868835 825138 643837    LINC0…
+ 5 chr1  629906 629985 chr1.6299… chr1   825137   868835 825138 643837    LINC0…
+ 6 chr1  633083 633560 chr1.6330… chr1   825137   868835 825138 643837    LINC0…
+ 7 chr1  633980 634076 chr1.6339… chr1   825137   868835 825138 643837    LINC0…
+ 8 chr1  778372 779265 chr1.7783… chr1   825137   868835 825138 643837    LINC0…
+ 9 chr1  821114 821757 chr1.8211… chr1   825137   868835 825138 643837    LINC0…
+10 chr1  826694 827783 chr1.8266… chr1   825137   868835 825138 643837    LINC0…
+# ℹ 172,471 more rows
+# ℹ 2 more variables: dist_to_NG &lt;dbl&gt;, mrc &lt;chr&gt;</code></pre>
+<pre class="r"><code>RNA_exp_genes &lt;- read.csv(&quot;data/other_papers/S13Table_Matthews2024.csv&quot;) %&gt;% 
+  dplyr::select(ENTREZID,SYMBOL)</code></pre>
+<pre class="r"><code>#### HOw I assigned expressed NG TSS to new peak file
+### export final peak
+a4gr &lt;- all_four_filt_counts %&gt;% 
+  dplyr::select(seqnames:Geneid) %&gt;% 
+  dplyr::rename(&quot;Peakid&quot;=Geneid) %&gt;% 
+  GRanges()
+
+###export as bedfile for analysis
+export(a4gr, &quot;data/Final_four_data/all_four_filt.bed&quot;, format = &quot;BED&quot;)
+
+###Import S13Table of exspressed RNA genes from Plos Genet. 2024 paper  
+expressed_Genes &lt;- S13Table_Matthews2024 %&gt;% dplyr::select(ENTREZID,SYMBOL)
+###Do the same with Grab the TSS file from biomart and export as bed file
+ ensembl &lt;- useEnsembl(biomart = &quot;genes&quot;, dataset = &quot;hsapiens_gene_ensembl&quot;)
+my_attributes &lt;- c(&#39;chromosome_name&#39;, &#39;start_position&#39;, &#39;end_position&#39;,&#39;entrezgene_id&#39;, &#39;hgnc_symbol&#39;)
+# searchAttributes(mart = ensembl, pattern = &quot;refseq&quot;)
+# searchDatasets(mart=ensembl,pattern=&quot;NCBI&quot;)
+gene_list &lt;- getBM(attributes=my_attributes,
+      filters = &quot;hgnc_symbol&quot;,
+        values = expressed_Genes$SYMBOL,
+      mart = ensembl)
+gene_list_Final &lt;- gene_list %&gt;% 
+  dplyr::filter(!is.na(entrezgene_id)) %&gt;%
+  mutate(chr = if_else(chromosome_name == &quot;X&quot;, &quot;chrX&quot;,
+      if_else(chromosome_name == &quot;Y&quot;, &quot;chrY&quot;, paste0(&quot;chr&quot;,chromosome_name)))) %&gt;% 
+  mutate(chromosome_name=as.numeric(chromosome_name)) %&gt;% 
+  mutate(chromosome_name=if_else(!is.na(chromosome_name),chr,
+   if_else(nchar(chr)&lt;5,chr,&quot;NA_character&quot;))) %&gt;% 
+  dplyr::filter(chromosome_name!=&quot;NA_character&quot;)
+  
+# saveRDS(gene_list_Final,&quot;data/other_papers/RNA_expressed_gene_list_final.RDS&quot;)
+
+# write.csv(gene_ref,&quot;data/gene_ref.csv&quot;)
+# listFilters(ensembl)
+####
+# gene_ref &lt;- read.csv(&quot;data/gene_ref.csv&quot;)
+# gene_full_list &lt;- gene_list %&gt;% 
+#   mutate(chromosome_name=as.numeric(chromosome_name))%&gt;% 
+#   # filter(!is.na(chromosome_name)) #%&gt;% 
+#   na.omit(.)
+#   dplyr::select(chromosome_name,start_position,end_position,entrezgene_id,ensembl_gene_id)
+
+
+
+### I performed the bedtools using cli. I moved the files to the correct directory on my hardrive to do this.
+# bedtools closest -a all_four_filt.bed -b All_TSS_NGs.bed -D b &gt;assigned_newNGbyTSS.bed
+#### This file only has the tss, I had to link the geneIDs and symbols and names using the lookup_table (contains TSS, Start and end, ENTREZID, ensembl_id,and SYMBOL)
+## I did learn a better way later, but the information was the same so I keep using the old file
+
+ lookup_table &lt;- read.csv(&quot;data/Final_four_data/expressedgene_lookuptable.csv&quot;, row.names = 1)
+ # saveRDS(lt1,&quot;data/Final_four_data/updated_RNA_gene_lookuptable&quot;)
+lt1&lt;- readRDS(&quot;data/Final_four_data/updated_RNA_gene_lookuptable&quot;)
+ # lt1 &lt;- gene_list_Final %&gt;%
+ #   group_by(chromosome_name,start_position) %&gt;%
+ # summarise(NG_end=paste(min(end_position)),
+ #            ENTREZID=paste(unique(entrezgene_id),collapse=&quot;:&quot;),
+ #            SYMBOL=paste(unique(hgnc_symbol),collapse=&quot;:&quot;),.groups=&quot;drop&quot;) %&gt;%  #add_row(chromosome_name=&quot;chr11&quot;,start_position=1995165,NG_end=&quot;2004552&quot;,ENTREZID=&quot;283120&quot;,SYMBOL=&quot;H19&quot;) %&gt;%
+ #   add_row(chromosome_name=&quot;chr16&quot;,start_position=18571161,NG_end=&quot;18571162&quot;,ENTREZID=&quot;653190&quot;,SYMBOL=&quot;ABCC6P1&quot;) %&gt;%
+ #   add_row(chromosome_name=&quot;chr1&quot;,start_position=69217759,NG_end=&quot;69217760&quot;,ENTREZID=&quot;64946&quot;,SYMBOL=&quot;CENPH&quot;)
+
+NG_assigned_table &lt;- read_delim(&quot;data/Final_four_data/assigned_newNGbyTSS.bed&quot;, col_names = FALSE)
+lt1_gr &lt;- lt1 %&gt;% 
+  dplyr::rename(&quot;seqnames&quot;=&quot;chromosome_name&quot;, &quot;start&quot;=&quot;start_position&quot;, &quot;end&quot;= &quot;NG_end&quot;) %&gt;% GRanges()
+  
+
+          
+TSS_NG_table &lt;- NG_assigned_table %&gt;% 
+  dplyr::rename(&quot;chr&quot;=X1,
+         &quot;start&quot;=X2,
+         &quot;end&quot;= X3,
+         &quot;Peakid&quot;=X6,
+         &quot;NG_chr&quot;=X7,
+         &quot;NG_start&quot;=X8 ,
+         &quot;NG_end&quot;=X9 ,
+         &quot;dist_to_NG&quot;=X13) %&gt;% 
+  ##dropping the other columns
+    dplyr::select(chr:end,Peakid:NG_end,dist_to_NG) %&gt;% 
+  ###removing a doubling of a Peakid and choosing the row with the smallest distance
+  group_by(Peakid) %&gt;% 
+   slice_min(dist_to_NG)
+
+# anti_table &lt;- lookup_table %&gt;% ###56 ENTREZGENEIDS
+#   mutate(ENTREZID=as.numeric(ENTREZID)) %&gt;% 
+#   dplyr::filter(!ENTREZID %in%gene_list_Final$entrezgene_id)
+  # anti_join(gene_list_Final, by=c(&quot;NG_chr&quot;=&quot;chromosome_name&quot;, &quot;NG_start&quot;=&quot;start_position&quot;, &#39;NG_end&#39;= &quot;end_position&quot;, &quot;ENTREZID&quot;=&quot;entrezgene_id&quot;)) #%&gt;% 
+  # dplyr::select(NG_chr:SYMBOL)
+     # dplyr::filter(ENTREZID!=entrezgene_id)
+ # rbind(lookup_table %&gt;% mutate(ENTREZID=as.numeric(ENTREZID)) %&gt;% 
+  # anti_join(gene_list_Final, by=c(&quot;NG_chr&quot;=&quot;chromosome_name&quot;, &quot;NG_start&quot;=&quot;start_position&quot;, &#39;NG_end&#39;= &quot;end_position&quot;, &quot;ENTREZID&quot;=&quot;entrezgene_id&quot;)))
+  
+  
+  
+collapsed_lookup_table &lt;-   lookup_table %&gt;% group_by(NG_chr,NG_start,SYMBOL) %&gt;% 
+     summarize(NG_end=min(NG_end),
+               ENTREZID=paste(unique(ENTREZID),collapse=&quot;:&quot;),
+                 SYMBOL=paste(unique(SYMBOL),collapse=&quot;:&quot;), .groups=&quot;drop&quot;) 
+  
+
+not_matched &lt;- TSS_NG_table %&gt;% 
+  GRanges()
+    # left_join(., lt1, by= c(&quot;NG_chr&quot;=&quot;chromosome_name&quot;,&quot;NG_end&quot;=&quot;start_position&quot;)) %&gt;% 
+    # dplyr::filter(is.na(SYMBOL))  
+   
+ retest &lt;- join_overlap_intersect(not_matched,lt1_gr)
+# lookup_table_match &lt;- 
+  test &lt;- not_matched %&gt;% 
+   dplyr::select(chr:dist_to_NG) %&gt;%
+    ungroup() %&gt;% 
+      # dplyr::filter(NG_start %in% lt1$start_position) %&gt;% 
+       left_join(., collapsed_lookup_table, by=c(&quot;NG_chr&quot;=&quot;NG_chr&quot;,&quot;NG_start&quot;=&quot;NG_start&quot;))
+  
+  retest %&gt;% 
+    as.data.frame  %&gt;% 
+    group_by(Peakid) %&gt;% 
+    tally %&gt;% 
+    filter(n&gt;1)
+  
+
+matched_up &lt;- TSS_NG_table %&gt;% 
+    left_join(., lt1, by= c(&quot;NG_chr&quot;=&quot;chromosome_name&quot;,&quot;NG_end&quot;=&quot;start_position&quot;)) %&gt;% 
+  left_join(., collapsed_lookup_table,by=c(&quot;NG_chr&quot;=&quot;NG_chr&quot;, &quot;NG_start&quot;=&quot;NG_end&quot;))
+    
+TSS_NG_table &lt;- matched_up %&gt;% 
+  dplyr::rename(&quot;NG_end&quot;=&quot;NG_end.y&quot;, &quot;NG_TSS&quot;=NG_end) %&gt;% ungroup() %&gt;% 
+  mutate(SYMBOL= if_else(!is.na(SYMBOL.x)&amp;!is.na(SYMBOL.y),paste0(SYMBOL.x,&quot;:&quot;,SYMBOL.y), if_else(!is.na(SYMBOL.x) &amp; is.na(SYMBOL.y),SYMBOL.x,if_else(is.na(SYMBOL.x)&amp;!is.na(SYMBOL.y),SYMBOL.x,SYMBOL.y)))) %&gt;% 
+  mutate(ENTREZID= if_else(!is.na(ENTREZID.x)&amp;!is.na(ENTREZID.y),paste0(ENTREZID.x,&quot;:&quot;,ENTREZID.y), if_else(!is.na(ENTREZID.x) &amp; is.na(ENTREZID.y),ENTREZID.x,if_else(is.na(ENTREZID.x)&amp;!is.na(ENTREZID.y),ENTREZID.x,ENTREZID.y)))) %&gt;% 
+  dplyr::select(chr:NG_start,NG_end,NG_TSS,ENTREZID,SYMBOL,dist_to_NG) #%&gt;%
+  # write_delim(.,&quot;data/Final_four_data/TSS_assigned_NG.txt&quot;,delim = &quot;\t&quot;,col_names = TRUE)
+
+### Collapsing the table to only one entry per region (some regions have more than one gene assigned)    
+
+
+Collapsed_new_peaks &lt;- TSS_NG_table %&gt;% 
+  group_by(chr, start, end, Peakid) %&gt;%
+    summarise(chr=paste(unique(chr)),
+              start=paste(unique(start)),
+              end=paste(unique(end)),
+              NG_chr=paste(NG_chr,collapse=&quot;:&quot;),
+              NG_start=paste(NG_start,collapse=&quot;:&quot;),
+              NG_end=paste(NG_end,collapse=&quot;:&quot;),
+              NG_TSS=paste(NG_TSS,collapse=&quot;:&quot;),
+              NCBI_gene = paste(unique(ENTREZID),collapse=&quot;,&quot;),
+              # ensembl_ID= paste(unique(ensembl_id),collapse = &quot;,&quot;),
+              SYMBOL= paste(unique(SYMBOL),collapse = &quot;,&quot;) , 
+              dist_to_NG =min(dist_to_NG))
+ write_delim(Collapsed_new_peaks,&quot;data/Final_four_data/collapsed_new_peaks.txt&quot;,delim = &quot;\t&quot;,col_names = TRUE)</code></pre>
+<div
+id="first-step-was-to-get-an-idea-if-response-clusters-had-a-pattern-or-enrichments-of-gobiological-processes-that-are-interesting-for-us."
+class="section level3">
+<h3>First step was to get an idea if response clusters had a pattern or
+enrichments of <a href="GO:Biological" class="uri">GO:Biological</a>
+Processes that are interesting for us.</h3>
+<pre class="r"><code>near_Genes &lt;- final_peaks %&gt;% 
+  left_join(., mrc_lookup, by = c(&quot;Peakid&quot;=&quot;Peakid&quot;))
+
+EAR_open_genes &lt;- near_Genes %&gt;% 
+  dplyr::filter(mrc==&quot;EAR_open&quot;) %&gt;% 
+  dplyr::filter(dist_to_NG &gt;-2000 &amp; dist_to_NG&lt;2000) %&gt;% 
+  distinct(NCBI_gene) %&gt;% 
+  separate_rows(NCBI_gene, sep=&quot;,&quot;)%&gt;% 
+  separate_rows(NCBI_gene, sep=&quot;:&quot;)%&gt;% 
+  distinct()
+EAR_close_genes &lt;- near_Genes %&gt;% 
+  dplyr::filter(mrc==&quot;EAR_close&quot;) %&gt;% 
+  dplyr::filter(dist_to_NG &gt;-2000 &amp; dist_to_NG&lt;2000) %&gt;% 
+  distinct(NCBI_gene) %&gt;% 
+  separate_rows(NCBI_gene, sep=&quot;,&quot;)%&gt;% 
+  separate_rows(NCBI_gene, sep=&quot;:&quot;)%&gt;% 
+  distinct()
+ESR_open_genes &lt;- near_Genes %&gt;% 
+  dplyr::filter(mrc==&quot;ESR_open&quot;) %&gt;% 
+  dplyr::filter(dist_to_NG &gt;-2000 &amp; dist_to_NG&lt;2000) %&gt;% 
+  distinct(NCBI_gene) %&gt;% 
+  separate_rows(NCBI_gene, sep=&quot;,&quot;)%&gt;% 
+  separate_rows(NCBI_gene, sep=&quot;:&quot;)%&gt;% 
+  distinct()
+ESR_close_genes &lt;- near_Genes %&gt;% 
+  dplyr::filter(mrc==&quot;ESR_close&quot;) %&gt;% 
+  dplyr::filter(dist_to_NG &gt;-2000 &amp; dist_to_NG&lt;2000) %&gt;% 
+  distinct(NCBI_gene) %&gt;% 
+  separate_rows(NCBI_gene, sep=&quot;,&quot;)%&gt;% 
+  separate_rows(NCBI_gene, sep=&quot;:&quot;)%&gt;% 
+  distinct()
+ESR_clop_genes &lt;- near_Genes %&gt;% 
+  dplyr::filter(mrc==&quot;ESR_clop&quot;) %&gt;% 
+ dplyr::filter(dist_to_NG &gt;-2000 &amp; dist_to_NG&lt;2000) %&gt;% 
+  distinct(NCBI_gene) %&gt;% 
+  separate_rows(NCBI_gene, sep=&quot;,&quot;)%&gt;% 
+  separate_rows(NCBI_gene, sep=&quot;:&quot;)%&gt;% 
+  distinct()
+ESR_opcl_genes &lt;- near_Genes %&gt;% 
+  dplyr::filter(mrc==&quot;ESR_opcl&quot;) %&gt;% 
+  dplyr::filter(dist_to_NG &gt;-2000 &amp; dist_to_NG&lt;2000) %&gt;% 
+  distinct(NCBI_gene) %&gt;% 
+  separate_rows(NCBI_gene, sep=&quot;,&quot;)%&gt;% 
+  separate_rows(NCBI_gene, sep=&quot;:&quot;)%&gt;% 
+  distinct()
+LR_open_genes &lt;- near_Genes %&gt;% 
+  dplyr::filter(mrc==&quot;LR_open&quot;) %&gt;% 
+  dplyr::filter(dist_to_NG &gt;-2000&amp;dist_to_NG&lt;2000) %&gt;% 
+  distinct(NCBI_gene) %&gt;% 
+  separate_rows(NCBI_gene, sep=&quot;,&quot;)%&gt;% 
+  separate_rows(NCBI_gene, sep=&quot;:&quot;)%&gt;% 
+  distinct()
+
+LR_close_genes &lt;- near_Genes %&gt;% 
+  dplyr::filter(mrc==&quot;LR_close&quot;) %&gt;% 
+  dplyr::filter(dist_to_NG &gt;-2000&amp;dist_to_NG&lt;2000) %&gt;% 
+  distinct(NCBI_gene) %&gt;% 
+  separate_rows(NCBI_gene, sep=&quot;,&quot;)%&gt;% 
+  separate_rows(NCBI_gene, sep=&quot;:&quot;)%&gt;% 
+  distinct()
+  
+
+NR_genes &lt;- near_Genes %&gt;% 
+  dplyr::filter(mrc==&quot;NR&quot;) %&gt;% 
+   dplyr::filter(dist_to_NG &gt;-2000&amp;dist_to_NG&lt;2000) %&gt;% 
+  distinct(NCBI_gene) %&gt;% 
+  separate_rows(NCBI_gene, sep=&quot;,&quot;)%&gt;% 
+  separate_rows(NCBI_gene, sep=&quot;:&quot;)%&gt;% 
+  distinct()</code></pre>
+<pre class="r"><code>LR_close_2kresgenes &lt;- gost(query = LR_close_genes$NCBI_gene,
+                    organism = &quot;hsapiens&quot;,
+                    significant = FALSE,
+                    ordered_query = FALSE,
+                    domain_scope = &quot;custom&quot;,
+                    measure_underrepresentation = FALSE,
+                    evcodes = FALSE,
+                    user_threshold = 0.05,
+                    correction_method = c(&quot;fdr&quot;),
+                    custom_bg = RNA_exp_genes$ENTREZID,
+                    sources=c(&quot;GO:BP&quot;,&quot;KEGG&quot;))
+
+
+
+saveRDS(LR_close_2kresgenes,&quot;data/Final_four_data/re_analysis/GO_analysis/LR_close_2kresgenes.RDS&quot;)</code></pre>
+<pre class="r"><code>EAR_open_2kresgenes &lt;- readRDS(&quot;data/Final_four_data/re_analysis/GO_analysis/EAR_open_2kresgenes.RDS&quot;)
+ESR_open_2kresgenes &lt;- readRDS(&quot;data/Final_four_data/re_analysis/GO_analysis/ESR_open_2kresgenes.RDS&quot;)
+LR_open_2kresgenes &lt;- readRDS(&quot;data/Final_four_data/re_analysis/GO_analysis/LR_open_2kresgenes.RDS&quot;)
+EAR_close_2kresgenes &lt;- readRDS(&quot;data/Final_four_data/re_analysis/GO_analysis/EAR_close_2kresgenes.RDS&quot;)
+ESR_close_2kresgenes &lt;- readRDS(&quot;data/Final_four_data/re_analysis/GO_analysis/ESR_close_2kresgenes.RDS&quot;)
+LR_close_2kresgenes &lt;- readRDS(&quot;data/Final_four_data/re_analysis/GO_analysis/LR_close_2kresgenes.RDS&quot;)
+
+ESR_clop_2kresgenes &lt;- readRDS(&quot;data/Final_four_data/re_analysis/GO_analysis/ESR_clop_2kresgenes.RDS&quot;)
+ESR_opcl_2kresgenes &lt;- readRDS(&quot;data/Final_four_data/re_analysis/GO_analysis/ESR_opcl_2kresgenes.RDS&quot;)
+
+NR_2kresgenes &lt;- readRDS(&quot;data/Final_four_data/re_analysis/GO_analysis/NR_2kresgenes.RDS&quot;)</code></pre>
+<pre class="r"><code>GO_KEGG_analysis &lt;- function(df,type, setp_value=1){
+# Extract the name of the dataframe
+  a &lt;- deparse(substitute(df)) %&gt;% 
+  gsub(&quot;_2kresgenes&quot;,&quot;&quot;,.)
+
+ # Prepare the table output
+  df_nomtable &lt;-  df$result %&gt;% 
+  dplyr::select(c(source, term_id,
+                  term_name,intersection_size, 
+                   term_size, p_value))
+# Create a color palette for different dataframe names
+  # You can customize this color palette as needed  
+  
+  mrc_palette &lt;- c(
+    &quot;EAR_open&quot; = &quot;#F8766D&quot;,
+    &quot;EAR_close&quot; = &quot;#f6483c&quot;,
+    &quot;ESR_open&quot; = &quot;#7CAE00&quot;,
+    &quot;ESR_close&quot; = &quot;#587b00&quot;,
+    &quot;ESR_opcl&quot; = &quot;cornflowerblue&quot;,
+    &quot;ESR_clop&quot;= &quot;grey60&quot;,
+     &quot;LR_open&quot; = &quot;#00BFC4&quot;,
+     &quot;LR_close&quot; = &quot;#008d91&quot;,
+     &quot;NR&quot; = &quot;#C77CFF&quot;
+  )
+   # Use the dataframe name as the fill color (fallback to black if name is not in the palette)
+   fill_color &lt;- mrc_palette[a] %||% &quot;darkgrey&quot;
+   
+table &lt;- df_nomtable %&gt;%
+  dplyr::filter(source==type) %&gt;% 
+  dplyr::filter(p_value &lt; setp_value) %&gt;% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %&gt;%
+  kable(.,caption = paste0(&quot;Significant (p &lt; &quot;,setp_value,&quot; ) &quot;,type,&quot; terms found in &quot;,a,&quot; neargenes&quot;)) %&gt;%
+  kable_paper(&quot;striped&quot;, full_width = FALSE) %&gt;%
+  kable_styling(
+    full_width = FALSE,
+    position = &quot;left&quot;,
+    bootstrap_options = c(&quot;striped&quot;, &quot;hover&quot;)
+  ) %&gt;%
+  scroll_box(width = &quot;100%&quot;, height = &quot;400px&quot;)
+
+# plot the table as ggplot object
+plot &lt;- df_nomtable %&gt;%
+  filter(source==type) %&gt;% 
+  # slice_head(n=10) %&gt;% 
+    dplyr::filter(p_value &lt; setp_value) %&gt;% 
+  mutate(log10_p=(-log(p_value, base=10))) %&gt;% 
+  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
+    geom_col(fill=fill_color)+
+  geom_vline(aes(xintercept=-log(0.05,base = 10)), col=&quot;red&quot;,linetype = 2)+
+  theme_bw()+
+  ylab(&quot;&quot;)+
+  xlab(paste0(&quot;-log10 p-value&quot;))+
+  guides(fill=&quot;none&quot;)+
+  theme(axis.text.y = element_text(color=&quot;black&quot;),
+        base_size=18)+
+  ggtitle(paste0(&quot;(p &lt; &quot;,setp_value,&quot; ) &quot;,type,&quot; terms found in\n &quot;,a,&quot; neargenes&quot;))
+
+
+print(table)
+print(plot)
+}</code></pre>
+<pre class="r"><code>GO_KEGG_analysis(EAR_open_2kresgenes,&quot;GO:BP&quot;, setp_value=0.05)</code></pre>
+<pre><code>&lt;div style=&quot;border: 1px solid #ddd; padding: 0px; overflow-y: scroll; height:400px; overflow-x: scroll; width:100%; &quot;&gt;&lt;table class=&quot; lightable-paper lightable-striped table table-striped table-hover&quot; style=&#39;font-family: &quot;Arial Narrow&quot;, arial, helvetica, sans-serif; width: auto !important; margin-left: auto; margin-right: auto; width: auto !important; &#39;&gt;
+&lt;caption&gt;Significant (p &amp;lt; 0.05 ) GO:BP terms found in EAR_open neargenes&lt;/caption&gt;
+ &lt;thead&gt;
+  &lt;tr&gt;
+   &lt;th style=&quot;text-align:left;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; source &lt;/th&gt;
+   &lt;th style=&quot;text-align:left;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; term_id &lt;/th&gt;
+   &lt;th style=&quot;text-align:left;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; term_name &lt;/th&gt;
+   &lt;th style=&quot;text-align:right;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; intersection_size &lt;/th&gt;
+   &lt;th style=&quot;text-align:right;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; term_size &lt;/th&gt;
+   &lt;th style=&quot;text-align:left;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; p_value &lt;/th&gt;
+  &lt;/tr&gt;
+ &lt;/thead&gt;
+&lt;tbody&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0006139 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; nucleobase-containing compound metabolic process &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 301 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 4474 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 6.85e-04 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0090304 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; nucleic acid metabolic process &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 272 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 4031 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 1.90e-03 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0010467 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; gene expression &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 313 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 4785 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 1.91e-03 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0009059 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; macromolecule biosynthetic process &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 330 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 5150 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 4.45e-03 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0034654 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; nucleobase-containing compound biosynthetic process &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 250 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 3757 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 6.79e-03 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0009987 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; cellular process &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 657 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 11760 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 6.79e-03 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0016070 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; RNA metabolic process &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 240 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 3580 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 6.79e-03 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0141187 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; nucleic acid biosynthetic process &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 237 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 3518 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 6.79e-03 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0006364 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; rRNA processing &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 28 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 218 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 7.56e-03 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0008150 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; biological_process &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 669 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 12052 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 7.60e-03 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0071840 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; cellular component organization or biogenesis &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 335 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 5336 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 9.73e-03 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0016072 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; rRNA metabolic process &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 30 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 254 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 1.34e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0042254 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; ribosome biogenesis &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 34 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 304 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 1.34e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0043170 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; macromolecule metabolic process &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 418 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 6936 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 1.53e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0009058 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; biosynthetic process &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 363 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 5923 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 2.27e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0032774 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; RNA biosynthetic process &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 225 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 3417 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 2.33e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0006325 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; chromatin organization &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 59 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 669 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 2.33e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0034476 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; U5 snRNA 3&#39;-end processing &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 3 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 3 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 4.53e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0034473 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; U1 snRNA 3&#39;-end processing &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 3 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 3 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 4.53e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;&lt;/div&gt;</code></pre>
+<p><img src="figure/RNA_seq_integration.Rmd/just%20BP-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>GO_KEGG_analysis(EAR_close_2kresgenes,&quot;GO:BP&quot;, setp_value=0.05)</code></pre>
+<pre><code>&lt;div style=&quot;border: 1px solid #ddd; padding: 0px; overflow-y: scroll; height:400px; overflow-x: scroll; width:100%; &quot;&gt;&lt;table class=&quot; lightable-paper lightable-striped table table-striped table-hover&quot; style=&#39;font-family: &quot;Arial Narrow&quot;, arial, helvetica, sans-serif; width: auto !important; margin-left: auto; margin-right: auto; width: auto !important; &#39;&gt;
+&lt;caption&gt;Significant (p &amp;lt; 0.05 ) GO:BP terms found in EAR_close neargenes&lt;/caption&gt;
+ &lt;thead&gt;
+  &lt;tr&gt;
+   &lt;th style=&quot;text-align:left;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; source &lt;/th&gt;
+   &lt;th style=&quot;text-align:left;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; term_id &lt;/th&gt;
+   &lt;th style=&quot;text-align:left;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; term_name &lt;/th&gt;
+   &lt;th style=&quot;text-align:right;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; intersection_size &lt;/th&gt;
+   &lt;th style=&quot;text-align:right;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; term_size &lt;/th&gt;
+   &lt;th style=&quot;text-align:left;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; p_value &lt;/th&gt;
+  &lt;/tr&gt;
+ &lt;/thead&gt;
+&lt;tbody&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0009605 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; response to external stimulus &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 18 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 1400 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 3.27e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0048513 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; animal organ development &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 23 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 2135 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 3.27e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;&lt;/div&gt;</code></pre>
+<p><img src="figure/RNA_seq_integration.Rmd/just%20BP-2.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>GO_KEGG_analysis(ESR_open_2kresgenes,&quot;GO:BP&quot;, setp_value=0.05)</code></pre>
+<pre><code>&lt;div style=&quot;border: 1px solid #ddd; padding: 0px; overflow-y: scroll; height:400px; overflow-x: scroll; width:100%; &quot;&gt;&lt;table class=&quot; lightable-paper lightable-striped table table-striped table-hover&quot; style=&#39;font-family: &quot;Arial Narrow&quot;, arial, helvetica, sans-serif; width: auto !important; margin-left: auto; margin-right: auto; width: auto !important; &#39;&gt;
+&lt;caption&gt;Significant (p &amp;lt; 0.05 ) GO:BP terms found in ESR_open neargenes&lt;/caption&gt;
+ &lt;thead&gt;
+  &lt;tr&gt;
+   &lt;th style=&quot;text-align:left;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; source &lt;/th&gt;
+   &lt;th style=&quot;text-align:left;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; term_id &lt;/th&gt;
+   &lt;th style=&quot;text-align:left;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; term_name &lt;/th&gt;
+   &lt;th style=&quot;text-align:right;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; intersection_size &lt;/th&gt;
+   &lt;th style=&quot;text-align:right;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; term_size &lt;/th&gt;
+   &lt;th style=&quot;text-align:left;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; p_value &lt;/th&gt;
+  &lt;/tr&gt;
+ &lt;/thead&gt;
+&lt;tbody&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0032502 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; developmental process &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 148 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 4488 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 3.15e-03 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0050793 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; regulation of developmental process &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 73 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 1800 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 4.35e-03 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0060425 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; lung morphogenesis &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 8 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 42 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 5.35e-03 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0030154 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; cell differentiation &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 104 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 2995 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 5.35e-03 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0042482 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; positive regulation of odontogenesis &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 4 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 7 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 5.35e-03 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0008283 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; cell population proliferation &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 58 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 1389 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 5.35e-03 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0048869 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; cellular developmental process &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 104 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 2996 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 5.35e-03 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0048856 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; anatomical structure development &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 135 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 4143 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 5.35e-03 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0003278 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; apoptotic process involved in heart morphogenesis &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 4 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 6 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 5.35e-03 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:2000736 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; regulation of stem cell differentiation &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 10 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 74 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 5.35e-03 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:2000026 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; regulation of multicellular organismal development &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 46 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 1014 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 5.85e-03 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0048568 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; embryonic organ development &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 21 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 317 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 6.75e-03 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0051094 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; positive regulation of developmental process &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 44 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 970 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 6.75e-03 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0045892 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; negative regulation of DNA-templated transcription &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 46 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 1030 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 6.75e-03 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0048863 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; stem cell differentiation &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 16 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 198 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 6.75e-03 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:1902679 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; negative regulation of RNA biosynthetic process &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 46 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 1040 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 7.61e-03 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0048732 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; gland development &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 21 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 324 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 7.95e-03 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0051384 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; response to glucocorticoid &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 10 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 89 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 1.15e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0007165 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; signal transduction &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 123 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 3853 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 1.63e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0042471 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; ear morphogenesis &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 9 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 76 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 1.63e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0007423 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; sensory organ development &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 23 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 400 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 1.64e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0048839 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; inner ear development &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 12 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 135 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 1.64e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0043583 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; ear development &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 13 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 155 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 1.64e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0042481 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; regulation of odontogenesis &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 4 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 11 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 1.64e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0042472 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; inner ear morphogenesis &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 8 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 62 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 1.78e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0000122 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; negative regulation of transcription by RNA polymerase II &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 35 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 757 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 1.85e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0008150 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; biological_process &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 305 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 12052 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 1.85e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0007275 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; multicellular organism development &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 110 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 3392 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 1.85e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0003431 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; growth plate cartilage chondrocyte development &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 3 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 5 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 1.87e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0032808 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; lacrimal gland development &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 3 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 5 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 1.87e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0060070 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; canonical Wnt signaling pathway &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 17 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 257 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 1.95e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0031960 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; response to corticosteroid &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 10 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 103 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 2.24e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0045934 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; negative regulation of nucleobase-containing compound metabolic process &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 49 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 1226 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 2.50e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0051253 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; negative regulation of RNA metabolic process &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 46 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 1130 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 2.58e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0009890 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; negative regulation of biosynthetic process &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 64 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 1744 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 2.60e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0045595 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; regulation of cell differentiation &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 46 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 1136 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 2.75e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0003433 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; chondrocyte development involved in endochondral bone morphogenesis &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 3 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 6 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 2.97e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0048468 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; cell development &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 71 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 2006 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 2.99e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0010558 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; negative regulation of macromolecule biosynthetic process &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 62 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 1693 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 3.17e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0035265 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; organ growth &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 11 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 132 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 3.31e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0110110 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; positive regulation of animal organ morphogenesis &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 5 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 26 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 3.39e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0090103 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; cochlea morphogenesis &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 4 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 15 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 3.41e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:1902036 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; regulation of hematopoietic stem cell differentiation &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 4 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 15 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 3.41e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0009888 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; tissue development &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 54 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 1426 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 3.41e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0090596 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; sensory organ morphogenesis &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 13 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 181 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 3.41e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0022603 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; regulation of anatomical structure morphogenesis &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 30 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 650 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 3.41e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0023052 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; signaling &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 128 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 4191 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 3.41e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0048513 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; animal organ development &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 74 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 2135 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 3.41e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0032501 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; multicellular organismal process &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 139 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 4631 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 3.41e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0060429 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; epithelium development &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 36 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 839 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 3.48e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0042487 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; regulation of odontogenesis of dentin-containing tooth &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 3 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 7 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 3.62e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0007154 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; cell communication &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 128 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 4204 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 3.62e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0009987 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; cellular process &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 298 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 11760 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 3.62e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0045597 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; positive regulation of cell differentiation &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 29 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 628 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 3.79e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0008285 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; negative regulation of cell population proliferation &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 25 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 511 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 3.89e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0060038 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; cardiac muscle cell proliferation &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 6 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 43 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 3.89e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0030855 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; epithelial cell differentiation &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 23 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 453 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 3.89e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:2000738 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; positive regulation of stem cell differentiation &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 4 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 17 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 4.38e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0030097 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; hemopoiesis &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 30 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 669 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 4.42e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0001837 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; epithelial to mesenchymal transition &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 11 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 143 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 4.42e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0045823 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; positive regulation of heart contraction &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 5 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 30 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 4.43e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0060218 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; hematopoietic stem cell differentiation &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 5 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 30 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 4.43e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:1903524 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; positive regulation of blood circulation &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 5 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 30 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 4.43e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0003418 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; growth plate cartilage chondrocyte differentiation &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 3 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 8 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 4.64e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0045637 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; regulation of myeloid cell differentiation &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 11 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 146 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 4.81e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0048523 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; negative regulation of cellular process &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 119 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 3901 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 4.88e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0016055 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; Wnt signaling pathway &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 20 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 380 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 4.90e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0042476 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; odontogenesis &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 8 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 83 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 4.97e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;&lt;/div&gt;</code></pre>
+<p><img src="figure/RNA_seq_integration.Rmd/just%20BP-3.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>GO_KEGG_analysis(ESR_close_2kresgenes,&quot;GO:BP&quot;, setp_value=0.05)</code></pre>
+<pre><code>&lt;div style=&quot;border: 1px solid #ddd; padding: 0px; overflow-y: scroll; height:400px; overflow-x: scroll; width:100%; &quot;&gt;&lt;table class=&quot; lightable-paper lightable-striped table table-striped table-hover&quot; style=&#39;font-family: &quot;Arial Narrow&quot;, arial, helvetica, sans-serif; width: auto !important; margin-left: auto; margin-right: auto; width: auto !important; &#39;&gt;
+&lt;caption&gt;Significant (p &amp;lt; 0.05 ) GO:BP terms found in ESR_close neargenes&lt;/caption&gt;
+ &lt;thead&gt;
+  &lt;tr&gt;
+   &lt;th style=&quot;text-align:left;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; source &lt;/th&gt;
+   &lt;th style=&quot;text-align:left;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; term_id &lt;/th&gt;
+   &lt;th style=&quot;text-align:left;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; term_name &lt;/th&gt;
+   &lt;th style=&quot;text-align:right;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; intersection_size &lt;/th&gt;
+   &lt;th style=&quot;text-align:right;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; term_size &lt;/th&gt;
+   &lt;th style=&quot;text-align:left;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; p_value &lt;/th&gt;
+  &lt;/tr&gt;
+ &lt;/thead&gt;
+&lt;tbody&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0032501 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; multicellular organismal process &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 139 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 4631 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 6.90e-04 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0030001 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; metal ion transport &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 29 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 551 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 1.03e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0048731 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; system development &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 92 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 2909 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 1.03e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0007275 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; multicellular organism development &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 103 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 3392 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 1.03e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0072359 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; circulatory system development &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 39 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 899 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 1.03e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0098660 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; inorganic ion transmembrane transport &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 28 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 553 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 1.03e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0060047 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; heart contraction &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 15 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 199 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 1.17e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0003015 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; heart process &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 15 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 209 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 1.25e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0030154 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; cell differentiation &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 92 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 2995 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 1.25e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0045760 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; positive regulation of action potential &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 3 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 4 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 1.25e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0048869 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; cellular developmental process &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 92 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 2996 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 1.25e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0044057 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; regulation of system process &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 22 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 399 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 1.25e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0006812 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; monoatomic cation transport &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 30 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 650 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 1.32e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0006813 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; potassium ion transport &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 12 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 145 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 1.32e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0034220 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; monoatomic ion transmembrane transport &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 29 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 627 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 1.32e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0003008 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; system process &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 46 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 1208 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 1.32e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0006816 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; calcium ion transport &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 17 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 267 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 1.32e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0008016 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; regulation of heart contraction &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 13 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 169 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 1.32e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0098662 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; inorganic cation transmembrane transport &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 25 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 508 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 1.43e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0006811 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; monoatomic ion transport &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 33 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 767 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 1.43e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0048646 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; anatomical structure formation involved in morphogenesis &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 36 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 874 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 1.46e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0055117 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; regulation of cardiac muscle contraction &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 8 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 67 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 1.46e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0010959 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; regulation of metal ion transport &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 16 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 253 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 1.59e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0098655 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; monoatomic cation transmembrane transport &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 25 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 523 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 1.89e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0070633 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; transepithelial transport &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 5 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 24 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 1.98e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0051924 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; regulation of calcium ion transport &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 12 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 158 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 1.98e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0048856 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; anatomical structure development &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 116 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 4143 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 2.12e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0023052 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; signaling &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 117 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 4191 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 2.13e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0007154 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; cell communication &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 117 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 4204 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 2.37e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0009888 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; tissue development &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 50 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 1426 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 2.51e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0048729 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; tissue morphogenesis &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 23 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 480 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 2.68e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0043269 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; regulation of monoatomic ion transport &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 17 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 301 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 2.73e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0003007 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; heart morphogenesis &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 14 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 222 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 3.11e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0042127 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; regulation of cell population proliferation &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 42 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 1146 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 3.11e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0007165 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; signal transduction &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 108 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 3853 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 3.22e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:1903522 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; regulation of blood circulation &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 13 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 199 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 3.39e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0048513 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; animal organ development &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 67 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 2135 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 3.64e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0035725 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; sodium ion transmembrane transport &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 9 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 104 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 3.64e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0006942 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; regulation of striated muscle contraction &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 8 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 83 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 3.64e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0006937 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; regulation of muscle contraction &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 10 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 128 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 3.74e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0051239 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; regulation of multicellular organismal process &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 64 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 2028 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 4.12e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0009653 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; anatomical structure morphogenesis &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 62 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 1957 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 4.57e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0030239 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; myofibril assembly &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 7 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 67 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 4.63e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0032502 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; developmental process &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 121 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 4488 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 4.63e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0006936 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; muscle contraction &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 15 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 268 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 4.79e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0001738 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; morphogenesis of a polarized epithelium &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 6 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 49 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 4.79e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0070588 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; calcium ion transmembrane transport &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 13 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 212 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 4.79e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0007507 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; heart development &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 23 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 516 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 4.81e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;&lt;/div&gt;</code></pre>
+<p><img src="figure/RNA_seq_integration.Rmd/just%20BP-4.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>GO_KEGG_analysis(ESR_opcl_2kresgenes,&quot;GO:BP&quot;, setp_value=0.05)</code></pre>
+<pre><code>&lt;div style=&quot;border: 1px solid #ddd; padding: 0px; overflow-y: scroll; height:400px; overflow-x: scroll; width:100%; &quot;&gt;&lt;table class=&quot; lightable-paper lightable-striped table table-striped table-hover&quot; style=&#39;font-family: &quot;Arial Narrow&quot;, arial, helvetica, sans-serif; width: auto !important; margin-left: auto; margin-right: auto; width: auto !important; &#39;&gt;
+&lt;caption&gt;Significant (p &amp;lt; 0.05 ) GO:BP terms found in ESR_opcl neargenes&lt;/caption&gt;
+ &lt;thead&gt;
+  &lt;tr&gt;
+   &lt;th style=&quot;text-align:left;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; source &lt;/th&gt;
+   &lt;th style=&quot;text-align:left;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; term_id &lt;/th&gt;
+   &lt;th style=&quot;text-align:left;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; term_name &lt;/th&gt;
+   &lt;th style=&quot;text-align:right;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; intersection_size &lt;/th&gt;
+   &lt;th style=&quot;text-align:right;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; term_size &lt;/th&gt;
+   &lt;th style=&quot;text-align:left;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; p_value &lt;/th&gt;
+  &lt;/tr&gt;
+ &lt;/thead&gt;
+&lt;tbody&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; NA &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; NA &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; NA &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; NA &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; NA &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; NA &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; :------ &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; :------- &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; :--------- &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; -----------------: &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; ---------: &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; :------- &lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;&lt;/div&gt;</code></pre>
+<p><img src="figure/RNA_seq_integration.Rmd/just%20BP-5.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>GO_KEGG_analysis(ESR_clop_2kresgenes,&quot;GO:BP&quot;, setp_value=0.05)</code></pre>
+<pre><code>&lt;div style=&quot;border: 1px solid #ddd; padding: 0px; overflow-y: scroll; height:400px; overflow-x: scroll; width:100%; &quot;&gt;&lt;table class=&quot; lightable-paper lightable-striped table table-striped table-hover&quot; style=&#39;font-family: &quot;Arial Narrow&quot;, arial, helvetica, sans-serif; width: auto !important; margin-left: auto; margin-right: auto; width: auto !important; &#39;&gt;
+&lt;caption&gt;Significant (p &amp;lt; 0.05 ) GO:BP terms found in ESR_clop neargenes&lt;/caption&gt;
+ &lt;thead&gt;
+  &lt;tr&gt;
+   &lt;th style=&quot;text-align:left;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; source &lt;/th&gt;
+   &lt;th style=&quot;text-align:left;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; term_id &lt;/th&gt;
+   &lt;th style=&quot;text-align:left;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; term_name &lt;/th&gt;
+   &lt;th style=&quot;text-align:right;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; intersection_size &lt;/th&gt;
+   &lt;th style=&quot;text-align:right;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; term_size &lt;/th&gt;
+   &lt;th style=&quot;text-align:left;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; p_value &lt;/th&gt;
+  &lt;/tr&gt;
+ &lt;/thead&gt;
+&lt;tbody&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; NA &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; NA &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; NA &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; NA &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; NA &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; NA &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; :------ &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; :------- &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; :--------- &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; -----------------: &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; ---------: &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; :------- &lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;&lt;/div&gt;</code></pre>
+<p><img src="figure/RNA_seq_integration.Rmd/just%20BP-6.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>GO_KEGG_analysis(LR_open_2kresgenes,&quot;GO:BP&quot;, setp_value=0.05)</code></pre>
+<pre><code>&lt;div style=&quot;border: 1px solid #ddd; padding: 0px; overflow-y: scroll; height:400px; overflow-x: scroll; width:100%; &quot;&gt;&lt;table class=&quot; lightable-paper lightable-striped table table-striped table-hover&quot; style=&#39;font-family: &quot;Arial Narrow&quot;, arial, helvetica, sans-serif; width: auto !important; margin-left: auto; margin-right: auto; width: auto !important; &#39;&gt;
+&lt;caption&gt;Significant (p &amp;lt; 0.05 ) GO:BP terms found in LR_open neargenes&lt;/caption&gt;
+ &lt;thead&gt;
+  &lt;tr&gt;
+   &lt;th style=&quot;text-align:left;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; source &lt;/th&gt;
+   &lt;th style=&quot;text-align:left;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; term_id &lt;/th&gt;
+   &lt;th style=&quot;text-align:left;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; term_name &lt;/th&gt;
+   &lt;th style=&quot;text-align:right;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; intersection_size &lt;/th&gt;
+   &lt;th style=&quot;text-align:right;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; term_size &lt;/th&gt;
+   &lt;th style=&quot;text-align:left;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; p_value &lt;/th&gt;
+  &lt;/tr&gt;
+ &lt;/thead&gt;
+&lt;tbody&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; NA &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; NA &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; NA &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; NA &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; NA &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; NA &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; :------ &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; :------- &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; :--------- &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; -----------------: &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; ---------: &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; :------- &lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;&lt;/div&gt;</code></pre>
+<p><img src="figure/RNA_seq_integration.Rmd/just%20BP-7.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>GO_KEGG_analysis(LR_close_2kresgenes,&quot;GO:BP&quot;, setp_value=0.05)</code></pre>
+<pre><code>&lt;div style=&quot;border: 1px solid #ddd; padding: 0px; overflow-y: scroll; height:400px; overflow-x: scroll; width:100%; &quot;&gt;&lt;table class=&quot; lightable-paper lightable-striped table table-striped table-hover&quot; style=&#39;font-family: &quot;Arial Narrow&quot;, arial, helvetica, sans-serif; width: auto !important; margin-left: auto; margin-right: auto; width: auto !important; &#39;&gt;
+&lt;caption&gt;Significant (p &amp;lt; 0.05 ) GO:BP terms found in LR_close neargenes&lt;/caption&gt;
+ &lt;thead&gt;
+  &lt;tr&gt;
+   &lt;th style=&quot;text-align:left;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; source &lt;/th&gt;
+   &lt;th style=&quot;text-align:left;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; term_id &lt;/th&gt;
+   &lt;th style=&quot;text-align:left;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; term_name &lt;/th&gt;
+   &lt;th style=&quot;text-align:right;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; intersection_size &lt;/th&gt;
+   &lt;th style=&quot;text-align:right;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; term_size &lt;/th&gt;
+   &lt;th style=&quot;text-align:left;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; p_value &lt;/th&gt;
+  &lt;/tr&gt;
+ &lt;/thead&gt;
+&lt;tbody&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; NA &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; NA &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; NA &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; NA &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; NA &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; NA &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; :------ &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; :------- &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; :--------- &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; -----------------: &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; ---------: &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; :------- &lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;&lt;/div&gt;</code></pre>
+<p><img src="figure/RNA_seq_integration.Rmd/just%20BP-8.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>GO_KEGG_analysis(NR_2kresgenes,&quot;GO:BP&quot;, setp_value=0.05)</code></pre>
+<pre><code>&lt;div style=&quot;border: 1px solid #ddd; padding: 0px; overflow-y: scroll; height:400px; overflow-x: scroll; width:100%; &quot;&gt;&lt;table class=&quot; lightable-paper lightable-striped table table-striped table-hover&quot; style=&#39;font-family: &quot;Arial Narrow&quot;, arial, helvetica, sans-serif; width: auto !important; margin-left: auto; margin-right: auto; width: auto !important; &#39;&gt;
+&lt;caption&gt;Significant (p &amp;lt; 0.05 ) GO:BP terms found in NR neargenes&lt;/caption&gt;
+ &lt;thead&gt;
+  &lt;tr&gt;
+   &lt;th style=&quot;text-align:left;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; source &lt;/th&gt;
+   &lt;th style=&quot;text-align:left;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; term_id &lt;/th&gt;
+   &lt;th style=&quot;text-align:left;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; term_name &lt;/th&gt;
+   &lt;th style=&quot;text-align:right;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; intersection_size &lt;/th&gt;
+   &lt;th style=&quot;text-align:right;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; term_size &lt;/th&gt;
+   &lt;th style=&quot;text-align:left;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; p_value &lt;/th&gt;
+  &lt;/tr&gt;
+ &lt;/thead&gt;
+&lt;tbody&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0008150 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; biological_process &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 5425 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 12052 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 8.35e-17 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0009987 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; cellular process &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 5295 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 11760 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 7.32e-14 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:BP &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; GO:0050794 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; regulation of cellular process &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 3519 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 7763 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 6.73e-03 &lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;&lt;/div&gt;</code></pre>
+<p><img src="figure/RNA_seq_integration.Rmd/just%20BP-9.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>GO_KEGG_analysis(EAR_open_2kresgenes,&quot;KEGG&quot;, setp_value=0.05)</code></pre>
+<pre><code>&lt;div style=&quot;border: 1px solid #ddd; padding: 0px; overflow-y: scroll; height:400px; overflow-x: scroll; width:100%; &quot;&gt;&lt;table class=&quot; lightable-paper lightable-striped table table-striped table-hover&quot; style=&#39;font-family: &quot;Arial Narrow&quot;, arial, helvetica, sans-serif; width: auto !important; margin-left: auto; margin-right: auto; width: auto !important; &#39;&gt;
+&lt;caption&gt;Significant (p &amp;lt; 0.05 ) KEGG terms found in EAR_open neargenes&lt;/caption&gt;
+ &lt;thead&gt;
+  &lt;tr&gt;
+   &lt;th style=&quot;text-align:left;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; source &lt;/th&gt;
+   &lt;th style=&quot;text-align:left;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; term_id &lt;/th&gt;
+   &lt;th style=&quot;text-align:left;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; term_name &lt;/th&gt;
+   &lt;th style=&quot;text-align:right;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; intersection_size &lt;/th&gt;
+   &lt;th style=&quot;text-align:right;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; term_size &lt;/th&gt;
+   &lt;th style=&quot;text-align:left;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; p_value &lt;/th&gt;
+  &lt;/tr&gt;
+ &lt;/thead&gt;
+&lt;tbody&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; NA &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; NA &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; NA &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; NA &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; NA &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; NA &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; :------ &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; :------- &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; :--------- &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; -----------------: &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; ---------: &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; :------- &lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;&lt;/div&gt;</code></pre>
+<p><img src="figure/RNA_seq_integration.Rmd/just%20KEGG-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>GO_KEGG_analysis(EAR_close_2kresgenes,&quot;KEGG&quot;, setp_value=0.05)</code></pre>
+<pre><code>&lt;div style=&quot;border: 1px solid #ddd; padding: 0px; overflow-y: scroll; height:400px; overflow-x: scroll; width:100%; &quot;&gt;&lt;table class=&quot; lightable-paper lightable-striped table table-striped table-hover&quot; style=&#39;font-family: &quot;Arial Narrow&quot;, arial, helvetica, sans-serif; width: auto !important; margin-left: auto; margin-right: auto; width: auto !important; &#39;&gt;
+&lt;caption&gt;Significant (p &amp;lt; 0.05 ) KEGG terms found in EAR_close neargenes&lt;/caption&gt;
+ &lt;thead&gt;
+  &lt;tr&gt;
+   &lt;th style=&quot;text-align:left;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; source &lt;/th&gt;
+   &lt;th style=&quot;text-align:left;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; term_id &lt;/th&gt;
+   &lt;th style=&quot;text-align:left;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; term_name &lt;/th&gt;
+   &lt;th style=&quot;text-align:right;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; intersection_size &lt;/th&gt;
+   &lt;th style=&quot;text-align:right;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; term_size &lt;/th&gt;
+   &lt;th style=&quot;text-align:left;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; p_value &lt;/th&gt;
+  &lt;/tr&gt;
+ &lt;/thead&gt;
+&lt;tbody&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; NA &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; NA &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; NA &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; NA &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; NA &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; NA &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; :------ &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; :------- &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; :--------- &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; -----------------: &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; ---------: &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; :------- &lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;&lt;/div&gt;</code></pre>
+<p><img src="figure/RNA_seq_integration.Rmd/just%20KEGG-2.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>GO_KEGG_analysis(ESR_open_2kresgenes,&quot;KEGG&quot;, setp_value=0.05)</code></pre>
+<pre><code>&lt;div style=&quot;border: 1px solid #ddd; padding: 0px; overflow-y: scroll; height:400px; overflow-x: scroll; width:100%; &quot;&gt;&lt;table class=&quot; lightable-paper lightable-striped table table-striped table-hover&quot; style=&#39;font-family: &quot;Arial Narrow&quot;, arial, helvetica, sans-serif; width: auto !important; margin-left: auto; margin-right: auto; width: auto !important; &#39;&gt;
+&lt;caption&gt;Significant (p &amp;lt; 0.05 ) KEGG terms found in ESR_open neargenes&lt;/caption&gt;
+ &lt;thead&gt;
+  &lt;tr&gt;
+   &lt;th style=&quot;text-align:left;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; source &lt;/th&gt;
+   &lt;th style=&quot;text-align:left;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; term_id &lt;/th&gt;
+   &lt;th style=&quot;text-align:left;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; term_name &lt;/th&gt;
+   &lt;th style=&quot;text-align:right;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; intersection_size &lt;/th&gt;
+   &lt;th style=&quot;text-align:right;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; term_size &lt;/th&gt;
+   &lt;th style=&quot;text-align:left;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; p_value &lt;/th&gt;
+  &lt;/tr&gt;
+ &lt;/thead&gt;
+&lt;tbody&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; KEGG &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; KEGG:05206 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; MicroRNAs in cancer &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 13 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 149 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 1.32e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; KEGG &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; KEGG:05216 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; Thyroid cancer &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 6 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 35 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 1.88e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; KEGG &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; KEGG:04934 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; Cushing syndrome &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 10 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 120 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 4.60e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; KEGG &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; KEGG:04024 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; cAMP signaling pathway &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 11 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 150 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 4.91e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; KEGG &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; KEGG:05217 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; Basal cell carcinoma &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 6 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 49 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 4.91e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;&lt;/div&gt;</code></pre>
+<p><img src="figure/RNA_seq_integration.Rmd/just%20KEGG-3.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>GO_KEGG_analysis(ESR_close_2kresgenes,&quot;KEGG&quot;, setp_value=0.05)</code></pre>
+<pre><code>&lt;div style=&quot;border: 1px solid #ddd; padding: 0px; overflow-y: scroll; height:400px; overflow-x: scroll; width:100%; &quot;&gt;&lt;table class=&quot; lightable-paper lightable-striped table table-striped table-hover&quot; style=&#39;font-family: &quot;Arial Narrow&quot;, arial, helvetica, sans-serif; width: auto !important; margin-left: auto; margin-right: auto; width: auto !important; &#39;&gt;
+&lt;caption&gt;Significant (p &amp;lt; 0.05 ) KEGG terms found in ESR_close neargenes&lt;/caption&gt;
+ &lt;thead&gt;
+  &lt;tr&gt;
+   &lt;th style=&quot;text-align:left;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; source &lt;/th&gt;
+   &lt;th style=&quot;text-align:left;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; term_id &lt;/th&gt;
+   &lt;th style=&quot;text-align:left;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; term_name &lt;/th&gt;
+   &lt;th style=&quot;text-align:right;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; intersection_size &lt;/th&gt;
+   &lt;th style=&quot;text-align:right;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; term_size &lt;/th&gt;
+   &lt;th style=&quot;text-align:left;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; p_value &lt;/th&gt;
+  &lt;/tr&gt;
+ &lt;/thead&gt;
+&lt;tbody&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; KEGG &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; KEGG:05414 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; Dilated cardiomyopathy &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 9 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 84 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 1.56e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; KEGG &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; KEGG:04814 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; Motor proteins &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 11 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 149 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 2.45e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; KEGG &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; KEGG:05410 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; Hypertrophic cardiomyopathy &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 8 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 79 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 2.45e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;&lt;/div&gt;</code></pre>
+<p><img src="figure/RNA_seq_integration.Rmd/just%20KEGG-4.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>GO_KEGG_analysis(ESR_opcl_2kresgenes,&quot;KEGG&quot;, setp_value=0.05)</code></pre>
+<pre><code>&lt;div style=&quot;border: 1px solid #ddd; padding: 0px; overflow-y: scroll; height:400px; overflow-x: scroll; width:100%; &quot;&gt;&lt;table class=&quot; lightable-paper lightable-striped table table-striped table-hover&quot; style=&#39;font-family: &quot;Arial Narrow&quot;, arial, helvetica, sans-serif; width: auto !important; margin-left: auto; margin-right: auto; width: auto !important; &#39;&gt;
+&lt;caption&gt;Significant (p &amp;lt; 0.05 ) KEGG terms found in ESR_opcl neargenes&lt;/caption&gt;
+ &lt;thead&gt;
+  &lt;tr&gt;
+   &lt;th style=&quot;text-align:left;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; source &lt;/th&gt;
+   &lt;th style=&quot;text-align:left;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; term_id &lt;/th&gt;
+   &lt;th style=&quot;text-align:left;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; term_name &lt;/th&gt;
+   &lt;th style=&quot;text-align:right;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; intersection_size &lt;/th&gt;
+   &lt;th style=&quot;text-align:right;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; term_size &lt;/th&gt;
+   &lt;th style=&quot;text-align:left;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; p_value &lt;/th&gt;
+  &lt;/tr&gt;
+ &lt;/thead&gt;
+&lt;tbody&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; KEGG &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; KEGG:04152 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; AMPK signaling pathway &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 2 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 102 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 2.4e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; KEGG &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; KEGG:04936 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; Alcoholic liver disease &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 2 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 97 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 2.4e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;&lt;/div&gt;</code></pre>
+<p><img src="figure/RNA_seq_integration.Rmd/just%20KEGG-5.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>GO_KEGG_analysis(ESR_clop_2kresgenes,&quot;KEGG&quot;, setp_value=0.05)</code></pre>
+<pre><code>&lt;div style=&quot;border: 1px solid #ddd; padding: 0px; overflow-y: scroll; height:400px; overflow-x: scroll; width:100%; &quot;&gt;&lt;table class=&quot; lightable-paper lightable-striped table table-striped table-hover&quot; style=&#39;font-family: &quot;Arial Narrow&quot;, arial, helvetica, sans-serif; width: auto !important; margin-left: auto; margin-right: auto; width: auto !important; &#39;&gt;
+&lt;caption&gt;Significant (p &amp;lt; 0.05 ) KEGG terms found in ESR_clop neargenes&lt;/caption&gt;
+ &lt;thead&gt;
+  &lt;tr&gt;
+   &lt;th style=&quot;text-align:left;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; source &lt;/th&gt;
+   &lt;th style=&quot;text-align:left;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; term_id &lt;/th&gt;
+   &lt;th style=&quot;text-align:left;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; term_name &lt;/th&gt;
+   &lt;th style=&quot;text-align:right;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; intersection_size &lt;/th&gt;
+   &lt;th style=&quot;text-align:right;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; term_size &lt;/th&gt;
+   &lt;th style=&quot;text-align:left;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; p_value &lt;/th&gt;
+  &lt;/tr&gt;
+ &lt;/thead&gt;
+&lt;tbody&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; KEGG &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; KEGG:00051 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; Fructose and mannose metabolism &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 1 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 27 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 4.75e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; KEGG &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; KEGG:04115 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; p53 signaling pathway &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 1 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 66 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 4.88e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; KEGG &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; KEGG:04152 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; AMPK signaling pathway &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 1 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 102 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 4.88e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; KEGG &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; KEGG:04919 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; Thyroid hormone signaling pathway &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 1 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 112 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 4.88e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;&lt;/div&gt;</code></pre>
+<p><img src="figure/RNA_seq_integration.Rmd/just%20KEGG-6.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>GO_KEGG_analysis(LR_open_2kresgenes,&quot;KEGG&quot;, setp_value=0.05)</code></pre>
+<pre><code>&lt;div style=&quot;border: 1px solid #ddd; padding: 0px; overflow-y: scroll; height:400px; overflow-x: scroll; width:100%; &quot;&gt;&lt;table class=&quot; lightable-paper lightable-striped table table-striped table-hover&quot; style=&#39;font-family: &quot;Arial Narrow&quot;, arial, helvetica, sans-serif; width: auto !important; margin-left: auto; margin-right: auto; width: auto !important; &#39;&gt;
+&lt;caption&gt;Significant (p &amp;lt; 0.05 ) KEGG terms found in LR_open neargenes&lt;/caption&gt;
+ &lt;thead&gt;
+  &lt;tr&gt;
+   &lt;th style=&quot;text-align:left;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; source &lt;/th&gt;
+   &lt;th style=&quot;text-align:left;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; term_id &lt;/th&gt;
+   &lt;th style=&quot;text-align:left;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; term_name &lt;/th&gt;
+   &lt;th style=&quot;text-align:right;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; intersection_size &lt;/th&gt;
+   &lt;th style=&quot;text-align:right;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; term_size &lt;/th&gt;
+   &lt;th style=&quot;text-align:left;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; p_value &lt;/th&gt;
+  &lt;/tr&gt;
+ &lt;/thead&gt;
+&lt;tbody&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; NA &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; NA &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; NA &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; NA &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; NA &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; NA &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; :------ &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; :------- &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; :--------- &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; -----------------: &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; ---------: &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; :------- &lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;&lt;/div&gt;</code></pre>
+<p><img src="figure/RNA_seq_integration.Rmd/just%20KEGG-7.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>GO_KEGG_analysis(LR_close_2kresgenes,&quot;KEGG&quot;, setp_value=0.05)</code></pre>
+<pre><code>&lt;div style=&quot;border: 1px solid #ddd; padding: 0px; overflow-y: scroll; height:400px; overflow-x: scroll; width:100%; &quot;&gt;&lt;table class=&quot; lightable-paper lightable-striped table table-striped table-hover&quot; style=&#39;font-family: &quot;Arial Narrow&quot;, arial, helvetica, sans-serif; width: auto !important; margin-left: auto; margin-right: auto; width: auto !important; &#39;&gt;
+&lt;caption&gt;Significant (p &amp;lt; 0.05 ) KEGG terms found in LR_close neargenes&lt;/caption&gt;
+ &lt;thead&gt;
+  &lt;tr&gt;
+   &lt;th style=&quot;text-align:left;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; source &lt;/th&gt;
+   &lt;th style=&quot;text-align:left;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; term_id &lt;/th&gt;
+   &lt;th style=&quot;text-align:left;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; term_name &lt;/th&gt;
+   &lt;th style=&quot;text-align:right;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; intersection_size &lt;/th&gt;
+   &lt;th style=&quot;text-align:right;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; term_size &lt;/th&gt;
+   &lt;th style=&quot;text-align:left;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; p_value &lt;/th&gt;
+  &lt;/tr&gt;
+ &lt;/thead&gt;
+&lt;tbody&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; NA &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; NA &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; NA &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; NA &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; NA &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; NA &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; :------ &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; :------- &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; :--------- &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; -----------------: &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; ---------: &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; :------- &lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;&lt;/div&gt;</code></pre>
+<p><img src="figure/RNA_seq_integration.Rmd/just%20KEGG-8.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>GO_KEGG_analysis(NR_2kresgenes,&quot;KEGG&quot;, setp_value=0.05)</code></pre>
+<pre><code>&lt;div style=&quot;border: 1px solid #ddd; padding: 0px; overflow-y: scroll; height:400px; overflow-x: scroll; width:100%; &quot;&gt;&lt;table class=&quot; lightable-paper lightable-striped table table-striped table-hover&quot; style=&#39;font-family: &quot;Arial Narrow&quot;, arial, helvetica, sans-serif; width: auto !important; margin-left: auto; margin-right: auto; width: auto !important; &#39;&gt;
+&lt;caption&gt;Significant (p &amp;lt; 0.05 ) KEGG terms found in NR neargenes&lt;/caption&gt;
+ &lt;thead&gt;
+  &lt;tr&gt;
+   &lt;th style=&quot;text-align:left;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; source &lt;/th&gt;
+   &lt;th style=&quot;text-align:left;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; term_id &lt;/th&gt;
+   &lt;th style=&quot;text-align:left;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; term_name &lt;/th&gt;
+   &lt;th style=&quot;text-align:right;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; intersection_size &lt;/th&gt;
+   &lt;th style=&quot;text-align:right;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; term_size &lt;/th&gt;
+   &lt;th style=&quot;text-align:left;position: sticky; top:0; background-color: #FFFFFF;&quot;&gt; p_value &lt;/th&gt;
+  &lt;/tr&gt;
+ &lt;/thead&gt;
+&lt;tbody&gt;
+  &lt;tr&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; KEGG &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; KEGG:00000 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; KEGG root term &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 2636 &lt;/td&gt;
+   &lt;td style=&quot;text-align:right;&quot;&gt; 5801 &lt;/td&gt;
+   &lt;td style=&quot;text-align:left;&quot;&gt; 3.95e-02 &lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;&lt;/div&gt;</code></pre>
+<p><img src="figure/RNA_seq_integration.Rmd/just%20KEGG-9.png" width="672" style="display: block; margin: auto;" /></p>
+</div>
+<div id="rna-seq-genes-and-atac-data" class="section level3">
+<h3>RNA-seq genes and ATAC data</h3>
+<p>after assigning expressed genes to nearest peaks and collecting
+differences, I also wanted to look at LFC between associated ATAC peaks
+and nearby expressed genes.</p>
+<br>
+<p>
+<button type="button" class="btn btn-default btn-workflowr btn-workflowr-sessioninfo" data-toggle="collapse" data-target="#workflowr-sessioninfo" style="display: block;">
+<span class="glyphicon glyphicon-wrench" aria-hidden="true"></span>
+Session information
+</button>
+</p>
+<div id="workflowr-sessioninfo" class="collapse">
+<pre class="r"><code>sessionInfo()</code></pre>
+<pre><code>R version 4.4.2 (2024-10-31 ucrt)
+Platform: x86_64-w64-mingw32/x64
+Running under: Windows 11 x64 (build 26100)
+
+Matrix products: default
+
+
+locale:
+[1] LC_COLLATE=English_United States.utf8 
+[2] LC_CTYPE=English_United States.utf8   
+[3] LC_MONETARY=English_United States.utf8
+[4] LC_NUMERIC=C                          
+[5] LC_TIME=English_United States.utf8    
+
+time zone: America/Chicago
+tzcode source: internal
+
+attached base packages:
+[1] grid      stats4    stats     graphics  grDevices utils     datasets 
+[8] methods   base     
+
+other attached packages:
+ [1] biomaRt_2.62.1                          
+ [2] ggpubr_0.6.0                            
+ [3] BiocParallel_1.40.0                     
+ [4] ggVennDiagram_1.5.2                     
+ [5] scales_1.3.0                            
+ [6] VennDiagram_1.7.3                       
+ [7] futile.logger_1.4.3                     
+ [8] gridExtra_2.3                           
+ [9] ggfortify_0.4.17                        
+[10] edgeR_4.4.2                             
+[11] limma_3.62.2                            
+[12] rtracklayer_1.66.0                      
+[13] org.Hs.eg.db_3.20.0                     
+[14] TxDb.Hsapiens.UCSC.hg38.knownGene_3.20.0
+[15] GenomicFeatures_1.58.0                  
+[16] AnnotationDbi_1.68.0                    
+[17] Biobase_2.66.0                          
+[18] GenomicRanges_1.58.0                    
+[19] GenomeInfoDb_1.42.3                     
+[20] IRanges_2.40.1                          
+[21] S4Vectors_0.44.0                        
+[22] BiocGenerics_0.52.0                     
+[23] ChIPseeker_1.42.1                       
+[24] gprofiler2_0.2.3                        
+[25] RColorBrewer_1.1-3                      
+[26] broom_1.0.7                             
+[27] kableExtra_1.4.0                        
+[28] lubridate_1.9.4                         
+[29] forcats_1.0.0                           
+[30] stringr_1.5.1                           
+[31] dplyr_1.1.4                             
+[32] purrr_1.0.4                             
+[33] readr_2.1.5                             
+[34] tidyr_1.3.1                             
+[35] tibble_3.2.1                            
+[36] ggplot2_3.5.1                           
+[37] tidyverse_2.0.0                         
+[38] workflowr_1.7.1                         
+
+loaded via a namespace (and not attached):
+  [1] splines_4.4.2                          
+  [2] later_1.4.1                            
+  [3] BiocIO_1.16.0                          
+  [4] filelock_1.0.3                         
+  [5] bitops_1.0-9                           
+  [6] ggplotify_0.1.2                        
+  [7] R.oo_1.27.0                            
+  [8] XML_3.99-0.18                          
+  [9] httr2_1.1.1                            
+ [10] lifecycle_1.0.4                        
+ [11] rstatix_0.7.2                          
+ [12] rprojroot_2.0.4                        
+ [13] vroom_1.6.5                            
+ [14] processx_3.8.6                         
+ [15] lattice_0.22-6                         
+ [16] backports_1.5.0                        
+ [17] magrittr_2.0.3                         
+ [18] plotly_4.10.4                          
+ [19] sass_0.4.9                             
+ [20] rmarkdown_2.29                         
+ [21] jquerylib_0.1.4                        
+ [22] yaml_2.3.10                            
+ [23] plotrix_3.8-4                          
+ [24] httpuv_1.6.15                          
+ [25] ggtangle_0.0.6                         
+ [26] cowplot_1.1.3                          
+ [27] DBI_1.2.3                              
+ [28] abind_1.4-8                            
+ [29] zlibbioc_1.52.0                        
+ [30] R.utils_2.13.0                         
+ [31] RCurl_1.98-1.16                        
+ [32] yulab.utils_0.2.0                      
+ [33] rappdirs_0.3.3                         
+ [34] git2r_0.35.0                           
+ [35] GenomeInfoDbData_1.2.13                
+ [36] enrichplot_1.26.6                      
+ [37] ggrepel_0.9.6                          
+ [38] tidytree_0.4.6                         
+ [39] svglite_2.1.3                          
+ [40] codetools_0.2-20                       
+ [41] DelayedArray_0.32.0                    
+ [42] DOSE_4.0.0                             
+ [43] xml2_1.3.7                             
+ [44] tidyselect_1.2.1                       
+ [45] aplot_0.2.5                            
+ [46] UCSC.utils_1.2.0                       
+ [47] farver_2.1.2                           
+ [48] BiocFileCache_2.14.0                   
+ [49] matrixStats_1.5.0                      
+ [50] GenomicAlignments_1.42.0               
+ [51] jsonlite_1.9.1                         
+ [52] Formula_1.2-5                          
+ [53] systemfonts_1.2.1                      
+ [54] progress_1.2.3                         
+ [55] tools_4.4.2                            
+ [56] treeio_1.30.0                          
+ [57] TxDb.Hsapiens.UCSC.hg19.knownGene_3.2.2
+ [58] Rcpp_1.0.14                            
+ [59] glue_1.8.0                             
+ [60] SparseArray_1.6.2                      
+ [61] xfun_0.51                              
+ [62] qvalue_2.38.0                          
+ [63] MatrixGenerics_1.18.1                  
+ [64] withr_3.0.2                            
+ [65] formatR_1.14                           
+ [66] fastmap_1.2.0                          
+ [67] boot_1.3-31                            
+ [68] callr_3.7.6                            
+ [69] caTools_1.18.3                         
+ [70] digest_0.6.37                          
+ [71] timechange_0.3.0                       
+ [72] R6_2.6.1                               
+ [73] gridGraphics_0.5-1                     
+ [74] colorspace_2.1-1                       
+ [75] GO.db_3.20.0                           
+ [76] gtools_3.9.5                           
+ [77] RSQLite_2.3.9                          
+ [78] R.methodsS3_1.8.2                      
+ [79] utf8_1.2.4                             
+ [80] generics_0.1.3                         
+ [81] data.table_1.17.0                      
+ [82] prettyunits_1.2.0                      
+ [83] httr_1.4.7                             
+ [84] htmlwidgets_1.6.4                      
+ [85] S4Arrays_1.6.0                         
+ [86] whisker_0.4.1                          
+ [87] pkgconfig_2.0.3                        
+ [88] gtable_0.3.6                           
+ [89] blob_1.2.4                             
+ [90] XVector_0.46.0                         
+ [91] htmltools_0.5.8.1                      
+ [92] carData_3.0-5                          
+ [93] fgsea_1.32.2                           
+ [94] png_0.1-8                              
+ [95] ggfun_0.1.8                            
+ [96] lambda.r_1.2.4                         
+ [97] knitr_1.49                             
+ [98] rstudioapi_0.17.1                      
+ [99] tzdb_0.4.0                             
+[100] reshape2_1.4.4                         
+[101] rjson_0.2.23                           
+[102] nlme_3.1-167                           
+[103] curl_6.2.1                             
+[104] cachem_1.1.0                           
+[105] KernSmooth_2.23-26                     
+[106] parallel_4.4.2                         
+[107] restfulr_0.0.15                        
+[108] pillar_1.10.1                          
+[109] vctrs_0.6.5                            
+[110] gplots_3.2.0                           
+[111] promises_1.3.2                         
+[112] car_3.1-3                              
+[113] dbplyr_2.5.0                           
+[114] evaluate_1.0.3                         
+[115] futile.options_1.0.1                   
+[116] locfit_1.5-9.12                        
+[117] cli_3.6.4                              
+[118] compiler_4.4.2                         
+[119] Rsamtools_2.22.0                       
+[120] rlang_1.1.5                            
+[121] crayon_1.5.3                           
+[122] ggsignif_0.6.4                         
+[123] labeling_0.4.3                         
+[124] ps_1.9.0                               
+[125] getPass_0.2-4                          
+[126] plyr_1.8.9                             
+[127] fs_1.6.5                               
+[128] stringi_1.8.4                          
+[129] viridisLite_0.4.2                      
+[130] munsell_0.5.1                          
+[131] Biostrings_2.74.1                      
+[132] lazyeval_0.2.2                         
+[133] GOSemSim_2.32.0                        
+[134] Matrix_1.7-3                           
+[135] hms_1.1.3                              
+[136] patchwork_1.3.0                        
+[137] bit64_4.6.0-1                          
+[138] KEGGREST_1.46.0                        
+[139] statmod_1.5.0                          
+[140] SummarizedExperiment_1.36.0            
+[141] igraph_2.1.4                           
+[142] memoise_2.0.1                          
+[143] bslib_0.9.0                            
+[144] ggtree_3.14.0                          
+[145] fastmatch_1.1-6                        
+[146] bit_4.6.0                              
+[147] ape_5.8-1                              </code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+
+<!-- Adjust MathJax settings so that all math formulae are shown using
+TeX fonts only; see
+https://docs.mathjax.org/en/latest/web/configuration.html. This will make
+the presentation more consistent at the cost of the webpage sometimes
+taking slightly longer to load. Note that this only works because the
+footer is added to webpages before the MathJax javascript. -->
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    "HTML-CSS": { availableFonts: ["TeX"] }
+  });
+</script>
+
+
+
+
+</div>
+</div>
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+function bootstrapStylePandocTables() {
+  $('tr.odd').parent('tbody').parent('table').addClass('table table-condensed');
+}
+$(document).ready(function () {
+  bootstrapStylePandocTables();
+});
+
+
+</script>
+
+<!-- tabsets -->
+
+<script>
+$(document).ready(function () {
+  window.buildTabsets("TOC");
+});
+
+$(document).ready(function () {
+  $('.tabset-dropdown > .nav-tabs > li').click(function () {
+    $(this).parent().toggleClass('nav-tabs-open');
+  });
+});
+</script>
+
+<!-- code folding -->
+
+<script>
+$(document).ready(function ()  {
+
+    // temporarily add toc-ignore selector to headers for the consistency with Pandoc
+    $('.unlisted.unnumbered').addClass('toc-ignore')
+
+    // move toc-ignore selectors from section div to header
+    $('div.section.toc-ignore')
+        .removeClass('toc-ignore')
+        .children('h1,h2,h3,h4,h5').addClass('toc-ignore');
+
+    // establish options
+    var options = {
+      selectors: "h1,h2,h3",
+      theme: "bootstrap3",
+      context: '.toc-content',
+      hashGenerator: function (text) {
+        return text.replace(/[.\\/?&!#<>]/g, '').replace(/\s/g, '_');
+      },
+      ignoreSelector: ".toc-ignore",
+      scrollTo: 0
+    };
+    options.showAndHide = true;
+    options.smoothScroll = true;
+
+    // tocify
+    var toc = $("#TOC").tocify(options).data("toc-tocify");
+});
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
