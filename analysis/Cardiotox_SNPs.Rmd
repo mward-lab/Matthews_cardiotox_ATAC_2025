@@ -1,0 +1,451 @@
+---
+title: "Cardiotox_SNPs"
+author: "Renee Matthews"
+date: "2025-05-09"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE,
+	warning = FALSE,
+	dev = c("png","pdf")
+)
+```
+
+```{css, echo=FALSE}
+pre {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+pre[class] {
+  max-height: 200px;
+}
+```
+
+```{r  package loading}
+library(tidyverse)
+library(kableExtra)
+library(broom)
+library(RColorBrewer)
+library("TxDb.Hsapiens.UCSC.hg38.knownGene")
+library("org.Hs.eg.db")
+library(rtracklayer)
+library(ggfortify)
+library(readr)
+library(BiocGenerics)
+library(gridExtra)
+library(VennDiagram)
+library(scales)
+library(ggVennDiagram)
+library(BiocParallel)
+library(ggpubr)
+library(edgeR)
+library(genomation)
+library(ggsignif)
+library(plyranges)
+library(ggrepel)
+library(ComplexHeatmap)
+library(cowplot)
+library(smplot2)
+library(readxl)
+library(devtools)
+library(vargen)
+
+```
+
+
+```{r data set loading}
+
+Collapsed_peaks <- read_delim("data/Final_four_data/collapsed_new_peaks.txt", delim = "\t", col_names = TRUE)
+Collapsed_peaks_gr <- Collapsed_peaks %>% dplyr::select(chr:Peakid) %>% GRanges()
+
+Motif_list_gr <- readRDS("data/Final_four_data/re_analysis/Motif_list_granges.RDS")
+##order specific
+df_list <- plyr::llply(Motif_list_gr, as.data.frame)
+### no change motif_list_gr names so they do not overwrite the dataframes
+names(Motif_list_gr) <- paste0(names(Motif_list_gr), "_gr")
+list2env(Motif_list_gr,envir= .GlobalEnv)
+
+list2env(df_list,envir= .GlobalEnv)
+
+final_peaks_gr <- Collapsed_peaks %>% 
+  dplyr::filter(Peakid %in% mcols(all_regions_gr)$Peakid) %>% 
+  GRanges()
+
+final_peaks <- Collapsed_peaks %>% 
+  dplyr::filter(Peakid %in% mcols(all_regions_gr)$Peakid) 
+
+mrc_lookup <- bind_rows(
+  (EAR_open  %>% dplyr::select(Peakid) %>% mutate(mrc = "EAR_open")),  
+  (EAR_close %>%  dplyr::select(Peakid) %>%mutate(mrc = "EAR_close")),
+  (ESR_open  %>%  dplyr::select(Peakid) %>%mutate(mrc = "ESR_open")),
+  (ESR_close %>%  dplyr::select(Peakid) %>%mutate(mrc = "ESR_close")),
+  (ESR_opcl   %>%  dplyr::select(Peakid) %>%mutate(mrc = "ESR_opcl")),
+  (ESR_clop   %>%  dplyr::select(Peakid) %>%mutate(mrc = "ESR_clop")),
+  (LR_open   %>%  dplyr::select(Peakid) %>%mutate(mrc = "LR_open")),
+  (LR_close  %>%  dplyr::select(Peakid) %>%mutate(mrc = "LR_close")),
+  (NR        %>%  dplyr::select(Peakid) %>%mutate(mrc = "NR"))
+) %>%
+  distinct(Peakid, mrc) 
+
+Schneider_all_SNPS <- read_delim("data/other_papers/Schneider_all_SNPS.txt", 
+    delim = "\t", escape_double = FALSE, 
+    trim_ws = TRUE)
+
+Schneider_all_SNPS_df <- Schneider_all_SNPS %>% 
+  dplyr::rename("RSID"="#Uploaded_variation") %>% 
+  dplyr::select(RSID,Location,SYMBOL,Gene, SOURCE) %>%
+  distinct(RSID,Location,SYMBOL,.keep_all = TRUE) %>% 
+  dplyr::rename("Close_SYMBOL"="SYMBOL") %>% 
+  separate_wider_delim(Location,delim=":",names=c("Chr","Coords")) %>% 
+  separate_wider_delim(Coords,delim= "-", names= c("Start","End")) %>% 
+  mutate(Chr=paste0("chr",Chr)) %>% 
+  group_by(RSID) %>% 
+  summarize(Chr=unique(Chr),
+            Start=unique(Start),
+            End=unique(End),
+            Close_SYMBOL=paste(unique(Close_SYMBOL),collapse=";"),
+            Gene=paste(Gene,collapse=";"),
+            SOURCE=paste(SOURCE,collapse=";")
+            ) %>% 
+  GRanges() %>% as.data.frame 
+
+schneider_gr <-Schneider_all_SNPS_df%>%
+  dplyr::select(seqnames,start,end,RSID:SOURCE) %>%
+  distinct() %>% 
+  GRanges()
+
+
+schneider_10k_gr <- Schneider_all_SNPS_df%>%
+  dplyr::select(seqnames,start,end,RSID:SOURCE) %>%
+  mutate(start=(start-5000),end=(end+4999), width=10000) %>%
+  distinct() %>% 
+  GRanges()
+ 
+schneider_20k_gr <- Schneider_all_SNPS_df%>%
+  dplyr::select(seqnames,start,end,RSID:SOURCE) %>%
+  mutate(start=(start-10000),end=(end+9999), width=20000) %>%
+  distinct() %>% 
+  GRanges()
+
+
+SNP_peak_check <- join_overlap_intersect(Collapsed_peaks_gr,schneider_gr) %>%
+  as.data.frame()
+# 
+SNP_peak_check_10k <- join_overlap_intersect(Collapsed_peaks_gr,schneider_10k_gr) %>%
+  as.data.frame()
+SNP_peak_check_20k <- join_overlap_intersect(Collapsed_peaks_gr,schneider_20k_gr) %>% 
+  as.data.frame()
+SNP_peak_check_20k_col <- join_overlap_intersect(Collapsed_peaks_gr,schneider_20k_gr) %>% 
+  as.data.frame()
+
+point_only <- SNP_peak_check
+SNP_10k_only <- SNP_peak_check_10k
+SNP_20k_only <- SNP_peak_check_20k
+Peaks_cutoff <- all_regions$Peakid
+
+schneider_short_list <- point_only %>% as.data.frame %>% dplyr::filter(Peakid %in%Peaks_cutoff)
+schneider_10k_list <- SNP_10k_only %>% distinct(RSID,Peakid)%>% dplyr::filter(Peakid %in%Peaks_cutoff)
+schneider_20k_list <- SNP_20k_only %>% distinct(RSID,Peakid)%>% dplyr::filter(Peakid %in%Peaks_cutoff)
+
+ATAC_med_3 <- read_csv("data/Final_four_data/re_analysis/median_3_lfc_norm.csv")%>% 
+  dplyr::select(peak,med_3h_lfc)
+ATAC_med_24 <- read_csv("data/Final_four_data/re_analysis/median_24_lfc_norm.csv")%>% 
+  dplyr::select(peak,med_24h_lfc)
+ATAC_med_LFC <- ATAC_med_3 %>% 
+  left_join(.,ATAC_med_24)
+
+```
+Total number of Schneider SNPs= `r length(unique(Schneider_all_SNPS_df$RSID))`
+Total number of Schneider SNPs in 20kb window from final 155,557 peak set= '`r length(unique(SNP_peak_check_20k$RSID))`
+
+```{r heatmap setup, fig.height=10, fig.width=5}
+hm_lfc_df <-
+  SNP_peak_check_20k %>% 
+  left_join(., mrc_lookup, by = c("Peakid"="Peakid")) %>% 
+  dplyr::filter(mrc != "NR") %>% 
+  dplyr::filter(!is.na(mrc)) %>%  
+  mutate(dist_to_SNP=case_when(
+    Peakid %in% point_only$Peakid &RSID %in% point_only$RSID~ 0,
+    Peakid %in% schneider_10k_list$Peakid &RSID %in% schneider_10k_list$RSID~ 10,
+    Peakid %in% schneider_20k_list$Peakid &RSID %in% schneider_20k_list$RSID~ 20)) %>% 
+    left_join(ATAC_med_LFC, by = c("Peakid"="peak")) %>% 
+  tidyr::unite(name,Peakid,RSID, sep = "_", remove = FALSE) %>% 
+  group_by(Peakid, RSID) %>% 
+   summarize(name=unique(name),
+           med_3h_lfc=unique(med_3h_lfc),
+           med_24h_lfc=unique(med_24h_lfc),
+          mrc=unique(mrc),
+          dist_to_SNP=min(dist_to_SNP))  %>% 
+  arrange(., Peakid)
+  
+
+
+hm_lfc_mat <-hm_lfc_df %>%
+  dplyr::select(Peakid,RSID,  med_3h_lfc, med_24h_lfc) %>% 
+  tidyr::unite(name, Peakid, RSID, sep = "_") %>% 
+  column_to_rownames("name") %>% 
+  as.matrix()
+
+hm_name_mat <-hm_lfc_df %>% 
+  dplyr::select (Peakid, RSID, mrc,dist_to_SNP) %>% 
+   tidyr::unite(name, Peakid, RSID, sep = "_")  
+  col_fun <- circlize::colorRamp2(c(-4, 0, 4), c("blue", "white", "red"))
+row_anno_lfc <- ComplexHeatmap::rowAnnotation(
+    MRC=hm_name_mat$mrc,
+    direct_overlap=hm_name_mat$dist_to_SNP,
+    col= list(
+    TE_status=c("TE_peak"="goldenrod",
+                "not_TE_peak"="lightblue"),
+    MRC = c("EAR_open" = "#F8766D",
+            "EAR_close" = "#f6483c",
+            "ESR_open" = "#7CAE00",
+            "ESR_close" = "#587b00",
+            "ESR_opcl"="grey40",
+            "ESR_clop"="tan",
+            "LR_open" = "#00BFC4",
+            "LR_close" = "#008d91",
+            "NR" = "#C77CFF",
+            "not_mrc"="black"),   
+    reheat_status=c("reheat_gene"="green",
+                    "not_reheat_gene"="orange"),
+    direct_overlap=c("0"="red",
+                     "10"="pink",
+                     "20"="tan2",
+                     "50"="grey8")))
+
+simply_map_lfc <- ComplexHeatmap::Heatmap(hm_lfc_mat,
+                                          col = col_fun,
+                        left_annotation = row_anno_lfc,
+                        show_row_names = TRUE,
+                       row_names_max_width= max_text_width(rownames(hm_lfc_mat),                                                        gp=gpar(fontsize=16)),
+                        heatmap_legend_param = list(direction = "horizontal"),
+                        show_column_names = TRUE,
+                        cluster_rows = FALSE,
+                        cluster_columns = FALSE)
+
+draw(simply_map_lfc, 
+     merge_legend = TRUE, 
+     heatmap_legend_side = "bottom", 
+    annotation_legend_side = "bottom")
+
+```
+
+```{r Boram Park etal}
+ParkSNPs <- readRDS("data/other_papers/ParkSNPs_pull_VEF.RDS")
+
+ParkSNP_table <-
+  ParkSNPs %>% 
+  dplyr::select(1:2) %>% 
+    distinct() %>% 
+    separate_wider_delim(.,Location,delim=":",names=c("chr","position"), cols_remove=FALSE) %>% 
+    separate_wider_delim(.,position,delim="-",names=c("begin","term")) %>%
+    mutate(chr=paste0("chr",chr)) 
+ParkSNP_gr <- ParkSNP_table %>% 
+  mutate("start" = begin, "end"=term) %>% 
+    GRanges()
+ParkSNP_10k_gr <- ParkSNP_table %>% 
+  mutate(begin=as.numeric(begin),term=as.numeric(term)) %>% 
+  mutate(start=begin-5000, end=term+5000) %>% 
+  GRanges()
+
+ParkSNP_20k_gr <- ParkSNP_table %>% 
+  mutate(begin=as.numeric(begin),term=as.numeric(term)) %>% 
+  mutate(start=begin-10000, end=term+10000) %>% 
+  GRanges()
+
+ParkSNP_gr_check <- join_overlap_intersect(final_peaks_gr,ParkSNP_gr) %>%
+  as.data.frame()
+
+ParkSNP_gr_10k_check <- join_overlap_intersect(final_peaks_gr,ParkSNP_10k_gr) %>%
+  as.data.frame()
+
+ParkSNP_gr_20k_check <- join_overlap_intersect(final_peaks_gr,ParkSNP_20k_gr) %>%
+  as.data.frame()
+
+```
+
+```{r masterplot Park}
+
+ParkSNP_gr_check <- join_overlap_intersect(final_peaks_gr,ParkSNP_gr) %>%
+  as.data.frame()
+Park_df <-ParkSNP_gr_20k_check%>% 
+  as.data.frame() %>%
+  dplyr::select(Peakid, X.Uploaded_variation) %>% 
+  dplyr::rename("SNPS"=X.Uploaded_variation) %>% 
+  left_join(., mrc_lookup, by = c("Peakid"="Peakid")) %>% 
+  dplyr::filter(mrc != "NR") %>% 
+  dplyr::filter(!is.na(mrc)) %>%  
+  dplyr::select(Peakid, SNPS,mrc) %>% 
+ left_join(ATAC_med_LFC, by = c("Peakid"="peak")) %>% 
+    mutate(dist_to_SNP=case_when(
+    Peakid %in% ParkSNP_gr_check$Peakid &SNPS %in% ParkSNP_gr_check$X.Uploaded_variation~ 0,
+    Peakid %in% ParkSNP_gr_10k_check$Peakid &SNPS %in% ParkSNP_gr_10k_check$X.Uploaded_variation~ 10,
+    Peakid %in% ParkSNP_gr_20k_check$Peakid &SNPS %in% ParkSNP_gr_20k_check$X.Uploaded_variation~ 20)) %>% 
+    tidyr::unite(name,Peakid,SNPS, sep = "_", remove = FALSE) %>% 
+  group_by(Peakid) %>% 
+   summarize(name=unique(name),
+           med_3h_lfc=unique(med_3h_lfc),
+           med_24h_lfc=unique(med_24h_lfc),
+           mrc=unique(mrc),
+          dist_to_SNP=min(dist_to_SNP))  %>% 
+  arrange(., Peakid)
+ 
+new_park_mat <- Park_df%>% 
+  ungroup() %>% 
+  dplyr::select(name,med_3h_lfc, med_24h_lfc) %>% 
+  column_to_rownames("name") %>% 
+  as.matrix()
+new_park_name_mat <- Park_df %>% 
+  ungroup() %>% 
+  dplyr::select(name,mrc,dist_to_SNP)
+
+row_anno_park <-
+  rowAnnotation(
+    MRC=new_park_name_mat$mrc,
+    direct_overlap=new_park_name_mat$dist_to_SNP,
+    col= list(TE_status=c("TE_peak"="goldenrod",
+                          "not_TE_peak"="lightblue"), 
+              MRC = c("EAR_open" = "#F8766D",
+                      "EAR_close" = "#f6483c",
+                      "ESR_open" = "#7CAE00",
+                      "ESR_close" = "#587b00",
+                      "ESR_opcl"="grey40", 
+                      "ESR_clop"="tan",
+                      "LR_open" = "#00BFC4",
+                      "LR_close" = "#008d91",
+                      "NR" = "#C77CFF",
+                      "not_mrc"="black"),
+                           direct_overlap=c("0"="red",
+                               "10"="pink",
+                               "20"="tan2",
+                               "50"="grey8")))
+col_fun <- circlize::colorRamp2(c(-4, 0, 4), c("blue", "white", "red"))
+simply_map_park <- ComplexHeatmap::Heatmap(new_park_mat,
+                                           col=col_fun,
+                        left_annotation = row_anno_park,
+                        row_names_max_width = max_text_width(rownames(new_park_mat),  
+                                                             gp=gpar(fontsize=16)),
+                        heatmap_legend_param = list(direction = "horizontal"),
+                        show_column_names = TRUE,
+                        cluster_rows = FALSE,
+                        cluster_columns = FALSE)
+
+draw(simply_map_park, merge_legend = TRUE, heatmap_legend_side = "bottom", 
+    annotation_legend_side = "bottom")
+
+
+```
+
+
+
+### nakano, et al
+```{r}
+nakano_SNPs <- readRDS("data/other_papers/nakano_SNPs_pull_VEF.RDS")
+
+nakano_SNP_table <-
+  nakano_SNPs %>% 
+  dplyr::select(1:2) %>% 
+    distinct() %>% 
+    separate_wider_delim(.,Location,delim=":",names=c("chr","position"), cols_remove=FALSE) %>% 
+    separate_wider_delim(.,position,delim="-",names=c("begin","term")) %>%
+    mutate(chr=paste0("chr",chr)) 
+nakano_SNP_gr <- nakano_SNP_table %>% 
+  mutate("start" = begin, "end"=term) %>% 
+    GRanges()
+nakano_SNP_10k_gr <- nakano_SNP_table %>% 
+  mutate(begin=as.numeric(begin),term=as.numeric(term)) %>% 
+  mutate(start=begin-5000, end=term+5000) %>% 
+  GRanges()
+
+nakano_SNP_20k_gr <- nakano_SNP_table %>% 
+  mutate(begin=as.numeric(begin),term=as.numeric(term)) %>% 
+  mutate(start=begin-10000, end=term+10000) %>% 
+  GRanges()
+
+nakano_SNP_gr_check <- join_overlap_intersect(final_peaks_gr,nakano_SNP_gr) %>%
+  as.data.frame()
+
+nakano_SNP_gr_10k_check <- join_overlap_intersect(final_peaks_gr,nakano_SNP_10k_gr) %>%
+  as.data.frame()
+
+nakano_SNP_gr_20k_check <- join_overlap_intersect(final_peaks_gr,nakano_SNP_20k_gr) %>%
+  as.data.frame()
+
+```
+
+```{r}
+nakano_SNP_gr_check <- join_overlap_intersect(final_peaks_gr,nakano_SNP_gr) %>%
+  as.data.frame()
+nakano_df <-nakano_SNP_gr_20k_check%>% 
+  as.data.frame() %>%
+  dplyr::select(Peakid, X.Uploaded_variation) %>% 
+  dplyr::rename("SNPS"=X.Uploaded_variation) %>% 
+   left_join(., mrc_lookup, by = c("Peakid"="Peakid")) %>% 
+  dplyr::filter(mrc != "NR") %>% 
+  dplyr::filter(!is.na(mrc)) %>%  
+  dplyr::select(Peakid, SNPS,mrc) %>% 
+  left_join(., ATAC_med_LFC,by=c("Peakid"="peak")) %>% 
+     mutate(dist_to_SNP=case_when(
+    Peakid %in% nakano_SNP_gr_check$Peakid &SNPS %in% nakano_SNP_gr_check$X.Uploaded_variation~ 0,
+    Peakid %in% nakano_SNP_gr_10k_check$Peakid &SNPS %in% nakano_SNP_gr_10k_check$X.Uploaded_variation~ 10,
+    Peakid %in% nakano_SNP_gr_20k_check$Peakid &SNPS %in% nakano_SNP_gr_20k_check$X.Uploaded_variation~ 20)) %>% 
+    tidyr::unite(name,Peakid,SNPS, sep = "_", remove = FALSE) %>% 
+  group_by(Peakid) %>% 
+   summarize(name=unique(name),
+           med_3h_lfc=unique(med_3h_lfc),
+           med_24h_lfc=unique(med_24h_lfc),
+          mrc=unique(mrc),
+          dist_to_SNP=min(dist_to_SNP))  %>% 
+  arrange(., Peakid)
+ 
+new_nakano_mat <- nakano_df%>% 
+  ungroup() %>% 
+  dplyr::select(name,med_3h_lfc, med_24h_lfc) %>% 
+  column_to_rownames("name") %>% 
+  as.matrix()
+new_nakano_name_mat <- nakano_df %>% 
+  ungroup() %>% 
+  dplyr::select(name,mrc,dist_to_SNP)
+
+row_anno_nakano <-
+  rowAnnotation(
+    MRC=new_nakano_name_mat$mrc,
+    direct_overlap=new_nakano_name_mat$dist_to_SNP,
+    col= list(TE_status=c("TE_peak"="goldenrod",
+                          "not_TE_peak"="lightblue"), 
+              MRC = c("EAR_open" = "#F8766D",
+                      "EAR_close" = "#f6483c",
+                      "ESR_open" = "#7CAE00",
+                      "ESR_close" = "#587b00",
+                      "ESR_opcl"="grey40", 
+                      "ESR_clop"="tan",
+                      "LR_open" = "#00BFC4",
+                      "LR_close" = "#008d91",
+                      "NR" = "#C77CFF",
+                      "not_mrc"="black"),
+              # gwas_status=c("AF"="green",
+              #               "HF"="orange", 
+              #               "AF;HF"="purple3"),
+              direct_overlap=c("0"="red",
+                               "10"="pink",
+                               "20"="tan2",
+                               "50"="grey8")))
+col_fun <- circlize::colorRamp2(c(-4, 0, 4), c("blue", "white", "red"))
+
+simply_map_nakano <- ComplexHeatmap::Heatmap(new_nakano_mat,
+                                             col= col_fun,
+                        left_annotation = row_anno_nakano,
+                        row_names_max_width = max_text_width(rownames(new_nakano_mat),  
+                                                             gp=gpar(fontsize=16)),
+                        heatmap_legend_param = list(direction = "horizontal"),
+                        show_column_names = TRUE,
+                        cluster_rows = FALSE,
+                        cluster_columns = FALSE)
+
+draw(simply_map_nakano, merge_legend = TRUE, heatmap_legend_side = "bottom", 
+    annotation_legend_side = "bottom")
+```
