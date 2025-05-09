@@ -1,0 +1,249 @@
+---
+title: "AF_HF_SNPs"
+author: "Renee Matthews"
+date: "2025-05-09"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE,
+	warning = FALSE,
+	dev = c("png","pdf")
+)
+```
+
+```{css, echo=FALSE}
+pre {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+pre[class] {
+  max-height: 200px;
+}
+```
+
+```{r  package loading}
+library(tidyverse)
+library(kableExtra)
+library(broom)
+library(RColorBrewer)
+library("TxDb.Hsapiens.UCSC.hg38.knownGene")
+library("org.Hs.eg.db")
+library(rtracklayer)
+library(ggfortify)
+library(readr)
+library(BiocGenerics)
+library(gridExtra)
+library(VennDiagram)
+library(scales)
+library(ggVennDiagram)
+library(BiocParallel)
+library(ggpubr)
+library(edgeR)
+library(genomation)
+library(ggsignif)
+library(plyranges)
+library(ggrepel)
+library(ComplexHeatmap)
+library(cowplot)
+library(smplot2)
+library(readxl)
+library(devtools)
+library(vargen)
+
+```
+
+
+Loading Atrial Fibrillation and Heart Failure SNPs
+```{r data loading}
+gwas_HF <- readRDS("data/other_papers/HF_gwas_association_downloaded_2025_01_23_EFO_0003144_withChildTraits.RDS")
+
+gwas_ARR <- readRDS("data/other_papers/AF_gwas_association_downloaded_2025_01_23_EFO_0000275.RDS")
+Short_gwas_gr <-
+  gwas_ARR %>% 
+          distinct(SNPS,.keep_all = TRUE) %>%
+          dplyr::select(CHR_ID, CHR_POS,SNPS) %>% 
+          mutate(gwas="AF") %>% 
+   rbind(gwas_HF %>% 
+          distinct(SNPS,.keep_all = TRUE) %>%
+          dplyr::select(CHR_ID, CHR_POS,SNPS) %>% 
+          mutate(gwas="HF")) %>% 
+  na.omit() %>% 
+ mutate(seqnames=paste0("chr",CHR_ID), CHR_POS=as.numeric(CHR_POS)) %>% 
+  na.omit() %>%
+   mutate(start=CHR_POS, end=CHR_POS, width=1) %>% 
+  GRanges()
+
+
+Short_gwas_10k_gr <- 
+    gwas_ARR %>% 
+          distinct(SNPS,.keep_all = TRUE) %>%
+          dplyr::select(CHR_ID, CHR_POS,SNPS) %>% 
+          mutate(gwas="AF") %>% 
+   rbind(gwas_HF %>% 
+          distinct(SNPS,.keep_all = TRUE) %>%
+          dplyr::select(CHR_ID, CHR_POS,SNPS) %>% 
+          mutate(gwas="HF")) %>% 
+  na.omit() %>% 
+ mutate(seqnames=paste0("chr",CHR_ID), CHR_POS=as.numeric(CHR_POS)) %>% 
+  na.omit() %>%
+   mutate(start=CHR_POS-5000, end=CHR_POS+4999) %>% 
+  GRanges()
+
+
+Short_gwas_20k_gr <- 
+    gwas_ARR %>% 
+          distinct(SNPS,.keep_all = TRUE) %>%
+          dplyr::select(CHR_ID, CHR_POS,SNPS) %>% 
+          mutate(gwas="AF") %>% 
+   rbind(gwas_HF %>% 
+          distinct(SNPS,.keep_all = TRUE) %>%
+          dplyr::select(CHR_ID, CHR_POS,SNPS) %>% 
+          mutate(gwas="HF")) %>% 
+  na.omit() %>% 
+ mutate(seqnames=paste0("chr",CHR_ID), CHR_POS=as.numeric(CHR_POS)) %>% 
+  na.omit() %>%
+  mutate(start=(CHR_POS-10000),end=(CHR_POS+9999), width=20000) %>%
+  distinct() %>% 
+  GRanges()
+
+```
+
+Loading ATAC-seq regions
+
+```{r}
+Collapsed_peaks <- read_delim("data/Final_four_data/collapsed_new_peaks.txt", delim = "\t", col_names = TRUE)
+Collapsed_peaks_gr <- Collapsed_peaks %>% dplyr::select(chr:Peakid) %>% GRanges()
+
+Motif_list_gr <- readRDS("data/Final_four_data/re_analysis/Motif_list_granges.RDS")
+##order specific
+df_list <- plyr::llply(Motif_list_gr, as.data.frame)
+### no change motif_list_gr names so they do not overwrite the dataframes
+names(Motif_list_gr) <- paste0(names(Motif_list_gr), "_gr")
+list2env(Motif_list_gr,envir= .GlobalEnv)
+
+list2env(df_list,envir= .GlobalEnv)
+
+final_peaks_gr <- Collapsed_peaks %>% 
+  dplyr::filter(Peakid %in% mcols(all_regions_gr)$Peakid) %>% 
+  GRanges()
+
+final_peaks <- Collapsed_peaks %>% 
+  dplyr::filter(Peakid %in% mcols(all_regions_gr)$Peakid) 
+
+mrc_lookup <- bind_rows(
+  (EAR_open  %>% dplyr::select(Peakid) %>% mutate(mrc = "EAR_open")),  
+  (EAR_close %>%  dplyr::select(Peakid) %>%mutate(mrc = "EAR_close")),
+  (ESR_open  %>%  dplyr::select(Peakid) %>%mutate(mrc = "ESR_open")),
+  (ESR_close %>%  dplyr::select(Peakid) %>%mutate(mrc = "ESR_close")),
+  (ESR_opcl   %>%  dplyr::select(Peakid) %>%mutate(mrc = "ESR_opcl")),
+  (ESR_clop   %>%  dplyr::select(Peakid) %>%mutate(mrc = "ESR_clop")),
+  (LR_open   %>%  dplyr::select(Peakid) %>%mutate(mrc = "LR_open")),
+  (LR_close  %>%  dplyr::select(Peakid) %>%mutate(mrc = "LR_close")),
+  (NR        %>%  dplyr::select(Peakid) %>%mutate(mrc = "NR"))
+) %>%
+  distinct(Peakid, mrc) 
+
+ATAC_med_3 <- read_csv("data/Final_four_data/re_analysis/median_3_lfc_norm.csv")%>% 
+  dplyr::select(peak,med_3h_lfc)
+ATAC_med_24 <- read_csv("data/Final_four_data/re_analysis/median_24_lfc_norm.csv")%>% 
+  dplyr::select(peak,med_24h_lfc)
+ATAC_med_LFC <- ATAC_med_3 %>% 
+  left_join(.,ATAC_med_24)
+```
+
+Overlappig ATAC regions and SNPs
+
+```{r overlapping regions and SNPs}
+
+gwas_peak_check <- join_overlap_intersect(final_peaks_gr,Short_gwas_gr) %>%
+  as.data.frame()
+ 
+gwas_peak_check_10k <- join_overlap_intersect(final_peaks_gr,Short_gwas_10k_gr) %>%
+  as.data.frame()
+gwas_peak_check_20k <- join_overlap_intersect(final_peaks_gr,Short_gwas_20k_gr) %>% 
+  as.data.frame()
+ 
+count_df <- join_overlap_intersect(Collapsed_peaks_gr, Short_gwas_gr)
+gwas_peak_check %>% 
+dplyr::filter(gwas=="HF;AF") %>% 
+  # dplyr::filter(mrc != "NR")
+  distinct(SNPS)
+```
+
+drawing the heatmap
+```{r heatmap,fig.height=12, fig.width=8}
+new_gwas_df <-
+  gwas_peak_check %>% 
+  as.data.frame() %>% 
+   left_join(., mrc_lookup, by = c("Peakid"="Peakid")) %>% 
+  dplyr::filter(mrc != "NR") %>% 
+  dplyr::filter(!is.na(mrc)) %>%  
+  left_join(ATAC_med_LFC, by = c("Peakid"="peak")) %>% 
+  mutate(dist_to_SNP=0) %>% 
+  group_by(Peakid, SNPS) %>% 
+  summarize(med_3h_lfc=unique(med_3h_lfc),
+           med_24h_lfc=unique(med_24h_lfc),
+           GWAS=paste(unique(gwas),collapse=";"),
+           mrc=unique(mrc),
+            dist_to_SNP=min(dist_to_SNP)) %>% 
+  tidyr::unite(name,Peakid,SNPS,sep ="_",remove=FALSE) %>% 
+   arrange(., Peakid)
+
+
+new_gwas_mat <- new_gwas_df%>% 
+  ungroup() %>% 
+  dplyr::select(name,med_3h_lfc, med_24h_lfc) %>% 
+  column_to_rownames("name") %>% 
+  as.matrix()
+new_gwas_name_mat <- new_gwas_df %>% 
+  ungroup() %>% 
+  dplyr::select(name,mrc,GWAS,dist_to_SNP)
+
+row_anno_gwas <-
+  rowAnnotation(
+    gwas_status=new_gwas_name_mat$GWAS,
+    MRC=new_gwas_name_mat$mrc,
+    direct_overlap=new_gwas_name_mat$dist_to_SNP,
+    col= list(TE_status=c("TE_peak"="goldenrod",
+                          "not_TE_peak"="lightblue"), 
+              MRC = c("EAR_open" = "#F8766D",
+                      "EAR_close" = "#f6483c",
+                      "ESR_open" = "#7CAE00",
+                      "ESR_close" = "#587b00",
+                      "ESR_opcl"="grey40", 
+                      "ESR_clop"="tan",
+                      "LR_open" = "#00BFC4",
+                      "LR_close" = "#008d91",
+                      "NR" = "#C77CFF",
+                      "not_mrc"="black"),
+              gwas_status=c("AF"="green",
+                            "HF"="orange", 
+                            "AF;HF"="purple3"),
+              direct_overlap=c("0"="goldenrod4",
+                               "10"="pink",
+                               "20"="tan2",
+                               "50"="grey8")))
+
+simply_map_gwas <- ComplexHeatmap::Heatmap(new_gwas_mat,
+                        left_annotation = row_anno_gwas,
+                        row_names_max_width = max_text_width(rownames(new_gwas_mat),  
+                                                             gp=gpar(fontsize=16)),
+                        heatmap_legend_param = list(direction = "horizontal"),
+                        show_column_names = TRUE,
+                        cluster_rows = FALSE,
+                        cluster_columns = FALSE)
+
+draw(simply_map_gwas, merge_legend = TRUE, heatmap_legend_side = "bottom", 
+    annotation_legend_side = "bottom")
+```
+
+
+```{r}
+new_gwas_df %>% distinct
+
+```
+
