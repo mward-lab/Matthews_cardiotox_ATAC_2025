@@ -1,0 +1,402 @@
+---
+title: "H3K27ac_data_integration"
+author: "Renee Matthews"
+date: "2025-05-09"
+output: html_document
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE,
+	warning = FALSE,
+		dev = c("png","pdf")
+)
+```
+
+```{css, echo=FALSE}
+pre {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+pre[class] {
+  max-height: 200px;
+}
+```
+
+```{r  package loading}
+library(tidyverse)
+library(kableExtra)
+library(broom)
+library(RColorBrewer)
+library(ChIPseeker)
+library("TxDb.Hsapiens.UCSC.hg38.knownGene")
+library(rtracklayer)
+library(edgeR)
+library(limma)
+library(readr)
+library(BiocGenerics)
+library(gridExtra)
+library(VennDiagram)
+library(scales)
+library(BiocParallel)
+library(ggpubr)
+library(devtools)
+library(eulerr)
+library(genomation)
+library(ggsignif)
+library(plyranges)
+library(ggrepel)
+library(ComplexHeatmap)
+library(smplot2)
+library(stringr)
+library(cowplot)
+```
+
+###  Integrating ATAC seq and H3K27ac CUT&Tag-seq together
+Loading data frames
+```{r}
+
+Collapsed_peaks <- read_delim("data/Final_four_data/collapsed_new_peaks.txt",
+                              delim = "\t", 
+                              escape_double = FALSE, 
+                              trim_ws = TRUE)
+
+Motif_list_gr <- readRDS("data/Final_four_data/re_analysis/Motif_list_granges.RDS")
+##order specific
+df_list <- plyr::llply(Motif_list_gr, as.data.frame)
+### no change motif_list_gr names so they do not overwrite the dataframes
+names(Motif_list_gr) <- paste0(names(Motif_list_gr), "_gr")
+list2env(Motif_list_gr,envir= .GlobalEnv)
+
+list2env(df_list,envir= .GlobalEnv)
+
+final_peaks_gr <- Collapsed_peaks %>% 
+  dplyr::filter(Peakid %in% mcols(all_regions_gr)$Peakid) %>% 
+  GRanges()
+
+final_peaks <- Collapsed_peaks %>% 
+  dplyr::filter(Peakid %in% mcols(all_regions_gr)$Peakid) 
+
+mrc_lookup <- bind_rows(
+  (EAR_open  %>% dplyr::select(Peakid) %>% mutate(mrc = "EAR_open")),  
+  (EAR_close %>%  dplyr::select(Peakid) %>%mutate(mrc = "EAR_close")),
+  (ESR_open  %>%  dplyr::select(Peakid) %>%mutate(mrc = "ESR_open")),
+  (ESR_close %>%  dplyr::select(Peakid) %>%mutate(mrc = "ESR_close")),
+  (ESR_opcl   %>%  dplyr::select(Peakid) %>%mutate(mrc = "ESR_opcl")),
+  (ESR_clop   %>%  dplyr::select(Peakid) %>%mutate(mrc = "ESR_clop")),
+  (LR_open   %>%  dplyr::select(Peakid) %>%mutate(mrc = "LR_open")),
+  (LR_close  %>%  dplyr::select(Peakid) %>%mutate(mrc = "LR_close")),
+  (NR        %>%  dplyr::select(Peakid) %>%mutate(mrc = "NR"))
+) %>%
+  distinct(Peakid, mrc) 
+
+RNA_exp_genes <- read.csv("data/other_papers/S13Table_Matthews2024.csv") %>% 
+  dplyr::select(ENTREZID,SYMBOL)
+
+# write_csv(median_3_lfc, "data/Final_four_data/re_analysis/median_3_lfc_H3K27ac_norm.csv")
+# write_csv(median_24_lfc, "data/Final_four_data/re_analysis/median_24_lfc_H3K27ac_norm.csv")
+# write_csv(median_3_lfc, "data/Final_four_data/re_analysis/median_3_lfc_norm.csv")
+# write_csv(median_24_lfc, "data/Final_four_data/re_analysis/median_24_lfc_norm.csv")
+
+
+H3K27ac_gr <- readRDS("data/Final_four_data/re_analysis/H3K27ac_granges_df.RDS")
+
+```
+
+### Overlapping data sets
+
+When doing the overlapping, ATAC regions are labeled with Peakid, H3K27ac regions are labeled with Geneid
+```{r}
+ol_peaks <- join_overlap_intersect(final_peaks_gr, H3K27ac_gr)
+ATAC_region_count <- ol_peaks %>% 
+  as.data.frame() %>% 
+  distinct(Peakid)
+H3K27ac_region_count <- ol_peaks %>% 
+  as.data.frame() %>% 
+  distinct(Geneid)
+Overlap_regions <- ol_peaks %>% 
+  as.data.frame() %>% 
+  distinct(Peakid,Geneid)
+```
+
+Number of ATAC regions: `r length(final_peaks_gr)`  
+Number of ATAC regions overlapping H3K27ac regions:`r length(ATAC_region_count$Peakid)` 
+`r sprintf("%.2f%%" , (length(ATAC_region_count$Peakid)/length(final_peaks_gr)*100))`  of ATAC peaks overlap an acetylated region.
+
+Number of H3K27ac regions: `r length(H3K27ac_gr)`  
+Number of ATAC regions overlapping H3K27ac regions:`r length(H3K27ac_region_count$Geneid)` 
+`r sprintf("%.2f%%" , (length(H3K27ac_region_count$Geneid)/length(H3K27ac_gr)*100))`  of H3K27ac peaks overlap an acetylated region.
+
+
+### Looking at correlation of LFC H3K27ac regions and LFC ATAC regions
+
+```{r  Correlation setup}
+H3K27ac_toplist_results <- readRDS("data/Final_four_data/re_analysis/Toptable_results_H3K27ac_data.RDS")
+H3K27ac_toptable_list <- bind_rows(H3K27ac_toplist_results, .id = "group")
+ATAC_toptable_results <- readRDS("data/Final_four_data/re_analysis/Toptable_results.RDS")
+ATAC_toptable_list <- bind_rows(ATAC_toptable_results, .id = "group")
+
+hr3_K27 <-  H3K27ac_toptable_list %>% 
+    separate_wider_delim(., group, names=c("trt","time"), delim="_") %>% 
+  dplyr::select(trt,time:logFC) %>% 
+  dplyr::filter(time=="3") %>% 
+  pivot_wider(., id_cols=c(genes), names_from = trt, values_from = logFC) %>% 
+  dplyr::rename(DOX_3_K27=DOX, DNR_3_K27=DNR,EPI_3_K27=EPI,MTX_3_K27=MTX)
+
+
+hr24_K27 <- H3K27ac_toptable_list %>% 
+  separate_wider_delim(., group, names=c("trt","time"), delim="_") %>% 
+  dplyr::select(trt,time:logFC) %>% 
+  dplyr::filter(time=="24") %>% 
+  pivot_wider(., id_cols=c(genes), names_from = trt, values_from = logFC) %>% 
+  dplyr::rename(DOX_24_K27=DOX, DNR_24_K27=DNR,EPI_24_K27=EPI,MTX_24_K27=MTX)
+
+K27_LFC_df <- hr3_K27 %>% 
+  left_join(., hr24_K27, by=c("genes"="genes")) 
+
+
+hr3_ATAC <- ATAC_toptable_list %>% 
+  dplyr::select(group:logFC) %>% 
+    separate_wider_delim(., group, names=c("trt","time"), delim="_") %>% 
+  dplyr::filter(time=="3") %>% 
+  pivot_wider(., id_cols=c(time, genes), names_from = trt, values_from = logFC) %>% 
+  dplyr::select(!TRZ) %>% 
+  dplyr::rename(DOX_3_ATAC=DOX, DNR_3_ATAC=DNR,EPI_3_ATAC=EPI,MTX_3_ATAC=MTX) %>% 
+  dplyr::rename("peak"=genes)
+
+hr24_ATAC <- ATAC_toptable_list %>% 
+  dplyr::select(group:logFC) %>% 
+    separate_wider_delim(., group, names=c("trt","time"), delim="_") %>% 
+  dplyr::filter(time=="24") %>% 
+  pivot_wider(., id_cols=c(time, genes), names_from = trt, values_from = logFC) %>% 
+  dplyr::select(!TRZ) %>% 
+  dplyr::rename(DOX_24_ATAC=DOX, DNR_24_ATAC=DNR,EPI_24_ATAC=EPI,MTX_24_ATAC=MTX) %>%
+  dplyr::rename("peak"=genes)
+
+ATAC_LFC_df <- hr3_ATAC %>% 
+  left_join(., hr24_ATAC, by=c("peak"="peak")) %>%
+   dplyr::select(!time.x) %>% 
+  dplyr::select(!time.y)
+
+
+```
+
+```{r correlation heatmaps}
+
+K27_ATAC_mat <- Overlap_regions %>%
+  left_join(.,ATAC_LFC_df,by=c("Peakid"="peak")) %>% 
+  left_join(.,K27_LFC_df, by=c("Geneid"="genes")) %>%
+  distinct(Peakid,Geneid,.keep_all = TRUE) %>% 
+  tidyr::unite(name,Peakid:Geneid, sep="_") %>% 
+  column_to_rownames("name") %>% 
+  as.matrix()  
+
+
+pearson_cor_mat <- cor(K27_ATAC_mat,method = "pearson", use = "pairwise.complete.obs")
+
+## do spearman correlation between matched observation of RNA and ATAC
+spearman_cor_mat <- cor(K27_ATAC_mat,method = "spearman", use = "pairwise.complete.obs")
+### make correlation heatmaps of both sets
+
+ComplexHeatmap::Heatmap(pearson_cor_mat, 
+                        column_title = "Pearson H3K27ac/ATAC LFC correlation")
+
+ComplexHeatmap::Heatmap(spearman_cor_mat,
+                        column_title = "Spearman H3K27ac/ATAC LFC correlation")
+
+```
+### Integration of RNA, ATAC, and H3K27ac data together
+
+I associated the data together like this:
+1)  Take the list of all ATAC regions that overlap H3K27ac regions
+2) Join the overlap list of regions with the assigned RNA expressed genes and their distance. 
+```{r Adding RNA toplist information}
+toplistall_RNA <- readRDS("data/other_papers/toplistall_RNA.RDS") %>% 
+  mutate(logFC = logFC*(-1))
+
+hr3_RNA <- toplistall_RNA %>% 
+  dplyr::select(time:logFC) %>% 
+  dplyr::filter(time=="3_hours") %>% 
+  pivot_wider(., id_cols=c(ENTREZID,SYMBOL), names_from = id, values_from = logFC) %>% 
+   dplyr::select(!TRZ) %>% 
+  dplyr::rename(DOX_3_RNA=DOX, DNR_3_RNA=DNR,EPI_3_RNA=EPI,MTX_3_RNA=MTX)
+  
+
+hr24_RNA <- toplistall_RNA %>% 
+  dplyr::select(time:logFC) %>% 
+  dplyr::filter(time=="24_hours") %>% 
+  pivot_wider(., id_cols=c(ENTREZID,SYMBOL), names_from = id, values_from = logFC) %>% 
+   dplyr::select(!TRZ) %>% 
+  dplyr::rename(DOX_24_RNA=DOX, DNR_24_RNA=DNR,EPI_24_RNA=EPI,MTX_24_RNA=MTX)
+
+RNA_LFC_df <- hr3_RNA %>% 
+  left_join(., hr24_RNA, by=c("SYMBOL"="SYMBOL","ENTREZID"="ENTREZID")) 
+```
+
+```{r}
+All_data_overlaps <- Overlap_regions %>% 
+  left_join(., (final_peaks %>% 
+              dplyr::select (Peakid,NCBI_gene:dist_to_NG)), 
+            by=c("Peakid"= "Peakid")) %>% 
+  # mutate(NCBI_gene = gsub("[:,]", ";", NCBI_gene),
+  #        SYMBOL = gsub("[:,]", ";", SYMBOL)) %>%
+  # separate_longer_delim(NCBI_gene, delim = ";") %>%
+  # separate_longer_delim(SYMBOL, delim = ";") %>% 
+  left_join(.,ATAC_LFC_df,by=c("Peakid"="peak")) %>% 
+  left_join(.,K27_LFC_df, by=c("Geneid"="genes")) %>%
+  left_join(., RNA_LFC_df, by = c("SYMBOL"="SYMBOL", "NCBI_gene"="ENTREZID"))
+
+Only_2kb_ATAC_K27_RNA <- All_data_overlaps %>% 
+  dplyr::filter(dist_to_NG > -2000 & dist_to_NG < 2000)
+
+
+All_data_mat <- All_data_overlaps %>% 
+  tidyr::unite(name, Peakid:dist_to_NG, sep="_") %>%
+  column_to_rownames(., "name") %>%
+  as.matrix()
+
+All_data_2kb_mat <- Only_2kb_ATAC_K27_RNA %>% 
+    tidyr::unite(name, Peakid:dist_to_NG, sep="_") %>%
+  column_to_rownames(., "name") %>%
+  as.matrix()
+
+  
+
+```
+Looking at correlations of all overlaps, irrespective of distance of region from expressed gene
+```{r}
+pearson_cor_mat_all <- cor(All_data_mat,method = "pearson", use = "pairwise.complete.obs")
+
+## do spearman correlation between matched observation of RNA and ATAC
+spearman_cor_mat_all <- cor(All_data_mat,method = "spearman", use = "pairwise.complete.obs")
+### make correlation heatmaps of both sets
+
+ComplexHeatmap::Heatmap(pearson_cor_mat_all, 
+                        column_title = "Pearson RNA/ATAC/H3K27ac LFC correlation")
+
+ComplexHeatmap::Heatmap(spearman_cor_mat_all,
+                        column_title = "Spearman RNA/ATAC/H3K27ac LFC correlation")
+
+```
+
+```{r just 2kb correlation}
+
+pearson_cor_mat_2kb <- cor(All_data_2kb_mat,method = "pearson", use = "pairwise.complete.obs")
+
+## do spearman correlation between matched observation of RNA and ATAC
+spearman_cor_mat_2kb <- cor(All_data_2kb_mat,method = "spearman", use = "pairwise.complete.obs")
+### make correlation heatmaps of both sets
+
+ComplexHeatmap::Heatmap(pearson_cor_mat_2kb, 
+                        column_title = "Pearson RNA/ATAC/H3K27ac LFC correlation using +/- 2 kb from TSS ")
+
+ComplexHeatmap::Heatmap(spearman_cor_mat_2kb,
+                        column_title = "Spearman RNA/ATAC/H3K27ac LFC correlation using +/- 2 kb from TSS ")
+
+```
+
+Looking at correlation of median LFC between H3K27ac and ATAC shared regions
+```{r loading median dataframes}
+
+H3K27_med_3 <- read_csv("data/Final_four_data/re_analysis/median_3_lfc_H3K27ac_norm.csv") %>% 
+  dplyr::select(H3K27ac_peak,med_Kac_3h_lfc)
+H3K27_med_24 <- read_csv("data/Final_four_data/re_analysis/median_24_lfc_H3K27ac_norm.csv")%>% 
+  dplyr::select(H3K27ac_peak,med_Kac_24h_lfc)
+ATAC_med_3 <- read_csv("data/Final_four_data/re_analysis/median_3_lfc_norm.csv")%>% 
+  dplyr::select(peak,med_3h_lfc)
+ATAC_med_24 <- read_csv("data/Final_four_data/re_analysis/median_24_lfc_norm.csv")%>% 
+  dplyr::select(peak,med_24h_lfc)
+RNA_median_3 <- readRDS("data/other_papers/RNA_median_3_lfc.RDS") %>% 
+  dplyr::select(RNA_3h_lfc,ENTREZID)
+RNA_median_24 <- readRDS("data/other_papers/RNA_median_24_lfc.RDS") %>% 
+  dplyr::select(RNA_24h_lfc,ENTREZID)
+
+
+
+```
+
+```{r}
+Median_df_2kb <- Only_2kb_ATAC_K27_RNA %>% 
+  dplyr::select(Peakid, Geneid,NCBI_gene) %>% 
+  mutate(NCBI_gene = gsub("[:,]", ";", NCBI_gene)) %>% 
+  separate_longer_delim(NCBI_gene, delim = ";") %>% 
+  distinct() %>% 
+  left_join(H3K27_med_3,by = c("Geneid"="H3K27ac_peak")) %>% 
+  left_join(H3K27_med_24,by = c("Geneid"="H3K27ac_peak")) %>% 
+  left_join(ATAC_med_3,by = c("Peakid"="peak")) %>% 
+  left_join(ATAC_med_24,by = c("Peakid"="peak")) %>%
+  left_join(RNA_median_3, by = c("NCBI_gene"="ENTREZID")) %>% 
+  left_join(RNA_median_24, by = c("NCBI_gene"="ENTREZID")) 
+ 
+  
+```
+
+```{r ATAC, H3K27ac}
+
+Median_df_2kb %>% 
+  ggplot(., aes(y=med_Kac_3h_lfc, x=med_3h_lfc))+
+  geom_point()+
+   sm_statCorr(corr_method = 'pearson')+
+   ggtitle("Correlation of 2kb ATAC regions and H3K27ac regions 3 hours")+
+  xlab("ATAC peak med LFC")+
+   ylab("H3K27ac med LFC")
+
+Median_df_2kb %>% 
+  ggplot(., aes(y=med_Kac_24h_lfc, x=med_24h_lfc))+
+  geom_point()+
+   sm_statCorr(corr_method = 'pearson')+
+   ggtitle("Correlation of 2kb ATAC regions and H3K27ac regions 24 hours")+
+  xlab("ATAC peak med LFC")+
+   ylab("H3K27ac med LFC")
+
+
+```
+```{r  RNA ATAC correlation}
+Median_df_2kb %>% 
+  ggplot(., aes(y=RNA_3h_lfc, x=med_3h_lfc))+
+  geom_point()+
+   sm_statCorr(corr_method = 'pearson')+
+   ggtitle("Correlation of 2kb ATAC regions and RNA expressed genes 3 hours")+
+  xlab("ATAC peak med LFC")+
+   ylab("RNA med LFC")
+
+Median_df_2kb %>% 
+  ggplot(., aes(y=RNA_24h_lfc, x=med_24h_lfc))+
+  geom_point()+
+   sm_statCorr(corr_method = 'pearson')+
+   ggtitle("Correlation of 2kb ATAC regions and RNA expressed genes 24 hours")+
+  xlab("ATAC peak med LFC")+
+   ylab("RNA med LFC")
+```
+
+```{r}
+
+no_H3K27ac_overlap <-   final_peaks %>%
+  dplyr::filter(!Peakid %in% Overlap_regions$Peakid) %>% 
+  dplyr::select (Peakid,NCBI_gene:dist_to_NG) %>% 
+left_join(ATAC_med_3,by = c("Peakid"="peak")) %>% 
+  left_join(ATAC_med_24,by = c("Peakid"="peak")) %>%
+  left_join(RNA_median_3, by = c("NCBI_gene"="ENTREZID")) %>% 
+  left_join(RNA_median_24, by = c("NCBI_gene"="ENTREZID")) %>% 
+  dplyr::filter(dist_to_NG > -2000 & dist_to_NG < 2000)
+
+no_H3K27ac_overlap %>% 
+ggplot(., aes(y=RNA_3h_lfc, x=med_3h_lfc))+
+  geom_point()+
+   sm_statCorr(corr_method = 'pearson')+
+   ggtitle("3 hour 2kb ATAC & RNA expressed, no H3K27ac overlap")+
+  xlab("ATAC peak med LFC")+
+   ylab("RNA med LFC")
+
+
+no_H3K27ac_overlap %>% 
+ggplot(., aes(y=RNA_24h_lfc, x=med_24h_lfc))+
+  geom_point()+
+   sm_statCorr(corr_method = 'pearson')+
+   ggtitle("24 hour 2kb ATAC & RNA expressed, no H3K27ac overlap")+
+  xlab("ATAC peak med LFC")+
+   ylab("RNA med LFC")
+
+```
+
