@@ -173,7 +173,7 @@ save_list <- list("DNR_3"=V.DNR_3.top,"DOX_3"=V.DOX_3.top,"EPI_3"=V.EPI_3.top,"M
 saveRDS(save_list,"data/Final_four_data/re_analysis/Toptable_results.RDS")
 ```
 
-
+### Volcano Plots
 ```{r Volcano plots}
 volcanosig <- function(df, psig.lvl) {
     df <- df %>% 
@@ -286,4 +286,185 @@ corrFC_ff <- cor(FCmatrix_ff)
 htanno_ff <-  HeatmapAnnotation(df = mat_col_ff, col = mat_colors_ff)
 Heatmap(corrFC_ff, top_annotation = htanno_ff)
 ```
+
+```{r example 3hr accesibility}
+drug_pal <- c("#8B006D","#DF707E","#F1B72B", "#3386DD","#707031","#41B333")
+
+# all_results <- bind_rows(save_list, .id = "group")
+DNR_3_top3_ff <- row.names(V.DNR_3.top[1:3,])
+
+log_filt_ff <-
+  filt_raw_counts_noY %>% 
+   cpm(., log=TRUE)%>%
+  as.data.frame() 
+  
+row.names(log_filt_ff) <- row.names(filt_raw_counts_noY)
+
+log_filt_ff %>% 
+  dplyr::filter(row.names(.) %in% DNR_3_top3_ff) %>% 
+  mutate(Peak = row.names(.)) %>% 
+  pivot_longer(cols = !Peak, names_to = "sample", values_to = "counts") %>% 
+  separate("sample", into = c("indv","trt","time")) %>% 
+  mutate(time=factor(time, levels = c("3h","24h"))) %>% 
+  mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
+  ggplot(., aes (x = time, y=counts))+
+  geom_boxplot(aes(fill=trt))+
+  facet_wrap(Peak~.)+
+  ggtitle("top 3 DAR in 3 hour DNR")+
+  scale_fill_manual(values = drug_pal)+
+  theme_bw()
+
+DOX_3_top3_ff <- row.names(V.DOX_3.top[1:3,])
+
+log_filt_ff %>% 
+  dplyr::filter(row.names(.) %in% DOX_3_top3_ff) %>% 
+  mutate(Peak = row.names(.)) %>% 
+  pivot_longer(cols = !Peak, names_to = "sample", values_to = "counts") %>% 
+  separate("sample", into = c("indv","trt","time")) %>% 
+  mutate(time=factor(time, levels = c("3h","24h"))) %>% 
+  mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
+  ggplot(., aes (x = time, y=counts))+
+  geom_boxplot(aes(fill=trt))+
+  facet_wrap(Peak~.)+
+  ggtitle("top 3 DAR in 3 hour DOX")+
+  scale_fill_manual(values = drug_pal)+
+  theme_bw()
+
+EPI_3_top3_ff <- row.names(V.EPI_3.top[1:3,])
+
+log_filt_ff %>% 
+  dplyr::filter(row.names(.) %in% EPI_3_top3_ff) %>% 
+  mutate(Peak = row.names(.)) %>% 
+  pivot_longer(cols = !Peak, names_to = "sample", values_to = "counts") %>% 
+  separate("sample", into = c("indv","trt","time")) %>% 
+  mutate(time=factor(time, levels = c("3h","24h"))) %>% 
+  mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
+  ggplot(., aes (x = time, y=counts))+
+  geom_boxplot(aes(fill=trt))+
+  facet_wrap(Peak~.)+
+  ggtitle("top 3 DAR in 3 hour EPI")+
+  scale_fill_manual(values = drug_pal)+
+  theme_bw()
+
+MTX_3_top3_ff <- row.names(V.MTX_3.top[1:3,])
+
+log_filt_ff %>% 
+  dplyr::filter(row.names(.) %in% MTX_3_top3_ff) %>% 
+  mutate(Peak = row.names(.)) %>% 
+  pivot_longer(cols = !Peak, names_to = "sample", values_to = "counts") %>% 
+  separate("sample", into = c("indv","trt","time")) %>% 
+  mutate(time=factor(time, levels = c("3h","24h"))) %>% 
+  mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
+  ggplot(., aes (x = time, y=counts))+
+  geom_boxplot(aes(fill=trt))+
+  facet_wrap(Peak~.)+
+  ggtitle("top 3 DAR in 3 hour MTX")+
+  scale_fill_manual(values = drug_pal)+
+  theme_bw()
+
+TRZ_3_top3_ff <- row.names(V.TRZ_3.top[1:3,])
+
+log_filt_ff %>% 
+  dplyr::filter(row.names(.) %in% TRZ_3_top3_ff) %>% 
+  mutate(Peak = row.names(.)) %>% 
+  pivot_longer(cols = !Peak, names_to = "sample", values_to = "counts") %>% 
+  separate("sample", into = c("indv","trt","time")) %>% 
+  mutate(time=factor(time, levels = c("3h","24h"))) %>% 
+  mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
+  ggplot(., aes (x = time, y=counts))+
+  geom_boxplot(aes(fill=trt))+
+  facet_wrap(Peak~.)+
+  ggtitle("top 3 DAR in 3 hour TRZ")+
+ scale_fill_manual(values = drug_pal)+
+  theme_bw()
+```
+
+
+
+
+```{r example 24hr accesibility}
+DNR_24_top3_ff <- row.names(V.DNR_24.top[1:3,])
+
+
+log_filt_ff %>% 
+  dplyr::filter(row.names(.) %in% DNR_24_top3_ff) %>% 
+  mutate(Peak = row.names(.)) %>% 
+  pivot_longer(cols = !Peak, names_to = "sample", values_to = "counts") %>% 
+  separate("sample", into = c("indv","trt","time")) %>% 
+  mutate(time=factor(time, levels = c("3h","24h"))) %>% 
+  mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
+  ggplot(., aes (x = time, y=counts))+
+  geom_boxplot(aes(fill=trt))+
+  facet_wrap(Peak~.)+
+  ggtitle("top 3 DAR in 24 hour DNR")+
+  scale_fill_manual(values = drug_pal)+
+  theme_bw()
+
+DOX_24_top3_ff <- row.names(V.DOX_24.top[1:3,])
+
+log_filt_ff %>% 
+  dplyr::filter(row.names(.) %in% DOX_24_top3_ff) %>% 
+  mutate(Peak = row.names(.)) %>% 
+  pivot_longer(cols = !Peak, names_to = "sample", values_to = "counts") %>% 
+  separate("sample", into = c("indv","trt","time")) %>% 
+  mutate(time=factor(time, levels = c("3h","24h"))) %>% 
+  mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
+  ggplot(., aes (x = time, y=counts))+
+  geom_boxplot(aes(fill=trt))+
+  facet_wrap(Peak~.)+
+  ggtitle("top 3 DAR in 24 hour DOX")+
+  scale_fill_manual(values = drug_pal)+
+  theme_bw()
+
+EPI_24_top3_ff <- row.names(V.EPI_24.top[1:3,])
+
+log_filt_ff %>% 
+  dplyr::filter(row.names(.) %in% EPI_24_top3_ff) %>% 
+  mutate(Peak = row.names(.)) %>% 
+  pivot_longer(cols = !Peak, names_to = "sample", values_to = "counts") %>% 
+  separate("sample", into = c("indv","trt","time")) %>% 
+  mutate(time=factor(time, levels = c("3h","24h"))) %>% 
+  mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
+  ggplot(., aes (x = time, y=counts))+
+  geom_boxplot(aes(fill=trt))+
+  facet_wrap(Peak~.)+
+  ggtitle("top 3 DAR in 24 hour EPI")+
+  scale_fill_manual(values = drug_pal)+
+  theme_bw()
+
+MTX_24_top3_ff <- row.names(V.MTX_24.top[1:3,])
+
+log_filt_ff %>% 
+  dplyr::filter(row.names(.) %in% MTX_24_top3_ff) %>% 
+  mutate(Peak = row.names(.)) %>% 
+  pivot_longer(cols = !Peak, names_to = "sample", values_to = "counts") %>% 
+  separate("sample", into = c("indv","trt","time")) %>% 
+  mutate(time=factor(time, levels = c("3h","24h"))) %>% 
+  mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
+  ggplot(., aes (x = time, y=counts))+
+  geom_boxplot(aes(fill=trt))+
+  facet_wrap(Peak~.)+
+  ggtitle("top 3 DAR in 24 hour MTX")+
+  scale_fill_manual(values = drug_pal)+
+  theme_bw()
+
+
+TRZ_24_top3_ff <- row.names(V.TRZ_24.top[1:3,])
+
+log_filt_ff %>% 
+  dplyr::filter(row.names(.) %in% TRZ_24_top3_ff) %>% 
+  mutate(Peak = row.names(.)) %>% 
+  pivot_longer(cols = !Peak, names_to = "sample", values_to = "counts") %>% 
+  separate("sample", into = c("indv","trt","time")) %>% 
+  mutate(time=factor(time, levels = c("3h","24h"))) %>% 
+  mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
+  ggplot(., aes (x = time, y=counts))+
+  geom_boxplot(aes(fill=trt))+
+  facet_wrap(Peak~.)+
+  ggtitle("top 3 DAR in 24 hour TRZ")+
+  scale_fill_manual(values = drug_pal)+
+  theme_bw()
+```
+
+
 
