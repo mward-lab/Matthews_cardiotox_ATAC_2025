@@ -437,13 +437,15 @@ peak_overlap_50unique <-  Filter_TE_list %>%
 
 These number reflect the count of all regions that overlap at least one TE class. Many regions can contain more than one TE, and some TEs (such as some LINEs) overlap more than one region. The first table reflects the numbers of overlapping regions and TEs by at least 1 bp.  The second table reflect the numbers of overlapping regions and TEs by at least 50% of the length of the TE.
 
-Summary of Peak information below:
-* Total number of peaks = `r length(Collapsed_peaks$Peakid)` 
+Summary of Peak information below:  
+* Total number of peaks = `r length(Collapsed_peaks$Peakid)`   
 * Total number of peaks overlapping at least 1 TE = `r length(Unique_peak_overlap$Peakid)`  
-* Total number of peaks overlapping by >50% TE length = `r length(peak_overlap_50unique$Peakid)`   
-**note** these numbers include peaks that are not classified into a motif response cluster.
+* Total number of peaks overlapping by >50% TE length = `r length(peak_overlap_50unique$Peakid)`  
 
-I created a dataframe of all TEs that overlap one peak.  This means the dataframe has many entries for the same peakid, but unique TEs that overlap that peak by at least 1 bp. I then labeled each region-TE pair by the cluster it is assigned to.  Additionally there is a column that contains the ratio of the width of the overlap to the width of the TE.  I stratified all TEs into the following classes: LINEs, SINEs, LTRs, DNAs, Retroposons, and Other using the assigned repClass column from repeatmasker.
+**note:** these numbers include peaks that are not classified into a motif response cluster.
+
+I created a dataframe of all TEs that overlap one peak.  This means the dataframe has many entries for the same peakid, but unique TEs that overlap that peak by at least 1 bp. I then labeled each region-TE pair by the cluster each region is assigned to.  Additionally there is a column that contains the ratio of the width of the overlap to the width of the TE, or as I called it the percent of overlap.  I stratified all TEs into the following classes: LINEs, SINEs, LTRs, DNAs, Retroposons (SVA), and Other using the assigned repClass column from repeatmasker.  
+
 ### Create annotated peaks file
 
 ```{r}
@@ -480,7 +482,7 @@ anno_TE_region_pairs <- Col_TSS_data_gr %>%
 ```
 
 There are a total of `r length(anno_TE_region_pairs$Peakid)` region-TE pairs out of a total of `r length(unique(anno_TE_region_pairs$Peakid))` unique regions. 
-Because of this many to many relationship, I needed to create a dataframe that just contained only those peaks that were in a cluster and count how many overlap
+Because of this many to many relationship, I needed to create a dataframe that just contained only those peaks that were in a cluster and count how many overlap.
 
 ```{r Class status df }
 Class_status_df <-
@@ -506,8 +508,9 @@ Class_status_df <-
 
 ```
 
-To get a better count of response cluster region-TE overlap numbers, I created a dataframe that removed the non-cluster peaks and tallied up the remaining numbers.
-Tally up data frames for enrichment counts
+To get a better count of response cluster region-TE overlap numbers, I created a dataframe that removed the non-cluster peaks and tallied up the remaining numbers.  
+
+### Tally of regions for enrichment counts
 ```{r all TE matrix}
 TE_mat<- Class_status_df %>%
    mutate(mrc=factor(mrc, levels = c("EAR_open","ESR_open","LR_open","ESR_opcl", "EAR_close","ESR_close","LR_close","ESR_clop", "NR"))) %>% 
@@ -742,7 +745,7 @@ mutate(mrc=factor(mrc, levels = c("h.genome","all_peaks","EAR_open","ESR_open", 
 nine_retro %>% 
   ggplot(., aes(x=mrc, fill= repName))+
   geom_bar(position="fill", col="black")+
-  theme_classic()+
+  theme_bw()+
   ggtitle(paste("Retroposon breakdown by nine clusters and Family"))+
   scale_fill_retroposons()
 
@@ -784,7 +787,7 @@ nine_retro %>%
   # dplyr::select(mrc, SVA_D, total, SVA_D_perc) %>% 
   # pivot_longer(., cols = SVA_D:SVA_D_perc, names_to = "sum_col",values_to = "values") %>% 
   # pivot_wider(., id_cols = sum_col, names_from = mrc, values_from = values) %>% 
-  kable(., caption="Breakdown of Retroposon SVA_D counts") %>% 
+  kable(., caption="Breakdown of Retroposon/SVA counts") %>% 
 kable_paper("striped", full_width = TRUE) %>%
   kable_styling(full_width = TRUE, font_size = 14)%>% 
   scroll_box(height = "500px")
