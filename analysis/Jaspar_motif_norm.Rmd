@@ -714,3 +714,36 @@ grid.draw(multi_page_grobs)
 
 
 ```
+making table of significant 
+```{r File for data}
+
+
+full_motifs_dataframe <- bind_rows(EAR_close_combo,
+          ESR_close_combo,
+          LR_close_combo,
+          EAR_open_combo,
+          ESR_open_combo,
+          LR_open_combo,
+          ESR_clop_combo,
+          ESR_opcl_combo)
+
+
+for_supplemental <- full_motifs_dataframe %>% 
+  dplyr::select(CLUSTER:EVALUE.y, ENR_RATIO,mrc_type) %>%  
+  dplyr::filter(ENR_RATIO>1.25) %>% 
+ dplyr::filter(EVALUE.y<0.05) %>%  
+  group_by(mrc_type,CLUSTER) %>% 
+  summarize(ID=paste(unique(ID), collapse = ";"),
+            ALT_ID=paste(unique(ALT_ID), collapse = ";"),
+            motif_name=paste(unique(motif_name),collapse="; "),
+            mrc=unique(mrc_type),
+            sig_val=paste0(min(EVALUE.y),"-",max(EVALUE.y)),
+            order_val=min(EVALUE.y)) %>% 
+    arrange(mrc,order_val) 
+# write_delim(for_supplemental,"data/Final_four_data/re_analysis/motif_cluster_dataframe.txt",delim="\t")
+  
+  
+  
+  
+```
+
