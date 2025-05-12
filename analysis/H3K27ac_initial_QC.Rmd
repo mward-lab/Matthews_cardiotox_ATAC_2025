@@ -100,6 +100,9 @@ H3K27ac_raw_count <- read_delim("C:/Users/renee/ATAC_folder/peaks folder/Raodah_
 
  sample_peaks_locations <- H3K27ac_raw_count[1:6]
  raw_counts_only <- H3K27ac_raw_count[,c(1,7:31)]
+ sample_peaks_locations %>% 
+   GRanges() %>% 
+   saveRDS("data/Final_four_data/re_analysis/H3K27ac_granges_df.RDS")
  
 ```
 Looking at raw counts QC
@@ -231,7 +234,9 @@ Removing C_VEH_3 and B_VEH_24 from matrix and reanalyzing
 ```{r}
 final_23_mat <- PCA_H3_mat %>% 
   as.data.frame() %>% 
-  dplyr::select(C_DNR_24:C_VEH_24,B_MTX_24,B_VEH_3:A_VEH_3) %>% 
+  dplyr::select(!C_VEH_3) %>% 
+   dplyr::select(!B_VEH_24) %>% 
+  
     as.matrix()
 
 hist(final_23_mat, main= "Raw counts across final samples",
@@ -248,7 +253,7 @@ boxplot(cpm(final_23_mat, log=TRUE),
         names=colnames(final_23_mat),
         las=2, cex.axis=.7)
 
-
+saveRDS(final_23_mat, "data/Final_four_data/re_analysis/H3K27ac_final_23_raw_counts.RDS")
 ```
 Filtering check
 ```{r filtering out low counts 23}
@@ -262,14 +267,14 @@ Still no change in row number.  Number of enriched regions is `r dim(filt_final_
 
 ### Differentially acetylated enriched regions
 ```{r}
-groupset <- colnames(filt_final_raw_counts)
+groupset <- colnames(final_23_mat)
 split_parts <- strsplit(groupset, "_")
 group <- sapply(split_parts, function(x) paste(x[2], x[3], sep = "_"))
 indv <- sapply(split_parts, function(x) paste(x[1]))
 
 group <- factor(group, levels=c("DNR_24","DNR_3","DOX_24","DOX_3","EPI_24","EPI_3","MTX_24","MTX_3","VEH_24","VEH_3"))
 
-dge <-  DGEList.data.frame(counts = filt_final_raw_counts, group = group, genes = row.names(filt_final_raw_counts))
+dge <-  DGEList.data.frame(counts = final_23_mat, group = group, genes = row.names(final_23_mat))
 dge <- calcNormFactors(dge)
 dge$samples
 
@@ -315,7 +320,7 @@ efit2 <- eBayes(fit2)
 results = decideTests(efit2)
 
 summary(results)
-plotSA(efit2, main="Mean-Variance trend for final model of H3K27ac")
+# plotSA(efit2, main="Mean-Variance trend for final model of H3K27ac")
 
 ```
 
