@@ -1,0 +1,241 @@
+---
+title: "H3K27ac_cormotif"
+author: "Renee Matthews"
+date: "2025-05-09"
+output: html_document
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE,
+	warning = FALSE,
+		dev = c("png","pdf")
+)
+```
+
+```{css, echo=FALSE}
+pre {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+pre[class] {
+  max-height: 200px;
+}
+```
+
+```{r  package loading}
+library(tidyverse)
+library(kableExtra)
+library(broom)
+library(RColorBrewer)
+library(ChIPseeker)
+library("TxDb.Hsapiens.UCSC.hg38.knownGene")
+library(rtracklayer)
+library(edgeR)
+library(limma)
+library(readr)
+library(BiocGenerics)
+library(gridExtra)
+library(VennDiagram)
+library(scales)
+library(BiocParallel)
+library(ggpubr)
+library(devtools)
+library(eulerr)
+library(genomation)
+library(ggsignif)
+library(plyranges)
+library(ggrepel)
+library(ComplexHeatmap)
+library(smplot2)
+library(stringr)
+library(cowplot)
+```
+
+### Loading raw counts for 23 samples
+
+Filtered out matrix from the [previous QC](https://mward-lab.github.io/Matthews_cardiotox_ATAC_2025/H3K27ac_initial_QC.html) page.
+```{r}
+final_23_mat <- readRDS("data/Final_four_data/re_analysis/H3K27ac_final_23_raw_counts_noM.RDS")
+```
+
+Filtering check
+```{r filtering out low counts 23}
+lcpm_f <- cpm(final_23_mat, log= TRUE)
+  ### for determining the basic cutoffs
+filt_final_raw_counts <- final_23_mat[rowMeans(lcpm_f)> 0,]
+dim(filt_final_raw_counts)
+
+```
+
+#### Custom Cormotif script
+```{r echo=TRUE, file='code/corMotifcustom.R'}
+
+```
+#### Making the dge cpm-TMM object and annotation matrix
+```{r}
+
+annotation_mat <- data.frame(timeset=colnames(filt_final_raw_counts)) %>%
+  mutate(sample = timeset) %>% 
+  separate(timeset, into = c("indv","trt","time"), sep= "_") %>% 
+  mutate(time = factor(time, levels = c("3", "24"))) %>% 
+  mutate(trt = factor(trt, levels = c("DOX","EPI", "DNR", "MTX", "TRZ", "VEH"))) %>% 
+  mutate(indv=factor(indv, levels = c("A","B","C","D"))) %>% 
+  mutate(trt_time=paste0(trt,"_",time))
+
+groupset <- colnames(filt_final_raw_counts)
+split_parts <- strsplit(groupset, "_")
+group <- sapply(split_parts, function(x) paste(x[2], x[3], sep = "_"))
+indv <- sapply(split_parts, function(x) paste(x[1]))
+
+group <- factor(group, levels=c("DNR_24","DNR_3","DOX_24","DOX_3","EPI_24","EPI_3","MTX_24","MTX_3","VEH_24","VEH_3"))
+
+dge <-  DGEList.data.frame(counts = filt_final_raw_counts, group = group, genes = row.names(filt_final_raw_counts))
+dge <- calcNormFactors(dge)
+dge$samples
+
+```
+Checking that I have 23 columns and the normalization factors.
+
+
+#### Setting up cormotif compid
+
+```{r Initial cormotif data}
+group_fac <- group
+groupid <- as.numeric(group_fac)
+### order of samples
+# DNR_24 DNR_3  DOX_24 EPI_24 EPI_3  MTX_24 MTX_3  VEH_24 DNR_24 DNR_3  DOX_3  EPI_24 EPI_3  MTX_24
+# VEH_3  DNR_24 DNR_3  DOX_24 DOX_3  MTX_24 MTX_3  VEH_24 VEH_3 
+#   1  2  3  5  6  7  8  9  1  2  4  5  6  7 10  1  2  3  4  7  8  9 10
+
+compid <- data.frame(c1= c(2,4,6,8,1,3,5,7), c2 = c( 10,10,10,10,9,9,9,9))
+compid
+y_TMM_cpm_ac <- cpm(dge, log = TRUE)
+
+```
+#### Running Cormotif
+```{r Cormotif run, eval=FALSE}
+set.seed(31415)
+cormotif_initial_ac <- cormotiffit(exprs = y_TMM_cpm_ac, groupid = groupid, compid = compid, K=1:6, max.iter = 500, runtype = "logCPM")
+
+saveRDS(cormotif_initial_ac, "data/Final_four_data/re_analysis/cormotif_23sample_initial_noM.RDS")
+
+```
+
+```{r}
+cormotif_initial_ac <- readRDS("data/Final_four_data/re_analysis/cormotif_23sample_initial_noM.RDS")
+plotIC(cormotif_initial_ac)
+plotMotif(cormotif_initial_ac)
+
+```
+
+```{r Cluster assingments}
+motif_prob <- cormotif_initial_ac$bestmotif$clustlike
+
+row.names(motif_prob) <- row.names(y_TMM_cpm_ac)
+
+group1 <- motif_prob %>% 
+  as.data.frame() %>% 
+  dplyr::filter(V1>0.5 & V2<0.5 & V3 <0.5& V4<0.5) %>% 
+  rownames_to_column("Peakid") %>% 
+  dplyr::select(Peakid) %>% 
+  separate(Peakid, into=c("chr","start","end"),remove = FALSE)
+  
+  
+group2 <- motif_prob %>% 
+  as.data.frame() %>% 
+  dplyr::filter(V1<0.5 & V2>0.5 & V3 <0.5& V4<0.5) %>% 
+  rownames_to_column("Peakid") %>% 
+  dplyr::select(Peakid) %>% 
+  separate(Peakid, into=c("chr","start","end"),remove = FALSE)
+  
+  
+  group3 <- motif_prob %>% 
+  as.data.frame() %>% 
+  dplyr::filter(V1<0.5 & V2<0.5 & V3 >0.5& V4<0.5) %>% 
+  rownames_to_column("Peakid") %>% 
+  dplyr::select(Peakid) %>% 
+  separate(Peakid, into=c("chr","start","end"),remove = FALSE)
+  
+  
+  
+  group4 <- motif_prob %>% 
+  as.data.frame() %>% 
+  dplyr::filter(V1<0.5 & V2<0.5 & V3 <0.5& V4>0.5) %>% 
+  rownames_to_column("Peakid") %>% 
+  dplyr::select(Peakid) %>% 
+  separate(Peakid, into=c("chr","start","end"),remove = FALSE)
+
+
+```
+
+Number of regions in group 1 (no-response)`r length(group1$Peakid)`
+
+Number of regions in group 2 (early acute response)`r length(group2$Peakid)`
+
+Number of regions in group 1 (late response)`r length(group3$Peakid)`
+
+Number of regions in group 1 (early-sustained)`r length(group4$Peakid)`
+
+```{r sampling}
+set.seed(31415)
+
+peaks1 <- group1 %>% 
+  slice_sample(n=3) %>% 
+  dplyr::select(Peakid)
+
+peaks2 <- group2 %>% 
+  slice_sample(n=3) %>% 
+  dplyr::select(Peakid)
+
+peaks3 <- group3 %>% 
+  slice_sample(n=3) %>% 
+  dplyr::select(Peakid)
+
+peaks4 <- group4 %>% 
+  slice_sample(n=3) %>% 
+  dplyr::select(Peakid)
+
+
+```
+
+```{r}
+drug_pal <- c("#8B006D","#DF707E","#F1B72B", "#3386DD","#41B333")
+
+
+example_boxplots <- function(peaks_df){
+  df_name <- deparse(substitute(peaks_df))
+y_TMM_cpm_ac %>%
+  as.data.frame() %>% 
+  rownames_to_column("Peakid") %>% 
+  dplyr::filter(Peakid %in% peaks_df$Peakid) %>% 
+  pivot_longer(cols=-Peakid, names_to="name", values_to = "log_cpm") %>% 
+  separate_wider_delim(cols=name,delim="_",names=c("indv","trt","time")) %>% 
+  mutate(trt=factor(trt,levels=c("DOX","EPI","DNR","MTX","VEH")),
+         time=factor(time, levels=c("3","24"),labels=c("3 hours","24 hours"))) %>% 
+  ggplot(., aes(x=time, y=log_cpm))+
+  geom_boxplot(aes(fill=trt))+
+   theme_bw()+
+  facet_wrap(~Peakid,nrow = 3, ncol = 6 )+
+ scale_fill_manual(values=drug_pal)+
+  theme(strip.text = element_text(face = "bold",  hjust = 0, size = 8),
+        strip.background = element_rect(fill = "white", linetype = "solid",
+                                        color = "black", linewidth = 1),
+        panel.spacing = unit(1, 'points'))+
+  ggtitle(df_name)
+}
+
+
+```
+
+```{r}
+example_boxplots(peaks1)
+
+example_boxplots(peaks2)
+
+example_boxplots(peaks3)
+
+example_boxplots(peaks4)
+```
+
