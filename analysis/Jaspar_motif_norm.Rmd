@@ -78,7 +78,7 @@ mrc_palette <- c(
 
 ```
 
-### EAR_open data EAR_open
+### EAR_open data
 ```{r EAR_open xstreme output data loading}
 
 
@@ -545,6 +545,7 @@ LR_open_combo %>%
    dplyr::filter(ENR_RATIO>ER_rat) %>%
   dplyr::select(RANK,CLUSTER,motif_name,SIM_MOTIF,ALT_ID, ID,EVALUE.y,mrc_type,TP.)%>%
   arrange(.,EVALUE.y) %>%
+  slice_head(n=80)%>% 
   mutate(log10Evalue= log(EVALUE.y, base = 10)*(-1)) %>% 
   mutate(motif_name=if_else(str_starts(motif_name,"^Z*"),paste(motif_name, RANK, sep="_"), if_else(motif_name=="KLF9",paste(motif_name, RANK,sep="_"),motif_name)))%>%
   ggplot(., aes (y= reorder(motif_name,log10Evalue))) +
@@ -555,22 +556,29 @@ LR_open_combo %>%
   ylab("Enriched TF motif")+
   ggtitle(paste( mrc_type,"response peaks(200bp)Enrichment ratio:",ER_rat))
 
+
+
+
 LR_open_combo %>% 
    dplyr::filter(ENR_RATIO>ER_rat) %>%
   dplyr::select(RANK,CLUSTER,motif_name,SIM_MOTIF,ALT_ID, ID,EVALUE.y,mrc_type,TP.)%>%
   arrange(.,EVALUE.y) %>%
-  mutate(log10Evalue= log(EVALUE.y, base = 10)*(-1)) %>%
+#   mutate(
+#   RANK = as.numeric(RANK),
+#   log10Evalue = -log10(if_else(EVALUE.y == 0, 1e-300, EVALUE.y)) + 1e-5 * (max(RANK, na.rm = TRUE) - RANK)
+# ) %>% 
+    mutate(log10Evalue = -log10(if_else(EVALUE.y == 0, 1e-300, EVALUE.y))) %>% 
   distinct(CLUSTER,.keep_all = TRUE) %>% 
   slice_head(n=5) %>% 
   mutate(motif_name=if_else(str_starts(motif_name,"^Z*"),paste(motif_name, RANK, sep="_"), if_else(motif_name=="KLF9",paste(motif_name, RANK,sep="_"),motif_name)))%>%
   ggplot(., aes (y= reorder(motif_name,log10Evalue))) +
   geom_col(aes(x=log10Evalue),fill=mrc_palette[mrc_type]) +
-  geom_point(aes(x=`TP.`*6), size =4)+
-  scale_x_continuous(expand=c (0,.125),sec.axis = sec_axis(transform= ~./6,name="Percent of peaks with motif"))+
+  geom_point(aes(x=`TP.`*3), size =4)+
+  scale_x_continuous(expand=c (0,.125),sec.axis = sec_axis(transform= ~./3,name="Percent of peaks with motif"))+
   theme_classic()+
   ylab("Enriched TF motif")+
   ggtitle(paste( mrc_type,"response peaks(200bp)Enrichment ratio:",ER_rat))
-
+ 
 ```
 
 
@@ -743,7 +751,8 @@ for_supplemental <- full_motifs_dataframe %>%
 # write_delim(for_supplemental,"data/Final_four_data/re_analysis/motif_cluster_dataframe.txt",delim="\t")
   
   
-  
-  
+  for_supplemental
+  full_motifs_dataframe %>% 
+    dplyr::filter(mrc_type=="LR_open")
 ```
 
