@@ -523,15 +523,15 @@ project makes it easier to run your code on other machines.</p>
 <div class="panel panel-default">
 <div class="panel-heading">
 <p class="panel-title">
-<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcommwardlabMatthewscardiotoxATAC2025tree76a1111f2214f7a3035c10329c1465ac97fe4de0targetblank76a1111a">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcommwardlabMatthewscardiotoxATAC2025treefd6cfe1d5f976c7414585e75429db834ee4c7e13targetblankfd6cfe1a">
 <span class="glyphicon glyphicon-ok text-success"
 aria-hidden="true"></span> <strong>Repository version:</strong>
-<a href="https://github.com/mward-lab/Matthews_cardiotox_ATAC_2025/tree/76a1111f2214f7a3035c10329c1465ac97fe4de0" target="_blank">76a1111</a>
+<a href="https://github.com/mward-lab/Matthews_cardiotox_ATAC_2025/tree/fd6cfe1d5f976c7414585e75429db834ee4c7e13" target="_blank">fd6cfe1</a>
 </a>
 </p>
 </div>
 <div
-id="strongRepositoryversionstrongahrefhttpsgithubcommwardlabMatthewscardiotoxATAC2025tree76a1111f2214f7a3035c10329c1465ac97fe4de0targetblank76a1111a"
+id="strongRepositoryversionstrongahrefhttpsgithubcommwardlabMatthewscardiotoxATAC2025treefd6cfe1d5f976c7414585e75429db834ee4c7e13targetblankfd6cfe1a"
 class="panel-collapse collapse">
 <div class="panel-body">
 <p>
@@ -541,7 +541,7 @@ reproducibility.
 </p>
 <p>
 The results in this page were generated with repository version
-<a href="https://github.com/mward-lab/Matthews_cardiotox_ATAC_2025/tree/76a1111f2214f7a3035c10329c1465ac97fe4de0" target="_blank">76a1111</a>.
+<a href="https://github.com/mward-lab/Matthews_cardiotox_ATAC_2025/tree/fd6cfe1d5f976c7414585e75429db834ee4c7e13" target="_blank">fd6cfe1</a>.
 See the <em>Past versions</em> tab to see a history of the changes made
 to the R Markdown and HTML files.
 </p>
@@ -732,6 +732,7 @@ Untracked files:
 Unstaged changes:
     Modified:   ATAC_learning.Rproj
     Modified:   analysis/DEG_analysis.Rmd
+    Modified:   analysis/H3K27ac_cormotif.Rmd
     Modified:   analysis/H3K27ac_initial_QC.Rmd
     Modified:   analysis/H3K27ac_integration.Rmd
     Modified:   analysis/Jaspar_motif.Rmd
@@ -782,6 +783,40 @@ Message
 </tr>
 </thead>
 <tbody>
+<tr>
+<td>
+Rmd
+</td>
+<td>
+<a href="https://github.com/mward-lab/Matthews_cardiotox_ATAC_2025/blob/fd6cfe1d5f976c7414585e75429db834ee4c7e13/analysis/Jaspar_motif_norm.Rmd" target="_blank">fd6cfe1</a>
+</td>
+<td>
+reneeisnowhere
+</td>
+<td>
+2025-05-12
+</td>
+<td>
+added supplemental data table code
+</td>
+</tr>
+<tr>
+<td>
+html
+</td>
+<td>
+<a href="https://rawcdn.githack.com/mward-lab/Matthews_cardiotox_ATAC_2025/a3f6c4cff0adc3b4a4b821573159d01c9709c19a/docs/Jaspar_motif_norm.html" target="_blank">a3f6c4c</a>
+</td>
+<td>
+reneeisnowhere
+</td>
+<td>
+2025-05-12
+</td>
+<td>
+Build site.
+</td>
+</tr>
 <tr>
 <td>
 html
@@ -88014,6 +88049,30 @@ meme_motifs_ESR_close &lt;- read_meme(&quot;C:/Users/renee/ATAC_folder/ATAC_meme
 meme_motifs_LR_close &lt;- read_meme(&quot;C:/Users/renee/ATAC_folder/ATAC_meme_data/new_analysis/LR_close_xstreme/xstreme.txt&quot;)
 meme_motifs_ESR_opcl &lt;- read_meme(&quot;C:/Users/renee/ATAC_folder/ATAC_meme_data/new_analysis/ESR_opcl_xstreme/xstreme.txt&quot;)
 meme_motifs_ESR_clop &lt;- read_meme(&quot;C:/Users/renee/ATAC_folder/ATAC_meme_data/new_analysis/ESR_clop_xstreme/xstreme.txt&quot;)</code></pre>
+<p>making table of significant</p>
+<pre class="r"><code>full_motifs_dataframe &lt;- bind_rows(EAR_close_combo,
+          ESR_close_combo,
+          LR_close_combo,
+          EAR_open_combo,
+          ESR_open_combo,
+          LR_open_combo,
+          ESR_clop_combo,
+          ESR_opcl_combo)
+
+
+for_supplemental &lt;- full_motifs_dataframe %&gt;% 
+  dplyr::select(CLUSTER:EVALUE.y, ENR_RATIO,mrc_type) %&gt;%  
+  dplyr::filter(ENR_RATIO&gt;1.25) %&gt;% 
+ dplyr::filter(EVALUE.y&lt;0.05) %&gt;%  
+  group_by(mrc_type,CLUSTER) %&gt;% 
+  summarize(ID=paste(unique(ID), collapse = &quot;;&quot;),
+            ALT_ID=paste(unique(ALT_ID), collapse = &quot;;&quot;),
+            motif_name=paste(unique(motif_name),collapse=&quot;; &quot;),
+            mrc=unique(mrc_type),
+            sig_val=paste0(min(EVALUE.y),&quot;-&quot;,max(EVALUE.y)),
+            order_val=min(EVALUE.y)) %&gt;% 
+    arrange(mrc,order_val) 
+# write_delim(for_supplemental,&quot;data/Final_four_data/re_analysis/motif_cluster_dataframe.txt&quot;,delim=&quot;\t&quot;)</code></pre>
 <br>
 <p>
 <button type="button" class="btn btn-default btn-workflowr btn-workflowr-sessioninfo" data-toggle="collapse" data-target="#workflowr-sessioninfo" style="display: block;">
