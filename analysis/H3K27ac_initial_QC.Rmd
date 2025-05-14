@@ -108,7 +108,6 @@ H3K27ac_raw_count <- read_delim("C:/Users/renee/ATAC_folder/peaks folder/Raodah_
 Looking at raw counts QC
 
 ```{r examine inital data}
-
 PCA_H3_mat <- raw_counts_only%>% column_to_rownames("Geneid") %>% 
   as.matrix()
 hist(PCA_H3_mat, main= "Raw counts across samples",
@@ -124,9 +123,7 @@ boxplot(cpm(PCA_H3_mat, log=TRUE),
                         col=4,
         names=colnames(PCA_H3_mat),
         las=2, cex.axis=.7)
-
 ```
-
 
 ### Heatmap of unfiltered log2 cpm counts
 
@@ -168,6 +165,7 @@ Heatmap(cor_raw_counts, top_annotation = htanno_full, column_title = "H3K27ac lo
 
 
 ```
+
 Filtering out low count enriched regions
 
 ```{r filtering out low counts 25}
@@ -204,8 +202,8 @@ pca_H3K27ac_anno %>%
    ggtitle(expression("PCA of log"[2]*"(cpm) H3K27ac filtered enriched regions"))+
   theme_bw()+
   guides(col="none", size =4)+
-  labs(y = paste0("PC 2 (",round(plotting_var_names[2],1),"%)")
-       , x =paste0("PC 1 (",round(plotting_var_names[1],1),"%)"))+
+  labs(y = paste0("PC 2 (",round(plotting_var_names[2],2),"%)")
+       , x =paste0("PC 1 (",round(plotting_var_names[1],2),"%)"))+
   theme(plot.title=element_text(size= 14,hjust = 0.5),
         axis.title = element_text(size = 12, color = "black"))
 
@@ -255,7 +253,7 @@ boxplot(cpm(final_23_mat, log=TRUE),
 
 saveRDS(final_23_mat, "data/Final_four_data/re_analysis/H3K27ac_final_23_raw_counts.RDS")
 ```
-Filtering check
+#### Filtering check
 ```{r filtering out low counts 23}
 lcpm_f <- cpm(final_23_mat, log= TRUE)
   ### for determining the basic cutoffs
@@ -265,7 +263,8 @@ dim(filt_final_raw_counts)
 ```
 Still no change in row number.  Number of enriched regions is `r dim(filt_final_raw_counts)` (rows and columns)
 
-### Differentially acetylated enriched regions
+
+#### Differentially acetylated enriched regions
 ```{r}
 groupset <- colnames(final_23_mat)
 split_parts <- strsplit(groupset, "_")
@@ -320,7 +319,7 @@ efit2 <- eBayes(fit2)
 results = decideTests(efit2)
 
 summary(results)
-# plotSA(efit2, main="Mean-Variance trend for final model of H3K27ac")
+plotSA(efit2, main="Mean-Variance trend for final model of H3K27ac")
 
 ```
 
@@ -358,7 +357,7 @@ volcanosig <- function(df, psig.lvl) {
     # df$genelabels[1:topg] <- df$rownames[1:topg]
     
   ggplot(df, aes(x=logFC, y=-log10(P.Value))) + 
-    geom_point(aes(color=threshold))+
+    ggrastr::geom_point_rast(aes(color=threshold))+
     # geom_text_repel(aes(label = genelabels), segment.curvature = -1e-20,force = 1,size=2.5,
     # arrow = arrow(length = unit(0.015, "npc")), max.overlaps = Inf) +
     #geom_hline(yintercept = -log10(psig.lvl))+
@@ -366,30 +365,31 @@ volcanosig <- function(df, psig.lvl) {
     ylab(expression("-log"[10]*"P Value"))+
     scale_color_manual(values = c("black", "red","blue"))+
     theme_cowplot()+
-    ylim(0,20)+
-    xlim(-6,6)+
+    ylim(0,15)+
+    xlim(-7,7)+
     theme(legend.position = "none",
               plot.title = element_text(size = rel(1.5), hjust = 0.5),
               axis.title = element_text(size = rel(0.8))) 
 }
 
-v1 <- volcanosig(V.DNR_3.top, 0.01)+ ggtitle("DNR 3 hour")
-v2 <- volcanosig(V.DNR_24.top, 0.01)+ ggtitle("DNR 24 hour")+ylab("")
-v3 <- volcanosig(V.DOX_3.top, 0.01)+ ggtitle("DOX 3 hour")
-v4 <- volcanosig(V.DOX_24.top, 0.01)+ ggtitle("DOX 24 hour")+ylab("")
-v5 <- volcanosig(V.EPI_3.top, 0.01)+ ggtitle("EPI 3 hour")
-v6 <- volcanosig(V.EPI_24.top, 0.01)+ ggtitle("EPI 24 hour")+ylab("")
-v7 <- volcanosig(V.MTX_3.top, 0.01)+ ggtitle("MTX 3 hour")
-v8 <- volcanosig(V.MTX_24.top, 0.01)+ ggtitle("MTX 24 hour")+ylab("")
+v1 <- volcanosig(V.DNR_3.top, 0.05)+ ggtitle("DNR 3 hour")
+v2 <- volcanosig(V.DNR_24.top, 0.05)+ ggtitle("DNR 24 hour")+ylab("")
+v3 <- volcanosig(V.DOX_3.top, 0.05)+ ggtitle("DOX 3 hour")
+v4 <- volcanosig(V.DOX_24.top, 0.05)+ ggtitle("DOX 24 hour")+ylab("")
+v5 <- volcanosig(V.EPI_3.top, 0.05)+ ggtitle("EPI 3 hour")
+v6 <- volcanosig(V.EPI_24.top, 0.05)+ ggtitle("EPI 24 hour")+ylab("")
+v7 <- volcanosig(V.MTX_3.top, 0.05)+ ggtitle("MTX 3 hour")
+v8 <- volcanosig(V.MTX_24.top, 0.05)+ ggtitle("MTX 24 hour")+ylab("")
 
 
-plot_grid(v1,v2,  rel_widths =c(.9,1))
-plot_grid(v3,v4,  rel_widths =c(.9,1))
-plot_grid(v5,v6,  rel_widths =c(.9,1))
-plot_grid(v7,v8,  rel_widths =c(.9,1))
+plot_grid(v1,v2,  rel_widths =c(1,1))
+plot_grid(v3,v4,  rel_widths =c(1,1))
+plot_grid(v5,v6,  rel_widths =c(1,1))
+plot_grid(v7,v8,  rel_widths =c(1,1))
 
 
 ```
+
 
 H3K27ac enriched regions median dataframe calculations
 ```{r bind all lists, eval=FALSE}
@@ -419,7 +419,7 @@ write_csv(median_3_lfc, "data/Final_four_data/re_analysis/median_3_lfc_H3K27ac_n
 write_csv(median_24_lfc, "data/Final_four_data/re_analysis/median_24_lfc_H3K27ac_norm.csv")
 
 ```
-Correlation of LFC between treatments
+#### Correlation of LFC between treatments
 ```{r LFC correlation}
 AC_matrix_ff <- subset(efit2$coefficients)
 
@@ -451,7 +451,7 @@ mat_colors_ac <-
 names(mat_colors_ac$time) <- unique(mat_col_ac$time)
 names(mat_colors_ac$class) <- unique(mat_col_ac$class)
 # names(mat_colors_FC$TOP2i) <- unique(mat_col_FC$TOP2i)
-pearson_corr_AC <- cor(AC_matrix_ff, method = "pearson")
+pearson_corr_AC<- cor(AC_matrix_ff, method = "pearson")
 spearman_corr_AC <- cor(AC_matrix_ff, method = "spearman")
 
 htanno_AC <-  HeatmapAnnotation(df = mat_col_ac, col = mat_colors_ac)
@@ -459,6 +459,278 @@ Heatmap(pearson_corr_AC, top_annotation = htanno_AC,
         column_title = "H3K27ac LFC Pearson Correlation")
 
 Heatmap(spearman_corr_AC, top_annotation = htanno_AC,
+        column_title = "H3K27ac LFC Spearman Correlation")
+```
+
+
+Raw counts without chrM (not doing)
+```{r examine inital data no M,eval=FALSE}
+
+PCA_H3_mat_noM <-raw_counts_only%>% 
+  column_to_rownames("Geneid") %>% 
+  dplyr::filter(!grepl("^chrM", rownames(.))) %>% 
+  as.matrix()
+
+hist(PCA_H3_mat_noM, main= "Raw counts across samples",
+     xlab = "Raw counts",
+     col=4)
+hist(cpm(PCA_H3_mat_noM, log=TRUE), 
+     main = expression("Histogram of Log"[2]*" cpm unfiltered"),
+     xlab = expression("Log"[2]*" counts-per-million"),
+     col=4)
+
+boxplot(cpm(PCA_H3_mat_noM, log=TRUE),
+        main=expression("Boxplot of Log"[2]*" counts-per-million without chrM"),
+                        col=4,
+        names=colnames(PCA_H3_mat_noM),
+        las=2, cex.axis=.7)
+
+```
+
+#### Removing outlier noM
+Removing C_VEH_3 and B_VEH_24 from matrix and reanalyzing
+```{r,eval=FALSE}
+final_23_mat_noM <- PCA_H3_mat_noM %>% 
+  as.data.frame() %>% 
+  dplyr::select(!C_VEH_3) %>% 
+   dplyr::select(!B_VEH_24) %>% 
+  
+    as.matrix()
+
+hist(final_23_mat_noM, main= "Raw counts across final samples_noM",
+     xlab = "Raw counts",
+     col=6)
+hist(cpm(final_23_mat_noM, log=TRUE), 
+     main = expression("Histogram of Log"[2]*" cpm unfiltered final counts H3K27ac_noM"),
+     xlab = expression("Log"[2]*" counts-per-million"),
+     col=6)
+
+boxplot(cpm(final_23_mat_noM, log=TRUE),
+        main=expression("Boxplot of Log"[2]*" counts-per-million final H3K27ac samples_noM"),
+                        col=6,
+        names=colnames(final_23_mat_noM),
+        las=2, cex.axis=.7)
+
+saveRDS(final_23_mat_noM, "data/Final_four_data/re_analysis/H3K27ac_final_23_raw_counts_noM.RDS")
+```
+
+```{r full heatmapnoM, fig.width=10, fig.height=10,eval=FALSE}
+cor_raw_counts_noM <- PCA_H3_mat_noM %>% 
+  cpm(., log = TRUE) %>% 
+  cor(.,method = "pearson")
+
+anno_raw_counts_noM <- data.frame(timeset = colnames(PCA_H3_mat))
+
+counts_corr_mat_noM <-anno_raw_counts_noM %>%
+  separate(timeset, into = c("indv","trt","time"), sep= "_") %>% 
+  mutate(class = if_else(trt == "DNR", "AC", 
+                         if_else(trt == "DOX", "AC", 
+                                 if_else(trt == "EPI", "AC", "nAC")))) %>%
+  mutate(TOP2i = if_else(trt == "DNR", "yes", 
+                         if_else(trt == "DOX", "yes", 
+                                 if_else(trt == "EPI", "yes", 
+                                         if_else(trt == "MTX", "yes", "no"))))) 
+
+                         
+ mat_colors <- list( 
+   trt= c("#F1B72B","#8B006D","#DF707E","#3386DD","#41B333"),
+   indv=c("#1B9E77", "#D95F02" ,"#7570B3"),
+   time=c("pink", "chocolate4"),
+   class=c("yellow1","darkorange1"), 
+   TOP2i =c("darkgreen","lightgreen"))                        
+                         
+names(mat_colors$trt)   <- unique(counts_corr_mat$trt)                      
+names(mat_colors$indv) <- unique(counts_corr_mat$indv)
+names(mat_colors$time) <- unique(counts_corr_mat$time)
+names(mat_colors$class) <- unique(counts_corr_mat$class)
+names(mat_colors$TOP2i) <- unique(counts_corr_mat$TOP2i)
+
+
+htanno_full <-  ComplexHeatmap::HeatmapAnnotation(df = counts_corr_mat_noM, col = mat_colors)
+Heatmap(cor_raw_counts_noM, top_annotation = htanno_full, column_title = "H3K27ac log2 cpm unfiltered counts correlation noM")
+
+
+```
+
+#### Filtering check
+```{r filtering out low counts 23noM,eval=FALSE}
+lcpm_f_noM <- cpm(final_23_mat_noM, log= TRUE)
+  ### for determining the basic cutoffs
+filt_final_raw_counts_noM <- final_23_mat_noM[rowMeans(lcpm_f_noM)> 0,]
+dim(filt_final_raw_counts_noM)
+
+```
+Still no change in row number.  Number of enriched regions is `r dim(filt_final_raw_counts)` (rows and columns)
+
+
+### Differentially acetylated enriched regions noM
+```{r,eval=FALSE}
+groupset <- colnames(final_23_mat_noM)
+split_parts <- strsplit(groupset, "_")
+group <- sapply(split_parts, function(x) paste(x[2], x[3], sep = "_"))
+indv <- sapply(split_parts, function(x) paste(x[1]))
+
+group <- factor(group, levels=c("DNR_24","DNR_3","DOX_24","DOX_3","EPI_24","EPI_3","MTX_24","MTX_3","VEH_24","VEH_3"))
+
+dge_noM <-  DGEList.data.frame(counts = final_23_mat_noM, group = group, genes = row.names(final_23_mat_noM))
+dge_noM <- calcNormFactors(dge_noM)
+dge_noM$samples
+
+
+
+```
+
+Making model matrix
+```{r create mmnoM,eval=FALSE}
+ mm <- model.matrix(~0 +group)
+colnames(mm) <-  c("DNR_24", "DNR_3", "DOX_24","DOX_3","EPI_24", "EPI_3","MTX_24", "MTX_3","VEH_24", "VEH_3")
+mm
+
+```
+
+
+```{r run pipeline noM,eval=FALSE}
+y <- voom(dge_noM, mm,plot =FALSE)
+
+corfit <- duplicateCorrelation(y, mm, block = indv)
+ 
+v <- voom(dge_noM, mm, block = indv, correlation = corfit$consensus)
+
+fit <- lmFit(v, mm, block = indv, correlation = corfit$consensus)
+
+
+cm <- makeContrasts(
+  DNR_3.VEH_3 = DNR_3-VEH_3,
+  DOX_3.VEH_3 = DOX_3-VEH_3,
+  EPI_3.VEH_3 = EPI_3-VEH_3,
+  MTX_3.VEH_3 = MTX_3-VEH_3,
+  DNR_24.VEH_24 =DNR_24-VEH_24,
+  DOX_24.VEH_24= DOX_24-VEH_24,
+  EPI_24.VEH_24= EPI_24-VEH_24,
+  MTX_24.VEH_24= MTX_24-VEH_24,
+  levels = mm)
+
+
+fit2<- contrasts.fit(fit, contrasts=cm)
+
+efit2_noM <- eBayes(fit2)
+
+results_noM = decideTests(efit2_noM)
+
+summary(results_noM)
+plotSA(efit2_noM, main="Mean-Variance trend for final model of H3K27ac")
+
+```
+
+```{r Extract info from toptable and store as RDSnoM,eval=FALSE}
+V.DNR_3.top= topTable(efit2_noM, coef=1, adjust.method="BH", number=Inf, sort.by="p")
+V.DOX_3.top= topTable(efit2_noM, coef=2, adjust.method="BH", number=Inf, sort.by="p")
+V.EPI_3.top= topTable(efit2_noM, coef=3, adjust.method="BH", number=Inf, sort.by="p")
+V.MTX_3.top= topTable(efit2_noM, coef=4, adjust.method="BH", number=Inf, sort.by="p")
+V.DNR_24.top= topTable(efit2_noM, coef=5, adjust.method="BH", number=Inf, sort.by="p")
+V.DOX_24.top= topTable(efit2_noM, coef=6, adjust.method="BH", number=Inf, sort.by="p")
+V.EPI_24.top= topTable(efit2_noM, coef=7, adjust.method="BH", number=Inf, sort.by="p")
+V.MTX_24.top= topTable(efit2_noM, coef=8, adjust.method="BH", number=Inf, sort.by="p")
+
+
+# plot_filenames <- c("V.DNR_3.top","V.DOX_3.top","V.EPI_3.top","V.MTX_3.top",
+#                     "V.TRZ_.top","V.DNR_24.top","V.DOX_24.top","V.EPI_24.top",
+#                     "V.MTX_24.top","V.TRZ_24.top")
+# plot_files <- c( V.DNR_3.top,V.DOX_3.top,V.EPI_3.top,V.MTX_3.top,
+#                     V.TRZ_3.top,V.DNR_24.top,V.DOX_24.top,V.EPI_24.top,
+#                     V.MTX_24.top,V.TRZ_24.top)
+
+save_list <- list("DNR_3"=V.DNR_3.top,"DOX_3"=V.DOX_3.top,"EPI_3"=V.EPI_3.top,"MTX_3"=V.MTX_3.top,"DNR_24"=V.DNR_24.top,"DOX_24"=V.DOX_24.top,"EPI_24"=V.EPI_24.top,"MTX_24"= V.MTX_24.top)
+
+saveRDS(save_list,"data/Final_four_data/re_analysis/Toptable_results_H3K27ac_data_noM.RDS")
+```
+
+
+```{r Volcano plotsnoM,eval=FALSE}
+volcanosig <- function(df, psig.lvl) {
+    df <- df %>% 
+    mutate(threshold = ifelse(adj.P.Val > psig.lvl, "A", ifelse(adj.P.Val <= psig.lvl & logFC<=0,"B","C")))
+      # ifelse(adj.P.Val <= psig.lvl & logFC >= 0,"B", "C")))
+    ##This is where I could add labels, but I have taken out
+    # df <- df %>% mutate(genelabels = "")
+    # df$genelabels[1:topg] <- df$rownames[1:topg]
+    
+  ggplot(df, aes(x=logFC, y=-log10(P.Value))) + 
+    geom_point(aes(color=threshold))+
+    # geom_text_repel(aes(label = genelabels), segment.curvature = -1e-20,force = 1,size=2.5,
+    # arrow = arrow(length = unit(0.015, "npc")), max.overlaps = Inf) +
+    #geom_hline(yintercept = -log10(psig.lvl))+
+    xlab(expression("Log"[2]*" FC"))+
+    ylab(expression("-log"[10]*"P Value"))+
+    scale_color_manual(values = c("black", "red","blue"))+
+    theme_cowplot()+
+    ylim(0,20)+
+    xlim(-6,6)+
+    theme(legend.position = "none",
+              plot.title = element_text(size = rel(1.5), hjust = 0.5),
+              axis.title = element_text(size = rel(0.8))) 
+}
+
+v1 <- volcanosig(V.DNR_3.top, 0.05)+ ggtitle("DNR 3 hour")
+v2 <- volcanosig(V.DNR_24.top, 0.05)+ ggtitle("DNR 24 hour")+ylab("")
+v3 <- volcanosig(V.DOX_3.top, 0.05)+ ggtitle("DOX 3 hour")
+v4 <- volcanosig(V.DOX_24.top, 0.05)+ ggtitle("DOX 24 hour")+ylab("")
+v5 <- volcanosig(V.EPI_3.top, 0.05)+ ggtitle("EPI 3 hour")
+v6 <- volcanosig(V.EPI_24.top, 0.05)+ ggtitle("EPI 24 hour")+ylab("")
+v7 <- volcanosig(V.MTX_3.top, 0.05)+ ggtitle("MTX 3 hour")
+v8 <- volcanosig(V.MTX_24.top, 0.05)+ ggtitle("MTX 24 hour")+ylab("")
+
+
+plot_grid(v1,v2,  rel_widths =c(1,1))
+plot_grid(v3,v4,  rel_widths =c(1,1))
+plot_grid(v5,v6,  rel_widths =c(1,1))
+plot_grid(v7,v8,  rel_widths =c(1,1))
+
+
+```
+
+
+
+#### Correlation of LFC between treatments noM
+```{r LFC correlation noM,eval=FALSE}
+AC_matrix_ff_noM <- subset(efit2_noM$coefficients)
+
+colnames(AC_matrix_ff_noM) <-
+  c("DNR\n3h",
+    "DOX\n3h",
+    "EPI\n3h",
+    "MTX\n3h",
+    "DNR\n24h",
+    "DOX\n24h",
+    "EPI\n24h",
+    "MTX\n24h"
+     )
+
+
+mat_col_ac_noM <-
+  data.frame(
+    time = c(rep("3 hours", 4), rep("24 hours", 4)),
+    class = (c(
+      "AC", "AC", "AC", "nAC","AC", "AC", "AC", "nAC" 
+    )))
+rownames(mat_col_ac_noM) <- colnames(AC_matrix_ff_noM)
+
+mat_colors_ac_noM <-
+  list(
+    time = c("pink", "chocolate4"),
+    class = c("yellow1", "lightgreen"))
+
+names(mat_colors_ac_noM$time) <- unique(mat_col_ac_noM$time)
+names(mat_colors_ac_noM$class) <- unique(mat_col_ac_noM$class)
+# names(mat_colors_FC$TOP2i) <- unique(mat_col_FC$TOP2i)
+pearson_corr_AC_noM<- cor(AC_matrix_ff_noM, method = "pearson")
+spearman_corr_AC_noM <- cor(AC_matrix_ff_noM, method = "spearman")
+
+htanno_AC_noM <-  HeatmapAnnotation(df = mat_col_ac_noM, col = mat_colors_ac_noM)
+Heatmap(pearson_corr_AC_noM, top_annotation = htanno_AC_noM,
+        column_title = "H3K27ac LFC Pearson Correlation")
+
+Heatmap(spearman_corr_AC_noM, top_annotation = htanno_AC_noM,
         column_title = "H3K27ac LFC Spearman Correlation")
 ```
 
