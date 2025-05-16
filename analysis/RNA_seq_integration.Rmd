@@ -88,8 +88,8 @@ mrc_lookup <- bind_rows(
 ) %>%
   distinct(Peakid, mrc) 
 
-Collapsed_peaks %>% 
-  left_join(., mrc_lookup, by = c("Peakid"="Peakid"))
+# Collapsed_peaks %>% 
+#   left_join(., mrc_lookup, by = c("Peakid"="Peakid"))
 
 RNA_exp_genes <- read.csv("data/other_papers/S13Table_Matthews2024.csv") %>% 
   dplyr::select(ENTREZID,SYMBOL)
@@ -323,8 +323,10 @@ NR_genes <- near_Genes %>%
   
 ```
 
+#### gprofiler2  
 
-```{r Running goprofiler2, eval=FALSE}
+GO:BP and KEGG pathway analysis of expressed RNA-seq genes within 2 kb of a response region. (region is 2 kb +/- TSS of gene)
+```{r Running gprofiler2, eval=FALSE}
 LR_close_2kresgenes <- gost(query = LR_close_genes$NCBI_gene,
                     organism = "hsapiens",
                     significant = FALSE,
@@ -361,7 +363,7 @@ NR_2kresgenes <- readRDS("data/Final_four_data/re_analysis/GO_analysis/NR_2kresg
 ```
 
 
-
+Function for showing GO or KEGG results
 ```{r table function}
 GO_KEGG_analysis <- function(df,type, setp_value=1){
 # Extract the name of the dataframe
@@ -406,7 +408,7 @@ table <- df_nomtable %>%
 # plot the table as ggplot object
 plot <- df_nomtable %>%
   filter(source==type) %>% 
-  # slice_head(n=10) %>% 
+  slice_head(n=10) %>%
     dplyr::filter(p_value < setp_value) %>% 
   mutate(log10_p=(-log(p_value, base=10))) %>% 
   ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
@@ -426,6 +428,7 @@ print(plot)
 }
 ```
 
+#### GO:BP results q < 0.05
 
 ```{r just BP, fig.height=7}
 GO_KEGG_analysis(EAR_open_2kresgenes,"GO:BP", setp_value=0.05)
@@ -441,10 +444,7 @@ GO_KEGG_analysis(NR_2kresgenes,"GO:BP", setp_value=0.05)
 ```
 
 
-
-
-
-
+#### KEGG results q < 0.05
 ```{r just KEGG, fig.height=8}
 GO_KEGG_analysis(EAR_open_2kresgenes,"KEGG", setp_value=0.05)
 GO_KEGG_analysis(EAR_close_2kresgenes,"KEGG", setp_value=0.05)
@@ -460,15 +460,124 @@ GO_KEGG_analysis(NR_2kresgenes,"KEGG", setp_value=0.05)
 
 
 
-
-
-
-
-
-
 ### RNA-seq genes and ATAC data
 after assigning expressed genes to nearest peaks and collecting differences, I also wanted to look at LFC between associated ATAC peaks and nearby expressed genes.
+```{r  RNA toplist}
+toplistall_RNA <- readRDS("data/other_papers/toplistall_RNA.RDS") %>% 
+  mutate(logFC = logFC*(-1))
+
+ATAC_toptable_results <- readRDS("data/Final_four_data/re_analysis/Toptable_results.RDS")
+ATAC_toptable_list <- bind_rows(ATAC_toptable_results, .id = "group")
+
+hr3_RNA <- toplistall_RNA %>% 
+  dplyr::select(time:logFC) %>% 
+  dplyr::filter(time=="3_hours") %>% 
+  pivot_wider(., id_cols=c(ENTREZID,SYMBOL), names_from = id, values_from = logFC) %>% 
+  dplyr::rename(DOX_3_RNA=DOX, DNR_3_RNA=DNR,EPI_3_RNA=EPI,MTX_3_RNA=MTX, TRZ_3_RNA=TRZ)
+  
+
+hr24_RNA <- toplistall_RNA %>% 
+  dplyr::select(time:logFC) %>% 
+  dplyr::filter(time=="24_hours") %>% 
+  pivot_wider(., id_cols=c(ENTREZID,SYMBOL), names_from = id, values_from = logFC) %>% 
+  dplyr::rename(DOX_24_RNA=DOX, DNR_24_RNA=DNR,EPI_24_RNA=EPI,MTX_24_RNA=MTX, TRZ_24_RNA=TRZ)
+
+RNA_LFC_df <- hr3_RNA %>% 
+  left_join(., hr24_RNA, by=c("SYMBOL"="SYMBOL","ENTREZID"="ENTREZID")) 
+
+
+hr3_ATAC <- ATAC_toptable_list %>% 
+  dplyr::select(group:logFC) %>% 
+    separate_wider_delim(., group, names=c("trt","time"), delim="_") %>% 
+  dplyr::filter(time=="3") %>% 
+  pivot_wider(., id_cols=c(time, genes), names_from = trt, values_from = logFC) %>% 
+  dplyr::rename(DOX_3_ATAC=DOX, DNR_3_ATAC=DNR,EPI_3_ATAC=EPI,MTX_3_ATAC=MTX, TRZ_3_ATAC=TRZ) %>% 
+  dplyr::rename("peak"=genes)
+
+hr24_ATAC <- ATAC_toptable_list %>% 
+  dplyr::select(group:logFC) %>% 
+    separate_wider_delim(., group, names=c("trt","time"), delim="_") %>% 
+  dplyr::filter(time=="24") %>% 
+  pivot_wider(., id_cols=c(time, genes), names_from = trt, values_from = logFC) %>% 
+  dplyr::rename(DOX_24_ATAC=DOX, DNR_24_ATAC=DNR,EPI_24_ATAC=EPI,MTX_24_ATAC=MTX, TRZ_24_ATAC=TRZ) %>% 
+  dplyr::rename("peak"=genes)
+
+ATAC_LFC_df <- hr3_ATAC %>% 
+  left_join(., hr24_ATAC, by=c("peak"="peak")) %>%
+   dplyr::select(!time.x) %>% 
+  dplyr::select(!time.y)
+
+
+```
+
+Combining ATAC LFC and RNA LFC by assigned expressed-near genes to peak
 ```{r}
+RNA_ATAC_mat <-   final_peaks %>%
+  dplyr::select(Peakid, NCBI_gene,SYMBOL) %>% 
+  separate_longer_delim(c(NCBI_gene), delim = ",") %>% 
+  separate_longer_delim(c(NCBI_gene), delim = ":") %>% 
+  separate_longer_delim(c(SYMBOL), delim = ",") %>% 
+  separate_longer_delim(c(SYMBOL), delim = ":") %>%
+  left_join(.,ATAC_LFC_df,by=c("Peakid"="peak")) %>% 
+  left_join(.,RNA_LFC_df, by=c("SYMBOL"="SYMBOL", "NCBI_gene"="ENTREZID")) %>%
+  distinct(Peakid,SYMBOL,NCBI_gene,.keep_all = TRUE) %>% 
+  tidyr::unite(name,Peakid:SYMBOL, sep="_") %>% 
+  column_to_rownames("name") %>% 
+  as.matrix()  
+  
+  
+```
+
+Examining LFC correlation by trt and time between RNA-seq and ATAC-seq associated gene-region pairs
+```{r correlation heatmaps}
+## do pearson correlation between matched observations of RNA and ATAC
+pearson_cor_mat <- cor(RNA_ATAC_mat,method = "pearson", use = "pairwise.complete.obs")
+
+## do spearman correlation between matched observation of RNA and ATAC
+spearman_cor_mat <- cor(RNA_ATAC_mat,method = "spearman", use = "pairwise.complete.obs")
+### make correlation heatmaps of both sets
+
+ComplexHeatmap::Heatmap(pearson_cor_mat, 
+                        column_title = "Pearson RNA/ATAC LFC correlation")
+
+ComplexHeatmap::Heatmap(spearman_cor_mat,
+                        column_title = "Spearman RNA/ATAC LFC correlation")
+```
+
+What about the correlation of RNA-expression LFC with ATAC LFC region within 2kb of expressed gene TSS?
+
+```{r 2kb correlation}
+peaks_2kb  <-Collapsed_peaks %>% 
+  dplyr::select(Peakid,dist_to_NG) %>% 
+  dplyr::filter(dist_to_NG>-2000 & dist_to_NG<2000)
+
+RNA_ATAC_2kbmat <- final_peaks %>%
+  dplyr::select(Peakid, NCBI_gene,SYMBOL) %>% 
+  separate_longer_delim(c(NCBI_gene), delim = ",") %>% 
+  separate_longer_delim(c(NCBI_gene), delim = ":") %>% 
+  separate_longer_delim(c(SYMBOL), delim = ",") %>% 
+  separate_longer_delim(c(SYMBOL), delim = ":") %>%
+  left_join(.,ATAC_LFC_df,by=c("Peakid"="peak")) %>% 
+  left_join(.,RNA_LFC_df, by=c("SYMBOL"="SYMBOL", "NCBI_gene"="ENTREZID")) %>% 
+  dplyr::filter(Peakid %in% peaks_2kb$Peakid) %>% 
+  distinct(Peakid,SYMBOL,NCBI_gene,.keep_all = TRUE) %>% 
+  tidyr::unite(name,Peakid:SYMBOL, sep="_") %>% 
+  column_to_rownames("name") %>% 
+  as.matrix() 
+
+
+## do pearson correlation between matched observations of RNA and ATAC
+pearson_cor_2kbmat <- cor(RNA_ATAC_2kbmat,method = "pearson", use = "pairwise.complete.obs")
+
+## do spearman correlation between matched observation of RNA and ATAC
+spearman_cor_2kbmat <- cor(RNA_ATAC_2kbmat,method = "spearman", use = "pairwise.complete.obs")
+### make correlation heatmaps of both sets
+
+ComplexHeatmap::Heatmap(pearson_cor_2kbmat, 
+                        column_title = "Pearson RNA/ATAC LFC correlation within 2kb")
+
+ComplexHeatmap::Heatmap(spearman_cor_2kbmat,
+                        column_title = "Spearman RNA/ATAC LFC correlation within 2kb")
 
 ```
 
