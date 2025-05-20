@@ -57,7 +57,7 @@ library(cowplot)
 
 Filtered out matrix from the [previous QC](https://mward-lab.github.io/Matthews_cardiotox_ATAC_2025/H3K27ac_initial_QC.html) page.
 ```{r}
-final_23_mat <- readRDS("data/Final_four_data/re_analysis/H3K27ac_final_23_raw_counts_noM.RDS")
+final_23_mat <- readRDS("data/Final_four_data/re_analysis/H3K27ac_final_23_raw_counts.RDS")
 ```
 
 Filtering check
@@ -111,7 +111,7 @@ groupid <- as.numeric(group_fac)
 
 compid <- data.frame(c1= c(2,4,6,8,1,3,5,7), c2 = c( 10,10,10,10,9,9,9,9))
 compid
-y_TMM_cpm_ac <- cpm(dge, log = TRUE)
+y_TMM_cpm_ac <- cpm(dge, method="TMM",log = TRUE)
 
 ```
 #### Running Cormotif
@@ -119,18 +119,18 @@ y_TMM_cpm_ac <- cpm(dge, log = TRUE)
 set.seed(31415)
 cormotif_initial_ac <- cormotiffit(exprs = y_TMM_cpm_ac, groupid = groupid, compid = compid, K=1:6, max.iter = 500, runtype = "logCPM")
 
-saveRDS(cormotif_initial_ac, "data/Final_four_data/re_analysis/cormotif_23sample_initial_noM.RDS")
+saveRDS(cormotif_initial_ac, "data/Final_four_data/re_analysis/cormotif_23sample_initial.RDS")
 
 ```
 
 ```{r}
-cormotif_initial_ac <- readRDS("data/Final_four_data/re_analysis/cormotif_23sample_initial_noM.RDS")
+cormotif_initial_ac <- readRDS("data/Final_four_data/re_analysis/cormotif_23sample_initial.RDS")
 plotIC(cormotif_initial_ac)
 plotMotif(cormotif_initial_ac)
 
 ```
 
-```{r Cluster assingments}
+```{r Cluster assingments, message=FALSE, warning=FALSE}
 motif_prob <- cormotif_initial_ac$bestmotif$clustlike
 
 row.names(motif_prob) <- row.names(y_TMM_cpm_ac)
@@ -178,7 +178,9 @@ Number of regions in group 3 (late response)`r length(group3$Peakid)`
 
 Number of regions in group 4 (early-sustained)`r length(group4$Peakid)`
 
-```{r sampling}
+Total number of regions assigned to a response cluster: `r sum(length(group1$Peakid),length(group2$Peakid),length(group3$Peakid),length(group4$Peakid))`
+
+```{r sampling, eval=FALSE}
 set.seed(31415)
 
 peaks1 <- group1 %>% 
@@ -199,6 +201,14 @@ peaks4 <- group4 %>%
 
 
 ```
+First peak set called:
+
+```{r}
+peaks1 <- data.frame(Peakid=c("chr16.68298383.68300769", "chr20.35883416.35884895", "chr7.101986183.101986955"))
+peaks2 <- data.frame(Peakid=c("chr11.12185300.12187968", "chr2.29011126.29012080", "chr7.28685845.28686525"))
+peaks3 <- data.frame(Peakid=c("chr12.1435626.1437547", "chr4.25703150.25704345", "chr8.101454612.101455631"))
+peaks4 <- data.frame(Peakid=c("chr1.151987590.151994802", "chr14.72741607.72742614", "chr3.151315610.151316939"))
+```
 
 ```{r}
 drug_pal <- c("#8B006D","#DF707E","#F1B72B", "#3386DD","#41B333")
@@ -217,7 +227,7 @@ y_TMM_cpm_ac %>%
   ggplot(., aes(x=time, y=log_cpm))+
   geom_boxplot(aes(fill=trt))+
    theme_bw()+
-  facet_wrap(~Peakid,nrow = 3, ncol = 6 )+
+  facet_wrap(~Peakid,nrow = 3, ncol = 6 , scales = "free_y")+
  scale_fill_manual(values=drug_pal)+
   theme(strip.text = element_text(face = "bold",  hjust = 0, size = 8),
         strip.background = element_rect(fill = "white", linetype = "solid",
@@ -230,12 +240,60 @@ y_TMM_cpm_ac %>%
 ```
 
 ```{r}
-example_boxplots(peaks1)
+example_boxplots(peaks1)+
+  facet_wrap(~Peakid,nrow = 3, ncol = 6)
 
 example_boxplots(peaks2)
 
-example_boxplots(peaks3)
+example_boxplots(peaks3)+
+  facet_wrap(~Peakid,nrow = 3, ncol = 6)
 
 example_boxplots(peaks4)
+```
+
+```{r ,eval=FALSE}
+toptable_results <- readRDS("data/Final_four_data/re_analysis/Toptable_results_H3K27ac_data.RDS")
+library(openxlsx)
+output_dir <- "data/Final_four_data/re_analysis/K27ac_excel_outputs"
+
+# Create directory if it doesn't exist
+if (!dir.exists(output_dir)) {
+  dir.create(output_dir, recursive = TRUE)
+}
+
+# Export each data frame to a separate .xlsx file
+for (name in names(toptable_results)) {
+  # Create a new workbook
+  wb <- createWorkbook()
+  
+  # Add a worksheet (you can use the name as the sheet name too)
+  addWorksheet(wb, name)
+  
+  # Write the data frame to the sheet
+  writeData(wb, sheet = name, toptable_results[[name]])
+  # Full file path using file.path()
+  output_file <- file.path(output_dir, paste0(name, ".xlsx"))
+  saveWorkbook(wb, file = output_file, overwrite = TRUE)
+}
+
+
+# write_tsv(save_ac, "data/Final_four_data/re_analysis/ATAC_excel_outputs/TableS13.tsv")
+```
+
+
+```{r mrc lookup, eval=FALSE}
+mrc_lookup <- bind_rows(
+  (group1  %>% dplyr::select(Peakid) %>% mutate(mrc = "No_response")),  
+  (group2 %>%  dplyr::select(Peakid) %>%mutate(mrc = "Early-acute_response")),
+  (group3  %>%  dplyr::select(Peakid) %>%mutate(mrc = "Late_response")),
+  (group4 %>%  dplyr::select(Peakid) %>%mutate(mrc = "Early-sustained_response")))
+
+dataframe_ac <- data.frame(AC_Peakid=rownames(y_TMM_cpm_ac))
+
+dataframe_ac %>% 
+  left_join(., mrc_lookup, by=c("AC_Peakid"="Peakid")) %>% 
+  mutate(mrc = replace_na(mrc, "not_mrc")) %>% 
+  write_tsv(., "data/Final_four_data/re_analysis/K27ac_excel_outputs/H3K27ac_mrc.tsv")
+
 ```
 
