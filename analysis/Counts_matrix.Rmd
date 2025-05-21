@@ -271,6 +271,80 @@ pca_final_four_anno %>%
 
 
 ```
+### Testing the impact of variables on variation in PC1 and PC2
+
+```{r funcs for PCA}
+#### functions needed for the plotting
+
+get_regr_pval <- function(mod) {
+  # Returns the p-value for the Fstatistic of a linear model
+  # mod: class lm
+  stopifnot(class(mod) == "lm")
+  fstat <- summary(mod)$fstatistic
+  pval <- 1 - pf(fstat[1], fstat[2], fstat[3])
+  return(pval)
+}
+
+plot_versus_pc <- function(df, pc_num, fac) {
+  # df: data.frame
+  # pc_num: numeric, specific PC for plotting
+  # fac: column name of df for plotting against PC
+  pc_char <- paste0("PC", pc_num)
+  # Calculate F-statistic p-value for linear model
+  pval <- get_regr_pval(lm(df[, pc_char] ~ df[, fac]))
+  if (is.numeric(df[, f])) {
+    ggplot(df, aes_string(x = f, y = pc_char)) + geom_point() +
+      geom_smooth(method = "lm") + labs(title = sprintf("p-val: %.2f", pval))
+  } else {
+    ggplot(df, aes_string(x = f, y = pc_char)) + geom_boxplot() +
+      labs(title = sprintf("p-val: %.2f", pval))
+  }
+}
+
+pca_plot <-
+  function(df, col_var = NULL, shape_var = NULL, title = "") {
+    ggplot(df) + geom_point(aes(
+      x = PC1,
+      y = PC2,
+      color = col_var,
+      shape = shape_var
+    ),
+    size = 5) +
+      labs(title = title, x = "PC 1", y = "PC 2") +
+      scale_color_manual(values = c(
+        "#8B006D",
+        "#DF707E",
+        "#F1B72B",
+        "#3386DD",
+        "#707031",
+        "#41B333"
+      ))
+  }
+```
+
+
+```{r Contribution of variance}
+facs <- c("indv", "trt", "time")
+names(facs) <- c("Individual", "Treatment", "Time")
+drug1 <- c("DOX","EPI", "DNR", "MTX", "TRZ", "VEH")##for changing shapes and colors
+time <- rep(c("24h", "3h"),24) %>% factor(., levels = c("3h","24h"))
+##gglistmaking
+for (f in facs) {
+  # PC1 v PC2
+  pca_plot(pca_final_four_anno, col_var = f, shape_var = time,
+           title = names(facs)[which(facs == f)])
+  print(last_plot())
+  
+  # Plot f versus PC1 and PC2
+  f_v_pc1 <- arrangeGrob(plot_versus_pc(pca_final_four_anno, 1, f))
+  f_v_pc2 <- arrangeGrob(plot_versus_pc(pca_final_four_anno, 2, f))
+  grid.arrange(f_v_pc1, f_v_pc2, ncol = 2, top = names(facs)[which(facs == f)])
+  # summary(plot_versus_pc(PCA_info_anno_all, 1, f))
+  # summary(plot_versus_pc(PCA_info_anno_all, 2, f))
+ 
+}
+```
+
 
 
 ### Comparison to realworld data
