@@ -1,0 +1,476 @@
+---
+title: "Enhancer_enrichment"
+author: "Renee Matthews"
+date: "2025-05-07"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE,
+	warning = FALSE,
+		dev = c("png","pdf")
+)
+```
+
+```{css, echo=FALSE}
+pre {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+pre[class] {
+  max-height: 200px;
+}
+```
+
+```{r package loading, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(kableExtra)
+library(broom)
+library(RColorBrewer)
+library(ChIPseeker)
+library("TxDb.Hsapiens.UCSC.hg38.knownGene")
+library("org.Hs.eg.db")
+library(rtracklayer)
+library(edgeR)
+library(ggfortify)
+library(limma)
+library(readr)
+library(BiocGenerics)
+library(gridExtra)
+library(VennDiagram)
+library(scales)
+library(BiocParallel)
+library(ggpubr)
+library(devtools)
+library(biomaRt)
+library(eulerr)
+library(smplot2)
+library(genomation)
+library(ggsignif)
+library(plyranges)
+library(ggrepel)
+library(epitools)
+library(circlize)
+
+```
+
+
+
+```{r Loading Cluster locations and full peaks list}
+Collapsed_peaks <- read_delim("data/Final_four_data/collapsed_new_peaks.txt",
+                              delim = "\t", 
+                              escape_double = FALSE, 
+                              trim_ws = TRUE)
+
+toptable_results <- readRDS("data/Final_four_data/re_analysis/Toptable_results.RDS")
+all_regions <- toptable_results$DOX_24$genes
+
+Collapsed_peaks <- read_delim("data/Final_four_data/collapsed_new_peaks.txt",
+                              delim = "\t", 
+                              escape_double = FALSE, 
+                              trim_ws = TRUE)
+
+final_peaks <- Collapsed_peaks %>% 
+  dplyr::filter(chr != "chrY") %>%
+  dplyr::filter(Peakid %in% all_regions) %>% 
+  GRanges()
+all_results  <- toptable_results %>%
+  imap(~ .x %>% tibble::rownames_to_column(var = "rowname") %>%
+         mutate(source = .y)) %>%
+  bind_rows()
+
+my_dar_data <- all_results %>% 
+  dplyr::filter(source=="DOX_3"|source=="DOX_24") %>% 
+  dplyr::select(source,genes,logFC,adj.P.Val) %>% 
+  pivot_wider(.,id_cols=genes,names_from = source, values_from = c(logFC, adj.P.Val))
+
+```
+
+
+### Enhancers and Response clusters
+
+
+First:  obtained a list of cis Regulatory Elements from Encode Screen
+[(https://screen.encodeproject.org/#)]
+
+
+```{r  enhancers of the heart}
+
+cREs_HLV_46F <- genomation::readBed("data/enhancerdata/ENCFF867HAD_ENCFF152PBB_ENCFF352YYH_ENCFF252IVK.7group.bed")
+
+Whole_peaks <- join_overlap_intersect(final_peaks, cREs_HLV_46F)
+
+Whole_peaks %>% 
+  as.data.frame() %>% 
+  group_by(blockCount) %>% 
+  tally() %>% 
+  kable(., caption="Breakdown of peaks overlapping cREs") %>% 
+  kable_paper("striped", full_width = TRUE) %>%
+  kable_styling(full_width = FALSE, font_size = 14)
+
+```
+
+
+```{r}
+keep_cRE_names <- c("CTCF-only,CTCF-bound" ,"PLS,CTCF-bound","PLS","dELS,CTCF-bound", "pELS","pELS,CTCF-bound","dELS")
+is_cRE <- Whole_peaks %>% 
+  as.data.frame() %>% 
+  dplyr::filter(blockCount %in% keep_cRE_names) %>% 
+  distinct(Peakid,blockCount) 
+
+is_CTCF <- Whole_peaks %>% 
+  as.data.frame() %>% 
+  dplyr::filter(blockCount == "CTCF-only,CTCF-bound") %>% 
+  distinct(Peakid,blockCount) 
+
+is_dELS <- Whole_peaks %>% 
+  as.data.frame() %>% 
+  dplyr::filter(blockCount == "dELS,CTCF-bound"|blockCount == "dELS") %>% 
+  distinct(Peakid,blockCount) 
+is_pELS <- Whole_peaks %>% 
+  as.data.frame() %>% 
+  dplyr::filter(blockCount == "pELS,CTCF-bound"|blockCount == "pELS") %>% 
+  distinct(Peakid,blockCount) 
+is_PLS <- Whole_peaks %>% 
+  as.data.frame() %>% 
+  dplyr::filter(blockCount == "PLS,CTCF-bound"|blockCount == "PLS") %>% 
+  distinct(Peakid,blockCount) 
+
+
+CRE_summary <-final_peaks %>% 
+  as.data.frame() %>% 
+   mutate(cRE_status=if_else(Peakid %in% is_cRE$Peakid,"cRE_peak","not_cRE_peak")) %>% 
+   mutate(CTCF_status=if_else(Peakid %in% is_CTCF$Peakid,"CTCF_peak","not_CTCF_peak")) %>% 
+    mutate(dELS_status=if_else(Peakid %in% is_dELS$Peakid,"dELS_peak","not_dELS_peak")) %>% 
+    mutate(pELS_status=if_else(Peakid %in% is_pELS$Peakid,"pELS_peak","not_pELS_peak")) %>% 
+    mutate(PLS_status=if_else(Peakid %in% is_PLS$Peakid,"PLS_peak","not_PLS_peak")) %>% 
+  dplyr::select(Peakid:PLS_status) %>% 
+  left_join(.,my_dar_data,by=c("Peakid"="genes")) %>% 
+  mutate(sig_3=if_else(adj.P.Val_DOX_3<0.05,"sig","not_sig"),
+         sig_24=if_else(adj.P.Val_DOX_24<0.05,"sig","not_sig")) %>% 
+  mutate(sig_3=factor(sig_3,levels=c("sig","not_sig")),
+         sig_24=factor(sig_24,levels=c("sig","not_sig"))) %>% 
+ mutate(sig_up = case_when(
+  adj.P.Val_DOX_24 < 0.05 & logFC_DOX_24 > 0 ~ "sig_up",
+  TRUE ~ "not_sig_up"
+)) %>% 
+ mutate(sig_down = case_when(
+  adj.P.Val_DOX_24 < 0.05 & logFC_DOX_24 > 0 ~ "sig_down",
+  TRUE ~ "not_sig_down"
+)) %>% 
+  mutate(sig_up=factor(sig_up,levels=c("sig_up","not_sig_up")),
+         sig_down=factor(sig_down,levels=c("sig_down","not_sig_down"))) 
+
+CRE_summary
+
+```
+
+```{r  DOX_3, getting numbers}
+status_columns <- c("cRE_status", "CTCF_status","dELS_status", "pELS_status","PLS_status")
+DOX_3_status_matrices <- map(status_columns, function(status_col) {
+  # Extract prefix (e.g., "TE", "SINE") from column name like "TE_status"
+  prefix <- sub("_status$", "", status_col)
+  expected_rows <- c(paste0(prefix,"_peak"), paste0("not_", prefix,"_peak"))
+  expected_cols <- c("sig", "not_sig")
+  
+  # Build matrix
+  mat <- CRE_summary %>%
+    group_by(across(all_of(status_col)), sig_3) %>%
+    tally() %>%
+    pivot_wider(
+      names_from = sig_3,
+      values_from = n,
+      values_fill = list(n = 0)
+    ) %>%
+    column_to_rownames(var = status_col) %>%
+    as.matrix()
+  
+  # Fill missing expected rows
+  for (r in setdiff(expected_rows, rownames(mat))) {
+    mat <- rbind(mat, setNames(rep(0, length(expected_cols)), expected_cols))
+    rownames(mat)[nrow(mat)] <- r
+  }
+
+  # Fill missing expected columns
+  for (c in setdiff(expected_cols, colnames(mat))) {
+    mat <- cbind(mat, setNames(rep(0, nrow(mat)), c))
+  }
+
+  # Order
+  mat <- mat[expected_rows, expected_cols, drop = FALSE]
+})
+
+# Set names so you can easily refer to each status
+names(DOX_3_status_matrices) <- status_columns
+
+
+odds_ratio_results_DOX_3 <- map(DOX_3_status_matrices, function(mat) {
+  if (!all(dim(mat) == c(2, 2)) || any(!is.finite(mat)) || sum(mat) == 0 || any(rowSums(mat) == 0) || any(colSums(mat) == 0)) {
+    return(NULL)
+  }
+  
+  result <- epitools::oddsratio(mat, method = "wald")
+  
+  or <- result$measure[2, "estimate"]
+  lower <- result$measure[2, "lower"]
+  upper <- result$measure[2, "upper"]
+  
+  pval_chisq <- if("chi.square" %in% colnames(result$p.value) && nrow(result$p.value) >= 2) {
+    result$p.value[2, "chi.square"]
+  } else {
+    NA_real_
+  }
+  
+  list(
+    odds_ratio = or,
+    lower_ci = lower,
+    upper_ci = upper,
+    chi_sq_p = pval_chisq
+  )
+})
+
+```
+
+```{r DOX 24}
+DOX_24_status_matrices <- map(status_columns, function(status_col) {
+  # Extract prefix (e.g., "TE", "SINE") from column name like "TE_status"
+  prefix <- sub("_status$", "", status_col)
+  expected_rows <- c(paste0(prefix,"_peak"), paste0("not_", prefix,"_peak"))
+  expected_cols <- c("sig", "not_sig")
+  
+  # Build matrix
+  mat <- CRE_summary %>%
+    group_by(across(all_of(status_col)), sig_24) %>%
+    tally() %>%
+    pivot_wider(
+      names_from = sig_24,
+      values_from = n,
+      values_fill = list(n = 0)
+    ) %>%
+    column_to_rownames(var = status_col) %>%
+    as.matrix()
+  
+  # Fill missing expected rows
+  for (r in setdiff(expected_rows, rownames(mat))) {
+    mat <- rbind(mat, setNames(rep(0, length(expected_cols)), expected_cols))
+    rownames(mat)[nrow(mat)] <- r
+  }
+
+  # Fill missing expected columns
+  for (c in setdiff(expected_cols, colnames(mat))) {
+    mat <- cbind(mat, setNames(rep(0, nrow(mat)), c))
+  }
+
+  # Order
+  mat <- mat[expected_rows, expected_cols, drop = FALSE]
+})
+
+# Set names so you can easily refer to each status
+names(DOX_24_status_matrices) <- status_columns
+
+
+odds_ratio_results_DOX_24 <- map(DOX_24_status_matrices, function(mat) {
+  if (!all(dim(mat) == c(2, 2)) || any(!is.finite(mat)) || sum(mat) == 0 || any(rowSums(mat) == 0) || any(colSums(mat) == 0)) {
+    return(NULL)
+  }
+  
+  result <- epitools::oddsratio(mat, method = "wald")
+  
+  or <- result$measure[2, "estimate"]
+  lower <- result$measure[2, "lower"]
+  upper <- result$measure[2, "upper"]
+  
+  pval_chisq <- if("chi.square" %in% colnames(result$p.value) && nrow(result$p.value) >= 2) {
+    result$p.value[2, "chi.square"]
+  } else {
+    NA_real_
+  }
+  
+  list(
+    odds_ratio = or,
+    lower_ci = lower,
+    upper_ci = upper,
+    chi_sq_p = pval_chisq
+  )
+})
+
+```
+
+
+```{r DOX 24 sigup}
+DOX_24_sigup_status_matrices <- map(status_columns, function(status_col) {
+  # Extract prefix (e.g., "TE", "SINE") from column name like "TE_status"
+  prefix <- sub("_status$", "", status_col)
+  expected_rows <- c(paste0(prefix,"_peak"), paste0("not_", prefix,"_peak"))
+  expected_cols <- c("sig_up", "not_sig_up")
+  
+  # Build matrix
+  mat <- CRE_summary %>%
+    group_by(across(all_of(status_col)), sig_up) %>%
+    tally() %>%
+    pivot_wider(
+      names_from = sig_up,
+      values_from = n,
+      values_fill = list(n = 0)
+    ) %>%
+    column_to_rownames(var = status_col) %>%
+    as.matrix()
+  
+  # Fill missing expected rows
+  for (r in setdiff(expected_rows, rownames(mat))) {
+    mat <- rbind(mat, setNames(rep(0, length(expected_cols)), expected_cols))
+    rownames(mat)[nrow(mat)] <- r
+  }
+
+  # Fill missing expected columns
+  for (c in setdiff(expected_cols, colnames(mat))) {
+    mat <- cbind(mat, setNames(rep(0, nrow(mat)), c))
+  }
+
+  # Order
+  mat <- mat[expected_rows, expected_cols, drop = FALSE]
+})
+
+# Set names so you can easily refer to each status
+names(DOX_24_sigup_status_matrices) <- status_columns
+
+
+odds_ratio_results_DOX_24_sigup <- map(DOX_24_sigup_status_matrices, function(mat) {
+  if (!all(dim(mat) == c(2, 2)) || any(!is.finite(mat)) || sum(mat) == 0 || any(rowSums(mat) == 0) || any(colSums(mat) == 0)) {
+    return(NULL)
+  }
+  
+  result <- epitools::oddsratio(mat, method = "wald")
+  
+  or <- result$measure[2, "estimate"]
+  lower <- result$measure[2, "lower"]
+  upper <- result$measure[2, "upper"]
+  
+  pval_chisq <- if("chi.square" %in% colnames(result$p.value) && nrow(result$p.value) >= 2) {
+    result$p.value[2, "chi.square"]
+  } else {
+    NA_real_
+  }
+  
+  list(
+    odds_ratio = or,
+    lower_ci = lower,
+    upper_ci = upper,
+    chi_sq_p = pval_chisq
+  )
+})
+
+```
+
+
+```{r DOX 24 sigdown}
+DOX_24_sigdown_status_matrices <- map(status_columns, function(status_col) {
+  # Extract prefix (e.g., "TE", "SINE") from column name like "TE_status"
+  prefix <- sub("_status$", "", status_col)
+  expected_rows <- c(paste0(prefix,"_peak"), paste0("not_", prefix,"_peak"))
+  expected_cols <- c("sig_down", "not_sig_down")
+  
+  # Build matrix
+  mat <- CRE_summary %>%
+    group_by(across(all_of(status_col)), sig_down) %>%
+    tally() %>%
+    pivot_wider(
+      names_from = sig_down,
+      values_from = n,
+      values_fill = list(n = 0)
+    ) %>%
+    column_to_rownames(var = status_col) %>%
+    as.matrix()
+  
+  # Fill missing expected rows
+  for (r in setdiff(expected_rows, rownames(mat))) {
+    mat <- rbind(mat, setNames(rep(0, length(expected_cols)), expected_cols))
+    rownames(mat)[nrow(mat)] <- r
+  }
+
+  # Fill missing expected columns
+  for (c in setdiff(expected_cols, colnames(mat))) {
+    mat <- cbind(mat, setNames(rep(0, nrow(mat)), c))
+  }
+
+  # Order
+  mat <- mat[expected_rows, expected_cols, drop = FALSE]
+})
+
+# Set names so you can easily refer to each status
+names(DOX_24_sigdown_status_matrices) <- status_columns
+
+
+odds_ratio_results_DOX_24_sigdown <- map(DOX_24_sigdown_status_matrices, function(mat) {
+  if (!all(dim(mat) == c(2, 2)) || any(!is.finite(mat)) || sum(mat) == 0 || any(rowSums(mat) == 0) || any(colSums(mat) == 0)) {
+    return(NULL)
+  }
+  
+  result <- epitools::oddsratio(mat, method = "wald")
+  
+  or <- result$measure[2, "estimate"]
+  lower <- result$measure[2, "lower"]
+  upper <- result$measure[2, "upper"]
+  
+  pval_chisq <- if("chi.square" %in% colnames(result$p.value) && nrow(result$p.value) >= 2) {
+    result$p.value[2, "chi.square"]
+  } else {
+    NA_real_
+  }
+  
+  list(
+    odds_ratio = or,
+    lower_ci = lower,
+    upper_ci = upper,
+    chi_sq_p = pval_chisq
+  )
+})
+
+```
+
+### odds ratio results
+```{r odds ratio test}
+col_fun_OR = colorRamp2(c(0,1,1.5,5), c("blueviolet","white","lightgreen","green3" ))
+
+combined_df <- bind_rows(
+  map_dfr(odds_ratio_results_DOX_3, ~as.data.frame(.x), .id = "status") %>% mutate(source = "DOX_3hr"),
+  map_dfr(odds_ratio_results_DOX_24, ~as.data.frame(.x), .id = "status") %>% mutate(source = "DOX_24hr"),
+  map_dfr(odds_ratio_results_DOX_24_sigup, ~as.data.frame(.x), .id = "status") %>% mutate(source = "DOX_24hr_sigup"),
+  map_dfr(odds_ratio_results_DOX_24_sigdown, ~as.data.frame(.x), .id = "status") %>% mutate(source = "DOX_24hr_sigdown")
+)
+
+sig_mat_OR <-combined_df %>% 
+  dplyr::select( status,source,chi_sq_p) %>%
+  group_by(source) %>%
+  mutate(rank_val=rank(chi_sq_p, ties.method = "first")) %>%
+  mutate(BH_correction= p.adjust(chi_sq_p,method= "BH")) %>% 
+  pivot_wider(., id_cols = status, names_from = source, values_from = BH_correction) %>% 
+  column_to_rownames("status") %>% 
+  as.matrix()
+
+```
+
+
+```{r heatmap of OR results}
+combined_df %>% 
+ dplyr::select(status, source, odds_ratio) %>%
+  group_by(source) %>%
+  pivot_wider(., id_cols = status, names_from = source, values_from = odds_ratio) %>% 
+  column_to_rownames("status") %>% 
+  as.matrix() %>% 
+  ComplexHeatmap::Heatmap(. ,col = col_fun_OR, 
+                          cluster_rows=FALSE, 
+                          cluster_columns=FALSE, 
+                          column_names_side = "top", 
+                          column_names_rot = 45,
+                          # na_col = "black",
+                          cell_fun = function(j, i, x, y, width, height, fill) {if (!is.na(sig_mat_OR[i, j]) && sig_mat_OR[i, j] < 0.05  && .[i, j] > 1) {
+            grid.text("*", x, y, gp = gpar(fontsize = 20))}})
+```
+ note, this is corrected for multiple testing across categories within each DOX-DAR column.
+
+
+
