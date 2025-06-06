@@ -1,0 +1,471 @@
+---
+title: "TSS and CUG overlap"
+author: "Renee Matthews"
+date: "2025-05-07"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE,
+	warning = FALSE,
+		dev = c("png","pdf")
+)
+```
+
+```{css, echo=FALSE}
+pre {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+pre[class] {
+  max-height: 200px;
+}
+```
+
+```{r package loading, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(kableExtra)
+library(broom)
+library(RColorBrewer)
+library(ChIPseeker)
+library("TxDb.Hsapiens.UCSC.hg38.knownGene")
+library("org.Hs.eg.db")
+library(rtracklayer)
+library(edgeR)
+library(ggfortify)
+library(limma)
+library(readr)
+library(BiocGenerics)
+library(gridExtra)
+library(VennDiagram)
+library(scales)
+library(BiocParallel)
+library(ggpubr)
+library(devtools)
+library(biomaRt)
+library(eulerr)
+library(smplot2)
+library(genomation)
+library(ggsignif)
+library(plyranges)
+library(ggrepel)
+library(epitools)
+library(circlize)
+
+```
+
+
+### Getting TSS locations for all genes:  
+
+```{r TSS data}
+txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
+tss_gr <- transcripts(txdb)
+tss_gr <- resize(tss_gr, width = 1, fix = "start")  # TSS is start for both strands
+```
+
+### Loading CpG-island locations from UCSC and converting to granges  
+
+```{r CpGi data}
+session <- browserSession("UCSC")
+genome(session) <- "hg38"
+cpg_table <- getTable(ucscTableQuery(session, track = "CpG Islands"))
+cpg_gr <- GRanges(seqnames = cpg_table$chrom,
+                  ranges = IRanges(start = cpg_table$chromStart + 1, end = cpg_table$chromEnd),
+                  strand = "*")
+
+```
+#### Loading region data  
+
+```{r Loading Cluster locations and full peaks list}
+Collapsed_peaks <- read_delim("data/Final_four_data/collapsed_new_peaks.txt",
+                              delim = "\t", 
+                              escape_double = FALSE, 
+                              trim_ws = TRUE)
+
+toptable_results <- readRDS("data/Final_four_data/re_analysis/Toptable_results.RDS")
+all_regions <- toptable_results$DOX_24$genes
+
+Collapsed_peaks <- read_delim("data/Final_four_data/collapsed_new_peaks.txt",
+                              delim = "\t", 
+                              escape_double = FALSE, 
+                              trim_ws = TRUE)
+
+final_peaks <- Collapsed_peaks %>% 
+  dplyr::filter(chr != "chrY") %>%
+  dplyr::filter(Peakid %in% all_regions) %>% 
+  GRanges()
+
+
+
+
+```
+### Assess the overlap between my data sets  
+
+```{r TSS counts}
+peaks_tss_annotated <- final_peaks %>%
+  join_overlap_left(tss_gr) %>%
+  mutate(TSS_status = ifelse(is.na(tx_id), "non-TSS", "TSS"))  
+  
+```
+
+
+```{r CpG counts}
+ 
+olap <- findOverlaps(final_peaks, cpg_gr)
+peak_cpg_status <- rep("non-CpG", length(final_peaks))
+  
+# Mark peaks that overlap CpG islands
+peak_cpg_status[unique(queryHits(olap))] <- "CpG"
+
+final_peaks$CpG_status <- peak_cpg_status
+
+```
+
+```{r join dataframes}
+
+all_results  <- toptable_results %>%
+  imap(~ .x %>% tibble::rownames_to_column(var = "rowname") %>%
+         mutate(source = .y)) %>%
+  bind_rows()
+my_dar_data <- all_results %>% 
+  dplyr::filter(source=="DOX_3"|source=="DOX_24") %>% 
+  dplyr::select(source,genes,logFC,adj.P.Val) %>% 
+  pivot_wider(.,id_cols=genes,names_from = source, values_from = c(logFC, adj.P.Val))
+
+CPG_TSS_status_df <- final_peaks %>%
+  as.data.frame() %>% 
+  dplyr::select(Peakid,CpG_status) %>% 
+  left_join(.,(peaks_tss_annotated %>% 
+              as.data.frame() %>% 
+  dplyr::select(Peakid,TSS_status) %>% 
+    distinct()), by=c("Peakid"="Peakid")) %>% 
+  left_join(.,my_dar_data,by=c("Peakid"="genes")) %>% 
+  mutate(sig_3=if_else(adj.P.Val_DOX_3<0.05,"sig","not_sig"),
+         sig_24=if_else(adj.P.Val_DOX_24<0.05,"sig","not_sig")) %>% 
+  mutate(sig_3=factor(sig_3,levels=c("sig","not_sig")),
+         sig_24=factor(sig_24,levels=c("sig","not_sig"))) %>% 
+ mutate(sig_up = case_when(
+  adj.P.Val_DOX_24 < 0.05 & logFC_DOX_24 > 0 ~ "sig_up",
+  TRUE ~ "not_sig_up"
+)) %>% 
+ mutate(sig_down = case_when(
+  adj.P.Val_DOX_24 < 0.05 & logFC_DOX_24 > 0 ~ "sig_down",
+  TRUE ~ "not_sig_down"
+)) %>% 
+  mutate(sig_up=factor(sig_up,levels=c("sig_up","not_sig_up")),
+         sig_down=factor(sig_down,levels=c("sig_down","not_sig_down"))) 
+
+CPG_TSS_status_df %>% 
+  group_by(CpG_status,sig_up) %>% 
+  tally()
+```
+
+```{r  DOX_3, getting numbers}
+status_columns <- c("CpG_status", "TSS_status")
+DOX_3_status_matrices <- map(status_columns, function(status_col) {
+  # Extract prefix (e.g., "TE", "SINE") from column name like "TE_status"
+  prefix <- sub("_status$", "", status_col)
+  expected_rows <- c(paste0(prefix), paste0("non-", prefix))
+  expected_cols <- c("sig", "not_sig")
+  
+  # Build matrix
+  mat <- CPG_TSS_status_df %>%
+    group_by(across(all_of(status_col)), sig_3) %>%
+    tally() %>%
+    pivot_wider(
+      names_from = sig_3,
+      values_from = n,
+      values_fill = list(n = 0)
+    ) %>%
+    column_to_rownames(var = status_col) %>%
+    as.matrix()
+  
+  # Fill missing expected rows
+  for (r in setdiff(expected_rows, rownames(mat))) {
+    mat <- rbind(mat, setNames(rep(0, length(expected_cols)), expected_cols))
+    rownames(mat)[nrow(mat)] <- r
+  }
+
+  # Fill missing expected columns
+  for (c in setdiff(expected_cols, colnames(mat))) {
+    mat <- cbind(mat, setNames(rep(0, nrow(mat)), c))
+  }
+
+  # Order
+  mat <- mat[expected_rows, expected_cols, drop = FALSE]
+})
+
+# Set names so you can easily refer to each status
+names(DOX_3_status_matrices) <- status_columns
+
+
+odds_ratio_results_DOX_3 <- map(DOX_3_status_matrices, function(mat) {
+  if (!all(dim(mat) == c(2, 2)) || any(!is.finite(mat)) || sum(mat) == 0 || any(rowSums(mat) == 0) || any(colSums(mat) == 0)) {
+    return(NULL)
+  }
+  
+  result <- epitools::oddsratio(mat, method = "wald")
+  
+  or <- result$measure[2, "estimate"]
+  lower <- result$measure[2, "lower"]
+  upper <- result$measure[2, "upper"]
+  
+  pval_chisq <- if("chi.square" %in% colnames(result$p.value) && nrow(result$p.value) >= 2) {
+    result$p.value[2, "chi.square"]
+  } else {
+    NA_real_
+  }
+  
+  list(
+    odds_ratio = or,
+    lower_ci = lower,
+    upper_ci = upper,
+    chi_sq_p = pval_chisq
+  )
+})
+
+```
+
+```{r DOX 24}
+DOX_24_status_matrices <- map(status_columns, function(status_col) {
+  # Extract prefix (e.g., "TE", "SINE") from column name like "TE_status"
+  prefix <- sub("_status$", "", status_col)
+  expected_rows <- c(paste0(prefix), paste0("non-", prefix))
+  expected_cols <- c("sig", "not_sig")
+  
+  # Build matrix
+  mat <- CPG_TSS_status_df %>%
+    group_by(across(all_of(status_col)), sig_24) %>%
+    tally() %>%
+    pivot_wider(
+      names_from = sig_24,
+      values_from = n,
+      values_fill = list(n = 0)
+    ) %>%
+    column_to_rownames(var = status_col) %>%
+    as.matrix()
+  
+  # Fill missing expected rows
+  for (r in setdiff(expected_rows, rownames(mat))) {
+    mat <- rbind(mat, setNames(rep(0, length(expected_cols)), expected_cols))
+    rownames(mat)[nrow(mat)] <- r
+  }
+
+  # Fill missing expected columns
+  for (c in setdiff(expected_cols, colnames(mat))) {
+    mat <- cbind(mat, setNames(rep(0, nrow(mat)), c))
+  }
+
+  # Order
+  mat <- mat[expected_rows, expected_cols, drop = FALSE]
+})
+
+# Set names so you can easily refer to each status
+names(DOX_24_status_matrices) <- status_columns
+
+
+odds_ratio_results_DOX_24 <- map(DOX_24_status_matrices, function(mat) {
+  if (!all(dim(mat) == c(2, 2)) || any(!is.finite(mat)) || sum(mat) == 0 || any(rowSums(mat) == 0) || any(colSums(mat) == 0)) {
+    return(NULL)
+  }
+  
+  result <- epitools::oddsratio(mat, method = "wald")
+  
+  or <- result$measure[2, "estimate"]
+  lower <- result$measure[2, "lower"]
+  upper <- result$measure[2, "upper"]
+  
+  pval_chisq <- if("chi.square" %in% colnames(result$p.value) && nrow(result$p.value) >= 2) {
+    result$p.value[2, "chi.square"]
+  } else {
+    NA_real_
+  }
+  
+  list(
+    odds_ratio = or,
+    lower_ci = lower,
+    upper_ci = upper,
+    chi_sq_p = pval_chisq
+  )
+})
+
+```
+
+
+```{r DOX 24 sigup}
+DOX_24_sigup_status_matrices <- map(status_columns, function(status_col) {
+  # Extract prefix (e.g., "TE", "SINE") from column name like "TE_status"
+  prefix <- sub("_status$", "", status_col)
+  expected_rows <- c(paste0(prefix), paste0("non-", prefix))
+  expected_cols <- c("sig_up", "not_sig_up")
+  
+  # Build matrix
+  mat <- CPG_TSS_status_df %>%
+    group_by(across(all_of(status_col)), sig_up) %>%
+    tally() %>%
+    pivot_wider(
+      names_from = sig_up,
+      values_from = n,
+      values_fill = list(n = 0)
+    ) %>%
+    column_to_rownames(var = status_col) %>%
+    as.matrix()
+  
+  # Fill missing expected rows
+  for (r in setdiff(expected_rows, rownames(mat))) {
+    mat <- rbind(mat, setNames(rep(0, length(expected_cols)), expected_cols))
+    rownames(mat)[nrow(mat)] <- r
+  }
+
+  # Fill missing expected columns
+  for (c in setdiff(expected_cols, colnames(mat))) {
+    mat <- cbind(mat, setNames(rep(0, nrow(mat)), c))
+  }
+
+  # Order
+  mat <- mat[expected_rows, expected_cols, drop = FALSE]
+})
+
+# Set names so you can easily refer to each status
+names(DOX_24_sigup_status_matrices) <- status_columns
+
+
+odds_ratio_results_DOX_24_sigup <- map(DOX_24_sigup_status_matrices, function(mat) {
+  if (!all(dim(mat) == c(2, 2)) || any(!is.finite(mat)) || sum(mat) == 0 || any(rowSums(mat) == 0) || any(colSums(mat) == 0)) {
+    return(NULL)
+  }
+  
+  result <- epitools::oddsratio(mat, method = "wald")
+  
+  or <- result$measure[2, "estimate"]
+  lower <- result$measure[2, "lower"]
+  upper <- result$measure[2, "upper"]
+  
+  pval_chisq <- if("chi.square" %in% colnames(result$p.value) && nrow(result$p.value) >= 2) {
+    result$p.value[2, "chi.square"]
+  } else {
+    NA_real_
+  }
+  
+  list(
+    odds_ratio = or,
+    lower_ci = lower,
+    upper_ci = upper,
+    chi_sq_p = pval_chisq
+  )
+})
+
+```
+
+
+```{r DOX 24 sigdown}
+DOX_24_sigdown_status_matrices <- map(status_columns, function(status_col) {
+  # Extract prefix (e.g., "TE", "SINE") from column name like "TE_status"
+  prefix <- sub("_status$", "", status_col)
+  expected_rows <- c(paste0(prefix), paste0("non-", prefix))
+  expected_cols <- c("sig_down", "not_sig_down")
+  
+  # Build matrix
+  mat <- CPG_TSS_status_df %>%
+    group_by(across(all_of(status_col)), sig_down) %>%
+    tally() %>%
+    pivot_wider(
+      names_from = sig_down,
+      values_from = n,
+      values_fill = list(n = 0)
+    ) %>%
+    column_to_rownames(var = status_col) %>%
+    as.matrix()
+  
+  # Fill missing expected rows
+  for (r in setdiff(expected_rows, rownames(mat))) {
+    mat <- rbind(mat, setNames(rep(0, length(expected_cols)), expected_cols))
+    rownames(mat)[nrow(mat)] <- r
+  }
+
+  # Fill missing expected columns
+  for (c in setdiff(expected_cols, colnames(mat))) {
+    mat <- cbind(mat, setNames(rep(0, nrow(mat)), c))
+  }
+
+  # Order
+  mat <- mat[expected_rows, expected_cols, drop = FALSE]
+})
+
+# Set names so you can easily refer to each status
+names(DOX_24_sigdown_status_matrices) <- status_columns
+
+
+odds_ratio_results_DOX_24_sigdown <- map(DOX_24_sigdown_status_matrices, function(mat) {
+  if (!all(dim(mat) == c(2, 2)) || any(!is.finite(mat)) || sum(mat) == 0 || any(rowSums(mat) == 0) || any(colSums(mat) == 0)) {
+    return(NULL)
+  }
+  
+  result <- epitools::oddsratio(mat, method = "wald")
+  
+  or <- result$measure[2, "estimate"]
+  lower <- result$measure[2, "lower"]
+  upper <- result$measure[2, "upper"]
+  
+  pval_chisq <- if("chi.square" %in% colnames(result$p.value) && nrow(result$p.value) >= 2) {
+    result$p.value[2, "chi.square"]
+  } else {
+    NA_real_
+  }
+  
+  list(
+    odds_ratio = or,
+    lower_ci = lower,
+    upper_ci = upper,
+    chi_sq_p = pval_chisq
+  )
+})
+
+```
+
+### odds ratio results
+```{r odds ratio test}
+
+col_fun_OR = colorRamp2(c(0,1,1.5,5), c("blueviolet","white","lightgreen","green3" ))
+
+combined_df <- bind_rows(
+  map_dfr(odds_ratio_results_DOX_3, ~as.data.frame(.x), .id = "status") %>% mutate(source = "DOX_3hr"),
+  map_dfr(odds_ratio_results_DOX_24, ~as.data.frame(.x), .id = "status") %>% mutate(source = "DOX_24hr"),
+  map_dfr(odds_ratio_results_DOX_24_sigup, ~as.data.frame(.x), .id = "status") %>% mutate(source = "DOX_24hr_sigup"),
+  map_dfr(odds_ratio_results_DOX_24_sigdown, ~as.data.frame(.x), .id = "status") %>% mutate(source = "DOX_24hr_sigdown")
+)
+
+
+sig_mat_OR <-combined_df %>% 
+  dplyr::select( status,source,chi_sq_p) %>%
+  group_by(source) %>%
+  mutate(rank_val=rank(chi_sq_p, ties.method = "first")) %>%
+  mutate(BH_correction= p.adjust(chi_sq_p,method= "BH")) %>% 
+  pivot_wider(., id_cols = status, names_from = source, values_from = BH_correction) %>% 
+  column_to_rownames("status") %>% 
+  as.matrix()
+
+
+```
+
+
+```{r heatmap of OR results}
+combined_df %>% 
+ dplyr::select(status, source, odds_ratio) %>%
+  group_by(source) %>%
+  pivot_wider(., id_cols = status, names_from = source, values_from = odds_ratio) %>% 
+  column_to_rownames("status") %>% 
+  as.matrix() %>% 
+  ComplexHeatmap::Heatmap(. ,col = col_fun_OR, 
+                          cluster_rows=FALSE, 
+                          cluster_columns=FALSE, 
+                          column_names_side = "top", 
+                          column_names_rot = 45,
+                          # na_col = "black",
+                          cell_fun = function(j, i, x, y, width, height, fill) {if (!is.na(sig_mat_OR[i, j]) && sig_mat_OR[i, j] < 0.05  && .[i, j] > 1) {
+            grid.text("*", x, y, gp = gpar(fontsize = 20))}})
+```
+ note, this is corrected for multiple testing across TSS and CUG tests only in each motif cluster.
