@@ -380,6 +380,61 @@ fit <- euler(c("This study" = 155557 - 66927,
 plot(fit, fills = list(fill = c("skyblue", "lightcoral"), alpha = 0.6),
      labels = FALSE, edges = TRUE, quantities = TRUE,
      main = "Euler diagram between this study and Snyder's study")
+matrixa <- matrix(c(66927,88630,71049,137976), nrow=2)
+fisher.test(matrixa)
+
+```
+### Just Vehicle samples and correlation:  
+
+```{r looking at vehicle samples log2cpm filtered}
+
+cor_cpm_counts_veh_pearson <-
+filt_raw_counts_noY %>% 
+  as.data.frame() %>% 
+  dplyr::select(A_VEH_3h,A_VEH_24h,
+                B_VEH_3h,B_VEH_24h,
+                C_VEH_3h,C_VEH_24h,
+                D_VEH_3h,D_VEH_24h) %>% 
+  
+  cpm(., log = TRUE) %>% 
+  cor(.,method = "pearson")
+
+
+cor_cpm_counts_veh_spearman <-
+filt_raw_counts_noY %>% 
+  as.data.frame() %>% 
+  dplyr::select(A_VEH_3h,A_VEH_24h,
+                B_VEH_3h,B_VEH_24h,
+                C_VEH_3h,C_VEH_24h,
+                D_VEH_3h,D_VEH_24h) %>% 
+  
+  cpm(., log = TRUE) %>% 
+  cor(.,method = "spearman")
+
+
+anno_raw_counts_veh <- data.frame(timeset = colnames(cor_cpm_counts_veh_pearson))
+
+counts_corr_mat_veh <-anno_raw_counts_veh %>%
+  separate(timeset, into = c("indv","trt","time"), sep= "_") 
+                         
+ mat_colors_veh <- list( 
+   trt= c("#F1B72B","#8B006D","#DF707E","#3386DD","#707031","#41B333"),
+   indv=c("#1B9E77", "#D95F02" ,"#7570B3", "#E6AB02"),
+   time=c("pink", "chocolate4"))                        
+                         
+names(mat_colors_veh$trt)   <- c("DNR","DOX","EPI","MTX","TRZ","VEH")                   
+names(mat_colors_veh$indv) <- unique(counts_corr_mat_veh$indv)
+names(mat_colors_veh$time) <- unique(counts_corr_mat_veh$time)
+
+
+
+htanno_full_veh <-  ComplexHeatmap::HeatmapAnnotation(df = counts_corr_mat_veh, col = mat_colors_veh)
+Heatmap(cor_cpm_counts_veh_pearson, 
+        top_annotation = htanno_full_veh,
+        column_title = "Pearson log2cpm of VEH samples")
+Heatmap(cor_cpm_counts_veh_spearman, 
+        top_annotation = htanno_full_veh,
+        column_title = "Spearman log2cpm of VEH samples")
 
 ```
 
