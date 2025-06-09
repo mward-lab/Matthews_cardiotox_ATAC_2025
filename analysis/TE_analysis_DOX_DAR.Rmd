@@ -146,10 +146,6 @@ SVA_peaks <- overlap_TE_gr %>%
   dplyr::filter(repClass=="Retroposon") %>% 
   distinct(Peakid)
 
-
-
-
-
 # join sig data by toptable information 
 
 all_results  <- toptable_results %>%
@@ -171,8 +167,27 @@ annotated_peaks <- all_results %>%
          sig_24=if_else(adj.P.Val_DOX_24<0.05,"sig","not_sig")) %>% 
   mutate(sig_3=factor(sig_3,levels=c("sig","not_sig")),
          sig_24=factor(sig_24,levels=c("sig","not_sig"))) %>% 
-  mutate(sig_up= if_else(adj.P.Val_DOX_24<0.05 & logFC_DOX_24>0,"sig_up","not_sig_up")) %>% 
- mutate(sig_down= if_else(adj.P.Val_DOX_24<0.05 & logFC_DOX_24<0,"sig_down","not_sig_down"))
+   mutate(sig_up_3 = case_when(
+  adj.P.Val_DOX_3 < 0.05 & logFC_DOX_3 > 0 ~ "sig_up",
+  TRUE ~ "not_sig_up"
+)) %>% 
+ mutate(sig_down_3 = case_when(
+  adj.P.Val_DOX_3 < 0.05 & logFC_DOX_3 < 0 ~ "sig_down",
+  TRUE ~ "not_sig_down"
+)) %>% 
+  mutate(sig_up_24 = case_when(
+  adj.P.Val_DOX_24 < 0.05 & logFC_DOX_24 > 0 ~ "sig_up",
+  TRUE ~ "not_sig_up"
+)) %>% 
+ mutate(sig_down_24 = case_when(
+  adj.P.Val_DOX_24 < 0.05 & logFC_DOX_24 < 0 ~ "sig_down",
+  TRUE ~ "not_sig_down"
+)) %>% 
+  mutate(sig_up_3=factor(sig_up_3,levels=c("sig_up","not_sig_up")),
+         sig_down_3=factor(sig_down_3,levels=c("sig_down","not_sig_down")),
+         sig_up_24=factor(sig_up_24,levels=c("sig_up","not_sig_up")),
+         sig_down_24=factor(sig_down_24,levels=c("sig_down","not_sig_down"))) 
+annotated_peaks
 ```
 
 
@@ -212,6 +227,7 @@ DOX_3_status_matrices <- map(status_columns, function(status_col) {
     ) %>%
     column_to_rownames(var = status_col) %>%
     as.matrix()
+   print(mat)
   
   # Fill missing expected rows
   for (r in setdiff(expected_rows, rownames(mat))) {
@@ -275,6 +291,7 @@ DOX_24_status_matrices <- map(status_columns, function(status_col) {
     ) %>%
     column_to_rownames(var = status_col) %>%
     as.matrix()
+   print(mat)
   
   # Fill missing expected rows
   for (r in setdiff(expected_rows, rownames(mat))) {
@@ -320,6 +337,147 @@ odds_ratio_results_DOX_24 <- map(DOX_24_status_matrices, function(mat) {
 
 ```
 
+####  DOX 3 hour matrix  
+
+
+```{r DOX3 sigup}
+
+# Create a list of matrices, named by status type
+DOX_3_sig_up_status_matrices <- map(status_columns, function(status_col) {
+  # Extract prefix (e.g., "TE", "SINE") from column name like "TE_status"
+  prefix <- sub("_status$", "", status_col)
+  expected_rows <- c(paste0(prefix, "_peak"), paste0("not_", prefix, "_peak"))
+  expected_cols <- c("sig_up", "not_sig_up")
+  
+  # Build matrix
+  mat <- annotated_peaks %>%
+    group_by(across(all_of(status_col)), sig_up_3) %>%
+    tally() %>%
+    pivot_wider(
+      names_from = sig_up_3,
+      values_from = n,
+      values_fill = list(n = 0)
+    ) %>%
+    column_to_rownames(var = status_col) %>%
+    as.matrix()
+   print(mat)
+  
+  # Fill missing expected rows
+  for (r in setdiff(expected_rows, rownames(mat))) {
+    mat <- rbind(mat, setNames(rep(0, length(expected_cols)), expected_cols))
+    rownames(mat)[nrow(mat)] <- r
+  }
+
+  # Fill missing expected columns
+  for (c in setdiff(expected_cols, colnames(mat))) {
+    mat <- cbind(mat, setNames(rep(0, nrow(mat)), c))
+  }
+
+  # Order
+  mat <- mat[expected_rows, expected_cols, drop = FALSE]
+})
+
+# Set names so you can easily refer to each status
+names(DOX_3_sig_up_status_matrices) <- status_columns
+
+
+odds_ratio_results_DOX_3_sig_up <- map(DOX_3_sig_up_status_matrices, function(mat) {
+  if (!all(dim(mat) == c(2, 2))) return(NULL)
+  
+  result <- epitools::oddsratio(mat, method = "wald")
+  
+  or <- result$measure[2, "estimate"]
+  lower <- result$measure[2, "lower"]
+  upper <- result$measure[2, "upper"]
+  
+  pval_chisq <- if("chi.square" %in% colnames(result$p.value) && nrow(result$p.value) >= 2) {
+    result$p.value[2, "chi.square"]
+  } else {
+    NA_real_
+  }
+  
+  list(
+    odds_ratio = or,
+    lower_ci = lower,
+    upper_ci = upper,
+    chi_sq_p = pval_chisq
+  )
+})
+
+
+```
+
+
+```{r DOX3 sigdown}
+
+# Create a list of matrices, named by status type
+DOX_3_sig_down_status_matrices <- map(status_columns, function(status_col) {
+  # Extract prefix (e.g., "TE", "SINE") from column name like "TE_status"
+  prefix <- sub("_status$", "", status_col)
+  expected_rows <- c(paste0(prefix, "_peak"), paste0("not_", prefix, "_peak"))
+  expected_cols <- c("sig_down", "not_sig_down")
+  
+  # Build matrix
+  mat <- annotated_peaks %>%
+    group_by(across(all_of(status_col)), sig_down_3) %>%
+    tally() %>%
+    pivot_wider(
+      names_from = sig_down_3,
+      values_from = n,
+      values_fill = list(n = 0)
+    ) %>%
+    column_to_rownames(var = status_col) %>%
+    as.matrix()
+   print(mat)
+  
+  # Fill missing expected rows
+  for (r in setdiff(expected_rows, rownames(mat))) {
+    mat <- rbind(mat, setNames(rep(0, length(expected_cols)), expected_cols))
+    rownames(mat)[nrow(mat)] <- r
+  }
+
+  # Fill missing expected columns
+  for (c in setdiff(expected_cols, colnames(mat))) {
+    mat <- cbind(mat, setNames(rep(0, nrow(mat)), c))
+  }
+
+  # Order
+  mat <- mat[expected_rows, expected_cols, drop = FALSE]
+})
+
+# Set names so you can easily refer to each status
+names(DOX_3_sig_down_status_matrices) <- status_columns
+
+
+odds_ratio_results_DOX_3_sig_down <- map(DOX_3_sig_down_status_matrices, function(mat) {
+  if (!all(dim(mat) == c(2, 2))) return(NULL)
+  
+  result <- epitools::oddsratio(mat, method = "wald")
+  
+  or <- result$measure[2, "estimate"]
+  lower <- result$measure[2, "lower"]
+  upper <- result$measure[2, "upper"]
+  
+  pval_chisq <- if("chi.square" %in% colnames(result$p.value) && nrow(result$p.value) >= 2) {
+    result$p.value[2, "chi.square"]
+  } else {
+    NA_real_
+  }
+  
+  list(
+    odds_ratio = or,
+    lower_ci = lower,
+    upper_ci = upper,
+    chi_sq_p = pval_chisq
+  )
+})
+
+
+```
+
+#### DOX 24 hour matrix  
+
+
 ```{r DOX24 sigup}
 
 # Create a list of matrices, named by status type
@@ -331,15 +489,16 @@ DOX_24_sig_up_status_matrices <- map(status_columns, function(status_col) {
   
   # Build matrix
   mat <- annotated_peaks %>%
-    group_by(across(all_of(status_col)), sig_up) %>%
+    group_by(across(all_of(status_col)), sig_up_24) %>%
     tally() %>%
     pivot_wider(
-      names_from = sig_up,
+      names_from = sig_up_24,
       values_from = n,
       values_fill = list(n = 0)
     ) %>%
     column_to_rownames(var = status_col) %>%
     as.matrix()
+   print(mat)
   
   # Fill missing expected rows
   for (r in setdiff(expected_rows, rownames(mat))) {
@@ -398,15 +557,16 @@ DOX_24_sig_down_status_matrices <- map(status_columns, function(status_col) {
   
   # Build matrix
   mat <- annotated_peaks %>%
-    group_by(across(all_of(status_col)), sig_down) %>%
+    group_by(across(all_of(status_col)), sig_down_24) %>%
     tally() %>%
     pivot_wider(
-      names_from = sig_down,
+      names_from = sig_down_24,
       values_from = n,
       values_fill = list(n = 0)
     ) %>%
     column_to_rownames(var = status_col) %>%
     as.matrix()
+  print(mat)
   
   # Fill missing expected rows
   for (r in setdiff(expected_rows, rownames(mat))) {
@@ -454,14 +614,16 @@ odds_ratio_results_DOX_24_sig_down <- map(DOX_24_sig_down_status_matrices, funct
 ```
 #### Combining the data and applying BH pvalue adjustments
 ```{r}
-odds_ratio_results_DOX_3
-odds_ratio_results_DOX_24
-odds_ratio_results_DOX_24_sig_up
-odds_ratio_results_DOX_24_sig_down
+# odds_ratio_results_DOX_3
+# odds_ratio_results_DOX_24
+# odds_ratio_results_DOX_24_sig_up
+# odds_ratio_results_DOX_24_sig_down
 
 combined_df <- bind_rows(
   map_dfr(odds_ratio_results_DOX_3, ~as.data.frame(.x), .id = "status") %>% mutate(source = "DOX_3hr"),
   map_dfr(odds_ratio_results_DOX_24, ~as.data.frame(.x), .id = "status") %>% mutate(source = "DOX_24hr"),
+  map_dfr(odds_ratio_results_DOX_3_sig_up, ~as.data.frame(.x), .id = "status") %>% mutate(source = "DOX_3hr_sigup"),
+  map_dfr(odds_ratio_results_DOX_3_sig_down, ~as.data.frame(.x), .id = "status") %>% mutate(source = "DOX_3hr_sigdown"),
   map_dfr(odds_ratio_results_DOX_24_sig_up, ~as.data.frame(.x), .id = "status") %>% mutate(source = "DOX_24hr_sigup"),
   map_dfr(odds_ratio_results_DOX_24_sig_down, ~as.data.frame(.x), .id = "status") %>% mutate(source = "DOX_24hr_sigdown")
 )

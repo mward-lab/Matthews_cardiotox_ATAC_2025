@@ -771,7 +771,50 @@ ggVennDiagram::ggVennDiagram(sig_venn_3hr)
 
 
 ggVennDiagram::ggVennDiagram(sig_venn_24hr)
+saveRDS(sig_meta_and_loc_split,"Sig_meta")
+
 ```
+
+#### Proportion of peaks that are DARs
+
+```{r 3hr DAR}
+three_hour_df <- all_results %>% 
+  dplyr::select(source, genes, logFC,adj.P.Val) %>% 
+  mutate(sig_val=if_else(adj.P.Val<0.05,"sig","not_sig")) %>% 
+  separate(source, into=c("trt","time"),sep="_") %>% 
+  dplyr::filter(time=="3") %>% 
+  mutate(trt=factor(trt, levels=c("DOX","EPI","DNR","MTX","TRZ")))
+
+twentyfour_hour_df <- all_results %>% 
+  dplyr::select(source, genes, logFC,adj.P.Val) %>% 
+  mutate(sig_val=if_else(adj.P.Val<0.05,"sig","not_sig")) %>% 
+  separate(source, into=c("trt","time"),sep="_") %>% 
+  dplyr::filter(time=="24") %>% 
+  mutate(trt=factor(trt, levels=c("DOX","EPI","DNR","MTX","TRZ")))
+
+```
+
+```{r 3 hour ggplot}
+three_hour_df %>% 
+  mutate(sig_val=factor(sig_val,levels = c("sig","not_sig"))) %>% 
+  ggplot(., aes(x=trt,fill=sig_val))+
+  geom_bar(position="fill")+
+  theme_bw()+
+  ggtitle("Proportion of significant regions by 3 hours")+
+  ylab("proportion")
+
+
+twentyfour_hour_df %>% 
+  mutate(sig_val=factor(sig_val,levels = c("sig","not_sig"))) %>% 
+  ggplot(., aes(x=trt,fill=sig_val))+
+  geom_bar(position="fill")+
+  theme_bw()+
+  ggtitle("Proportion of significant regions by 24 hours")+
+  ylab("proportion")
+```
+
+
+
 ```{r doxbed, eval=FALSE}
 DOX_sig <- sig_meta_and_loc_split[c("DOX_3", "DOX_24")]
 
@@ -824,6 +867,42 @@ for (name in names(DOXsig_up_gr)) {
   # Export to BED (auto converts to 0-based)
   export(gr_centered, con = file.path(output_dir, paste0(name, "DOXsig_up_centered.bed")), format = "BED")
 }
+
+```
+
+```{r, eval=FALSE}
+ filt_DOX24_notup <- all_results %>% 
+  dplyr::filter (source=="DOX_24") %>% 
+  dplyr::filter(!genes %in% DOXsig_up$DOX_24_up$genes) %>% 
+  separate(rowname, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE) 
+
+filt_DOX24_notdown <- all_results %>% 
+  dplyr::filter (source=="DOX_24") %>% 
+  dplyr::filter(!genes %in% DOXsig_down$DOX_24_down$genes) %>% 
+  separate(rowname, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE) 
+
+# Now convert to GRanges
+filt_DOX24_notup_gr <- GRanges(
+  seqnames = filt_DOX24_notup$seqnames,
+  ranges = IRanges(start = filt_DOX24_notup$start, end = filt_DOX24_notup$end),
+  mcols = filt_DOX24_notup %>% select(-seqnames, -start, -end)
+)
+filt_DOX24_notdown_gr <- GRanges(
+  seqnames = filt_DOX24_notdown$seqnames,
+  ranges = IRanges(start = filt_DOX24_notdown$start, end = filt_DOX24_notdown$end),
+  mcols = filt_DOX24_notdown %>% select(-seqnames, -start, -end)
+)
+DOX_not_list_gr <- list("DOX24_notup"=filt_DOX24_notup_gr,"DOX24_notdown"=filt_DOX24_notdown_gr)
+# for (name in names(DOX_not_list)) {
+#   gr <- DOX_not_list[[name]]
+#   
+#   # Recenter each region to 200 bp around its midpoint
+#   gr_centered <- resize(gr, width = 200, fix = "center")
+#   
+#   # Export to BED (auto converts to 0-based)
+#   export(gr_centered, con = file.path(output_dir, paste0(name, "DOX24not_centered.bed")), format = "BED")
+# }
+
 
 ```
 

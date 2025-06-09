@@ -153,16 +153,26 @@ CRE_summary <-final_peaks %>%
          sig_24=if_else(adj.P.Val_DOX_24<0.05,"sig","not_sig")) %>% 
   mutate(sig_3=factor(sig_3,levels=c("sig","not_sig")),
          sig_24=factor(sig_24,levels=c("sig","not_sig"))) %>% 
- mutate(sig_up = case_when(
+ mutate(sig_up_3 = case_when(
+  adj.P.Val_DOX_3 < 0.05 & logFC_DOX_3 > 0 ~ "sig_up",
+  TRUE ~ "not_sig_up"
+)) %>% 
+ mutate(sig_down_3 = case_when(
+  adj.P.Val_DOX_3 < 0.05 & logFC_DOX_3 < 0 ~ "sig_down",
+  TRUE ~ "not_sig_down"
+)) %>% 
+  mutate(sig_up_24 = case_when(
   adj.P.Val_DOX_24 < 0.05 & logFC_DOX_24 > 0 ~ "sig_up",
   TRUE ~ "not_sig_up"
 )) %>% 
- mutate(sig_down = case_when(
-  adj.P.Val_DOX_24 < 0.05 & logFC_DOX_24 > 0 ~ "sig_down",
+ mutate(sig_down_24 = case_when(
+  adj.P.Val_DOX_24 < 0.05 & logFC_DOX_24 < 0 ~ "sig_down",
   TRUE ~ "not_sig_down"
 )) %>% 
-  mutate(sig_up=factor(sig_up,levels=c("sig_up","not_sig_up")),
-         sig_down=factor(sig_down,levels=c("sig_down","not_sig_down"))) 
+  mutate(sig_up_3=factor(sig_up_3,levels=c("sig_up","not_sig_up")),
+         sig_down_3=factor(sig_down_3,levels=c("sig_down","not_sig_down")),
+         sig_up_24=factor(sig_up_24,levels=c("sig_up","not_sig_up")),
+         sig_down_24=factor(sig_down_24,levels=c("sig_down","not_sig_down"))) 
 
 
 
@@ -299,7 +309,145 @@ odds_ratio_results_DOX_24 <- map(DOX_24_status_matrices, function(mat) {
 
 ```
 
+#### 3 hour matrix  
 
+  
+  
+```{r DOX_3 sigup}
+DOX_3_sigup_status_matrices <- map(status_columns, function(status_col) {
+  # Extract prefix (e.g., "TE", "SINE") from column name like "TE_status"
+  prefix <- sub("_status$", "", status_col)
+  expected_rows <- c(paste0(prefix,"_peak"), paste0("not_", prefix,"_peak"))
+  expected_cols <- c("sig_up", "not_sig_up")
+  
+  # Build matrix
+  mat <- CRE_summary %>%
+    group_by(across(all_of(status_col)), sig_up_3) %>%
+    tally() %>%
+    pivot_wider(
+      names_from = sig_up_3,
+      values_from = n,
+      values_fill = list(n = 0)
+    ) %>%
+    column_to_rownames(var = status_col) %>%
+    as.matrix()
+  
+  # Fill missing expected rows
+  for (r in setdiff(expected_rows, rownames(mat))) {
+    mat <- rbind(mat, setNames(rep(0, length(expected_cols)), expected_cols))
+    rownames(mat)[nrow(mat)] <- r
+  }
+
+  # Fill missing expected columns
+  for (c in setdiff(expected_cols, colnames(mat))) {
+    mat <- cbind(mat, setNames(rep(0, nrow(mat)), c))
+  }
+
+  # Order
+  mat <- mat[expected_rows, expected_cols, drop = FALSE]
+})
+
+# Set names so you can easily refer to each status
+names(DOX_3_sigup_status_matrices) <- status_columns
+
+
+odds_ratio_results_DOX_3_sigup <- map(DOX_3_sigup_status_matrices, function(mat) {
+  if (!all(dim(mat) == c(2, 2)) || any(!is.finite(mat)) || sum(mat) == 0 || any(rowSums(mat) == 0) || any(colSums(mat) == 0)) {
+    return(NULL)
+  }
+  
+  result <- epitools::oddsratio(mat, method = "wald")
+  
+  or <- result$measure[2, "estimate"]
+  lower <- result$measure[2, "lower"]
+  upper <- result$measure[2, "upper"]
+  
+  pval_chisq <- if("chi.square" %in% colnames(result$p.value) && nrow(result$p.value) >= 2) {
+    result$p.value[2, "chi.square"]
+  } else {
+    NA_real_
+  }
+  
+  list(
+    odds_ratio = or,
+    lower_ci = lower,
+    upper_ci = upper,
+    chi_sq_p = pval_chisq
+  )
+})
+
+```
+
+
+```{r DOX_3 sigdown}
+DOX_3_sigdown_status_matrices <- map(status_columns, function(status_col) {
+  # Extract prefix (e.g., "TE", "SINE") from column name like "TE_status"
+  prefix <- sub("_status$", "", status_col)
+  expected_rows <- c(paste0(prefix,"_peak"), paste0("not_", prefix,"_peak"))
+  expected_cols <- c("sig_down", "not_sig_down")
+  
+  # Build matrix
+  mat <- CRE_summary %>%
+    group_by(across(all_of(status_col)), sig_down_3) %>%
+    tally() %>%
+    pivot_wider(
+      names_from = sig_down_3,
+      values_from = n,
+      values_fill = list(n = 0)
+    ) %>%
+    column_to_rownames(var = status_col) %>%
+    as.matrix()
+  
+  # Fill missing expected rows
+  for (r in setdiff(expected_rows, rownames(mat))) {
+    mat <- rbind(mat, setNames(rep(0, length(expected_cols)), expected_cols))
+    rownames(mat)[nrow(mat)] <- r
+  }
+
+  # Fill missing expected columns
+  for (c in setdiff(expected_cols, colnames(mat))) {
+    mat <- cbind(mat, setNames(rep(0, nrow(mat)), c))
+  }
+
+  # Order
+  mat <- mat[expected_rows, expected_cols, drop = FALSE]
+})
+
+# Set names so you can easily refer to each status
+names(DOX_3_sigdown_status_matrices) <- status_columns
+
+
+odds_ratio_results_DOX_3_sigdown <- map(DOX_3_sigdown_status_matrices, function(mat) {
+  if (!all(dim(mat) == c(2, 2)) || any(!is.finite(mat)) || sum(mat) == 0 || any(rowSums(mat) == 0) || any(colSums(mat) == 0)) {
+    return(NULL)
+  }
+  
+  result <- epitools::oddsratio(mat, method = "wald")
+  
+  or <- result$measure[2, "estimate"]
+  lower <- result$measure[2, "lower"]
+  upper <- result$measure[2, "upper"]
+  
+  pval_chisq <- if("chi.square" %in% colnames(result$p.value) && nrow(result$p.value) >= 2) {
+    result$p.value[2, "chi.square"]
+  } else {
+    NA_real_
+  }
+  
+  list(
+    odds_ratio = or,
+    lower_ci = lower,
+    upper_ci = upper,
+    chi_sq_p = pval_chisq
+  )
+})
+
+```
+  
+#### 24 hour matrix  
+
+  
+  
 ```{r DOX 24 sigup}
 DOX_24_sigup_status_matrices <- map(status_columns, function(status_col) {
   # Extract prefix (e.g., "TE", "SINE") from column name like "TE_status"
@@ -309,10 +457,10 @@ DOX_24_sigup_status_matrices <- map(status_columns, function(status_col) {
   
   # Build matrix
   mat <- CRE_summary %>%
-    group_by(across(all_of(status_col)), sig_up) %>%
+    group_by(across(all_of(status_col)), sig_up_24) %>%
     tally() %>%
     pivot_wider(
-      names_from = sig_up,
+      names_from = sig_up_24,
       values_from = n,
       values_fill = list(n = 0)
     ) %>%
@@ -375,10 +523,10 @@ DOX_24_sigdown_status_matrices <- map(status_columns, function(status_col) {
   
   # Build matrix
   mat <- CRE_summary %>%
-    group_by(across(all_of(status_col)), sig_down) %>%
+    group_by(across(all_of(status_col)), sig_down_24) %>%
     tally() %>%
     pivot_wider(
-      names_from = sig_down,
+      names_from = sig_down_24,
       values_from = n,
       values_fill = list(n = 0)
     ) %>%
@@ -431,6 +579,7 @@ odds_ratio_results_DOX_24_sigdown <- map(DOX_24_sigdown_status_matrices, functio
 
 ```
 
+  
 ### odds ratio results
 ```{r odds ratio test}
 col_fun_OR = colorRamp2(c(0,1,1.5,5), c("blueviolet","white","lightgreen","green3" ))
@@ -438,6 +587,8 @@ col_fun_OR = colorRamp2(c(0,1,1.5,5), c("blueviolet","white","lightgreen","green
 combined_df <- bind_rows(
   map_dfr(odds_ratio_results_DOX_3, ~as.data.frame(.x), .id = "status") %>% mutate(source = "DOX_3hr"),
   map_dfr(odds_ratio_results_DOX_24, ~as.data.frame(.x), .id = "status") %>% mutate(source = "DOX_24hr"),
+  map_dfr(odds_ratio_results_DOX_3_sigup, ~as.data.frame(.x), .id = "status") %>% mutate(source = "DOX_3hr_sigup"),
+  map_dfr(odds_ratio_results_DOX_3_sigdown, ~as.data.frame(.x), .id = "status") %>% mutate(source = "DOX_3hr_sigdown"),
   map_dfr(odds_ratio_results_DOX_24_sigup, ~as.data.frame(.x), .id = "status") %>% mutate(source = "DOX_24hr_sigup"),
   map_dfr(odds_ratio_results_DOX_24_sigdown, ~as.data.frame(.x), .id = "status") %>% mutate(source = "DOX_24hr_sigdown")
 )
@@ -457,9 +608,12 @@ combined_df
 ```{r heatmap of OR results}
 combined_df %>% 
  dplyr::select(status, source, odds_ratio) %>%
+  mutate(status=factor(status, levels=c("cRE_status","PLS_status","pELS_status","dELS_status","CTCF_status"))) %>% 
+  arrange(status) %>% 
   group_by(source) %>%
   pivot_wider(., id_cols = status, names_from = source, values_from = odds_ratio) %>% 
   column_to_rownames("status") %>% 
+  
   as.matrix() %>% 
   ComplexHeatmap::Heatmap(. ,col = col_fun_OR, 
                           cluster_rows=FALSE, 
