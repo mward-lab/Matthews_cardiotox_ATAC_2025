@@ -53,6 +53,7 @@ library(ComplexHeatmap)
 library(cowplot)
 library(smplot2)
 library(data.table)
+library(ggVennDiagram)
 
 ```
 
@@ -693,6 +694,9 @@ all_results  <- toptable_results %>%
   imap(~ .x %>% tibble::rownames_to_column(var = "rowname") %>%
          mutate(source = .y)) %>%
   bind_rows()
+all_results_list  <- toptable_results %>%
+  imap(~ .x %>% tibble::rownames_to_column(var = "rowname") %>%
+         mutate(source = .y)) 
 
 sig_meta_and_loc <- all_results %>% 
   dplyr::filter(adj.P.Val<0.05) %>%  ## filter by pvalue
@@ -724,6 +728,17 @@ notsig_meta_and_loc_split_gr <- lapply(notsig_meta_and_loc_split, function(sub_d
   )
 })
 
+all_DAR_regions <- all_results %>% 
+   separate(rowname, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE)
+all_DAR_regions_list <- split(all_DAR_regions, all_DAR_regions$source)
+
+all_DAR_regions_gr <- lapply(all_DAR_regions_list, function(sub_df) {
+  GRanges(
+    seqnames = sub_df$seqnames,
+    ranges = IRanges(start = sub_df$start, end = sub_df$end),
+    mcols = sub_df %>% dplyr::select(-seqnames, -start, -end)
+  )
+})
 ```
 
 ```{r exporting bed files, eval=FALSE}
@@ -773,6 +788,21 @@ ggVennDiagram::ggVennDiagram(sig_venn_3hr)
 ggVennDiagram::ggVennDiagram(sig_venn_24hr)
 saveRDS(sig_meta_and_loc_split,"Sig_meta")
 
+
+sig_3hr_obj <- ggVennDiagram::Venn(sig_venn_list[c("DOX_3","EPI_3", "DNR_3","MTX_3")])
+sig_24hr_obj <- ggVennDiagram::Venn(sig_venn_list[c("DOX_24","EPI_24", "DNR_24","MTX_24")])
+sig_3hr_obj <- ggVennDiagram::process_data(sig_3hr_obj)
+sig_24hr_obj <- ggVennDiagram::process_data(sig_24hr_obj)
+
+sig_3hr_regions <- ggVennDiagram::venn_region(sig_3hr_obj)
+sig_24hr_regions<- ggVennDiagram::venn_region(sig_24hr_obj)
+sig_3hr_shared <- sig_3hr_obj$regionLabel$item[[11]]
+sig_24hr_shared <-   sig_24hr_obj$regionLabel$item[[11]]
+
+# saveRDS(sig_3hr_shared,"data/Final_four_data/re_analysis/AC_shared_3hour_DARs.RDS")
+# saveRDS(sig_24hr_shared,"data/Final_four_data/re_analysis/AC_shared_24hour_DARs.RDS")
+
+
 ```
 
 #### Proportion of peaks that are DARs
@@ -796,7 +826,7 @@ twentyfour_hour_df <- all_results %>%
 
 ```{r 3 hour ggplot}
 three_hour_df %>% 
-  mutate(sig_val=factor(sig_val,levels = c("sig","not_sig"))) %>% 
+  mutate(sig_val=factor(sig_val,levels = c("not_sig","sig"))) %>% 
   ggplot(., aes(x=trt,fill=sig_val))+
   geom_bar(position="fill")+
   theme_bw()+
@@ -805,7 +835,7 @@ three_hour_df %>%
 
 
 twentyfour_hour_df %>% 
-  mutate(sig_val=factor(sig_val,levels = c("sig","not_sig"))) %>% 
+  mutate(sig_val=factor(sig_val,levels = c("not_sig","sig"))) %>% 
   ggplot(., aes(x=trt,fill=sig_val))+
   geom_bar(position="fill")+
   theme_bw()+
@@ -906,3 +936,261 @@ DOX_not_list_gr <- list("DOX24_notup"=filt_DOX24_notup_gr,"DOX24_notdown"=filt_D
 
 ```
 
+```{r Genomic Features}
+txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
+### maybe use annotatePeakInBatch from ChIPpeakAnno
+peakAnnoList_DOX_DAR <- lapply(all_DAR_regions_gr, annotatePeak, tssRegion =c(-2000,2000), TxDb=txdb)
+ # saveRDS(peakAnnoList_DOX_DAR, "data/Final_four_data/re_analysis/DOX_DAR_annotated_peaks_chipannno.RDS")
+filt_peakAnnoList_DOX_DAR <- lapply(sig_meta_and_loc_split_gr,annotatePeak, tssRegion =c(-2000,2000), TxDb=txdb)
+# saveRDS(filt_peakAnnoList_DOX_DAR, "data/Final_four_data/re_analysis/filt_DOX_DAR_annotated_peaks_chipannno.RDS")
+plotAnnoBar(peakAnnoList_DOX_DAR)+
+  ggtitle ("Genomic Feature Distribution, all DAR no filtering\n should look identical")
+plotAnnoBar(filt_peakAnnoList_DOX_DAR)+
+  ggtitle ("Genomic Feature Distribution, Significant regions \n using adj.P.Val <0.05")
+
+# annotated_peak_TSS_chipanno <-  peakAnnoList_DOX_DAR %>%
+#   imap(~ .x %>% tibble::rownames_to_column(var = "rowname") %>%
+#          mutate(source = .y)) 
+
+```
+
+```{r looking at proportion of DE genes that are DOX DAR}
+
+
+toplistall_RNA <- readRDS("data/other_papers/toplistall_RNA.RDS") %>% 
+  mutate(logFC = logFC*(-1))
+peakAnnoList_DOX_DAR <- readRDS("data/Final_four_data/re_analysis/DOX_DAR_annotated_peaks_chipannno.RDS")
+Assigned_genes_toPeak <- peakAnnoList_DOX_DAR$DOX_24 %>% as.data.frame() %>% 
+  dplyr::select(mcols.genes,annotation, geneId, distanceToTSS) %>% 
+  dplyr::rename("Peakid"=mcols.genes)
+
+
+RNA_results <-
+toplistall_RNA %>% 
+  dplyr::select(time:logFC) %>% 
+  tidyr::unite("sample",time, id) %>% 
+  pivot_wider(., id_cols = c(ENTREZID,SYMBOL),names_from = sample, values_from = logFC) %>% 
+  rename_with(~ str_replace(., "hours", "RNA"))
+
+
+DOX24_degs <- toplistall_RNA %>%
+  dplyr::select(time:logFC,adj.P.Val) %>% 
+  dplyr::filter(id=="DOX") %>% 
+  tidyr::unite("sample",time, id) %>% 
+  dplyr::select(sample:SYMBOL,adj.P.Val) %>% 
+  dplyr::filter(adj.P.Val<0.05) %>% 
+  dplyr::filter(sample=="24_hours_DOX")
+
+DOX3_degs <- toplistall_RNA %>%
+  dplyr::select(time:logFC,adj.P.Val) %>% 
+  dplyr::filter(id=="DOX") %>% 
+  tidyr::unite("sample",time, id) %>% 
+  dplyr::select(sample:SYMBOL,adj.P.Val) %>% 
+  dplyr::filter(adj.P.Val<0.05) %>% 
+  dplyr::filter(sample=="3_hours_DOX")
+  
+  
+
+Peak_gene_RNA_LFC <- Assigned_genes_toPeak %>% 
+  left_join(., RNA_results, by =c("geneId"="ENTREZID"))
+
+
+entrez_ids <- Assigned_genes_toPeak$geneId  
+
+
+gene_info <- AnnotationDbi::select(
+  org.Hs.eg.db,
+  keys = entrez_ids,
+  columns = c("SYMBOL"),
+  keytype = "ENTREZID"
+)
+gene_info_collapsed <- gene_info %>%
+  group_by(ENTREZID) %>%
+  summarise(SYMBOL = paste(unique(SYMBOL), collapse = ","), .groups = "drop")
+
+```
+
+NOw to make a dataframe for RNA marked DEGs and TSS
+#### 3 hour DAR and DEGs
+Looking at DARs within 2kb of TSS
+```{r  2kb 3hr DEGnDAR}
+three_hour_df %>% 
+  dplyr::filter(trt=="DOX") %>% 
+  left_join(., Assigned_genes_toPeak, by=c("genes"="Peakid")) %>% 
+  mutate(DEG=if_else(geneId %in% DOX3_degs$ENTREZID,"DEG","not_DEG")) %>% 
+  dplyr::filter(distanceToTSS>-2000 & distanceToTSS<2000) %>% 
+   mutate(sig_val = factor(sig_val, levels = c( "sig","not_sig"))) %>% 
+  ggplot(., aes(x=sig_val,fill=DEG))+
+  geom_bar(position="fill")+
+  theme_bw()+
+  ggtitle(" DOX DARs with DEGs at 3 hours within 2kb")+
+  ylab("proportion")
+
+filtered_df_3hr <-
+three_hour_df %>% 
+  dplyr::filter(trt == "DOX") %>% 
+  left_join(Assigned_genes_toPeak, by = c("genes" = "Peakid")) %>% 
+  mutate(DEG = if_else(geneId %in% DOX3_degs$ENTREZID, "DEG", "not_DEG")) %>% 
+  dplyr::filter(distanceToTSS> -2000 & distanceToTSS < 2000) %>% 
+   mutate(sig_val = factor(sig_val, levels = c( "sig","not_sig")))
+
+
+
+contingency_table_3hr <- table(filtered_df_3hr$DEG, filtered_df_3hr$sig_val)
+contingency_table_3hr
+
+fisher.test(contingency_table_3hr)
+```
+Looking at DARs within 20kb of TSS
+```{r  20kb 3hr DEGnDAR}
+three_hour_df %>% 
+  dplyr::filter(trt=="DOX") %>% 
+  left_join(., Assigned_genes_toPeak, by=c("genes"="Peakid")) %>% 
+  mutate(DEG=if_else(geneId %in% DOX3_degs$ENTREZID,"DEG","not_DEG")) %>% 
+  dplyr::filter(distanceToTSS>-20000 & distanceToTSS<20000) %>% 
+   mutate(sig_val = factor(sig_val, levels = c( "sig","not_sig"))) %>% 
+ ggplot(., aes(x=sig_val,fill=DEG))+
+  geom_bar(position="fill")+
+  theme_bw()+
+  ggtitle(" DOX DARs with DEGs at 3 hours within 20kb")+
+  ylab("proportion")
+
+filtered_df_3hr20k <-
+three_hour_df %>% 
+  dplyr::filter(trt == "DOX") %>% 
+  left_join(Assigned_genes_toPeak, by = c("genes" = "Peakid")) %>% 
+  mutate(DEG = if_else(geneId %in% DOX3_degs$ENTREZID, "DEG", "not_DEG")) %>% 
+  dplyr::filter(distanceToTSS> -20000 & distanceToTSS < 20000) %>% 
+   mutate(sig_val = factor(sig_val, levels = c( "sig","not_sig")))
+
+
+
+contingency_table_3hr20k <- table(filtered_df_3hr20k$DEG, filtered_df_3hr20k$sig_val)
+contingency_table_3hr20k
+
+fisher.test(contingency_table_3hr20k)
+```
+
+Looking at DARs with all distances to TSS
+
+```{r  nodist 3hr DEGnDAR}
+three_hour_df %>% 
+  dplyr::filter(trt=="DOX") %>% 
+  left_join(., Assigned_genes_toPeak, by=c("genes"="Peakid")) %>% 
+  mutate(DEG=if_else(geneId %in% DOX3_degs$ENTREZID,"DEG","not_DEG")) %>% 
+  # dplyr::filter(distanceToTSS>-20000 & distanceToTSS<20000) %>% 
+   mutate(sig_val = factor(sig_val, levels = c( "sig","not_sig"))) %>% 
+
+  ggplot(., aes(x=sig_val,fill=DEG))+
+  geom_bar(position="fill")+
+  theme_bw()+
+  ggtitle("DOX DARs with DEGs at 3 hours (all)")+
+  ylab("proportion")
+
+filtered_df_3hrnodist <-
+three_hour_df %>% 
+  dplyr::filter(trt == "DOX") %>% 
+  left_join(Assigned_genes_toPeak, by = c("genes" = "Peakid")) %>% 
+  mutate(DEG = if_else(geneId %in% DOX3_degs$ENTREZID, "DEG", "not_DEG")) %>% 
+  # dplyr::filter(distanceToTSS> -20000 & distanceToTSS < 20000) %>% 
+  mutate(sig_val = factor(sig_val, levels = c( "sig","not_sig")))
+
+
+
+contingency_table_3hrnodist <- table(filtered_df_3hrnodist$DEG, filtered_df_3hrnodist$sig_val)
+contingency_table_3hrnodist
+
+fisher.test(contingency_table_3hrnodist)
+```
+
+
+
+#### 24 hour DAR and DEGs
+Looking at DARs within 2kb of TSS
+```{r  2kb 24hr DEGnDAR}
+twentyfour_hour_df %>% 
+  dplyr::filter(trt=="DOX") %>% 
+  left_join(., Assigned_genes_toPeak, by=c("genes"="Peakid")) %>% 
+  mutate(DEG=if_else(geneId %in% DOX24_degs$ENTREZID,"DEG","not_DEG")) %>% 
+  dplyr::filter(distanceToTSS>-2000 & distanceToTSS<2000) %>% 
+   mutate(sig_val = factor(sig_val, levels = c( "sig","not_sig"))) %>% 
+  ggplot(., aes(x=sig_val,fill=DEG))+
+  geom_bar(position="fill")+
+  theme_bw()+
+  ggtitle(" significant DEGs in DOX DARs and DOX not-DARs at 24 hours within 2kb of TSS")+
+  ylab("proportion")
+
+filtered_df_24hr <-
+twentyfour_hour_df %>% 
+  dplyr::filter(trt == "DOX") %>% 
+  left_join(Assigned_genes_toPeak, by = c("genes" = "Peakid")) %>% 
+  mutate(DEG = if_else(geneId %in% DOX24_degs$ENTREZID, "DEG", "not_DEG")) %>% 
+  dplyr::filter(distanceToTSS> -2000 & distanceToTSS < 2000) %>% 
+   mutate(sig_val = factor(sig_val, levels = c( "sig","not_sig")))
+
+
+
+contingency_table_24hr <- table(filtered_df_24hr$DEG, filtered_df_24hr$sig_val)
+contingency_table_24hr
+
+fisher.test(contingency_table_24hr)
+```
+Looking at DARs within 20kb of TSS
+```{r  20kb 24hr DEGnDAR}
+twentyfour_hour_df %>% 
+  dplyr::filter(trt=="DOX") %>% 
+  left_join(., Assigned_genes_toPeak, by=c("genes"="Peakid")) %>% 
+  mutate(DEG=if_else(geneId %in% DOX24_degs$ENTREZID,"DEG","not_DEG")) %>% 
+  dplyr::filter(distanceToTSS>-20000 & distanceToTSS<20000) %>% 
+  mutate(sig_val=factor(sig_val,levels = c("sig","not_sig"))) %>% 
+  ggplot(., aes(x=sig_val,fill=DEG))+
+  geom_bar(position="fill")+
+  theme_bw()+
+  ggtitle(" significant DEGs in DOX DARs and DOX not-DARs at 24 hours within 20kb")+
+  ylab("proportion")
+
+filtered_df_24hr20k <-
+twentyfour_hour_df %>% 
+  dplyr::filter(trt == "DOX") %>% 
+  left_join(Assigned_genes_toPeak, by = c("genes" = "Peakid")) %>% 
+  mutate(DEG = if_else(geneId %in% DOX24_degs$ENTREZID, "DEG", "not_DEG")) %>% 
+  dplyr::filter(distanceToTSS> -20000 & distanceToTSS < 20000) %>% 
+   mutate(sig_val = factor(sig_val, levels = c( "sig","not_sig")))
+
+
+
+contingency_table_24hr20k <- table(filtered_df_24hr20k$DEG, filtered_df_24hr20k$sig_val)
+contingency_table_24hr20k
+
+fisher.test(contingency_table_24hr20k)
+```
+
+Looking at DARs with all distances to TSS
+
+```{r  nodist 24hr DEGnDAR}
+twentyfour_hour_df %>% 
+  dplyr::filter(trt=="DOX") %>% 
+  left_join(., Assigned_genes_toPeak, by=c("genes"="Peakid")) %>% 
+  mutate(DEG=if_else(geneId %in% DOX24_degs$ENTREZID,"DEG","not_DEG")) %>% 
+  # dplyr::filter(distanceToTSS>-20000 & distanceToTSS<20000) %>% 
+   mutate(sig_val = factor(sig_val, levels = c( "sig","not_sig"))) %>% 
+ ggplot(., aes(x=sig_val,fill=DEG))+
+  geom_bar(position="fill")+
+  theme_bw()+
+  ggtitle(" significant DEGs in DOX DARs and DOX not-DARs at 24 hours (all)")+
+  ylab("proportion")
+
+filtered_df_24hrnodist <-
+twentyfour_hour_df %>% 
+  dplyr::filter(trt == "DOX") %>% 
+  left_join(Assigned_genes_toPeak, by = c("genes" = "Peakid")) %>% 
+  mutate(DEG = if_else(geneId %in% DOX24_degs$ENTREZID, "DEG", "not_DEG")) %>% 
+  # dplyr::filter(distanceToTSS> -20000 & distanceToTSS < 20000) %>% 
+  mutate(sig_val = factor(sig_val, levels = c( "sig","not_sig")))
+
+
+contingency_table_24hrnodist <- table(filtered_df_24hrnodist$DEG, filtered_df_24hrnodist$sig_val)
+contingency_table_24hrnodist
+
+fisher.test(contingency_table_24hrnodist)
+```
