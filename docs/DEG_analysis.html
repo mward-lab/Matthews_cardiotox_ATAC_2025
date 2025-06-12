@@ -390,7 +390,7 @@ class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span>
 <div class="tab-content">
 <div id="summary" class="tab-pane fade in active">
 <p>
-<strong>Last updated:</strong> 2025-06-09
+<strong>Last updated:</strong> 2025-06-12
 </p>
 <p>
 <strong>Checks:</strong> <span
@@ -521,15 +521,15 @@ project makes it easier to run your code on other machines.</p>
 <div class="panel panel-default">
 <div class="panel-heading">
 <p class="panel-title">
-<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcommwardlabMatthewscardiotoxATAC2025tree7a30fff2fbf4f076ebc52ef6b7a07f81c06d5f26targetblank7a30fffa">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcommwardlabMatthewscardiotoxATAC2025tree601b63fa261330dd115b94ce15d41f86d5bbe4e6targetblank601b63fa">
 <span class="glyphicon glyphicon-ok text-success"
 aria-hidden="true"></span> <strong>Repository version:</strong>
-<a href="https://github.com/mward-lab/Matthews_cardiotox_ATAC_2025/tree/7a30fff2fbf4f076ebc52ef6b7a07f81c06d5f26" target="_blank">7a30fff</a>
+<a href="https://github.com/mward-lab/Matthews_cardiotox_ATAC_2025/tree/601b63fa261330dd115b94ce15d41f86d5bbe4e6" target="_blank">601b63f</a>
 </a>
 </p>
 </div>
 <div
-id="strongRepositoryversionstrongahrefhttpsgithubcommwardlabMatthewscardiotoxATAC2025tree7a30fff2fbf4f076ebc52ef6b7a07f81c06d5f26targetblank7a30fffa"
+id="strongRepositoryversionstrongahrefhttpsgithubcommwardlabMatthewscardiotoxATAC2025tree601b63fa261330dd115b94ce15d41f86d5bbe4e6targetblank601b63fa"
 class="panel-collapse collapse">
 <div class="panel-body">
 <p>
@@ -539,7 +539,7 @@ reproducibility.
 </p>
 <p>
 The results in this page were generated with repository version
-<a href="https://github.com/mward-lab/Matthews_cardiotox_ATAC_2025/tree/7a30fff2fbf4f076ebc52ef6b7a07f81c06d5f26" target="_blank">7a30fff</a>.
+<a href="https://github.com/mward-lab/Matthews_cardiotox_ATAC_2025/tree/601b63fa261330dd115b94ce15d41f86d5bbe4e6" target="_blank">601b63f</a>.
 See the <em>Past versions</em> tab to see a history of the changes made
 to the R Markdown and HTML files.
 </p>
@@ -558,6 +558,7 @@ Ignored files:
     Ignored:    .Rhistory
     Ignored:    .Rproj.user/
     Ignored:    analysis/H3K27ac_integration_noM.Rmd
+    Ignored:    analysis/figure/
     Ignored:    data/ACresp_SNP_table.csv
     Ignored:    data/ARR_SNP_table.csv
     Ignored:    data/All_merged_peaks.tsv
@@ -714,13 +715,17 @@ Ignored files:
 Untracked files:
     Untracked:  RNA_seq_integration.Rmd
     Untracked:  Rplot.pdf
+    Untracked:  Sig_meta
     Untracked:  analysis/.gitignore
+    Untracked:  analysis/AC_shared_analysis.Rmd
     Untracked:  analysis/Cormotif_analysis_testing diff.Rmd
     Untracked:  analysis/Diagnosis-tmm.Rmd
     Untracked:  analysis/Expressed_RNA_associations.Rmd
     Untracked:  analysis/LFC_corr.Rmd
+    Untracked:  analysis/SNP_TAD_peaks.Rmd
     Untracked:  analysis/SVA.Rmd
     Untracked:  analysis/Tan2020.Rmd
+    Untracked:  analysis/Top2B_analysis.Rmd
     Untracked:  analysis/making_master_peaks_list.Rmd
     Untracked:  analysis/my_hc_filt_counts.csv
     Untracked:  code/Concatenations_for_export.R
@@ -787,6 +792,40 @@ Message
 </tr>
 </thead>
 <tbody>
+<tr>
+<td>
+Rmd
+</td>
+<td>
+<a href="https://github.com/mward-lab/Matthews_cardiotox_ATAC_2025/blob/601b63fa261330dd115b94ce15d41f86d5bbe4e6/analysis/DEG_analysis.Rmd" target="_blank">601b63f</a>
+</td>
+<td>
+reneeisnowhere
+</td>
+<td>
+2025-06-12
+</td>
+<td>
+updates
+</td>
+</tr>
+<tr>
+<td>
+html
+</td>
+<td>
+<a href="https://rawcdn.githack.com/mward-lab/Matthews_cardiotox_ATAC_2025/eeaa3e6d4f6995208ca73f3731360b2573d86811/docs/DEG_analysis.html" target="_blank">eeaa3e6</a>
+</td>
+<td>
+reneeisnowhere
+</td>
+<td>
+2025-06-09
+</td>
+<td>
+Build site.
+</td>
+</tr>
 <tr>
 <td>
 Rmd
@@ -1068,7 +1107,8 @@ library(ggrepel)
 library(ComplexHeatmap)
 library(cowplot)
 library(smplot2)
-library(data.table)</code></pre>
+library(data.table)
+library(ggVennDiagram)</code></pre>
 <div id="differential-analysis" class="section level3">
 <h3>Differential analysis</h3>
 <p>Loading counts matrix and making filtered matrix</p>
@@ -2838,6 +2878,9 @@ all_results  &lt;- toptable_results %&gt;%
   imap(~ .x %&gt;% tibble::rownames_to_column(var = &quot;rowname&quot;) %&gt;%
          mutate(source = .y)) %&gt;%
   bind_rows()
+all_results_list  &lt;- toptable_results %&gt;%
+  imap(~ .x %&gt;% tibble::rownames_to_column(var = &quot;rowname&quot;) %&gt;%
+         mutate(source = .y)) 
 
 sig_meta_and_loc &lt;- all_results %&gt;% 
   dplyr::filter(adj.P.Val&lt;0.05) %&gt;%  ## filter by pvalue
@@ -2866,6 +2909,18 @@ notsig_meta_and_loc_split_gr &lt;- lapply(notsig_meta_and_loc_split, function(su
     seqnames = sub_df$seqnames,
     ranges = IRanges(start = sub_df$start, end = sub_df$end),
     mcols = sub_df %&gt;% select(-seqnames, -start, -end)
+  )
+})
+
+all_DAR_regions &lt;- all_results %&gt;% 
+   separate(rowname, into = c(&quot;seqnames&quot;, &quot;start&quot;, &quot;end&quot;), sep = &quot;\\.&quot;, convert = TRUE)
+all_DAR_regions_list &lt;- split(all_DAR_regions, all_DAR_regions$source)
+
+all_DAR_regions_gr &lt;- lapply(all_DAR_regions_list, function(sub_df) {
+  GRanges(
+    seqnames = sub_df$seqnames,
+    ranges = IRanges(start = sub_df$start, end = sub_df$end),
+    mcols = sub_df %&gt;% dplyr::select(-seqnames, -start, -end)
   )
 })</code></pre>
 <pre class="r"><code># Folder with input BED files
@@ -2985,7 +3040,21 @@ reneeisnowhere
 </table>
 </div>
 </div>
-<pre class="r"><code>saveRDS(sig_meta_and_loc_split,&quot;Sig_meta&quot;)</code></pre>
+<pre class="r"><code>saveRDS(sig_meta_and_loc_split,&quot;Sig_meta&quot;)
+
+
+sig_3hr_obj &lt;- ggVennDiagram::Venn(sig_venn_list[c(&quot;DOX_3&quot;,&quot;EPI_3&quot;, &quot;DNR_3&quot;,&quot;MTX_3&quot;)])
+sig_24hr_obj &lt;- ggVennDiagram::Venn(sig_venn_list[c(&quot;DOX_24&quot;,&quot;EPI_24&quot;, &quot;DNR_24&quot;,&quot;MTX_24&quot;)])
+sig_3hr_obj &lt;- ggVennDiagram::process_data(sig_3hr_obj)
+sig_24hr_obj &lt;- ggVennDiagram::process_data(sig_24hr_obj)
+
+sig_3hr_regions &lt;- ggVennDiagram::venn_region(sig_3hr_obj)
+sig_24hr_regions&lt;- ggVennDiagram::venn_region(sig_24hr_obj)
+sig_3hr_shared &lt;- sig_3hr_obj$regionLabel$item[[11]]
+sig_24hr_shared &lt;-   sig_24hr_obj$regionLabel$item[[11]]
+
+# saveRDS(sig_3hr_shared,&quot;data/Final_four_data/re_analysis/AC_shared_3hour_DARs.RDS&quot;)
+# saveRDS(sig_24hr_shared,&quot;data/Final_four_data/re_analysis/AC_shared_24hour_DARs.RDS&quot;)</code></pre>
 <div id="proportion-of-peaks-that-are-dars" class="section level4">
 <h4>Proportion of peaks that are DARs</h4>
 <pre class="r"><code>three_hour_df &lt;- all_results %&gt;% 
@@ -3002,21 +3071,95 @@ twentyfour_hour_df &lt;- all_results %&gt;%
   dplyr::filter(time==&quot;24&quot;) %&gt;% 
   mutate(trt=factor(trt, levels=c(&quot;DOX&quot;,&quot;EPI&quot;,&quot;DNR&quot;,&quot;MTX&quot;,&quot;TRZ&quot;)))</code></pre>
 <pre class="r"><code>three_hour_df %&gt;% 
-  mutate(sig_val=factor(sig_val,levels = c(&quot;sig&quot;,&quot;not_sig&quot;))) %&gt;% 
+  mutate(sig_val=factor(sig_val,levels = c(&quot;not_sig&quot;,&quot;sig&quot;))) %&gt;% 
   ggplot(., aes(x=trt,fill=sig_val))+
   geom_bar(position=&quot;fill&quot;)+
   theme_bw()+
   ggtitle(&quot;Proportion of significant regions by 3 hours&quot;)+
   ylab(&quot;proportion&quot;)</code></pre>
 <p><img src="figure/DEG_analysis.Rmd/3%20hour%20ggplot-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-no-spaces-3-hour-ggplot-1">
+Past versions of "3 hour ggplot-1.png"
+</button>
+</p>
+<div id="fig-no-spaces-3-hour-ggplot-1" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/mward-lab/Matthews_cardiotox_ATAC_2025/blob/eeaa3e6d4f6995208ca73f3731360b2573d86811/docs/figure/DEG_analysis.Rmd/3 hour ggplot-1.png" target="_blank">eeaa3e6</a>
+</td>
+<td>
+reneeisnowhere
+</td>
+<td>
+2025-06-09
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 <pre class="r"><code>twentyfour_hour_df %&gt;% 
-  mutate(sig_val=factor(sig_val,levels = c(&quot;sig&quot;,&quot;not_sig&quot;))) %&gt;% 
+  mutate(sig_val=factor(sig_val,levels = c(&quot;not_sig&quot;,&quot;sig&quot;))) %&gt;% 
   ggplot(., aes(x=trt,fill=sig_val))+
   geom_bar(position=&quot;fill&quot;)+
   theme_bw()+
   ggtitle(&quot;Proportion of significant regions by 24 hours&quot;)+
   ylab(&quot;proportion&quot;)</code></pre>
 <p><img src="figure/DEG_analysis.Rmd/3%20hour%20ggplot-2.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-no-spaces-3-hour-ggplot-2">
+Past versions of "3 hour ggplot-2.png"
+</button>
+</p>
+<div id="fig-no-spaces-3-hour-ggplot-2" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/mward-lab/Matthews_cardiotox_ATAC_2025/blob/eeaa3e6d4f6995208ca73f3731360b2573d86811/docs/figure/DEG_analysis.Rmd/3 hour ggplot-2.png" target="_blank">eeaa3e6</a>
+</td>
+<td>
+reneeisnowhere
+</td>
+<td>
+2025-06-09
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 <pre class="r"><code>DOX_sig &lt;- sig_meta_and_loc_split[c(&quot;DOX_3&quot;, &quot;DOX_24&quot;)]
 
 DOXsig_up &lt;- lapply(DOX_sig, function(x) dplyr::filter(x, logFC &gt; 0))
@@ -3099,6 +3242,435 @@ DOX_not_list_gr &lt;- list(&quot;DOX24_notup&quot;=filt_DOX24_notup_gr,&quot;DOX
 #   # Export to BED (auto converts to 0-based)
 #   export(gr_centered, con = file.path(output_dir, paste0(name, &quot;DOX24not_centered.bed&quot;)), format = &quot;BED&quot;)
 # }</code></pre>
+<pre class="r"><code>txdb &lt;- TxDb.Hsapiens.UCSC.hg38.knownGene
+### maybe use annotatePeakInBatch from ChIPpeakAnno
+peakAnnoList_DOX_DAR &lt;- lapply(all_DAR_regions_gr, annotatePeak, tssRegion =c(-2000,2000), TxDb=txdb)</code></pre>
+<pre><code>&gt;&gt; preparing features information...         2025-06-12 5:53:26 PM 
+&gt;&gt; identifying nearest features...       2025-06-12 5:53:26 PM 
+&gt;&gt; calculating distance from peak to TSS...  2025-06-12 5:53:28 PM 
+&gt;&gt; assigning genomic annotation...       2025-06-12 5:53:28 PM 
+&gt;&gt; assigning chromosome lengths          2025-06-12 5:53:45 PM 
+&gt;&gt; done...                   2025-06-12 5:53:45 PM 
+&gt;&gt; preparing features information...         2025-06-12 5:53:45 PM 
+&gt;&gt; identifying nearest features...       2025-06-12 5:53:45 PM 
+&gt;&gt; calculating distance from peak to TSS...  2025-06-12 5:53:46 PM 
+&gt;&gt; assigning genomic annotation...       2025-06-12 5:53:46 PM 
+&gt;&gt; assigning chromosome lengths          2025-06-12 5:53:50 PM 
+&gt;&gt; done...                   2025-06-12 5:53:50 PM 
+&gt;&gt; preparing features information...         2025-06-12 5:53:51 PM 
+&gt;&gt; identifying nearest features...       2025-06-12 5:53:51 PM 
+&gt;&gt; calculating distance from peak to TSS...  2025-06-12 5:53:52 PM 
+&gt;&gt; assigning genomic annotation...       2025-06-12 5:53:52 PM 
+&gt;&gt; assigning chromosome lengths          2025-06-12 5:53:56 PM 
+&gt;&gt; done...                   2025-06-12 5:53:56 PM 
+&gt;&gt; preparing features information...         2025-06-12 5:53:56 PM 
+&gt;&gt; identifying nearest features...       2025-06-12 5:53:56 PM 
+&gt;&gt; calculating distance from peak to TSS...  2025-06-12 5:53:58 PM 
+&gt;&gt; assigning genomic annotation...       2025-06-12 5:53:58 PM 
+&gt;&gt; assigning chromosome lengths          2025-06-12 5:54:02 PM 
+&gt;&gt; done...                   2025-06-12 5:54:02 PM 
+&gt;&gt; preparing features information...         2025-06-12 5:54:02 PM 
+&gt;&gt; identifying nearest features...       2025-06-12 5:54:02 PM 
+&gt;&gt; calculating distance from peak to TSS...  2025-06-12 5:54:04 PM 
+&gt;&gt; assigning genomic annotation...       2025-06-12 5:54:04 PM 
+&gt;&gt; assigning chromosome lengths          2025-06-12 5:54:08 PM 
+&gt;&gt; done...                   2025-06-12 5:54:08 PM 
+&gt;&gt; preparing features information...         2025-06-12 5:54:08 PM 
+&gt;&gt; identifying nearest features...       2025-06-12 5:54:08 PM 
+&gt;&gt; calculating distance from peak to TSS...  2025-06-12 5:54:09 PM 
+&gt;&gt; assigning genomic annotation...       2025-06-12 5:54:09 PM 
+&gt;&gt; assigning chromosome lengths          2025-06-12 5:54:14 PM 
+&gt;&gt; done...                   2025-06-12 5:54:14 PM 
+&gt;&gt; preparing features information...         2025-06-12 5:54:14 PM 
+&gt;&gt; identifying nearest features...       2025-06-12 5:54:14 PM 
+&gt;&gt; calculating distance from peak to TSS...  2025-06-12 5:54:15 PM 
+&gt;&gt; assigning genomic annotation...       2025-06-12 5:54:15 PM 
+&gt;&gt; assigning chromosome lengths          2025-06-12 5:54:20 PM 
+&gt;&gt; done...                   2025-06-12 5:54:20 PM 
+&gt;&gt; preparing features information...         2025-06-12 5:54:20 PM 
+&gt;&gt; identifying nearest features...       2025-06-12 5:54:20 PM 
+&gt;&gt; calculating distance from peak to TSS...  2025-06-12 5:54:21 PM 
+&gt;&gt; assigning genomic annotation...       2025-06-12 5:54:21 PM 
+&gt;&gt; assigning chromosome lengths          2025-06-12 5:54:26 PM 
+&gt;&gt; done...                   2025-06-12 5:54:26 PM 
+&gt;&gt; preparing features information...         2025-06-12 5:54:26 PM 
+&gt;&gt; identifying nearest features...       2025-06-12 5:54:26 PM 
+&gt;&gt; calculating distance from peak to TSS...  2025-06-12 5:54:27 PM 
+&gt;&gt; assigning genomic annotation...       2025-06-12 5:54:27 PM 
+&gt;&gt; assigning chromosome lengths          2025-06-12 5:54:32 PM 
+&gt;&gt; done...                   2025-06-12 5:54:33 PM 
+&gt;&gt; preparing features information...         2025-06-12 5:54:33 PM 
+&gt;&gt; identifying nearest features...       2025-06-12 5:54:33 PM 
+&gt;&gt; calculating distance from peak to TSS...  2025-06-12 5:54:34 PM 
+&gt;&gt; assigning genomic annotation...       2025-06-12 5:54:34 PM 
+&gt;&gt; assigning chromosome lengths          2025-06-12 5:54:38 PM 
+&gt;&gt; done...                   2025-06-12 5:54:38 PM </code></pre>
+<pre class="r"><code> # saveRDS(peakAnnoList_DOX_DAR, &quot;data/Final_four_data/re_analysis/DOX_DAR_annotated_peaks_chipannno.RDS&quot;)
+filt_peakAnnoList_DOX_DAR &lt;- lapply(sig_meta_and_loc_split_gr,annotatePeak, tssRegion =c(-2000,2000), TxDb=txdb)</code></pre>
+<pre><code>&gt;&gt; preparing features information...         2025-06-12 5:54:38 PM 
+&gt;&gt; identifying nearest features...       2025-06-12 5:54:38 PM 
+&gt;&gt; calculating distance from peak to TSS...  2025-06-12 5:54:40 PM 
+&gt;&gt; assigning genomic annotation...       2025-06-12 5:54:40 PM 
+&gt;&gt; assigning chromosome lengths          2025-06-12 5:54:43 PM 
+&gt;&gt; done...                   2025-06-12 5:54:43 PM 
+&gt;&gt; preparing features information...         2025-06-12 5:54:44 PM 
+&gt;&gt; identifying nearest features...       2025-06-12 5:54:44 PM 
+&gt;&gt; calculating distance from peak to TSS...  2025-06-12 5:54:44 PM 
+&gt;&gt; assigning genomic annotation...       2025-06-12 5:54:44 PM 
+&gt;&gt; assigning chromosome lengths          2025-06-12 5:54:47 PM 
+&gt;&gt; done...                   2025-06-12 5:54:47 PM 
+&gt;&gt; preparing features information...         2025-06-12 5:54:47 PM 
+&gt;&gt; identifying nearest features...       2025-06-12 5:54:47 PM 
+&gt;&gt; calculating distance from peak to TSS...  2025-06-12 5:54:48 PM 
+&gt;&gt; assigning genomic annotation...       2025-06-12 5:54:48 PM 
+&gt;&gt; assigning chromosome lengths          2025-06-12 5:54:52 PM 
+&gt;&gt; done...                   2025-06-12 5:54:52 PM 
+&gt;&gt; preparing features information...         2025-06-12 5:54:52 PM 
+&gt;&gt; identifying nearest features...       2025-06-12 5:54:52 PM 
+&gt;&gt; calculating distance from peak to TSS...  2025-06-12 5:54:53 PM 
+&gt;&gt; assigning genomic annotation...       2025-06-12 5:54:53 PM 
+&gt;&gt; assigning chromosome lengths          2025-06-12 5:54:56 PM 
+&gt;&gt; done...                   2025-06-12 5:54:56 PM 
+&gt;&gt; preparing features information...         2025-06-12 5:54:56 PM 
+&gt;&gt; identifying nearest features...       2025-06-12 5:54:56 PM 
+&gt;&gt; calculating distance from peak to TSS...  2025-06-12 5:54:57 PM 
+&gt;&gt; assigning genomic annotation...       2025-06-12 5:54:57 PM 
+&gt;&gt; assigning chromosome lengths          2025-06-12 5:55:01 PM 
+&gt;&gt; done...                   2025-06-12 5:55:01 PM 
+&gt;&gt; preparing features information...         2025-06-12 5:55:01 PM 
+&gt;&gt; identifying nearest features...       2025-06-12 5:55:01 PM 
+&gt;&gt; calculating distance from peak to TSS...  2025-06-12 5:55:01 PM 
+&gt;&gt; assigning genomic annotation...       2025-06-12 5:55:01 PM 
+&gt;&gt; assigning chromosome lengths          2025-06-12 5:55:05 PM 
+&gt;&gt; done...                   2025-06-12 5:55:05 PM 
+&gt;&gt; preparing features information...         2025-06-12 5:55:05 PM 
+&gt;&gt; identifying nearest features...       2025-06-12 5:55:05 PM 
+&gt;&gt; calculating distance from peak to TSS...  2025-06-12 5:55:05 PM 
+&gt;&gt; assigning genomic annotation...       2025-06-12 5:55:05 PM 
+&gt;&gt; assigning chromosome lengths          2025-06-12 5:55:09 PM 
+&gt;&gt; done...                   2025-06-12 5:55:09 PM 
+&gt;&gt; preparing features information...         2025-06-12 5:55:09 PM 
+&gt;&gt; identifying nearest features...       2025-06-12 5:55:09 PM 
+&gt;&gt; calculating distance from peak to TSS...  2025-06-12 5:55:09 PM 
+&gt;&gt; assigning genomic annotation...       2025-06-12 5:55:09 PM 
+&gt;&gt; assigning chromosome lengths          2025-06-12 5:55:13 PM 
+&gt;&gt; done...                   2025-06-12 5:55:13 PM 
+&gt;&gt; preparing features information...         2025-06-12 5:55:13 PM 
+&gt;&gt; identifying nearest features...       2025-06-12 5:55:13 PM 
+&gt;&gt; calculating distance from peak to TSS...  2025-06-12 5:55:13 PM 
+&gt;&gt; assigning genomic annotation...       2025-06-12 5:55:13 PM 
+&gt;&gt; assigning chromosome lengths          2025-06-12 5:55:17 PM 
+&gt;&gt; done...                   2025-06-12 5:55:17 PM </code></pre>
+<pre class="r"><code># saveRDS(filt_peakAnnoList_DOX_DAR, &quot;data/Final_four_data/re_analysis/filt_DOX_DAR_annotated_peaks_chipannno.RDS&quot;)
+plotAnnoBar(peakAnnoList_DOX_DAR)+
+  ggtitle (&quot;Genomic Feature Distribution, all DAR no filtering\n should look identical&quot;)</code></pre>
+<p><img src="figure/DEG_analysis.Rmd/Genomic%20Features-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>plotAnnoBar(filt_peakAnnoList_DOX_DAR)+
+  ggtitle (&quot;Genomic Feature Distribution, Significant regions \n using adj.P.Val &lt;0.05&quot;)</code></pre>
+<p><img src="figure/DEG_analysis.Rmd/Genomic%20Features-2.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code># annotated_peak_TSS_chipanno &lt;-  peakAnnoList_DOX_DAR %&gt;%
+#   imap(~ .x %&gt;% tibble::rownames_to_column(var = &quot;rowname&quot;) %&gt;%
+#          mutate(source = .y)) </code></pre>
+<pre class="r"><code>toplistall_RNA &lt;- readRDS(&quot;data/other_papers/toplistall_RNA.RDS&quot;) %&gt;% 
+  mutate(logFC = logFC*(-1))
+peakAnnoList_DOX_DAR &lt;- readRDS(&quot;data/Final_four_data/re_analysis/DOX_DAR_annotated_peaks_chipannno.RDS&quot;)
+Assigned_genes_toPeak &lt;- peakAnnoList_DOX_DAR$DOX_24 %&gt;% as.data.frame() %&gt;% 
+  dplyr::select(mcols.genes,annotation, geneId, distanceToTSS) %&gt;% 
+  dplyr::rename(&quot;Peakid&quot;=mcols.genes)
+
+
+RNA_results &lt;-
+toplistall_RNA %&gt;% 
+  dplyr::select(time:logFC) %&gt;% 
+  tidyr::unite(&quot;sample&quot;,time, id) %&gt;% 
+  pivot_wider(., id_cols = c(ENTREZID,SYMBOL),names_from = sample, values_from = logFC) %&gt;% 
+  rename_with(~ str_replace(., &quot;hours&quot;, &quot;RNA&quot;))
+
+
+DOX24_degs &lt;- toplistall_RNA %&gt;%
+  dplyr::select(time:logFC,adj.P.Val) %&gt;% 
+  dplyr::filter(id==&quot;DOX&quot;) %&gt;% 
+  tidyr::unite(&quot;sample&quot;,time, id) %&gt;% 
+  dplyr::select(sample:SYMBOL,adj.P.Val) %&gt;% 
+  dplyr::filter(adj.P.Val&lt;0.05) %&gt;% 
+  dplyr::filter(sample==&quot;24_hours_DOX&quot;)
+
+DOX3_degs &lt;- toplistall_RNA %&gt;%
+  dplyr::select(time:logFC,adj.P.Val) %&gt;% 
+  dplyr::filter(id==&quot;DOX&quot;) %&gt;% 
+  tidyr::unite(&quot;sample&quot;,time, id) %&gt;% 
+  dplyr::select(sample:SYMBOL,adj.P.Val) %&gt;% 
+  dplyr::filter(adj.P.Val&lt;0.05) %&gt;% 
+  dplyr::filter(sample==&quot;3_hours_DOX&quot;)
+  
+  
+
+Peak_gene_RNA_LFC &lt;- Assigned_genes_toPeak %&gt;% 
+  left_join(., RNA_results, by =c(&quot;geneId&quot;=&quot;ENTREZID&quot;))
+
+
+entrez_ids &lt;- Assigned_genes_toPeak$geneId  
+
+
+gene_info &lt;- AnnotationDbi::select(
+  org.Hs.eg.db,
+  keys = entrez_ids,
+  columns = c(&quot;SYMBOL&quot;),
+  keytype = &quot;ENTREZID&quot;
+)
+gene_info_collapsed &lt;- gene_info %&gt;%
+  group_by(ENTREZID) %&gt;%
+  summarise(SYMBOL = paste(unique(SYMBOL), collapse = &quot;,&quot;), .groups = &quot;drop&quot;)</code></pre>
+<p>NOw to make a dataframe for RNA marked DEGs and TSS #### 3 hour DAR
+and DEGs Looking at DARs within 2kb of TSS</p>
+<pre class="r"><code>three_hour_df %&gt;% 
+  dplyr::filter(trt==&quot;DOX&quot;) %&gt;% 
+  left_join(., Assigned_genes_toPeak, by=c(&quot;genes&quot;=&quot;Peakid&quot;)) %&gt;% 
+  mutate(DEG=if_else(geneId %in% DOX3_degs$ENTREZID,&quot;DEG&quot;,&quot;not_DEG&quot;)) %&gt;% 
+  dplyr::filter(distanceToTSS&gt;-2000 &amp; distanceToTSS&lt;2000) %&gt;% 
+   mutate(sig_val = factor(sig_val, levels = c( &quot;sig&quot;,&quot;not_sig&quot;))) %&gt;% 
+  ggplot(., aes(x=sig_val,fill=DEG))+
+  geom_bar(position=&quot;fill&quot;)+
+  theme_bw()+
+  ggtitle(&quot; DOX DARs with DEGs at 3 hours within 2kb&quot;)+
+  ylab(&quot;proportion&quot;)</code></pre>
+<p><img src="figure/DEG_analysis.Rmd/2kb%203hr%20DEGnDAR-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>filtered_df_3hr &lt;-
+three_hour_df %&gt;% 
+  dplyr::filter(trt == &quot;DOX&quot;) %&gt;% 
+  left_join(Assigned_genes_toPeak, by = c(&quot;genes&quot; = &quot;Peakid&quot;)) %&gt;% 
+  mutate(DEG = if_else(geneId %in% DOX3_degs$ENTREZID, &quot;DEG&quot;, &quot;not_DEG&quot;)) %&gt;% 
+  dplyr::filter(distanceToTSS&gt; -2000 &amp; distanceToTSS &lt; 2000) %&gt;% 
+   mutate(sig_val = factor(sig_val, levels = c( &quot;sig&quot;,&quot;not_sig&quot;)))
+
+
+
+contingency_table_3hr &lt;- table(filtered_df_3hr$DEG, filtered_df_3hr$sig_val)
+contingency_table_3hr</code></pre>
+<pre><code>         
+            sig not_sig
+  DEG         1      36
+  not_DEG   979   35578</code></pre>
+<pre class="r"><code>fisher.test(contingency_table_3hr)</code></pre>
+<pre><code>
+    Fisher&#39;s Exact Test for Count Data
+
+data:  contingency_table_3hr
+p-value = 1
+alternative hypothesis: true odds ratio is not equal to 1
+95 percent confidence interval:
+ 0.02485041 6.00813519
+sample estimates:
+odds ratio 
+  1.009478 </code></pre>
+<p>Looking at DARs within 20kb of TSS</p>
+<pre class="r"><code>three_hour_df %&gt;% 
+  dplyr::filter(trt==&quot;DOX&quot;) %&gt;% 
+  left_join(., Assigned_genes_toPeak, by=c(&quot;genes&quot;=&quot;Peakid&quot;)) %&gt;% 
+  mutate(DEG=if_else(geneId %in% DOX3_degs$ENTREZID,&quot;DEG&quot;,&quot;not_DEG&quot;)) %&gt;% 
+  dplyr::filter(distanceToTSS&gt;-20000 &amp; distanceToTSS&lt;20000) %&gt;% 
+   mutate(sig_val = factor(sig_val, levels = c( &quot;sig&quot;,&quot;not_sig&quot;))) %&gt;% 
+ ggplot(., aes(x=sig_val,fill=DEG))+
+  geom_bar(position=&quot;fill&quot;)+
+  theme_bw()+
+  ggtitle(&quot; DOX DARs with DEGs at 3 hours within 20kb&quot;)+
+  ylab(&quot;proportion&quot;)</code></pre>
+<p><img src="figure/DEG_analysis.Rmd/20kb%203hr%20DEGnDAR-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>filtered_df_3hr20k &lt;-
+three_hour_df %&gt;% 
+  dplyr::filter(trt == &quot;DOX&quot;) %&gt;% 
+  left_join(Assigned_genes_toPeak, by = c(&quot;genes&quot; = &quot;Peakid&quot;)) %&gt;% 
+  mutate(DEG = if_else(geneId %in% DOX3_degs$ENTREZID, &quot;DEG&quot;, &quot;not_DEG&quot;)) %&gt;% 
+  dplyr::filter(distanceToTSS&gt; -20000 &amp; distanceToTSS &lt; 20000) %&gt;% 
+   mutate(sig_val = factor(sig_val, levels = c( &quot;sig&quot;,&quot;not_sig&quot;)))
+
+
+
+contingency_table_3hr20k &lt;- table(filtered_df_3hr20k$DEG, filtered_df_3hr20k$sig_val)
+contingency_table_3hr20k</code></pre>
+<pre><code>         
+            sig not_sig
+  DEG         4     115
+  not_DEG  2333   93936</code></pre>
+<pre class="r"><code>fisher.test(contingency_table_3hr20k)</code></pre>
+<pre><code>
+    Fisher&#39;s Exact Test for Count Data
+
+data:  contingency_table_3hr20k
+p-value = 0.5398
+alternative hypothesis: true odds ratio is not equal to 1
+95 percent confidence interval:
+ 0.3749074 3.6886522
+sample estimates:
+odds ratio 
+  1.400459 </code></pre>
+<p>Looking at DARs with all distances to TSS</p>
+<pre class="r"><code>three_hour_df %&gt;% 
+  dplyr::filter(trt==&quot;DOX&quot;) %&gt;% 
+  left_join(., Assigned_genes_toPeak, by=c(&quot;genes&quot;=&quot;Peakid&quot;)) %&gt;% 
+  mutate(DEG=if_else(geneId %in% DOX3_degs$ENTREZID,&quot;DEG&quot;,&quot;not_DEG&quot;)) %&gt;% 
+  # dplyr::filter(distanceToTSS&gt;-20000 &amp; distanceToTSS&lt;20000) %&gt;% 
+   mutate(sig_val = factor(sig_val, levels = c( &quot;sig&quot;,&quot;not_sig&quot;))) %&gt;% 
+
+  ggplot(., aes(x=sig_val,fill=DEG))+
+  geom_bar(position=&quot;fill&quot;)+
+  theme_bw()+
+  ggtitle(&quot;DOX DARs with DEGs at 3 hours (all)&quot;)+
+  ylab(&quot;proportion&quot;)</code></pre>
+<p><img src="figure/DEG_analysis.Rmd/nodist%203hr%20DEGnDAR-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>filtered_df_3hrnodist &lt;-
+three_hour_df %&gt;% 
+  dplyr::filter(trt == &quot;DOX&quot;) %&gt;% 
+  left_join(Assigned_genes_toPeak, by = c(&quot;genes&quot; = &quot;Peakid&quot;)) %&gt;% 
+  mutate(DEG = if_else(geneId %in% DOX3_degs$ENTREZID, &quot;DEG&quot;, &quot;not_DEG&quot;)) %&gt;% 
+  # dplyr::filter(distanceToTSS&gt; -20000 &amp; distanceToTSS &lt; 20000) %&gt;% 
+  mutate(sig_val = factor(sig_val, levels = c( &quot;sig&quot;,&quot;not_sig&quot;)))
+
+
+
+contingency_table_3hrnodist &lt;- table(filtered_df_3hrnodist$DEG, filtered_df_3hrnodist$sig_val)
+contingency_table_3hrnodist</code></pre>
+<pre><code>         
+             sig not_sig
+  DEG          6     153
+  not_DEG   3467  151931</code></pre>
+<pre class="r"><code>fisher.test(contingency_table_3hrnodist)</code></pre>
+<pre><code>
+    Fisher&#39;s Exact Test for Count Data
+
+data:  contingency_table_3hrnodist
+p-value = 0.1743
+alternative hypothesis: true odds ratio is not equal to 1
+95 percent confidence interval:
+ 0.6205303 3.8313098
+sample estimates:
+odds ratio 
+  1.718498 </code></pre>
+</div>
+<div id="hour-dar-and-degs" class="section level4">
+<h4>24 hour DAR and DEGs</h4>
+<p>Looking at DARs within 2kb of TSS</p>
+<pre class="r"><code>twentyfour_hour_df %&gt;% 
+  dplyr::filter(trt==&quot;DOX&quot;) %&gt;% 
+  left_join(., Assigned_genes_toPeak, by=c(&quot;genes&quot;=&quot;Peakid&quot;)) %&gt;% 
+  mutate(DEG=if_else(geneId %in% DOX24_degs$ENTREZID,&quot;DEG&quot;,&quot;not_DEG&quot;)) %&gt;% 
+  dplyr::filter(distanceToTSS&gt;-2000 &amp; distanceToTSS&lt;2000) %&gt;% 
+   mutate(sig_val = factor(sig_val, levels = c( &quot;sig&quot;,&quot;not_sig&quot;))) %&gt;% 
+  ggplot(., aes(x=sig_val,fill=DEG))+
+  geom_bar(position=&quot;fill&quot;)+
+  theme_bw()+
+  ggtitle(&quot; significant DEGs in DOX DARs and DOX not-DARs at 24 hours within 2kb of TSS&quot;)+
+  ylab(&quot;proportion&quot;)</code></pre>
+<p><img src="figure/DEG_analysis.Rmd/2kb%2024hr%20DEGnDAR-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>filtered_df_24hr &lt;-
+twentyfour_hour_df %&gt;% 
+  dplyr::filter(trt == &quot;DOX&quot;) %&gt;% 
+  left_join(Assigned_genes_toPeak, by = c(&quot;genes&quot; = &quot;Peakid&quot;)) %&gt;% 
+  mutate(DEG = if_else(geneId %in% DOX24_degs$ENTREZID, &quot;DEG&quot;, &quot;not_DEG&quot;)) %&gt;% 
+  dplyr::filter(distanceToTSS&gt; -2000 &amp; distanceToTSS &lt; 2000) %&gt;% 
+   mutate(sig_val = factor(sig_val, levels = c( &quot;sig&quot;,&quot;not_sig&quot;)))
+
+
+
+contingency_table_24hr &lt;- table(filtered_df_24hr$DEG, filtered_df_24hr$sig_val)
+contingency_table_24hr</code></pre>
+<pre><code>         
+            sig not_sig
+  DEG      4810    7211
+  not_DEG  8973   15600</code></pre>
+<pre class="r"><code>fisher.test(contingency_table_24hr)</code></pre>
+<pre><code>
+    Fisher&#39;s Exact Test for Count Data
+
+data:  contingency_table_24hr
+p-value = 9.982e-11
+alternative hypothesis: true odds ratio is not equal to 1
+95 percent confidence interval:
+ 1.108569 1.213073
+sample estimates:
+odds ratio 
+  1.159665 </code></pre>
+<p>Looking at DARs within 20kb of TSS</p>
+<pre class="r"><code>twentyfour_hour_df %&gt;% 
+  dplyr::filter(trt==&quot;DOX&quot;) %&gt;% 
+  left_join(., Assigned_genes_toPeak, by=c(&quot;genes&quot;=&quot;Peakid&quot;)) %&gt;% 
+  mutate(DEG=if_else(geneId %in% DOX24_degs$ENTREZID,&quot;DEG&quot;,&quot;not_DEG&quot;)) %&gt;% 
+  dplyr::filter(distanceToTSS&gt;-20000 &amp; distanceToTSS&lt;20000) %&gt;% 
+  mutate(sig_val=factor(sig_val,levels = c(&quot;sig&quot;,&quot;not_sig&quot;))) %&gt;% 
+  ggplot(., aes(x=sig_val,fill=DEG))+
+  geom_bar(position=&quot;fill&quot;)+
+  theme_bw()+
+  ggtitle(&quot; significant DEGs in DOX DARs and DOX not-DARs at 24 hours within 20kb&quot;)+
+  ylab(&quot;proportion&quot;)</code></pre>
+<p><img src="figure/DEG_analysis.Rmd/20kb%2024hr%20DEGnDAR-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>filtered_df_24hr20k &lt;-
+twentyfour_hour_df %&gt;% 
+  dplyr::filter(trt == &quot;DOX&quot;) %&gt;% 
+  left_join(Assigned_genes_toPeak, by = c(&quot;genes&quot; = &quot;Peakid&quot;)) %&gt;% 
+  mutate(DEG = if_else(geneId %in% DOX24_degs$ENTREZID, &quot;DEG&quot;, &quot;not_DEG&quot;)) %&gt;% 
+  dplyr::filter(distanceToTSS&gt; -20000 &amp; distanceToTSS &lt; 20000) %&gt;% 
+   mutate(sig_val = factor(sig_val, levels = c( &quot;sig&quot;,&quot;not_sig&quot;)))
+
+
+
+contingency_table_24hr20k &lt;- table(filtered_df_24hr20k$DEG, filtered_df_24hr20k$sig_val)
+contingency_table_24hr20k</code></pre>
+<pre><code>         
+            sig not_sig
+  DEG     12585   16899
+  not_DEG 26942   39962</code></pre>
+<pre class="r"><code>fisher.test(contingency_table_24hr20k)</code></pre>
+<pre><code>
+    Fisher&#39;s Exact Test for Count Data
+
+data:  contingency_table_24hr20k
+p-value = 2.314e-12
+alternative hypothesis: true odds ratio is not equal to 1
+95 percent confidence interval:
+ 1.074263 1.135825
+sample estimates:
+odds ratio 
+  1.104609 </code></pre>
+<p>Looking at DARs with all distances to TSS</p>
+<pre class="r"><code>twentyfour_hour_df %&gt;% 
+  dplyr::filter(trt==&quot;DOX&quot;) %&gt;% 
+  left_join(., Assigned_genes_toPeak, by=c(&quot;genes&quot;=&quot;Peakid&quot;)) %&gt;% 
+  mutate(DEG=if_else(geneId %in% DOX24_degs$ENTREZID,&quot;DEG&quot;,&quot;not_DEG&quot;)) %&gt;% 
+  # dplyr::filter(distanceToTSS&gt;-20000 &amp; distanceToTSS&lt;20000) %&gt;% 
+   mutate(sig_val = factor(sig_val, levels = c( &quot;sig&quot;,&quot;not_sig&quot;))) %&gt;% 
+ ggplot(., aes(x=sig_val,fill=DEG))+
+  geom_bar(position=&quot;fill&quot;)+
+  theme_bw()+
+  ggtitle(&quot; significant DEGs in DOX DARs and DOX not-DARs at 24 hours (all)&quot;)+
+  ylab(&quot;proportion&quot;)</code></pre>
+<p><img src="figure/DEG_analysis.Rmd/nodist%2024hr%20DEGnDAR-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>filtered_df_24hrnodist &lt;-
+twentyfour_hour_df %&gt;% 
+  dplyr::filter(trt == &quot;DOX&quot;) %&gt;% 
+  left_join(Assigned_genes_toPeak, by = c(&quot;genes&quot; = &quot;Peakid&quot;)) %&gt;% 
+  mutate(DEG = if_else(geneId %in% DOX24_degs$ENTREZID, &quot;DEG&quot;, &quot;not_DEG&quot;)) %&gt;% 
+  # dplyr::filter(distanceToTSS&gt; -20000 &amp; distanceToTSS &lt; 20000) %&gt;% 
+  mutate(sig_val = factor(sig_val, levels = c( &quot;sig&quot;,&quot;not_sig&quot;)))
+
+
+contingency_table_24hrnodist &lt;- table(filtered_df_24hrnodist$DEG, filtered_df_24hrnodist$sig_val)
+contingency_table_24hrnodist</code></pre>
+<pre><code>         
+            sig not_sig
+  DEG     18448   24529
+  not_DEG 46372   66208</code></pre>
+<pre class="r"><code>fisher.test(contingency_table_24hrnodist)</code></pre>
+<pre><code>
+    Fisher&#39;s Exact Test for Count Data
+
+data:  contingency_table_24hrnodist
+p-value = 5.671e-10
+alternative hypothesis: true odds ratio is not equal to 1
+95 percent confidence interval:
+ 1.049852 1.098289
+sample estimates:
+odds ratio 
+  1.073801 </code></pre>
 <br>
 <p>
 <button type="button" class="btn btn-default btn-workflowr btn-workflowr-sessioninfo" data-toggle="collapse" data-target="#workflowr-sessioninfo" style="display: block;">
@@ -3130,51 +3702,52 @@ attached base packages:
 [8] methods   base     
 
 other attached packages:
- [1] data.table_1.17.0                       
- [2] smplot2_0.2.5                           
- [3] cowplot_1.1.3                           
- [4] ComplexHeatmap_2.22.0                   
- [5] ggrepel_0.9.6                           
- [6] plyranges_1.26.0                        
- [7] ggsignif_0.6.4                          
- [8] eulerr_7.0.2                            
- [9] devtools_2.4.5                          
-[10] usethis_3.1.0                           
-[11] ggpubr_0.6.0                            
-[12] BiocParallel_1.40.0                     
-[13] scales_1.3.0                            
-[14] VennDiagram_1.7.3                       
-[15] futile.logger_1.4.3                     
-[16] gridExtra_2.3                           
-[17] ggfortify_0.4.17                        
-[18] edgeR_4.4.2                             
-[19] limma_3.62.2                            
-[20] rtracklayer_1.66.0                      
-[21] org.Hs.eg.db_3.20.0                     
-[22] TxDb.Hsapiens.UCSC.hg38.knownGene_3.20.0
-[23] GenomicFeatures_1.58.0                  
-[24] AnnotationDbi_1.68.0                    
-[25] Biobase_2.66.0                          
-[26] GenomicRanges_1.58.0                    
-[27] GenomeInfoDb_1.42.3                     
-[28] IRanges_2.40.1                          
-[29] S4Vectors_0.44.0                        
-[30] BiocGenerics_0.52.0                     
-[31] ChIPseeker_1.42.1                       
-[32] RColorBrewer_1.1-3                      
-[33] broom_1.0.7                             
-[34] kableExtra_1.4.0                        
-[35] lubridate_1.9.4                         
-[36] forcats_1.0.0                           
-[37] stringr_1.5.1                           
-[38] dplyr_1.1.4                             
-[39] purrr_1.0.4                             
-[40] readr_2.1.5                             
-[41] tidyr_1.3.1                             
-[42] tibble_3.2.1                            
-[43] ggplot2_3.5.1                           
-[44] tidyverse_2.0.0                         
-[45] workflowr_1.7.1                         
+ [1] ggVennDiagram_1.5.2                     
+ [2] data.table_1.17.0                       
+ [3] smplot2_0.2.5                           
+ [4] cowplot_1.1.3                           
+ [5] ComplexHeatmap_2.22.0                   
+ [6] ggrepel_0.9.6                           
+ [7] plyranges_1.26.0                        
+ [8] ggsignif_0.6.4                          
+ [9] eulerr_7.0.2                            
+[10] devtools_2.4.5                          
+[11] usethis_3.1.0                           
+[12] ggpubr_0.6.0                            
+[13] BiocParallel_1.40.0                     
+[14] scales_1.3.0                            
+[15] VennDiagram_1.7.3                       
+[16] futile.logger_1.4.3                     
+[17] gridExtra_2.3                           
+[18] ggfortify_0.4.17                        
+[19] edgeR_4.4.2                             
+[20] limma_3.62.2                            
+[21] rtracklayer_1.66.0                      
+[22] org.Hs.eg.db_3.20.0                     
+[23] TxDb.Hsapiens.UCSC.hg38.knownGene_3.20.0
+[24] GenomicFeatures_1.58.0                  
+[25] AnnotationDbi_1.68.0                    
+[26] Biobase_2.66.0                          
+[27] GenomicRanges_1.58.0                    
+[28] GenomeInfoDb_1.42.3                     
+[29] IRanges_2.40.1                          
+[30] S4Vectors_0.44.0                        
+[31] BiocGenerics_0.52.0                     
+[32] ChIPseeker_1.42.1                       
+[33] RColorBrewer_1.1-3                      
+[34] broom_1.0.7                             
+[35] kableExtra_1.4.0                        
+[36] lubridate_1.9.4                         
+[37] forcats_1.0.0                           
+[38] stringr_1.5.1                           
+[39] dplyr_1.1.4                             
+[40] purrr_1.0.4                             
+[41] readr_2.1.5                             
+[42] tidyr_1.3.1                             
+[43] tibble_3.2.1                            
+[44] ggplot2_3.5.1                           
+[45] tidyverse_2.0.0                         
+[46] workflowr_1.7.1                         
 
 loaded via a namespace (and not attached):
   [1] fs_1.6.5                               
@@ -3208,145 +3781,144 @@ loaded via a namespace (and not attached):
  [29] pwr_1.3-0                              
  [30] rstudioapi_0.17.1                      
  [31] RSQLite_2.3.9                          
- [32] ggVennDiagram_1.5.2                    
- [33] shape_1.4.6.1                          
- [34] generics_0.1.3                         
- [35] gridGraphics_0.5-1                     
- [36] TxDb.Hsapiens.UCSC.hg19.knownGene_3.2.2
- [37] BiocIO_1.16.0                          
- [38] vroom_1.6.5                            
- [39] gtools_3.9.5                           
- [40] car_3.1-3                              
- [41] GO.db_3.20.0                           
- [42] Matrix_1.7-3                           
- [43] ggbeeswarm_0.7.2                       
- [44] abind_1.4-8                            
- [45] R.methodsS3_1.8.2                      
- [46] lifecycle_1.0.4                        
- [47] whisker_0.4.1                          
- [48] yaml_2.3.10                            
- [49] carData_3.0-5                          
- [50] SummarizedExperiment_1.36.0            
- [51] gplots_3.2.0                           
- [52] qvalue_2.38.0                          
- [53] SparseArray_1.6.2                      
- [54] blob_1.2.4                             
- [55] promises_1.3.2                         
- [56] crayon_1.5.3                           
- [57] miniUI_0.1.1.1                         
- [58] ggtangle_0.0.6                         
- [59] lattice_0.22-6                         
- [60] KEGGREST_1.46.0                        
- [61] magick_2.8.5                           
- [62] pillar_1.10.1                          
- [63] knitr_1.49                             
- [64] fgsea_1.32.2                           
- [65] rjson_0.2.23                           
- [66] boot_1.3-31                            
- [67] codetools_0.2-20                       
- [68] fastmatch_1.1-6                        
- [69] glue_1.8.0                             
- [70] getPass_0.2-4                          
- [71] ggfun_0.1.8                            
- [72] remotes_2.5.0                          
- [73] vctrs_0.6.5                            
- [74] png_0.1-8                              
- [75] treeio_1.30.0                          
- [76] gtable_0.3.6                           
- [77] cachem_1.1.0                           
- [78] xfun_0.51                              
- [79] S4Arrays_1.6.0                         
- [80] mime_0.12                              
- [81] iterators_1.0.14                       
- [82] statmod_1.5.0                          
- [83] ellipsis_0.3.2                         
- [84] nlme_3.1-167                           
- [85] ggtree_3.14.0                          
- [86] bit64_4.6.0-1                          
- [87] rprojroot_2.0.4                        
- [88] bslib_0.9.0                            
- [89] vipor_0.4.7                            
- [90] rpart_4.1.24                           
- [91] KernSmooth_2.23-26                     
- [92] Hmisc_5.2-2                            
- [93] colorspace_2.1-1                       
- [94] DBI_1.2.3                              
- [95] nnet_7.3-20                            
- [96] ggrastr_1.0.2                          
- [97] tidyselect_1.2.1                       
- [98] processx_3.8.6                         
- [99] bit_4.6.0                              
-[100] compiler_4.4.2                         
-[101] curl_6.2.1                             
-[102] git2r_0.35.0                           
-[103] htmlTable_2.4.3                        
-[104] xml2_1.3.7                             
-[105] DelayedArray_0.32.0                    
-[106] checkmate_2.3.2                        
-[107] caTools_1.18.3                         
-[108] callr_3.7.6                            
-[109] digest_0.6.37                          
-[110] rmarkdown_2.29                         
-[111] XVector_0.46.0                         
-[112] base64enc_0.1-3                        
-[113] htmltools_0.5.8.1                      
-[114] pkgconfig_2.0.3                        
-[115] MatrixGenerics_1.18.1                  
-[116] fastmap_1.2.0                          
-[117] GlobalOptions_0.1.2                    
-[118] rlang_1.1.5                            
-[119] htmlwidgets_1.6.4                      
-[120] UCSC.utils_1.2.0                       
-[121] shiny_1.10.0                           
-[122] farver_2.1.2                           
-[123] jquerylib_0.1.4                        
-[124] zoo_1.8-13                             
-[125] jsonlite_1.9.1                         
-[126] GOSemSim_2.32.0                        
-[127] R.oo_1.27.0                            
-[128] RCurl_1.98-1.16                        
-[129] magrittr_2.0.3                         
-[130] Formula_1.2-5                          
-[131] GenomeInfoDbData_1.2.13                
-[132] ggplotify_0.1.2                        
-[133] patchwork_1.3.0                        
-[134] munsell_0.5.1                          
-[135] Rcpp_1.0.14                            
-[136] ape_5.8-1                              
-[137] stringi_1.8.4                          
-[138] zlibbioc_1.52.0                        
-[139] plyr_1.8.9                             
-[140] pkgbuild_1.4.6                         
-[141] parallel_4.4.2                         
-[142] Biostrings_2.74.1                      
-[143] splines_4.4.2                          
-[144] circlize_0.4.16                        
-[145] hms_1.1.3                              
-[146] locfit_1.5-9.12                        
-[147] ps_1.9.0                               
-[148] igraph_2.1.4                           
-[149] reshape2_1.4.4                         
-[150] pkgload_1.4.0                          
-[151] futile.options_1.0.1                   
-[152] XML_3.99-0.18                          
-[153] evaluate_1.0.3                         
-[154] lambda.r_1.2.4                         
-[155] tzdb_0.4.0                             
-[156] foreach_1.5.2                          
-[157] httpuv_1.6.15                          
-[158] clue_0.3-66                            
-[159] xtable_1.8-4                           
-[160] restfulr_0.0.15                        
-[161] tidytree_0.4.6                         
-[162] rstatix_0.7.2                          
-[163] later_1.4.1                            
-[164] viridisLite_0.4.2                      
-[165] aplot_0.2.5                            
-[166] beeswarm_0.4.0                         
-[167] memoise_2.0.1                          
-[168] GenomicAlignments_1.42.0               
-[169] cluster_2.1.8.1                        
-[170] timechange_0.3.0                       </code></pre>
+ [32] shape_1.4.6.1                          
+ [33] generics_0.1.3                         
+ [34] gridGraphics_0.5-1                     
+ [35] TxDb.Hsapiens.UCSC.hg19.knownGene_3.2.2
+ [36] BiocIO_1.16.0                          
+ [37] vroom_1.6.5                            
+ [38] gtools_3.9.5                           
+ [39] car_3.1-3                              
+ [40] GO.db_3.20.0                           
+ [41] Matrix_1.7-3                           
+ [42] ggbeeswarm_0.7.2                       
+ [43] abind_1.4-8                            
+ [44] R.methodsS3_1.8.2                      
+ [45] lifecycle_1.0.4                        
+ [46] whisker_0.4.1                          
+ [47] yaml_2.3.10                            
+ [48] carData_3.0-5                          
+ [49] SummarizedExperiment_1.36.0            
+ [50] gplots_3.2.0                           
+ [51] qvalue_2.38.0                          
+ [52] SparseArray_1.6.2                      
+ [53] blob_1.2.4                             
+ [54] promises_1.3.2                         
+ [55] crayon_1.5.3                           
+ [56] miniUI_0.1.1.1                         
+ [57] ggtangle_0.0.6                         
+ [58] lattice_0.22-6                         
+ [59] KEGGREST_1.46.0                        
+ [60] magick_2.8.5                           
+ [61] pillar_1.10.1                          
+ [62] knitr_1.49                             
+ [63] fgsea_1.32.2                           
+ [64] rjson_0.2.23                           
+ [65] boot_1.3-31                            
+ [66] codetools_0.2-20                       
+ [67] fastmatch_1.1-6                        
+ [68] glue_1.8.0                             
+ [69] getPass_0.2-4                          
+ [70] ggfun_0.1.8                            
+ [71] remotes_2.5.0                          
+ [72] vctrs_0.6.5                            
+ [73] png_0.1-8                              
+ [74] treeio_1.30.0                          
+ [75] gtable_0.3.6                           
+ [76] cachem_1.1.0                           
+ [77] xfun_0.51                              
+ [78] S4Arrays_1.6.0                         
+ [79] mime_0.12                              
+ [80] iterators_1.0.14                       
+ [81] statmod_1.5.0                          
+ [82] ellipsis_0.3.2                         
+ [83] nlme_3.1-167                           
+ [84] ggtree_3.14.0                          
+ [85] bit64_4.6.0-1                          
+ [86] rprojroot_2.0.4                        
+ [87] bslib_0.9.0                            
+ [88] vipor_0.4.7                            
+ [89] rpart_4.1.24                           
+ [90] KernSmooth_2.23-26                     
+ [91] Hmisc_5.2-2                            
+ [92] colorspace_2.1-1                       
+ [93] DBI_1.2.3                              
+ [94] nnet_7.3-20                            
+ [95] ggrastr_1.0.2                          
+ [96] tidyselect_1.2.1                       
+ [97] processx_3.8.6                         
+ [98] bit_4.6.0                              
+ [99] compiler_4.4.2                         
+[100] curl_6.2.1                             
+[101] git2r_0.35.0                           
+[102] htmlTable_2.4.3                        
+[103] xml2_1.3.7                             
+[104] DelayedArray_0.32.0                    
+[105] checkmate_2.3.2                        
+[106] caTools_1.18.3                         
+[107] callr_3.7.6                            
+[108] digest_0.6.37                          
+[109] rmarkdown_2.29                         
+[110] XVector_0.46.0                         
+[111] base64enc_0.1-3                        
+[112] htmltools_0.5.8.1                      
+[113] pkgconfig_2.0.3                        
+[114] MatrixGenerics_1.18.1                  
+[115] fastmap_1.2.0                          
+[116] GlobalOptions_0.1.2                    
+[117] rlang_1.1.5                            
+[118] htmlwidgets_1.6.4                      
+[119] UCSC.utils_1.2.0                       
+[120] shiny_1.10.0                           
+[121] farver_2.1.2                           
+[122] jquerylib_0.1.4                        
+[123] zoo_1.8-13                             
+[124] jsonlite_1.9.1                         
+[125] GOSemSim_2.32.0                        
+[126] R.oo_1.27.0                            
+[127] RCurl_1.98-1.16                        
+[128] magrittr_2.0.3                         
+[129] Formula_1.2-5                          
+[130] GenomeInfoDbData_1.2.13                
+[131] ggplotify_0.1.2                        
+[132] patchwork_1.3.0                        
+[133] munsell_0.5.1                          
+[134] Rcpp_1.0.14                            
+[135] ape_5.8-1                              
+[136] stringi_1.8.4                          
+[137] zlibbioc_1.52.0                        
+[138] plyr_1.8.9                             
+[139] pkgbuild_1.4.6                         
+[140] parallel_4.4.2                         
+[141] Biostrings_2.74.1                      
+[142] splines_4.4.2                          
+[143] circlize_0.4.16                        
+[144] hms_1.1.3                              
+[145] locfit_1.5-9.12                        
+[146] ps_1.9.0                               
+[147] igraph_2.1.4                           
+[148] reshape2_1.4.4                         
+[149] pkgload_1.4.0                          
+[150] futile.options_1.0.1                   
+[151] XML_3.99-0.18                          
+[152] evaluate_1.0.3                         
+[153] lambda.r_1.2.4                         
+[154] tzdb_0.4.0                             
+[155] foreach_1.5.2                          
+[156] httpuv_1.6.15                          
+[157] clue_0.3-66                            
+[158] xtable_1.8-4                           
+[159] restfulr_0.0.15                        
+[160] tidytree_0.4.6                         
+[161] rstatix_0.7.2                          
+[162] later_1.4.1                            
+[163] viridisLite_0.4.2                      
+[164] aplot_0.2.5                            
+[165] beeswarm_0.4.0                         
+[166] memoise_2.0.1                          
+[167] GenomicAlignments_1.42.0               
+[168] cluster_2.1.8.1                        
+[169] timechange_0.3.0                       </code></pre>
 </div>
 </div>
 </div>
