@@ -954,7 +954,7 @@ plotAnnoBar(filt_peakAnnoList_DOX_DAR)+
 
 ```
 
-```{r looking at proportion of DE genes that are DOX DAR}
+```{r looking at proportion of DE genes that have DOX DAR}
 
 
 toplistall_RNA <- readRDS("data/other_papers/toplistall_RNA.RDS") %>% 
@@ -988,8 +988,13 @@ DOX3_degs <- toplistall_RNA %>%
   dplyr::select(sample:SYMBOL,adj.P.Val) %>% 
   dplyr::filter(adj.P.Val<0.05) %>% 
   dplyr::filter(sample=="3_hours_DOX")
-  
-  
+
+RNA_all_expressed <-toplistall_RNA %>% 
+  dplyr::select(time:logFC,adj.P.Val) %>% 
+  dplyr::filter(id=="DOX") %>% 
+  dplyr::filter(time=="24_hours") %>% 
+  tidyr::unite("sample",time, id) %>% 
+  dplyr::select(ENTREZID, SYMBOL)  
 
 Peak_gene_RNA_LFC <- Assigned_genes_toPeak %>% 
   left_join(., RNA_results, by =c("geneId"="ENTREZID"))
@@ -1009,8 +1014,133 @@ gene_info_collapsed <- gene_info %>%
   summarise(SYMBOL = paste(unique(SYMBOL), collapse = ","), .groups = "drop")
 
 ```
+### Exploring DARs and expressed genes
+#### 3 hour DOX DAR and expressed RNA genes 2kb
+```{r 3hr expressed 2kb}
+three_hour_df %>% 
+  dplyr::filter(trt=="DOX") %>% 
+  left_join(., Assigned_genes_toPeak, by=c("genes"="Peakid")) %>% 
+  mutate(EXP_RNA=if_else(geneId %in% RNA_all_expressed$ENTREZID,"exp","not_exp")) %>% 
+  dplyr::filter(distanceToTSS>-2000 & distanceToTSS<2000) %>% 
+   mutate(sig_val = factor(sig_val, levels = c( "sig","not_sig"))) %>% 
+  ggplot(., aes(x=sig_val,fill=EXP_RNA))+
+  geom_bar(position="fill")+
+  theme_bw()+
+  ggtitle("Expressed genes with and without DOX DARs within 2kb  at 3 hours ")+
+  ylab("proportion")
 
-NOw to make a dataframe for RNA marked DEGs and TSS
+filtered_df_3hr_exp <-
+three_hour_df %>% 
+  dplyr::filter(trt == "DOX") %>% 
+  left_join(., Assigned_genes_toPeak, by=c("genes"="Peakid")) %>% 
+  mutate(EXP_RNA=if_else(geneId %in% RNA_all_expressed$ENTREZID,"exp","not_exp")) %>% 
+  dplyr::filter(distanceToTSS>-2000 & distanceToTSS<2000) %>% 
+   mutate(sig_val = factor(sig_val, levels = c( "sig","not_sig")))
+
+
+
+contingency_table_3hr_exp <- table(filtered_df_3hr_exp$EXP_RNA, filtered_df_3hr_exp$sig_val)
+contingency_table_3hr_exp
+
+fisher.test(contingency_table_3hr_exp)
+
+
+```
+
+#### 3 hour DOX DAR and expressed RNA genes 20kb
+```{r 3hr expressed 20kb}
+three_hour_df %>% 
+  dplyr::filter(trt=="DOX") %>% 
+  left_join(., Assigned_genes_toPeak, by=c("genes"="Peakid")) %>% 
+  mutate(EXP_RNA=if_else(geneId %in% RNA_all_expressed$ENTREZID,"exp","not_exp")) %>% 
+  dplyr::filter(distanceToTSS>-20000 & distanceToTSS<20000) %>% 
+   mutate(sig_val = factor(sig_val, levels = c( "sig","not_sig"))) %>% 
+  ggplot(., aes(x=sig_val,fill=EXP_RNA))+
+  geom_bar(position="fill")+
+  theme_bw()+
+  ggtitle(" DOX DARs with expressed genes at 3 hours within 20kb")+
+  ylab("proportion")
+
+filtered_df_3hr_exp20kb <-
+three_hour_df %>% 
+  dplyr::filter(trt == "DOX") %>% 
+  left_join(., Assigned_genes_toPeak, by=c("genes"="Peakid")) %>% 
+  mutate(EXP_RNA=if_else(geneId %in% RNA_all_expressed$ENTREZID,"exp","not_exp")) %>% 
+  dplyr::filter(distanceToTSS>-20000 & distanceToTSS<20000) %>% 
+   mutate(sig_val = factor(sig_val, levels = c( "sig","not_sig")))
+
+
+
+contingency_table_3hr_exp20kb <- table(filtered_df_3hr_exp20kb$EXP_RNA, filtered_df_3hr_exp20kb$sig_val)
+contingency_table_3hr_exp20kb
+
+fisher.test(contingency_table_3hr_exp20kb)
+```
+
+
+#### 24 hour DOX DAR and expressed RNA genes 2kb
+```{r 24hr expressed 2kb}
+twentyfour_hour_df %>% 
+  dplyr::filter(trt=="DOX") %>% 
+  left_join(., Assigned_genes_toPeak, by=c("genes"="Peakid")) %>% 
+  mutate(EXP_RNA=if_else(geneId %in% RNA_all_expressed$ENTREZID,"exp","not_exp")) %>% 
+  dplyr::filter(distanceToTSS>-2000 & distanceToTSS<2000) %>% 
+   mutate(sig_val = factor(sig_val, levels = c( "sig","not_sig"))) %>% 
+  ggplot(., aes(x=sig_val,fill=EXP_RNA))+
+  geom_bar(position="fill")+
+  theme_bw()+
+  ggtitle("Expressed genes with and without DOX DARs within 2kb  at 3 hours ")+
+  ylab("proportion")
+
+filtered_df_24hr_exp <-
+twentyfour_hour_df %>% 
+  dplyr::filter(trt == "DOX") %>% 
+  left_join(., Assigned_genes_toPeak, by=c("genes"="Peakid")) %>% 
+  mutate(EXP_RNA=if_else(geneId %in% RNA_all_expressed$ENTREZID,"exp","not_exp")) %>% 
+  dplyr::filter(distanceToTSS>-2000 & distanceToTSS<2000) %>% 
+   mutate(sig_val = factor(sig_val, levels = c( "sig","not_sig")))
+
+
+
+contingency_table_24hr_exp <- table(filtered_df_24hr_exp$EXP_RNA, filtered_df_24hr_exp$sig_val)
+contingency_table_24hr_exp
+
+fisher.test(contingency_table_24hr_exp)
+
+
+```
+
+#### 24 hour DOX DAR and expressed RNA genes 20kb
+```{r 24hr expressed 20kb}
+twentyfour_hour_df %>% 
+  dplyr::filter(trt=="DOX") %>% 
+  left_join(., Assigned_genes_toPeak, by=c("genes"="Peakid")) %>% 
+  mutate(EXP_RNA=if_else(geneId %in% RNA_all_expressed$ENTREZID,"exp","not_exp")) %>% 
+  dplyr::filter(distanceToTSS>-20000 & distanceToTSS<20000) %>% 
+   mutate(sig_val = factor(sig_val, levels = c( "sig","not_sig"))) %>% 
+  ggplot(., aes(x=sig_val,fill=EXP_RNA))+
+  geom_bar(position="fill")+
+  theme_bw()+
+  ggtitle(" DOX DARs with expressed genes at 3 hours within 20kb")+
+  ylab("proportion")
+
+filtered_df_24hr_exp20kb <-
+twentyfour_hour_df %>% 
+  dplyr::filter(trt == "DOX") %>% 
+  left_join(., Assigned_genes_toPeak, by=c("genes"="Peakid")) %>% 
+  mutate(EXP_RNA=if_else(geneId %in% RNA_all_expressed$ENTREZID,"exp","not_exp")) %>% 
+  dplyr::filter(distanceToTSS>-20000 & distanceToTSS<20000) %>% 
+   mutate(sig_val = factor(sig_val, levels = c( "sig","not_sig")))
+
+
+
+contingency_table_24hr_exp20kb <- table(filtered_df_24hr_exp20kb$EXP_RNA, filtered_df_24hr_exp20kb$sig_val)
+contingency_table_24hr_exp20kb
+
+fisher.test(contingency_table_24hr_exp20kb)
+```
+
+
 #### 3 hour DAR and DEGs
 Looking at DARs within 2kb of TSS
 ```{r  2kb 3hr DEGnDAR}
@@ -1020,10 +1150,10 @@ three_hour_df %>%
   mutate(DEG=if_else(geneId %in% DOX3_degs$ENTREZID,"DEG","not_DEG")) %>% 
   dplyr::filter(distanceToTSS>-2000 & distanceToTSS<2000) %>% 
    mutate(sig_val = factor(sig_val, levels = c( "sig","not_sig"))) %>% 
-  ggplot(., aes(x=sig_val,fill=DEG))+
+  ggplot(., aes(x=DEG,fill=sig_val))+
   geom_bar(position="fill")+
   theme_bw()+
-  ggtitle(" DOX DARs with DEGs at 3 hours within 2kb")+
+   ggtitle(" DOX DARs and not-DARs within 2kb of TSS of DEGs at 3 hours")+
   ylab("proportion")
 
 filtered_df_3hr <-
@@ -1049,10 +1179,10 @@ three_hour_df %>%
   mutate(DEG=if_else(geneId %in% DOX3_degs$ENTREZID,"DEG","not_DEG")) %>% 
   dplyr::filter(distanceToTSS>-20000 & distanceToTSS<20000) %>% 
    mutate(sig_val = factor(sig_val, levels = c( "sig","not_sig"))) %>% 
- ggplot(., aes(x=sig_val,fill=DEG))+
+ ggplot(., aes(x=DEG,fill=sig_val))+
   geom_bar(position="fill")+
   theme_bw()+
-  ggtitle(" DOX DARs with DEGs at 3 hours within 20kb")+
+  ggtitle(" DOX DARs and not-DARs within 20kb of TSS of DEGs at 3 hours")+
   ylab("proportion")
 
 filtered_df_3hr20k <-
@@ -1081,10 +1211,10 @@ three_hour_df %>%
   # dplyr::filter(distanceToTSS>-20000 & distanceToTSS<20000) %>% 
    mutate(sig_val = factor(sig_val, levels = c( "sig","not_sig"))) %>% 
 
-  ggplot(., aes(x=sig_val,fill=DEG))+
+ ggplot(., aes(x=DEG,fill=sig_val))+
   geom_bar(position="fill")+
   theme_bw()+
-  ggtitle("DOX DARs with DEGs at 3 hours (all)")+
+   ggtitle("DOX DARs and not-DARs within all distance of TSS of DEGs at 3 hours")+
   ylab("proportion")
 
 filtered_df_3hrnodist <-
@@ -1114,10 +1244,10 @@ twentyfour_hour_df %>%
   mutate(DEG=if_else(geneId %in% DOX24_degs$ENTREZID,"DEG","not_DEG")) %>% 
   dplyr::filter(distanceToTSS>-2000 & distanceToTSS<2000) %>% 
    mutate(sig_val = factor(sig_val, levels = c( "sig","not_sig"))) %>% 
-  ggplot(., aes(x=sig_val,fill=DEG))+
+ ggplot(., aes(x=DEG,fill=sig_val))+
   geom_bar(position="fill")+
   theme_bw()+
-  ggtitle(" significant DEGs in DOX DARs and DOX not-DARs at 24 hours within 2kb of TSS")+
+  ggtitle(" DOX DARs and not-DARs within 2kb of TSS of DEGs at 24 hours")+
   ylab("proportion")
 
 filtered_df_24hr <-
@@ -1143,10 +1273,10 @@ twentyfour_hour_df %>%
   mutate(DEG=if_else(geneId %in% DOX24_degs$ENTREZID,"DEG","not_DEG")) %>% 
   dplyr::filter(distanceToTSS>-20000 & distanceToTSS<20000) %>% 
   mutate(sig_val=factor(sig_val,levels = c("sig","not_sig"))) %>% 
-  ggplot(., aes(x=sig_val,fill=DEG))+
+  ggplot(., aes(x=DEG,fill=sig_val))+
   geom_bar(position="fill")+
   theme_bw()+
-  ggtitle(" significant DEGs in DOX DARs and DOX not-DARs at 24 hours within 20kb")+
+   ggtitle(" DOX DARs and not-DARs within 20kb of TSS of DEGs at 24 hours")+
   ylab("proportion")
 
 filtered_df_24hr20k <-
@@ -1174,10 +1304,10 @@ twentyfour_hour_df %>%
   mutate(DEG=if_else(geneId %in% DOX24_degs$ENTREZID,"DEG","not_DEG")) %>% 
   # dplyr::filter(distanceToTSS>-20000 & distanceToTSS<20000) %>% 
    mutate(sig_val = factor(sig_val, levels = c( "sig","not_sig"))) %>% 
- ggplot(., aes(x=sig_val,fill=DEG))+
+ ggplot(., aes(x=DEG,fill=sig_val))+
   geom_bar(position="fill")+
   theme_bw()+
-  ggtitle(" significant DEGs in DOX DARs and DOX not-DARs at 24 hours (all)")+
+  ggtitle(" DOX DARs and not-DARs associated with TSS DEGs at 24 hours")+
   ylab("proportion")
 
 filtered_df_24hrnodist <-
