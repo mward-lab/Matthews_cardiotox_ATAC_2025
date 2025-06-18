@@ -1,0 +1,99 @@
+---
+title: "BH_correction_fig2"
+author: "Renee Matthews"
+date: "2025-05-07"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE,
+	warning = FALSE,
+		dev = c("png","pdf")
+)
+```
+
+```{css, echo=FALSE}
+pre {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+pre[class] {
+  max-height: 200px;
+}
+```
+```{r load packages}
+library(tidyverse)
+library(ComplexHeatmap)
+library(circlize)
+
+```
+
+```{r load data}
+top_df <- readRDS("data/Final_four_data/re_analysis/OR_results_TE_df_1bp_alltrt.RDS")
+mid_df <- readRDS("data/Final_four_data/re_analysis/OR_results_TSS_CpG_df_1bp_alltrt.RDS")
+bot_df <- readRDS("data/Final_four_data/re_analysis/OR_results_cREs_df_1bp_alltrt.RDS")
+
+```
+
+
+```{r}
+results_order <- top_df %>%
+  bind_rows(mid_df) %>% 
+  bind_rows(bot_df) %>%
+  mutate(status=factor(status,
+                            levels=c("TE_status",
+                                     "SINE_status",
+                                     "LINE_status",
+                                     "DNA_status","LTR_status",
+                                     "SVA_status","CpG_status",
+                                     "TSS_status","cRE_status",
+                                     "PLS_status","dELS_status","pELS_status",
+                                     "CTCF_status"))) %>%
+  arrange(status) %>%
+  group_by(source) %>%
+  mutate(rank_val=rank(chi_sq_p, ties.method = "first")) %>%
+  mutate(BH_correction= p.adjust(chi_sq_p,method= "BH")) %>%
+  mutate(sig=chi_sq_p<BH_correction) %>%
+  mutate(source=factor(source,levels = c("DOX_3hr", "DOX_24hr", "EPI_3hr","EPI_24hr",
+                                                     "DNR_3hr","DNR_24hr","MTX_3hr","MTX_24hr")))
+
+critical_value <- max(results_order$chi_sq_p[results_order$sig])
+
+col_fun_OR = colorRamp2(c(0,1,1.5,3,4), c("#BC9BFF","white","lightgreen","green3","green3" ))
+sig_mat_OR <-
+  results_order %>%
+  as.data.frame() %>%
+  dplyr::select( status,source,BH_correction) %>%
+  arrange(status) %>%
+  pivot_wider(., id_cols = status, names_from = source, values_from = BH_correction) %>%
+  # dplyr::select(Matrix_Name,EAR_open,ESR_open,LR_open,ESR_opcl,EAR_close,ESR_close,LR_close,ESR_clop) %>%
+  column_to_rownames("status") %>%
+  as.matrix()
+
+
+results_mat <- results_order %>%
+  as.data.frame() %>%
+  dplyr::select( status,source,odds_ratio) %>%
+  arrange(status) %>%
+  pivot_wider(., id_cols = status, names_from = source, values_from = odds_ratio) %>%
+  # dplyr::select(status,EAR_open,ESR_open,LR_open,ESR_opcl,EAR_close,ESR_close,LR_close,ESR_clop) %>%
+  column_to_rownames("status") %>%
+  as.matrix()
+```
+
+
+```{r heatmap}
+ComplexHeatmap::Heatmap(results_mat ,col = col_fun_OR,
+                          cluster_rows=FALSE,
+                          cluster_columns=FALSE,
+                          column_names_side = "top",
+                          column_names_rot = 45,
+                          # na_col = "black",
+                          cell_fun = function(j, i, x, y, width, height, fill) {
+                            if (!is.na(sig_mat_OR[i, j]) && sig_mat_OR[i, j] <0.05 && results_mat[i, j] > 1) {
+                              grid.text("*", x, y, gp = gpar(fontsize = 20))  # Add star if significant
+                            } })
+```

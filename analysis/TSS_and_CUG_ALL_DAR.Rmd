@@ -1,7 +1,7 @@
 ---
-title: "TE_analysis_DOX_DAR"
+title: "TSS and CUG overlap"
 author: "Renee Matthews"
-date: "2025-06-05"
+date: "2025-05-07"
 output: html_document
 ---
 
@@ -57,46 +57,32 @@ library(circlize)
 
 ```
 
-Loading repeatmasker data:
 
-```{r repeatmasker df}
-repeatmasker <- read.delim("data/other_papers/repeatmasker.tsv")
+### Getting TSS locations for all genes:  
+
+```{r TSS data}
+txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
+tss_gr <- transcripts(txdb)
+tss_gr <- resize(tss_gr, width = 1, fix = "start")  # TSS is start for both strands
 ```
 
-Subsetting repeatmasker for analysis by class/family
-```{r subset repeatmasker}
-reClass_list <- repeatmasker %>% 
-  distinct(repClass)
+### Loading CpG-island locations from UCSC and converting to granges  
 
-Line_repeats <- repeatmasker %>% 
-  dplyr::filter(repClass == "LINE") %>% 
- makeGRangesFromDataFrame(., keep.extra.columns = TRUE, seqnames.field = "genoName", start.field = "genoStart", end.field = "genoEnd",starts.in.df.are.0based=TRUE)
-
-Sine_repeats <- repeatmasker %>% 
-  dplyr::filter(repClass == "SINE") %>% 
- makeGRangesFromDataFrame(., keep.extra.columns = TRUE, seqnames.field = "genoName", start.field = "genoStart", end.field = "genoEnd",starts.in.df.are.0based=TRUE)
-
-LTR_repeats <- repeatmasker %>% 
-  dplyr::filter(repClass == "LTR") %>% 
- makeGRangesFromDataFrame(., keep.extra.columns = TRUE, seqnames.field = "genoName", start.field = "genoStart", end.field = "genoEnd",starts.in.df.are.0based=TRUE)
-
-DNA_repeats <- repeatmasker %>% 
-  dplyr::filter(repClass == "DNA") %>% 
- makeGRangesFromDataFrame(., keep.extra.columns = TRUE, seqnames.field = "genoName", start.field = "genoStart", end.field = "genoEnd",starts.in.df.are.0based=TRUE)
-
-retroposon_repeats <- repeatmasker %>% 
-  dplyr::filter(repClass == "Retroposon") %>% 
- makeGRangesFromDataFrame(., keep.extra.columns = TRUE, seqnames.field = "genoName", start.field = "genoStart", end.field = "genoEnd",starts.in.df.are.0based=TRUE)
-
-all_TEs_gr <- repeatmasker %>% 
- makeGRangesFromDataFrame(., keep.extra.columns = TRUE, seqnames.field = "genoName", start.field = "genoStart", end.field = "genoEnd",starts.in.df.are.0based=TRUE)
-
+```{r CpGi data}
+session <- browserSession("UCSC")
+genome(session) <- "hg38"
+cpg_table <- getTable(ucscTableQuery(session, track = "CpG Islands"))
+cpg_gr <- GRanges(seqnames = cpg_table$chrom,
+                  ranges = IRanges(start = cpg_table$chromStart + 1, end = cpg_table$chromEnd),
+                  strand = "*")
 ```
+#### Loading region data  
 
-### Initial overlaps of TEs vs all regions (155,557)
-
-
-```{r loading toptable-covert to granges}
+```{r Loading Cluster locations and full peaks list}
+Collapsed_peaks <- read_delim("data/Final_four_data/collapsed_new_peaks.txt",
+                              delim = "\t", 
+                              escape_double = FALSE, 
+                              trim_ws = TRUE)
 
 toptable_results <- readRDS("data/Final_four_data/re_analysis/Toptable_results.RDS")
 all_regions <- toptable_results$DOX_24$genes
@@ -106,7 +92,7 @@ Collapsed_peaks <- read_delim("data/Final_four_data/collapsed_new_peaks.txt",
                               escape_double = FALSE, 
                               trim_ws = TRUE)
 
-Col_TSS_data_gr <- Collapsed_peaks %>% 
+final_peaks <- Collapsed_peaks %>% 
   dplyr::filter(chr != "chrY") %>%
   dplyr::filter(Peakid %in% all_regions) %>% 
   GRanges()
@@ -137,107 +123,84 @@ my_MTX_data <- all_results %>%
   pivot_wider(.,id_cols=genes,names_from = source, values_from = c(logFC, adj.P.Val))
 
 
+
+
+```
+### Assess the overlap between my data sets  
+
+```{r TSS counts}
+peaks_tss_annotated <- final_peaks %>%
+  join_overlap_left(tss_gr) %>%
+  mutate(TSS_status = ifelse(is.na(tx_id), "non-TSS", "TSS"))  
+  
 ```
 
-### Overlapping all peaks with TEs
-```{r}
-overlap_TE_gr <- join_overlap_intersect(Col_TSS_data_gr,all_TEs_gr)
-TE_peaks <- overlap_TE_gr %>% 
-  as.data.frame() %>% 
-  distinct(Peakid)
 
-LINE_peaks <- overlap_TE_gr %>% 
-  as.data.frame() %>%
-  dplyr::filter(repClass=="LINE") %>% 
-  distinct(Peakid)
+```{r CpG counts}
+ 
+olap <- findOverlaps(final_peaks, cpg_gr)
+peak_cpg_status <- rep("non-CpG", length(final_peaks))
+  
+# Mark peaks that overlap CpG islands
+peak_cpg_status[unique(queryHits(olap))] <- "CpG"
 
-SINE_peaks <- overlap_TE_gr %>% 
-  as.data.frame() %>%
-  dplyr::filter(repClass=="SINE") %>% 
-  distinct(Peakid)
+final_peaks$CpG_status <- peak_cpg_status
 
-LTR_peaks <- overlap_TE_gr %>% 
-  as.data.frame() %>%
-  dplyr::filter(repClass=="LTR") %>% 
-  distinct(Peakid)
+```
 
-DNA_peaks <- overlap_TE_gr %>% 
-  as.data.frame() %>%
-  dplyr::filter(repClass=="DNA") %>% 
-  distinct(Peakid)
-
-SVA_peaks <- overlap_TE_gr %>% 
-  as.data.frame() %>%
-  dplyr::filter(repClass=="Retroposon") %>% 
-  distinct(Peakid)
-
-# join sig data by toptable information 
+```{r join dataframes}
 
 all_results  <- toptable_results %>%
   imap(~ .x %>% tibble::rownames_to_column(var = "rowname") %>%
          mutate(source = .y)) %>%
   bind_rows()
 
-annotated_peaks <-   all_results %>%
-  dplyr::filter(source=="DOX_3"|source=="DOX_24") %>% 
-  dplyr::select(source,genes,logFC,adj.P.Val) %>% 
-  pivot_wider(.,id_cols=genes,names_from = source, values_from = c(logFC, adj.P.Val)) %>% 
-  mutate(TE_status=if_else(genes %in% TE_peaks$Peakid,"TE_peak","not_TE_peak"),
-         LINE_status=if_else(genes %in% LINE_peaks$Peakid,"LINE_peak","not_LINE_peak"),
-         SINE_status=if_else(genes %in% SINE_peaks$Peakid,"SINE_peak","not_SINE_peak"),
-         LTR_status=if_else(genes %in% LTR_peaks$Peakid,"LTR_peak","not_LTR_peak"),
-         DNA_status=if_else(genes %in% DNA_peaks$Peakid,"DNA_peak","not_DNA_peak"),
-         SVA_status=if_else(genes %in% SVA_peaks$Peakid,"SVA_peak","not_SVA_peak")) %>% 
+
+CPG_TSS_status_df <- final_peaks %>%
+  as.data.frame() %>% 
+  dplyr::select(Peakid,CpG_status) %>% 
+  left_join(.,(peaks_tss_annotated %>% 
+              as.data.frame() %>% 
+  dplyr::select(Peakid,TSS_status) %>% 
+    distinct()), by=c("Peakid"="Peakid")) %>% 
+  left_join(.,my_DOX_data,by=c("Peakid"="genes")) %>% 
   mutate(DOX_sig_3=if_else(adj.P.Val_DOX_3<0.05,"sig","not_sig"),
          DOX_sig_24=if_else(adj.P.Val_DOX_24<0.05,"sig","not_sig")) %>% 
   mutate(DOX_sig_3=factor(DOX_sig_3,levels=c("sig","not_sig")),
          DOX_sig_24=factor(DOX_sig_24,levels=c("sig","not_sig"))) %>% 
-  left_join(.,my_EPI_data,by=c("genes"="genes")) %>% 
+  left_join(.,my_EPI_data,by=c("Peakid"="genes")) %>% 
   mutate(EPI_sig_3=if_else(adj.P.Val_EPI_3<0.05,"sig","not_sig"),
          EPI_sig_24=if_else(adj.P.Val_EPI_24<0.05,"sig","not_sig")) %>% 
   mutate(EPI_sig_3=factor(EPI_sig_3,levels=c("sig","not_sig")),
          EPI_sig_24=factor(EPI_sig_24,levels=c("sig","not_sig"))) %>% 
-  left_join(.,my_DNR_data,by=c("genes"="genes")) %>% 
+  left_join(.,my_DNR_data,by=c("Peakid"="genes")) %>% 
   mutate(DNR_sig_3=if_else(adj.P.Val_DNR_3<0.05,"sig","not_sig"),
          DNR_sig_24=if_else(adj.P.Val_DNR_24<0.05,"sig","not_sig")) %>% 
   mutate(DNR_sig_3=factor(DNR_sig_3,levels=c("sig","not_sig")),
          DNR_sig_24=factor(DNR_sig_24,levels=c("sig","not_sig"))) %>% 
-  left_join(.,my_MTX_data,by=c("genes"="genes")) %>% 
+  left_join(.,my_MTX_data,by=c("Peakid"="genes")) %>% 
   mutate(MTX_sig_3=if_else(adj.P.Val_MTX_3<0.05,"sig","not_sig"),
          MTX_sig_24=if_else(adj.P.Val_MTX_24<0.05,"sig","not_sig")) %>% 
   mutate(MTX_sig_3=factor(MTX_sig_3,levels=c("sig","not_sig")),
          MTX_sig_24=factor(MTX_sig_24,levels=c("sig","not_sig"))) 
 
+
+CPG_TSS_status_df %>% 
+  group_by(CpG_status,DOX_sig_3) %>% 
+  tally()
 ```
+#### DOX  
 
-
-
-
-
-```{r exploring making matrices}
-DOX_3_TE_mat <- annotated_peaks %>% 
-  group_by(TE_status,DOX_sig_3) %>% 
-  tally() %>% 
-  pivot_wider(., id_cols=TE_status,names_from = DOX_sig_3,values_from = n) %>% 
-  column_to_rownames("TE_status") %>% 
-  as.matrix()
-```
-From the code above,
-#### DOX
-```{r DOX3 hour types}
-
-# Vector of status-type column names in your data
-status_columns <- c("TE_status", "SINE_status", "LINE_status", "LTR_status", "DNA_status", "SVA_status")
-
-# Create a list of matrices, named by status type
+```{r  DOX_3, getting numbers}
+status_columns <- c("CpG_status", "TSS_status")
 DOX_3_status_matrices <- map(status_columns, function(status_col) {
   # Extract prefix (e.g., "TE", "SINE") from column name like "TE_status"
   prefix <- sub("_status$", "", status_col)
-  expected_rows <- c(paste0(prefix, "_peak"), paste0("not_", prefix, "_peak"))
+  expected_rows <- c(paste0(prefix), paste0("non-", prefix))
   expected_cols <- c("sig", "not_sig")
   
   # Build matrix
-  mat <- annotated_peaks %>%
+  mat <- CPG_TSS_status_df %>%
     group_by(across(all_of(status_col)), DOX_sig_3) %>%
     tally() %>%
     pivot_wider(
@@ -247,7 +210,6 @@ DOX_3_status_matrices <- map(status_columns, function(status_col) {
     ) %>%
     column_to_rownames(var = status_col) %>%
     as.matrix()
-   print(mat)
   
   # Fill missing expected rows
   for (r in setdiff(expected_rows, rownames(mat))) {
@@ -269,7 +231,9 @@ names(DOX_3_status_matrices) <- status_columns
 
 
 odds_ratio_results_DOX_3 <- map(DOX_3_status_matrices, function(mat) {
-  if (!all(dim(mat) == c(2, 2))) return(NULL)
+  if (!all(dim(mat) == c(2, 2)) || any(!is.finite(mat)) || sum(mat) == 0 || any(rowSums(mat) == 0) || any(colSums(mat) == 0)) {
+    return(NULL)
+  }
   
   result <- epitools::oddsratio(mat, method = "wald")
   
@@ -292,16 +256,16 @@ odds_ratio_results_DOX_3 <- map(DOX_3_status_matrices, function(mat) {
 })
 
 ```
-```{r DOX_24 matrix}
-# Create a list of matrices, named by status type
+
+```{r DOX 24}
 DOX_24_status_matrices <- map(status_columns, function(status_col) {
   # Extract prefix (e.g., "TE", "SINE") from column name like "TE_status"
   prefix <- sub("_status$", "", status_col)
-  expected_rows <- c(paste0(prefix, "_peak"), paste0("not_", prefix, "_peak"))
+  expected_rows <- c(paste0(prefix), paste0("non-", prefix))
   expected_cols <- c("sig", "not_sig")
   
   # Build matrix
-  mat <- annotated_peaks %>%
+  mat <- CPG_TSS_status_df %>%
     group_by(across(all_of(status_col)), DOX_sig_24) %>%
     tally() %>%
     pivot_wider(
@@ -311,7 +275,6 @@ DOX_24_status_matrices <- map(status_columns, function(status_col) {
     ) %>%
     column_to_rownames(var = status_col) %>%
     as.matrix()
-   print(mat)
   
   # Fill missing expected rows
   for (r in setdiff(expected_rows, rownames(mat))) {
@@ -333,7 +296,9 @@ names(DOX_24_status_matrices) <- status_columns
 
 
 odds_ratio_results_DOX_24 <- map(DOX_24_status_matrices, function(mat) {
-  if (!all(dim(mat) == c(2, 2))) return(NULL)
+  if (!all(dim(mat) == c(2, 2)) || any(!is.finite(mat)) || sum(mat) == 0 || any(rowSums(mat) == 0) || any(colSums(mat) == 0)) {
+    return(NULL)
+  }
   
   result <- epitools::oddsratio(mat, method = "wald")
   
@@ -357,21 +322,19 @@ odds_ratio_results_DOX_24 <- map(DOX_24_status_matrices, function(mat) {
 
 ```
 
-#### EPI
-```{r EPI3 hour types}
 
-# Vector of status-type column names in your data
-status_columns <- c("TE_status", "SINE_status", "LINE_status", "LTR_status", "DNA_status", "SVA_status")
+#### EPI  
 
-# Create a list of matrices, named by status type
+```{r  EPI_3, getting numbers}
+status_columns <- c("CpG_status", "TSS_status")
 EPI_3_status_matrices <- map(status_columns, function(status_col) {
   # Extract prefix (e.g., "TE", "SINE") from column name like "TE_status"
   prefix <- sub("_status$", "", status_col)
-  expected_rows <- c(paste0(prefix, "_peak"), paste0("not_", prefix, "_peak"))
+  expected_rows <- c(paste0(prefix), paste0("non-", prefix))
   expected_cols <- c("sig", "not_sig")
   
   # Build matrix
-  mat <- annotated_peaks %>%
+  mat <- CPG_TSS_status_df %>%
     group_by(across(all_of(status_col)), EPI_sig_3) %>%
     tally() %>%
     pivot_wider(
@@ -381,7 +344,6 @@ EPI_3_status_matrices <- map(status_columns, function(status_col) {
     ) %>%
     column_to_rownames(var = status_col) %>%
     as.matrix()
-   print(mat)
   
   # Fill missing expected rows
   for (r in setdiff(expected_rows, rownames(mat))) {
@@ -403,7 +365,9 @@ names(EPI_3_status_matrices) <- status_columns
 
 
 odds_ratio_results_EPI_3 <- map(EPI_3_status_matrices, function(mat) {
-  if (!all(dim(mat) == c(2, 2))) return(NULL)
+  if (!all(dim(mat) == c(2, 2)) || any(!is.finite(mat)) || sum(mat) == 0 || any(rowSums(mat) == 0) || any(colSums(mat) == 0)) {
+    return(NULL)
+  }
   
   result <- epitools::oddsratio(mat, method = "wald")
   
@@ -426,16 +390,16 @@ odds_ratio_results_EPI_3 <- map(EPI_3_status_matrices, function(mat) {
 })
 
 ```
-```{r EPI_24 matrix}
-# Create a list of matrices, named by status type
+
+```{r EPI 24}
 EPI_24_status_matrices <- map(status_columns, function(status_col) {
   # Extract prefix (e.g., "TE", "SINE") from column name like "TE_status"
   prefix <- sub("_status$", "", status_col)
-  expected_rows <- c(paste0(prefix, "_peak"), paste0("not_", prefix, "_peak"))
+  expected_rows <- c(paste0(prefix), paste0("non-", prefix))
   expected_cols <- c("sig", "not_sig")
   
   # Build matrix
-  mat <- annotated_peaks %>%
+  mat <- CPG_TSS_status_df %>%
     group_by(across(all_of(status_col)), EPI_sig_24) %>%
     tally() %>%
     pivot_wider(
@@ -445,7 +409,6 @@ EPI_24_status_matrices <- map(status_columns, function(status_col) {
     ) %>%
     column_to_rownames(var = status_col) %>%
     as.matrix()
-   print(mat)
   
   # Fill missing expected rows
   for (r in setdiff(expected_rows, rownames(mat))) {
@@ -467,7 +430,9 @@ names(EPI_24_status_matrices) <- status_columns
 
 
 odds_ratio_results_EPI_24 <- map(EPI_24_status_matrices, function(mat) {
-  if (!all(dim(mat) == c(2, 2))) return(NULL)
+  if (!all(dim(mat) == c(2, 2)) || any(!is.finite(mat)) || sum(mat) == 0 || any(rowSums(mat) == 0) || any(colSums(mat) == 0)) {
+    return(NULL)
+  }
   
   result <- epitools::oddsratio(mat, method = "wald")
   
@@ -491,22 +456,18 @@ odds_ratio_results_EPI_24 <- map(EPI_24_status_matrices, function(mat) {
 
 ```
 
+#### DNR  
 
-#### DNR
-```{r DNR3 hour types}
-
-# Vector of status-type column names in your data
-status_columns <- c("TE_status", "SINE_status", "LINE_status", "LTR_status", "DNA_status", "SVA_status")
-
-# Create a list of matrices, named by status type
+```{r  DNR_3, getting numbers}
+status_columns <- c("CpG_status", "TSS_status")
 DNR_3_status_matrices <- map(status_columns, function(status_col) {
   # Extract prefix (e.g., "TE", "SINE") from column name like "TE_status"
   prefix <- sub("_status$", "", status_col)
-  expected_rows <- c(paste0(prefix, "_peak"), paste0("not_", prefix, "_peak"))
+  expected_rows <- c(paste0(prefix), paste0("non-", prefix))
   expected_cols <- c("sig", "not_sig")
   
   # Build matrix
-  mat <- annotated_peaks %>%
+  mat <- CPG_TSS_status_df %>%
     group_by(across(all_of(status_col)), DNR_sig_3) %>%
     tally() %>%
     pivot_wider(
@@ -516,7 +477,6 @@ DNR_3_status_matrices <- map(status_columns, function(status_col) {
     ) %>%
     column_to_rownames(var = status_col) %>%
     as.matrix()
-   print(mat)
   
   # Fill missing expected rows
   for (r in setdiff(expected_rows, rownames(mat))) {
@@ -538,7 +498,9 @@ names(DNR_3_status_matrices) <- status_columns
 
 
 odds_ratio_results_DNR_3 <- map(DNR_3_status_matrices, function(mat) {
-  if (!all(dim(mat) == c(2, 2))) return(NULL)
+  if (!all(dim(mat) == c(2, 2)) || any(!is.finite(mat)) || sum(mat) == 0 || any(rowSums(mat) == 0) || any(colSums(mat) == 0)) {
+    return(NULL)
+  }
   
   result <- epitools::oddsratio(mat, method = "wald")
   
@@ -561,16 +523,16 @@ odds_ratio_results_DNR_3 <- map(DNR_3_status_matrices, function(mat) {
 })
 
 ```
-```{r DNR_24 matrix}
-# Create a list of matrices, named by status type
+
+```{r DNR 24}
 DNR_24_status_matrices <- map(status_columns, function(status_col) {
   # Extract prefix (e.g., "TE", "SINE") from column name like "TE_status"
   prefix <- sub("_status$", "", status_col)
-  expected_rows <- c(paste0(prefix, "_peak"), paste0("not_", prefix, "_peak"))
+  expected_rows <- c(paste0(prefix), paste0("non-", prefix))
   expected_cols <- c("sig", "not_sig")
   
   # Build matrix
-  mat <- annotated_peaks %>%
+  mat <- CPG_TSS_status_df %>%
     group_by(across(all_of(status_col)), DNR_sig_24) %>%
     tally() %>%
     pivot_wider(
@@ -580,7 +542,6 @@ DNR_24_status_matrices <- map(status_columns, function(status_col) {
     ) %>%
     column_to_rownames(var = status_col) %>%
     as.matrix()
-   print(mat)
   
   # Fill missing expected rows
   for (r in setdiff(expected_rows, rownames(mat))) {
@@ -602,7 +563,9 @@ names(DNR_24_status_matrices) <- status_columns
 
 
 odds_ratio_results_DNR_24 <- map(DNR_24_status_matrices, function(mat) {
-  if (!all(dim(mat) == c(2, 2))) return(NULL)
+  if (!all(dim(mat) == c(2, 2)) || any(!is.finite(mat)) || sum(mat) == 0 || any(rowSums(mat) == 0) || any(colSums(mat) == 0)) {
+    return(NULL)
+  }
   
   result <- epitools::oddsratio(mat, method = "wald")
   
@@ -626,22 +589,18 @@ odds_ratio_results_DNR_24 <- map(DNR_24_status_matrices, function(mat) {
 
 ```
 
+#### MTX  
 
-#### MTX
-```{r MTX3 hour types}
-
-# Vector of status-type column names in your data
-status_columns <- c("TE_status", "SINE_status", "LINE_status", "LTR_status", "DNA_status", "SVA_status")
-
-# Create a list of matrices, named by status type
+```{r  MTX_3, getting numbers}
+status_columns <- c("CpG_status", "TSS_status")
 MTX_3_status_matrices <- map(status_columns, function(status_col) {
   # Extract prefix (e.g., "TE", "SINE") from column name like "TE_status"
   prefix <- sub("_status$", "", status_col)
-  expected_rows <- c(paste0(prefix, "_peak"), paste0("not_", prefix, "_peak"))
+  expected_rows <- c(paste0(prefix), paste0("non-", prefix))
   expected_cols <- c("sig", "not_sig")
   
   # Build matrix
-  mat <- annotated_peaks %>%
+  mat <- CPG_TSS_status_df %>%
     group_by(across(all_of(status_col)), MTX_sig_3) %>%
     tally() %>%
     pivot_wider(
@@ -651,7 +610,6 @@ MTX_3_status_matrices <- map(status_columns, function(status_col) {
     ) %>%
     column_to_rownames(var = status_col) %>%
     as.matrix()
-   print(mat)
   
   # Fill missing expected rows
   for (r in setdiff(expected_rows, rownames(mat))) {
@@ -673,7 +631,9 @@ names(MTX_3_status_matrices) <- status_columns
 
 
 odds_ratio_results_MTX_3 <- map(MTX_3_status_matrices, function(mat) {
-  if (!all(dim(mat) == c(2, 2))) return(NULL)
+  if (!all(dim(mat) == c(2, 2)) || any(!is.finite(mat)) || sum(mat) == 0 || any(rowSums(mat) == 0) || any(colSums(mat) == 0)) {
+    return(NULL)
+  }
   
   result <- epitools::oddsratio(mat, method = "wald")
   
@@ -696,16 +656,16 @@ odds_ratio_results_MTX_3 <- map(MTX_3_status_matrices, function(mat) {
 })
 
 ```
-```{r MTX_24 matrix}
-# Create a list of matrices, named by status type
+
+```{r MTX 24}
 MTX_24_status_matrices <- map(status_columns, function(status_col) {
   # Extract prefix (e.g., "TE", "SINE") from column name like "TE_status"
   prefix <- sub("_status$", "", status_col)
-  expected_rows <- c(paste0(prefix, "_peak"), paste0("not_", prefix, "_peak"))
+  expected_rows <- c(paste0(prefix), paste0("non-", prefix))
   expected_cols <- c("sig", "not_sig")
   
   # Build matrix
-  mat <- annotated_peaks %>%
+  mat <- CPG_TSS_status_df %>%
     group_by(across(all_of(status_col)), MTX_sig_24) %>%
     tally() %>%
     pivot_wider(
@@ -715,7 +675,6 @@ MTX_24_status_matrices <- map(status_columns, function(status_col) {
     ) %>%
     column_to_rownames(var = status_col) %>%
     as.matrix()
-   print(mat)
   
   # Fill missing expected rows
   for (r in setdiff(expected_rows, rownames(mat))) {
@@ -737,7 +696,9 @@ names(MTX_24_status_matrices) <- status_columns
 
 
 odds_ratio_results_MTX_24 <- map(MTX_24_status_matrices, function(mat) {
-  if (!all(dim(mat) == c(2, 2))) return(NULL)
+  if (!all(dim(mat) == c(2, 2)) || any(!is.finite(mat)) || sum(mat) == 0 || any(rowSums(mat) == 0) || any(colSums(mat) == 0)) {
+    return(NULL)
+  }
   
   result <- epitools::oddsratio(mat, method = "wald")
   
@@ -760,18 +721,15 @@ odds_ratio_results_MTX_24 <- map(MTX_24_status_matrices, function(mat) {
 })
 
 ```
+ 
 
 
 
 
+### odds ratio results
+```{r odds ratio test}
 
-
-#### Combining the data and applying BH pvalue adjustments
-```{r}
-# odds_ratio_results_DOX_3
-# odds_ratio_results_DOX_24
-# odds_ratio_results_DOX_24_sig_up
-# odds_ratio_results_DOX_24_sig_down
+col_fun_OR = colorRamp2(c(0,1,1.5,5), c("blueviolet","white","lightgreen","green3" ))
 
 combined_df <- bind_rows(
   map_dfr(odds_ratio_results_DOX_3, ~as.data.frame(.x), .id = "status") %>% mutate(source = "DOX_3hr"),
@@ -781,13 +739,10 @@ combined_df <- bind_rows(
   map_dfr(odds_ratio_results_DNR_3, ~as.data.frame(.x), .id = "status") %>% mutate(source = "DNR_3hr"),
   map_dfr(odds_ratio_results_DNR_24, ~as.data.frame(.x), .id = "status") %>% mutate(source = "DNR_24hr"),
   map_dfr(odds_ratio_results_MTX_3, ~as.data.frame(.x), .id = "status") %>% mutate(source = "MTX_3hr"),
-  map_dfr(odds_ratio_results_MTX_24, ~as.data.frame(.x), .id = "status") %>% mutate(source = "MTX_24hr")
-)
-# saveRDS(combined_df,"data/Final_four_data/re_analysis/OR_results_TE_df_1bp_alltrt.RDS")
-```
+  map_dfr(odds_ratio_results_MTX_24, ~as.data.frame(.x), .id = "status") %>% mutate(source = "MTX_24hr"))
 
-```{r}
-TE_sig_mat <- combined_df %>% 
+
+sig_mat_OR <-combined_df %>% 
   dplyr::select( status,source,chi_sq_p) %>%
   group_by(source) %>%
   mutate(rank_val=rank(chi_sq_p, ties.method = "first")) %>%
@@ -796,23 +751,24 @@ TE_sig_mat <- combined_df %>%
   column_to_rownames("status") %>% 
   as.matrix()
 
-col_fun_OR = colorRamp2(c(0,1,1.5,5), c("blueviolet","white","lightgreen","green3" ))
+# saveRDS(combined_df,"data/Final_four_data/re_analysis/OR_results_TSS_CpG_df_1bp_ALLtrt.RDS")
+```
 
-# TE_od_mat <- 
+
+```{r heatmap of OR results}
 combined_df %>% 
-  dplyr::select(status, source, odds_ratio) %>%
+ dplyr::select(status, source, odds_ratio) %>%
   group_by(source) %>%
   pivot_wider(., id_cols = status, names_from = source, values_from = odds_ratio) %>% 
   column_to_rownames("status") %>% 
   as.matrix() %>% 
-   ComplexHeatmap::Heatmap(. ,col = col_fun_OR, 
+  ComplexHeatmap::Heatmap(. ,col = col_fun_OR, 
                           cluster_rows=FALSE, 
                           cluster_columns=FALSE, 
                           column_names_side = "top", 
                           column_names_rot = 45,
                           # na_col = "black",
-                          cell_fun = function(j, i, x, y, width, height, fill) {if (!is.na(TE_sig_mat[i, j]) && TE_sig_mat[i, j] < 0.05  && .[i, j] > 1) {
+                          cell_fun = function(j, i, x, y, width, height, fill) {if (!is.na(sig_mat_OR[i, j]) && sig_mat_OR[i, j] < 0.05  && .[i, j] > 1) {
             grid.text("*", x, y, gp = gpar(fontsize = 20))}})
-
 ```
-
+ note, this is corrected for multiple testing across TSS and CUG tests only in each motif cluster.
