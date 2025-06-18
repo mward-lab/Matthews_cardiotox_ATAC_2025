@@ -1,0 +1,2073 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+
+<meta name="author" content="Renee Matthews" />
+
+<meta name="date" content="2025-06-05" />
+
+<title>TE_analysis_DOX_DAR</title>
+
+<script src="site_libs/header-attrs-2.29/header-attrs.js"></script>
+<script src="site_libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="site_libs/bootstrap-3.3.5/css/cosmo.min.css" rel="stylesheet" />
+<script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
+<style>h1 {font-size: 34px;}
+       h1.title {font-size: 38px;}
+       h2 {font-size: 30px;}
+       h3 {font-size: 24px;}
+       h4 {font-size: 18px;}
+       h5 {font-size: 16px;}
+       h6 {font-size: 12px;}
+       code {color: inherit; background-color: rgba(0, 0, 0, 0.04);}
+       pre:not([class]) { background-color: white }</style>
+<script src="site_libs/jqueryui-1.13.2/jquery-ui.min.js"></script>
+<link href="site_libs/tocify-1.9.1/jquery.tocify.css" rel="stylesheet" />
+<script src="site_libs/tocify-1.9.1/jquery.tocify.js"></script>
+<script src="site_libs/navigation-1.1/tabsets.js"></script>
+<link href="site_libs/highlightjs-9.12.0/textmate.css" rel="stylesheet" />
+<script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+<link href="site_libs/font-awesome-6.5.2/css/all.min.css" rel="stylesheet" />
+<link href="site_libs/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet" />
+
+<link rel="icon" href="https://github.com/workflowr/workflowr-assets/raw/main/img/reproducible.png">
+<!-- Add a small amount of space between sections. -->
+<style type="text/css">
+div.section {
+  padding-top: 12px;
+}
+</style>
+
+
+
+<style type="text/css">
+  code{white-space: pre-wrap;}
+  span.smallcaps{font-variant: small-caps;}
+  span.underline{text-decoration: underline;}
+  div.column{display: inline-block; vertical-align: top; width: 50%;}
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+  ul.task-list{list-style: none;}
+    </style>
+
+<style type="text/css">code{white-space: pre;}</style>
+<script type="text/javascript">
+if (window.hljs) {
+  hljs.configure({languages: []});
+  hljs.initHighlightingOnLoad();
+  if (document.readyState && document.readyState === "complete") {
+    window.setTimeout(function() { hljs.initHighlighting(); }, 0);
+  }
+}
+</script>
+
+
+
+
+
+
+
+
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+img {
+  max-width:100%;
+}
+.tabbed-pane {
+  padding-top: 12px;
+}
+.html-widget {
+  margin-bottom: 20px;
+}
+button.code-folding-btn:focus {
+  outline: none;
+}
+summary {
+  display: list-item;
+}
+details > summary > p:only-child {
+  display: inline;
+}
+pre code {
+  padding: 0;
+}
+</style>
+
+
+<style type="text/css">
+.dropdown-submenu {
+  position: relative;
+}
+.dropdown-submenu>.dropdown-menu {
+  top: 0;
+  left: 100%;
+  margin-top: -6px;
+  margin-left: -1px;
+  border-radius: 0 6px 6px 6px;
+}
+.dropdown-submenu:hover>.dropdown-menu {
+  display: block;
+}
+.dropdown-submenu>a:after {
+  display: block;
+  content: " ";
+  float: right;
+  width: 0;
+  height: 0;
+  border-color: transparent;
+  border-style: solid;
+  border-width: 5px 0 5px 5px;
+  border-left-color: #cccccc;
+  margin-top: 5px;
+  margin-right: -10px;
+}
+.dropdown-submenu:hover>a:after {
+  border-left-color: #adb5bd;
+}
+.dropdown-submenu.pull-left {
+  float: none;
+}
+.dropdown-submenu.pull-left>.dropdown-menu {
+  left: -100%;
+  margin-left: 10px;
+  border-radius: 6px 0 6px 6px;
+}
+</style>
+
+<script type="text/javascript">
+// manage active state of menu based on current page
+$(document).ready(function () {
+  // active menu anchor
+  href = window.location.pathname
+  href = href.substr(href.lastIndexOf('/') + 1)
+  if (href === "")
+    href = "index.html";
+  var menuAnchor = $('a[href="' + href + '"]');
+
+  // mark the anchor link active (and if it's in a dropdown, also mark that active)
+  var dropdown = menuAnchor.closest('li.dropdown');
+  if (window.bootstrap) { // Bootstrap 4+
+    menuAnchor.addClass('active');
+    dropdown.find('> .dropdown-toggle').addClass('active');
+  } else { // Bootstrap 3
+    menuAnchor.parent().addClass('active');
+    dropdown.addClass('active');
+  }
+
+  // Navbar adjustments
+  var navHeight = $(".navbar").first().height() + 15;
+  var style = document.createElement('style');
+  var pt = "padding-top: " + navHeight + "px; ";
+  var mt = "margin-top: -" + navHeight + "px; ";
+  var css = "";
+  // offset scroll position for anchor links (for fixed navbar)
+  for (var i = 1; i <= 6; i++) {
+    css += ".section h" + i + "{ " + pt + mt + "}\n";
+  }
+  style.innerHTML = "body {" + pt + "padding-bottom: 40px; }\n" + css;
+  document.head.appendChild(style);
+});
+</script>
+
+<!-- tabsets -->
+
+<style type="text/css">
+.tabset-dropdown > .nav-tabs {
+  display: inline-table;
+  max-height: 500px;
+  min-height: 44px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.tabset-dropdown > .nav-tabs > li.active:before, .tabset-dropdown > .nav-tabs.nav-tabs-open:before {
+  content: "\e259";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li.active:before {
+  content: "\e258";
+  font-family: 'Glyphicons Halflings';
+  border: none;
+}
+
+.tabset-dropdown > .nav-tabs > li.active {
+  display: block;
+}
+
+.tabset-dropdown > .nav-tabs > li > a,
+.tabset-dropdown > .nav-tabs > li > a:focus,
+.tabset-dropdown > .nav-tabs > li > a:hover {
+  border: none;
+  display: inline-block;
+  border-radius: 4px;
+  background-color: transparent;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li {
+  display: block;
+  float: none;
+}
+
+.tabset-dropdown > .nav-tabs > li {
+  display: none;
+}
+</style>
+
+<!-- code folding -->
+
+
+
+<style type="text/css">
+
+#TOC {
+  margin: 25px 0px 20px 0px;
+}
+@media (max-width: 768px) {
+#TOC {
+  position: relative;
+  width: 100%;
+}
+}
+
+@media print {
+.toc-content {
+  /* see https://github.com/w3c/csswg-drafts/issues/4434 */
+  float: right;
+}
+}
+
+.toc-content {
+  padding-left: 30px;
+  padding-right: 40px;
+}
+
+div.main-container {
+  max-width: 1200px;
+}
+
+div.tocify {
+  width: 20%;
+  max-width: 260px;
+  max-height: 85%;
+}
+
+@media (min-width: 768px) and (max-width: 991px) {
+  div.tocify {
+    width: 25%;
+  }
+}
+
+@media (max-width: 767px) {
+  div.tocify {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+.tocify ul, .tocify li {
+  line-height: 20px;
+}
+
+.tocify-subheader .tocify-item {
+  font-size: 0.90em;
+}
+
+.tocify .list-group-item {
+  border-radius: 0px;
+}
+
+
+</style>
+
+
+
+</head>
+
+<body>
+
+
+<div class="container-fluid main-container">
+
+
+<!-- setup 3col/9col grid for toc_float and main content  -->
+<div class="row">
+<div class="col-xs-12 col-sm-4 col-md-3">
+<div id="TOC" class="tocify">
+</div>
+</div>
+
+<div class="toc-content col-xs-12 col-sm-8 col-md-9">
+
+
+
+
+<div class="navbar navbar-default  navbar-fixed-top" role="navigation">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-bs-toggle="collapse" data-target="#navbar" data-bs-target="#navbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="index.html">Matthews_cardiotox_ATAC_2025</a>
+    </div>
+    <div id="navbar" class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+        <li>
+  <a href="index.html">Home</a>
+</li>
+<li>
+  <a href="about.html">About</a>
+</li>
+<li>
+  <a href="license.html">License</a>
+</li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        <li>
+  <a href="https://github.com/mward-lab/Matthews_cardiotox_ATAC_2025">
+    <span class="fab fa-github"></span>
+     
+    Source code
+  </a>
+</li>
+      </ul>
+    </div><!--/.nav-collapse -->
+  </div><!--/.container -->
+</div><!--/.navbar -->
+
+<div id="header">
+
+
+
+<h1 class="title toc-ignore">TE_analysis_DOX_DAR</h1>
+<h4 class="author">Renee Matthews</h4>
+<h4 class="date">2025-06-05</h4>
+
+</div>
+
+
+<p>
+<button type="button" class="btn btn-default btn-workflowr btn-workflowr-report" data-toggle="collapse" data-target="#workflowr-report">
+<span class="glyphicon glyphicon-list" aria-hidden="true"></span>
+workflowr <span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span>
+</button>
+</p>
+<div id="workflowr-report" class="collapse">
+<ul class="nav nav-tabs">
+<li class="active">
+<a data-toggle="tab" href="#summary">Summary</a>
+</li>
+<li>
+<a data-toggle="tab" href="#checks"> Checks <span
+class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span>
+</a>
+</li>
+<li>
+<a data-toggle="tab" href="#versions">Past versions</a>
+</li>
+</ul>
+<div class="tab-content">
+<div id="summary" class="tab-pane fade in active">
+<p>
+<strong>Last updated:</strong> 2025-06-18
+</p>
+<p>
+<strong>Checks:</strong> <span
+class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> 7
+<span class="glyphicon glyphicon-exclamation-sign text-danger"
+aria-hidden="true"></span> 0
+</p>
+<p>
+<strong>Knit directory:</strong> <code>ATAC_learning/</code> <span
+class="glyphicon glyphicon-question-sign" aria-hidden="true"
+title="This is the local directory in which the code in this file was executed.">
+</span>
+</p>
+<p>
+This reproducible <a href="https://rmarkdown.rstudio.com">R Markdown</a>
+analysis was created with <a
+  href="https://github.com/workflowr/workflowr">workflowr</a> (version
+1.7.1). The <em>Checks</em> tab describes the reproducibility checks
+that were applied when the results were created. The <em>Past
+versions</em> tab lists the development history.
+</p>
+<hr>
+</div>
+<div id="checks" class="tab-pane fade">
+<div id="workflowr-checks" class="panel-group">
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRMarkdownfilestronguptodate">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>R Markdown file:</strong> up-to-date
+</a>
+</p>
+</div>
+<div id="strongRMarkdownfilestronguptodate"
+class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great! Since the R Markdown file has been committed to the Git
+repository, you know the exact version of the code that produced these
+results.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongEnvironmentstrongempty">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Environment:</strong> empty </a>
+</p>
+</div>
+<div id="strongEnvironmentstrongempty" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great job! The global environment was empty. Objects defined in the
+global environment can affect the analysis in your R Markdown file in
+unknown ways. For reproduciblity it’s best to always run the code in an
+empty environment.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongSeedstrongcodesetseed20231016code">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Seed:</strong>
+<code>set.seed(20231016)</code> </a>
+</p>
+</div>
+<div id="strongSeedstrongcodesetseed20231016code"
+class="panel-collapse collapse">
+<div class="panel-body">
+<p>The command <code>set.seed(20231016)</code> was run prior to running
+the code in the R Markdown file. Setting a seed ensures that any results
+that rely on randomness, e.g. subsampling or permutations, are
+reproducible.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongSessioninformationstrongrecorded">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Session information:</strong>
+recorded </a>
+</p>
+</div>
+<div id="strongSessioninformationstrongrecorded"
+class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great job! Recording the operating system, R version, and package
+versions is critical for reproducibility.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongCachestrongnone">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Cache:</strong> none </a>
+</p>
+</div>
+<div id="strongCachestrongnone" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Nice! There were no cached chunks for this analysis, so you can be
+confident that you successfully produced the results during this
+run.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongFilepathsstrongrelative">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>File paths:</strong> relative </a>
+</p>
+</div>
+<div id="strongFilepathsstrongrelative" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great job! Using relative paths to the files within your workflowr
+project makes it easier to run your code on other machines.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcommwardlabMatthewscardiotoxATAC2025tree62bafc3c128f880ecc56f75a484f7a186d4a0e42targetblank62bafc3a">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Repository version:</strong>
+<a href="https://github.com/mward-lab/Matthews_cardiotox_ATAC_2025/tree/62bafc3c128f880ecc56f75a484f7a186d4a0e42" target="_blank">62bafc3</a>
+</a>
+</p>
+</div>
+<div
+id="strongRepositoryversionstrongahrefhttpsgithubcommwardlabMatthewscardiotoxATAC2025tree62bafc3c128f880ecc56f75a484f7a186d4a0e42targetblank62bafc3a"
+class="panel-collapse collapse">
+<div class="panel-body">
+<p>
+Great! You are using Git for version control. Tracking code development
+and connecting the code version to the results is critical for
+reproducibility.
+</p>
+<p>
+The results in this page were generated with repository version
+<a href="https://github.com/mward-lab/Matthews_cardiotox_ATAC_2025/tree/62bafc3c128f880ecc56f75a484f7a186d4a0e42" target="_blank">62bafc3</a>.
+See the <em>Past versions</em> tab to see a history of the changes made
+to the R Markdown and HTML files.
+</p>
+<p>
+Note that you need to be careful to ensure that all relevant files for
+the analysis have been committed to Git prior to generating the results
+(you can use <code>wflow_publish</code> or
+<code>wflow_git_commit</code>). workflowr only checks the R Markdown
+file, but you know if there are other scripts or data files that it
+depends on. Below is the status of the Git repository when the results
+were generated:
+</p>
+<pre><code>
+Ignored files:
+    Ignored:    .RData
+    Ignored:    .Rhistory
+    Ignored:    .Rproj.user/
+    Ignored:    analysis/H3K27ac_integration_noM.Rmd
+    Ignored:    data/ACresp_SNP_table.csv
+    Ignored:    data/ARR_SNP_table.csv
+    Ignored:    data/All_merged_peaks.tsv
+    Ignored:    data/CAD_gwas_dataframe.RDS
+    Ignored:    data/CTX_SNP_table.csv
+    Ignored:    data/Collapsed_expressed_NG_peak_table.csv
+    Ignored:    data/DEG_toplist_sep_n45.RDS
+    Ignored:    data/FRiP_first_run.txt
+    Ignored:    data/Final_four_data/
+    Ignored:    data/Frip_1_reads.csv
+    Ignored:    data/Frip_2_reads.csv
+    Ignored:    data/Frip_3_reads.csv
+    Ignored:    data/Frip_4_reads.csv
+    Ignored:    data/Frip_5_reads.csv
+    Ignored:    data/Frip_6_reads.csv
+    Ignored:    data/GO_KEGG_analysis/
+    Ignored:    data/HF_SNP_table.csv
+    Ignored:    data/Ind1_75DA24h_dedup_peaks.csv
+    Ignored:    data/Ind1_TSS_peaks.RDS
+    Ignored:    data/Ind1_firstfragment_files.txt
+    Ignored:    data/Ind1_fragment_files.txt
+    Ignored:    data/Ind1_peaks_list.RDS
+    Ignored:    data/Ind1_summary.txt
+    Ignored:    data/Ind2_TSS_peaks.RDS
+    Ignored:    data/Ind2_fragment_files.txt
+    Ignored:    data/Ind2_peaks_list.RDS
+    Ignored:    data/Ind2_summary.txt
+    Ignored:    data/Ind3_TSS_peaks.RDS
+    Ignored:    data/Ind3_fragment_files.txt
+    Ignored:    data/Ind3_peaks_list.RDS
+    Ignored:    data/Ind3_summary.txt
+    Ignored:    data/Ind4_79B24h_dedup_peaks.csv
+    Ignored:    data/Ind4_TSS_peaks.RDS
+    Ignored:    data/Ind4_V24h_fraglength.txt
+    Ignored:    data/Ind4_fragment_files.txt
+    Ignored:    data/Ind4_fragment_filesN.txt
+    Ignored:    data/Ind4_peaks_list.RDS
+    Ignored:    data/Ind4_summary.txt
+    Ignored:    data/Ind5_TSS_peaks.RDS
+    Ignored:    data/Ind5_fragment_files.txt
+    Ignored:    data/Ind5_fragment_filesN.txt
+    Ignored:    data/Ind5_peaks_list.RDS
+    Ignored:    data/Ind5_summary.txt
+    Ignored:    data/Ind6_TSS_peaks.RDS
+    Ignored:    data/Ind6_fragment_files.txt
+    Ignored:    data/Ind6_peaks_list.RDS
+    Ignored:    data/Ind6_summary.txt
+    Ignored:    data/Knowles_4.RDS
+    Ignored:    data/Knowles_5.RDS
+    Ignored:    data/Knowles_6.RDS
+    Ignored:    data/LiSiLTDNRe_TE_df.RDS
+    Ignored:    data/MI_gwas.RDS
+    Ignored:    data/SNP_GWAS_PEAK_MRC_id
+    Ignored:    data/SNP_GWAS_PEAK_MRC_id.csv
+    Ignored:    data/SNP_gene_cat_list.tsv
+    Ignored:    data/SNP_supp_schneider.RDS
+    Ignored:    data/TE_info/
+    Ignored:    data/TFmapnames.RDS
+    Ignored:    data/all_TSSE_scores.RDS
+    Ignored:    data/all_four_filtered_counts.txt
+    Ignored:    data/aln_run1_results.txt
+    Ignored:    data/anno_ind1_DA24h.RDS
+    Ignored:    data/anno_ind4_V24h.RDS
+    Ignored:    data/annotated_gwas_SNPS.csv
+    Ignored:    data/background_n45_he_peaks.RDS
+    Ignored:    data/cardiac_muscle_FRIP.csv
+    Ignored:    data/cardiomyocyte_FRIP.csv
+    Ignored:    data/col_ng_peak.csv
+    Ignored:    data/cormotif_full_4_run.RDS
+    Ignored:    data/cormotif_full_4_run_he.RDS
+    Ignored:    data/cormotif_full_6_run.RDS
+    Ignored:    data/cormotif_full_6_run_he.RDS
+    Ignored:    data/cormotif_probability_45_list.csv
+    Ignored:    data/cormotif_probability_45_list_he.csv
+    Ignored:    data/cormotif_probability_all_6_list.csv
+    Ignored:    data/cormotif_probability_all_6_list_he.csv
+    Ignored:    data/datasave.RDS
+    Ignored:    data/embryo_heart_FRIP.csv
+    Ignored:    data/enhancer_list_ENCFF126UHK.bed
+    Ignored:    data/enhancerdata/
+    Ignored:    data/filt_Peaks_efit2.RDS
+    Ignored:    data/filt_Peaks_efit2_bl.RDS
+    Ignored:    data/filt_Peaks_efit2_n45.RDS
+    Ignored:    data/first_Peaksummarycounts.csv
+    Ignored:    data/first_run_frag_counts.txt
+    Ignored:    data/full_bedfiles/
+    Ignored:    data/gene_ref.csv
+    Ignored:    data/gwas_1_dataframe.RDS
+    Ignored:    data/gwas_2_dataframe.RDS
+    Ignored:    data/gwas_3_dataframe.RDS
+    Ignored:    data/gwas_4_dataframe.RDS
+    Ignored:    data/gwas_5_dataframe.RDS
+    Ignored:    data/high_conf_peak_counts.csv
+    Ignored:    data/high_conf_peak_counts.txt
+    Ignored:    data/high_conf_peaks_bl_counts.txt
+    Ignored:    data/high_conf_peaks_counts.txt
+    Ignored:    data/hits_files/
+    Ignored:    data/hyper_files/
+    Ignored:    data/hypo_files/
+    Ignored:    data/ind1_DA24hpeaks.RDS
+    Ignored:    data/ind1_TSSE.RDS
+    Ignored:    data/ind2_TSSE.RDS
+    Ignored:    data/ind3_TSSE.RDS
+    Ignored:    data/ind4_TSSE.RDS
+    Ignored:    data/ind4_V24hpeaks.RDS
+    Ignored:    data/ind5_TSSE.RDS
+    Ignored:    data/ind6_TSSE.RDS
+    Ignored:    data/initial_complete_stats_run1.txt
+    Ignored:    data/left_ventricle_FRIP.csv
+    Ignored:    data/median_24_lfc.RDS
+    Ignored:    data/median_3_lfc.RDS
+    Ignored:    data/mergedPeads.gff
+    Ignored:    data/mergedPeaks.gff
+    Ignored:    data/motif_list_full
+    Ignored:    data/motif_list_n45
+    Ignored:    data/motif_list_n45.RDS
+    Ignored:    data/multiqc_fastqc_run1.txt
+    Ignored:    data/multiqc_fastqc_run2.txt
+    Ignored:    data/multiqc_genestat_run1.txt
+    Ignored:    data/multiqc_genestat_run2.txt
+    Ignored:    data/my_hc_filt_counts.RDS
+    Ignored:    data/my_hc_filt_counts_n45.RDS
+    Ignored:    data/n45_bedfiles/
+    Ignored:    data/n45_files
+    Ignored:    data/other_papers/
+    Ignored:    data/peakAnnoList_1.RDS
+    Ignored:    data/peakAnnoList_2.RDS
+    Ignored:    data/peakAnnoList_24_full.RDS
+    Ignored:    data/peakAnnoList_24_n45.RDS
+    Ignored:    data/peakAnnoList_3.RDS
+    Ignored:    data/peakAnnoList_3_full.RDS
+    Ignored:    data/peakAnnoList_3_n45.RDS
+    Ignored:    data/peakAnnoList_4.RDS
+    Ignored:    data/peakAnnoList_5.RDS
+    Ignored:    data/peakAnnoList_6.RDS
+    Ignored:    data/peakAnnoList_Eight.RDS
+    Ignored:    data/peakAnnoList_full_motif.RDS
+    Ignored:    data/peakAnnoList_n45_motif.RDS
+    Ignored:    data/siglist_full.RDS
+    Ignored:    data/siglist_n45.RDS
+    Ignored:    data/summarized_peaks_dataframe.txt
+    Ignored:    data/summary_peakIDandReHeat.csv
+    Ignored:    data/test.list.RDS
+    Ignored:    data/testnames.txt
+    Ignored:    data/toplist_6.RDS
+    Ignored:    data/toplist_full.RDS
+    Ignored:    data/toplist_full_DAR_6.RDS
+    Ignored:    data/toplist_n45.RDS
+    Ignored:    data/trimmed_seq_length.csv
+    Ignored:    data/unclassified_full_set_peaks.RDS
+    Ignored:    data/unclassified_n45_set_peaks.RDS
+    Ignored:    data/xstreme/
+
+Untracked files:
+    Untracked:  RNA_seq_integration.Rmd
+    Untracked:  Rplot.pdf
+    Untracked:  Sig_meta
+    Untracked:  analysis/.gitignore
+    Untracked:  analysis/AC_shared_analysis.Rmd
+    Untracked:  analysis/Cormotif_analysis_testing diff.Rmd
+    Untracked:  analysis/Diagnosis-tmm.Rmd
+    Untracked:  analysis/Enhancer_enrichment_ALL_DAR.Rmd
+    Untracked:  analysis/Expressed_RNA_associations.Rmd
+    Untracked:  analysis/GO_analysis_DAR.Rmd
+    Untracked:  analysis/Jaspar_motif_DAR.Rmd
+    Untracked:  analysis/LFC_corr.Rmd
+    Untracked:  analysis/SNP_TAD_peaks.Rmd
+    Untracked:  analysis/SVA.Rmd
+    Untracked:  analysis/TSS_and_CUG_ALL_DAR.Rmd
+    Untracked:  analysis/Tan2020.Rmd
+    Untracked:  analysis/Top2B_analysis.Rmd
+    Untracked:  analysis/making_master_peaks_list.Rmd
+    Untracked:  analysis/my_hc_filt_counts.csv
+    Untracked:  code/Concatenations_for_export.R
+    Untracked:  code/IGV_snapshot_code.R
+    Untracked:  code/LongDARlist.R
+    Untracked:  code/just_for_Fun.R
+    Untracked:  my_plot.pdf
+    Untracked:  my_plot.png
+    Untracked:  output/cormotif_probability_45_list.csv
+    Untracked:  output/cormotif_probability_all_6_list.csv
+    Untracked:  setup.RData
+
+Unstaged changes:
+    Modified:   ATAC_learning.Rproj
+    Modified:   analysis/AF_HF_SNPs.Rmd
+    Modified:   analysis/Cardiotox_SNPs.Rmd
+    Modified:   analysis/Cormotif_analysis.Rmd
+    Modified:   analysis/DEG_analysis.Rmd
+    Modified:   analysis/H3K27ac_initial_QC.Rmd
+    Modified:   analysis/Jaspar_motif.Rmd
+    Modified:   analysis/Jaspar_motif_ff.Rmd
+    Modified:   analysis/TE_analysis_norm.Rmd
+    Modified:   analysis/final_four_analysis.Rmd
+
+</code></pre>
+<p>
+Note that any generated files, e.g. HTML, png, CSS, etc., are not
+included in this status report because it is ok for generated content to
+have uncommitted changes.
+</p>
+</div>
+</div>
+</div>
+</div>
+<hr>
+</div>
+<div id="versions" class="tab-pane fade">
+<p>
+These are the previous versions of the repository in which changes were
+made to the R Markdown (<code>analysis/TE_analysis_ALL_DAR.Rmd</code>)
+and HTML (<code>docs/TE_analysis_ALL_DAR.html</code>) files. If you’ve
+configured a remote Git repository (see <code>?wflow_git_remote</code>),
+click on the hyperlinks in the table below to view the files as they
+were in that past version.
+</p>
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+File
+</th>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+<th>
+Message
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+Rmd
+</td>
+<td>
+<a href="https://github.com/mward-lab/Matthews_cardiotox_ATAC_2025/blob/62bafc3c128f880ecc56f75a484f7a186d4a0e42/analysis/TE_analysis_ALL_DAR.Rmd" target="_blank">62bafc3</a>
+</td>
+<td>
+reneeisnowhere
+</td>
+<td>
+2025-06-18
+</td>
+<td>
+adding all trts
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<hr>
+</div>
+</div>
+</div>
+<style type="text/css">
+pre {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+pre[class] {
+  max-height: 200px;
+}
+</style>
+<pre class="r"><code>library(tidyverse)
+library(kableExtra)
+library(broom)
+library(RColorBrewer)
+library(ChIPseeker)
+library(&quot;TxDb.Hsapiens.UCSC.hg38.knownGene&quot;)
+library(&quot;org.Hs.eg.db&quot;)
+library(rtracklayer)
+library(edgeR)
+library(ggfortify)
+library(limma)
+library(readr)
+library(BiocGenerics)
+library(gridExtra)
+library(VennDiagram)
+library(scales)
+library(BiocParallel)
+library(ggpubr)
+library(devtools)
+library(biomaRt)
+library(eulerr)
+library(smplot2)
+library(genomation)
+library(ggsignif)
+library(plyranges)
+library(ggrepel)
+library(epitools)
+library(circlize)</code></pre>
+<p>Loading repeatmasker data:</p>
+<pre class="r"><code>repeatmasker &lt;- read.delim(&quot;data/other_papers/repeatmasker.tsv&quot;)</code></pre>
+<p>Subsetting repeatmasker for analysis by class/family</p>
+<pre class="r"><code>reClass_list &lt;- repeatmasker %&gt;% 
+  distinct(repClass)
+
+Line_repeats &lt;- repeatmasker %&gt;% 
+  dplyr::filter(repClass == &quot;LINE&quot;) %&gt;% 
+ makeGRangesFromDataFrame(., keep.extra.columns = TRUE, seqnames.field = &quot;genoName&quot;, start.field = &quot;genoStart&quot;, end.field = &quot;genoEnd&quot;,starts.in.df.are.0based=TRUE)
+
+Sine_repeats &lt;- repeatmasker %&gt;% 
+  dplyr::filter(repClass == &quot;SINE&quot;) %&gt;% 
+ makeGRangesFromDataFrame(., keep.extra.columns = TRUE, seqnames.field = &quot;genoName&quot;, start.field = &quot;genoStart&quot;, end.field = &quot;genoEnd&quot;,starts.in.df.are.0based=TRUE)
+
+LTR_repeats &lt;- repeatmasker %&gt;% 
+  dplyr::filter(repClass == &quot;LTR&quot;) %&gt;% 
+ makeGRangesFromDataFrame(., keep.extra.columns = TRUE, seqnames.field = &quot;genoName&quot;, start.field = &quot;genoStart&quot;, end.field = &quot;genoEnd&quot;,starts.in.df.are.0based=TRUE)
+
+DNA_repeats &lt;- repeatmasker %&gt;% 
+  dplyr::filter(repClass == &quot;DNA&quot;) %&gt;% 
+ makeGRangesFromDataFrame(., keep.extra.columns = TRUE, seqnames.field = &quot;genoName&quot;, start.field = &quot;genoStart&quot;, end.field = &quot;genoEnd&quot;,starts.in.df.are.0based=TRUE)
+
+retroposon_repeats &lt;- repeatmasker %&gt;% 
+  dplyr::filter(repClass == &quot;Retroposon&quot;) %&gt;% 
+ makeGRangesFromDataFrame(., keep.extra.columns = TRUE, seqnames.field = &quot;genoName&quot;, start.field = &quot;genoStart&quot;, end.field = &quot;genoEnd&quot;,starts.in.df.are.0based=TRUE)
+
+all_TEs_gr &lt;- repeatmasker %&gt;% 
+ makeGRangesFromDataFrame(., keep.extra.columns = TRUE, seqnames.field = &quot;genoName&quot;, start.field = &quot;genoStart&quot;, end.field = &quot;genoEnd&quot;,starts.in.df.are.0based=TRUE)</code></pre>
+<div id="initial-overlaps-of-tes-vs-all-regions-155557"
+class="section level3">
+<h3>Initial overlaps of TEs vs all regions (155,557)</h3>
+<pre class="r"><code>toptable_results &lt;- readRDS(&quot;data/Final_four_data/re_analysis/Toptable_results.RDS&quot;)
+all_regions &lt;- toptable_results$DOX_24$genes
+
+Collapsed_peaks &lt;- read_delim(&quot;data/Final_four_data/collapsed_new_peaks.txt&quot;,
+                              delim = &quot;\t&quot;, 
+                              escape_double = FALSE, 
+                              trim_ws = TRUE)
+
+Col_TSS_data_gr &lt;- Collapsed_peaks %&gt;% 
+  dplyr::filter(chr != &quot;chrY&quot;) %&gt;%
+  dplyr::filter(Peakid %in% all_regions) %&gt;% 
+  GRanges()
+
+all_results  &lt;- toptable_results %&gt;%
+  imap(~ .x %&gt;% tibble::rownames_to_column(var = &quot;rowname&quot;) %&gt;%
+         mutate(source = .y)) %&gt;%
+  bind_rows()
+
+my_DOX_data &lt;- all_results %&gt;% 
+  dplyr::filter(source==&quot;DOX_3&quot;|source==&quot;DOX_24&quot;) %&gt;% 
+  dplyr::select(source,genes,logFC,adj.P.Val) %&gt;% 
+  pivot_wider(.,id_cols=genes,names_from = source, values_from = c(logFC, adj.P.Val))
+
+my_EPI_data &lt;- all_results %&gt;% 
+  dplyr::filter(source==&quot;EPI_3&quot;|source==&quot;EPI_24&quot;) %&gt;% 
+  dplyr::select(source,genes,logFC,adj.P.Val) %&gt;% 
+  pivot_wider(.,id_cols=genes,names_from = source, values_from = c(logFC, adj.P.Val))
+
+my_DNR_data &lt;- all_results %&gt;% 
+  dplyr::filter(source==&quot;DNR_3&quot;|source==&quot;DNR_24&quot;) %&gt;% 
+  dplyr::select(source,genes,logFC,adj.P.Val) %&gt;% 
+  pivot_wider(.,id_cols=genes,names_from = source, values_from = c(logFC, adj.P.Val))
+
+my_MTX_data &lt;- all_results %&gt;% 
+  dplyr::filter(source==&quot;MTX_3&quot;|source==&quot;MTX_24&quot;) %&gt;% 
+  dplyr::select(source,genes,logFC,adj.P.Val) %&gt;% 
+  pivot_wider(.,id_cols=genes,names_from = source, values_from = c(logFC, adj.P.Val))</code></pre>
+</div>
+<div id="overlapping-all-peaks-with-tes" class="section level3">
+<h3>Overlapping all peaks with TEs</h3>
+<pre class="r"><code>overlap_TE_gr &lt;- join_overlap_intersect(Col_TSS_data_gr,all_TEs_gr)
+TE_peaks &lt;- overlap_TE_gr %&gt;% 
+  as.data.frame() %&gt;% 
+  distinct(Peakid)
+
+LINE_peaks &lt;- overlap_TE_gr %&gt;% 
+  as.data.frame() %&gt;%
+  dplyr::filter(repClass==&quot;LINE&quot;) %&gt;% 
+  distinct(Peakid)
+
+SINE_peaks &lt;- overlap_TE_gr %&gt;% 
+  as.data.frame() %&gt;%
+  dplyr::filter(repClass==&quot;SINE&quot;) %&gt;% 
+  distinct(Peakid)
+
+LTR_peaks &lt;- overlap_TE_gr %&gt;% 
+  as.data.frame() %&gt;%
+  dplyr::filter(repClass==&quot;LTR&quot;) %&gt;% 
+  distinct(Peakid)
+
+DNA_peaks &lt;- overlap_TE_gr %&gt;% 
+  as.data.frame() %&gt;%
+  dplyr::filter(repClass==&quot;DNA&quot;) %&gt;% 
+  distinct(Peakid)
+
+SVA_peaks &lt;- overlap_TE_gr %&gt;% 
+  as.data.frame() %&gt;%
+  dplyr::filter(repClass==&quot;Retroposon&quot;) %&gt;% 
+  distinct(Peakid)
+
+# join sig data by toptable information 
+
+all_results  &lt;- toptable_results %&gt;%
+  imap(~ .x %&gt;% tibble::rownames_to_column(var = &quot;rowname&quot;) %&gt;%
+         mutate(source = .y)) %&gt;%
+  bind_rows()
+
+annotated_peaks &lt;-   all_results %&gt;%
+  dplyr::filter(source==&quot;DOX_3&quot;|source==&quot;DOX_24&quot;) %&gt;% 
+  dplyr::select(source,genes,logFC,adj.P.Val) %&gt;% 
+  pivot_wider(.,id_cols=genes,names_from = source, values_from = c(logFC, adj.P.Val)) %&gt;% 
+  mutate(TE_status=if_else(genes %in% TE_peaks$Peakid,&quot;TE_peak&quot;,&quot;not_TE_peak&quot;),
+         LINE_status=if_else(genes %in% LINE_peaks$Peakid,&quot;LINE_peak&quot;,&quot;not_LINE_peak&quot;),
+         SINE_status=if_else(genes %in% SINE_peaks$Peakid,&quot;SINE_peak&quot;,&quot;not_SINE_peak&quot;),
+         LTR_status=if_else(genes %in% LTR_peaks$Peakid,&quot;LTR_peak&quot;,&quot;not_LTR_peak&quot;),
+         DNA_status=if_else(genes %in% DNA_peaks$Peakid,&quot;DNA_peak&quot;,&quot;not_DNA_peak&quot;),
+         SVA_status=if_else(genes %in% SVA_peaks$Peakid,&quot;SVA_peak&quot;,&quot;not_SVA_peak&quot;)) %&gt;% 
+  mutate(DOX_sig_3=if_else(adj.P.Val_DOX_3&lt;0.05,&quot;sig&quot;,&quot;not_sig&quot;),
+         DOX_sig_24=if_else(adj.P.Val_DOX_24&lt;0.05,&quot;sig&quot;,&quot;not_sig&quot;)) %&gt;% 
+  mutate(DOX_sig_3=factor(DOX_sig_3,levels=c(&quot;sig&quot;,&quot;not_sig&quot;)),
+         DOX_sig_24=factor(DOX_sig_24,levels=c(&quot;sig&quot;,&quot;not_sig&quot;))) %&gt;% 
+  left_join(.,my_EPI_data,by=c(&quot;genes&quot;=&quot;genes&quot;)) %&gt;% 
+  mutate(EPI_sig_3=if_else(adj.P.Val_EPI_3&lt;0.05,&quot;sig&quot;,&quot;not_sig&quot;),
+         EPI_sig_24=if_else(adj.P.Val_EPI_24&lt;0.05,&quot;sig&quot;,&quot;not_sig&quot;)) %&gt;% 
+  mutate(EPI_sig_3=factor(EPI_sig_3,levels=c(&quot;sig&quot;,&quot;not_sig&quot;)),
+         EPI_sig_24=factor(EPI_sig_24,levels=c(&quot;sig&quot;,&quot;not_sig&quot;))) %&gt;% 
+  left_join(.,my_DNR_data,by=c(&quot;genes&quot;=&quot;genes&quot;)) %&gt;% 
+  mutate(DNR_sig_3=if_else(adj.P.Val_DNR_3&lt;0.05,&quot;sig&quot;,&quot;not_sig&quot;),
+         DNR_sig_24=if_else(adj.P.Val_DNR_24&lt;0.05,&quot;sig&quot;,&quot;not_sig&quot;)) %&gt;% 
+  mutate(DNR_sig_3=factor(DNR_sig_3,levels=c(&quot;sig&quot;,&quot;not_sig&quot;)),
+         DNR_sig_24=factor(DNR_sig_24,levels=c(&quot;sig&quot;,&quot;not_sig&quot;))) %&gt;% 
+  left_join(.,my_MTX_data,by=c(&quot;genes&quot;=&quot;genes&quot;)) %&gt;% 
+  mutate(MTX_sig_3=if_else(adj.P.Val_MTX_3&lt;0.05,&quot;sig&quot;,&quot;not_sig&quot;),
+         MTX_sig_24=if_else(adj.P.Val_MTX_24&lt;0.05,&quot;sig&quot;,&quot;not_sig&quot;)) %&gt;% 
+  mutate(MTX_sig_3=factor(MTX_sig_3,levels=c(&quot;sig&quot;,&quot;not_sig&quot;)),
+         MTX_sig_24=factor(MTX_sig_24,levels=c(&quot;sig&quot;,&quot;not_sig&quot;))) 
+annotated_peaks</code></pre>
+<pre><code># A tibble: 155,557 × 31
+   genes     logFC_DOX_3 logFC_DOX_24 adj.P.Val_DOX_3 adj.P.Val_DOX_24 TE_status
+   &lt;chr&gt;           &lt;dbl&gt;        &lt;dbl&gt;           &lt;dbl&gt;            &lt;dbl&gt; &lt;chr&gt;    
+ 1 chr10.72…       -2.28       -2.60     0.0000000156         2.55e-13 not_TE_p…
+ 2 chr19.46…       -1.80       -2.84     0.00000105           1.02e-14 TE_peak  
+ 3 chr7.552…       -2.41       -2.24     0.00000115           3.53e-10 TE_peak  
+ 4 chr17.19…       -1.54       -1.82     0.00000255           2.42e-11 not_TE_p…
+ 5 chr10.90…       -1.84       -1.28     0.00000703           5.49e- 6 TE_peak  
+ 6 chr14.76…       -1.28       -1.45     0.00000703           4.33e-10 TE_peak  
+ 7 chr19.51…       -2.07       -3.44     0.00000703           3.89e-13 not_TE_p…
+ 8 chr10.70…       -1.84       -3.30     0.00000735           6.99e-14 TE_peak  
+ 9 chr1.203…        1.69        0.699    0.00000767           7.54e- 3 TE_peak  
+10 chr12.67…       -1.17       -2.16     0.00000989           1.02e-14 TE_peak  
+# ℹ 155,547 more rows
+# ℹ 25 more variables: LINE_status &lt;chr&gt;, SINE_status &lt;chr&gt;, LTR_status &lt;chr&gt;,
+#   DNA_status &lt;chr&gt;, SVA_status &lt;chr&gt;, DOX_sig_3 &lt;fct&gt;, DOX_sig_24 &lt;fct&gt;,
+#   logFC_EPI_3 &lt;dbl&gt;, logFC_EPI_24 &lt;dbl&gt;, adj.P.Val_EPI_3 &lt;dbl&gt;,
+#   adj.P.Val_EPI_24 &lt;dbl&gt;, EPI_sig_3 &lt;fct&gt;, EPI_sig_24 &lt;fct&gt;,
+#   logFC_DNR_3 &lt;dbl&gt;, logFC_DNR_24 &lt;dbl&gt;, adj.P.Val_DNR_3 &lt;dbl&gt;,
+#   adj.P.Val_DNR_24 &lt;dbl&gt;, DNR_sig_3 &lt;fct&gt;, DNR_sig_24 &lt;fct&gt;, …</code></pre>
+<pre class="r"><code>DOX_3_TE_mat &lt;- annotated_peaks %&gt;% 
+  group_by(TE_status,DOX_sig_3) %&gt;% 
+  tally() %&gt;% 
+  pivot_wider(., id_cols=TE_status,names_from = DOX_sig_3,values_from = n) %&gt;% 
+  column_to_rownames(&quot;TE_status&quot;) %&gt;% 
+  as.matrix()</code></pre>
+<p>From the code above, #### DOX</p>
+<pre class="r"><code># Vector of status-type column names in your data
+status_columns &lt;- c(&quot;TE_status&quot;, &quot;SINE_status&quot;, &quot;LINE_status&quot;, &quot;LTR_status&quot;, &quot;DNA_status&quot;, &quot;SVA_status&quot;)
+
+# Create a list of matrices, named by status type
+DOX_3_status_matrices &lt;- map(status_columns, function(status_col) {
+  # Extract prefix (e.g., &quot;TE&quot;, &quot;SINE&quot;) from column name like &quot;TE_status&quot;
+  prefix &lt;- sub(&quot;_status$&quot;, &quot;&quot;, status_col)
+  expected_rows &lt;- c(paste0(prefix, &quot;_peak&quot;), paste0(&quot;not_&quot;, prefix, &quot;_peak&quot;))
+  expected_cols &lt;- c(&quot;sig&quot;, &quot;not_sig&quot;)
+  
+  # Build matrix
+  mat &lt;- annotated_peaks %&gt;%
+    group_by(across(all_of(status_col)), DOX_sig_3) %&gt;%
+    tally() %&gt;%
+    pivot_wider(
+      names_from = DOX_sig_3,
+      values_from = n,
+      values_fill = list(n = 0)
+    ) %&gt;%
+    column_to_rownames(var = status_col) %&gt;%
+    as.matrix()
+   print(mat)
+  
+  # Fill missing expected rows
+  for (r in setdiff(expected_rows, rownames(mat))) {
+    mat &lt;- rbind(mat, setNames(rep(0, length(expected_cols)), expected_cols))
+    rownames(mat)[nrow(mat)] &lt;- r
+  }
+
+  # Fill missing expected columns
+  for (c in setdiff(expected_cols, colnames(mat))) {
+    mat &lt;- cbind(mat, setNames(rep(0, nrow(mat)), c))
+  }
+
+  # Order
+  mat &lt;- mat[expected_rows, expected_cols, drop = FALSE]
+})</code></pre>
+<pre><code>             sig not_sig
+TE_peak     2316  101833
+not_TE_peak 1157   50251
+               sig not_sig
+SINE_peak     1028   41766
+not_SINE_peak 2445  110318
+               sig not_sig
+LINE_peak      780   33372
+not_LINE_peak 2693  118712
+              sig not_sig
+LTR_peak      407   22282
+not_LTR_peak 3066  129802
+              sig not_sig
+DNA_peak      297   14796
+not_DNA_peak 3176  137288
+              sig not_sig
+SVA_peak        3     288
+not_SVA_peak 3470  151796</code></pre>
+<pre class="r"><code># Set names so you can easily refer to each status
+names(DOX_3_status_matrices) &lt;- status_columns
+
+
+odds_ratio_results_DOX_3 &lt;- map(DOX_3_status_matrices, function(mat) {
+  if (!all(dim(mat) == c(2, 2))) return(NULL)
+  
+  result &lt;- epitools::oddsratio(mat, method = &quot;wald&quot;)
+  
+  or &lt;- result$measure[2, &quot;estimate&quot;]
+  lower &lt;- result$measure[2, &quot;lower&quot;]
+  upper &lt;- result$measure[2, &quot;upper&quot;]
+  
+  pval_chisq &lt;- if(&quot;chi.square&quot; %in% colnames(result$p.value) &amp;&amp; nrow(result$p.value) &gt;= 2) {
+    result$p.value[2, &quot;chi.square&quot;]
+  } else {
+    NA_real_
+  }
+  
+  list(
+    odds_ratio = or,
+    lower_ci = lower,
+    upper_ci = upper,
+    chi_sq_p = pval_chisq
+  )
+})</code></pre>
+<pre class="r"><code># Create a list of matrices, named by status type
+DOX_24_status_matrices &lt;- map(status_columns, function(status_col) {
+  # Extract prefix (e.g., &quot;TE&quot;, &quot;SINE&quot;) from column name like &quot;TE_status&quot;
+  prefix &lt;- sub(&quot;_status$&quot;, &quot;&quot;, status_col)
+  expected_rows &lt;- c(paste0(prefix, &quot;_peak&quot;), paste0(&quot;not_&quot;, prefix, &quot;_peak&quot;))
+  expected_cols &lt;- c(&quot;sig&quot;, &quot;not_sig&quot;)
+  
+  # Build matrix
+  mat &lt;- annotated_peaks %&gt;%
+    group_by(across(all_of(status_col)), DOX_sig_24) %&gt;%
+    tally() %&gt;%
+    pivot_wider(
+      names_from = DOX_sig_24,
+      values_from = n,
+      values_fill = list(n = 0)
+    ) %&gt;%
+    column_to_rownames(var = status_col) %&gt;%
+    as.matrix()
+   print(mat)
+  
+  # Fill missing expected rows
+  for (r in setdiff(expected_rows, rownames(mat))) {
+    mat &lt;- rbind(mat, setNames(rep(0, length(expected_cols)), expected_cols))
+    rownames(mat)[nrow(mat)] &lt;- r
+  }
+
+  # Fill missing expected columns
+  for (c in setdiff(expected_cols, colnames(mat))) {
+    mat &lt;- cbind(mat, setNames(rep(0, nrow(mat)), c))
+  }
+
+  # Order
+  mat &lt;- mat[expected_rows, expected_cols, drop = FALSE]
+})</code></pre>
+<pre><code>              sig not_sig
+TE_peak     44303   59846
+not_TE_peak 20517   30891
+                sig not_sig
+SINE_peak     19128   23666
+not_SINE_peak 45692   67071
+                sig not_sig
+LINE_peak     15208   18944
+not_LINE_peak 49612   71793
+               sig not_sig
+LTR_peak      9971   12718
+not_LTR_peak 54849   78019
+               sig not_sig
+DNA_peak      6778    8315
+not_DNA_peak 58042   82422
+               sig not_sig
+SVA_peak        79     212
+not_SVA_peak 64741   90525</code></pre>
+<pre class="r"><code># Set names so you can easily refer to each status
+names(DOX_24_status_matrices) &lt;- status_columns
+
+
+odds_ratio_results_DOX_24 &lt;- map(DOX_24_status_matrices, function(mat) {
+  if (!all(dim(mat) == c(2, 2))) return(NULL)
+  
+  result &lt;- epitools::oddsratio(mat, method = &quot;wald&quot;)
+  
+  or &lt;- result$measure[2, &quot;estimate&quot;]
+  lower &lt;- result$measure[2, &quot;lower&quot;]
+  upper &lt;- result$measure[2, &quot;upper&quot;]
+  
+  pval_chisq &lt;- if(&quot;chi.square&quot; %in% colnames(result$p.value) &amp;&amp; nrow(result$p.value) &gt;= 2) {
+    result$p.value[2, &quot;chi.square&quot;]
+  } else {
+    NA_real_
+  }
+  
+  list(
+    odds_ratio = or,
+    lower_ci = lower,
+    upper_ci = upper,
+    chi_sq_p = pval_chisq
+  )
+})</code></pre>
+<div id="epi" class="section level4">
+<h4>EPI</h4>
+<pre class="r"><code># Vector of status-type column names in your data
+status_columns &lt;- c(&quot;TE_status&quot;, &quot;SINE_status&quot;, &quot;LINE_status&quot;, &quot;LTR_status&quot;, &quot;DNA_status&quot;, &quot;SVA_status&quot;)
+
+# Create a list of matrices, named by status type
+EPI_3_status_matrices &lt;- map(status_columns, function(status_col) {
+  # Extract prefix (e.g., &quot;TE&quot;, &quot;SINE&quot;) from column name like &quot;TE_status&quot;
+  prefix &lt;- sub(&quot;_status$&quot;, &quot;&quot;, status_col)
+  expected_rows &lt;- c(paste0(prefix, &quot;_peak&quot;), paste0(&quot;not_&quot;, prefix, &quot;_peak&quot;))
+  expected_cols &lt;- c(&quot;sig&quot;, &quot;not_sig&quot;)
+  
+  # Build matrix
+  mat &lt;- annotated_peaks %&gt;%
+    group_by(across(all_of(status_col)), EPI_sig_3) %&gt;%
+    tally() %&gt;%
+    pivot_wider(
+      names_from = EPI_sig_3,
+      values_from = n,
+      values_fill = list(n = 0)
+    ) %&gt;%
+    column_to_rownames(var = status_col) %&gt;%
+    as.matrix()
+   print(mat)
+  
+  # Fill missing expected rows
+  for (r in setdiff(expected_rows, rownames(mat))) {
+    mat &lt;- rbind(mat, setNames(rep(0, length(expected_cols)), expected_cols))
+    rownames(mat)[nrow(mat)] &lt;- r
+  }
+
+  # Fill missing expected columns
+  for (c in setdiff(expected_cols, colnames(mat))) {
+    mat &lt;- cbind(mat, setNames(rep(0, nrow(mat)), c))
+  }
+
+  # Order
+  mat &lt;- mat[expected_rows, expected_cols, drop = FALSE]
+})</code></pre>
+<pre><code>             sig not_sig
+TE_peak     9688   94461
+not_TE_peak 4546   46862
+                sig not_sig
+SINE_peak      4196   38598
+not_SINE_peak 10038  102725
+                sig not_sig
+LINE_peak      3031   31121
+not_LINE_peak 11203  110202
+               sig not_sig
+LTR_peak      1590   21099
+not_LTR_peak 12644  120224
+               sig not_sig
+DNA_peak      1265   13828
+not_DNA_peak 12969  127495
+               sig not_sig
+SVA_peak        32     259
+not_SVA_peak 14202  141064</code></pre>
+<pre class="r"><code># Set names so you can easily refer to each status
+names(EPI_3_status_matrices) &lt;- status_columns
+
+
+odds_ratio_results_EPI_3 &lt;- map(EPI_3_status_matrices, function(mat) {
+  if (!all(dim(mat) == c(2, 2))) return(NULL)
+  
+  result &lt;- epitools::oddsratio(mat, method = &quot;wald&quot;)
+  
+  or &lt;- result$measure[2, &quot;estimate&quot;]
+  lower &lt;- result$measure[2, &quot;lower&quot;]
+  upper &lt;- result$measure[2, &quot;upper&quot;]
+  
+  pval_chisq &lt;- if(&quot;chi.square&quot; %in% colnames(result$p.value) &amp;&amp; nrow(result$p.value) &gt;= 2) {
+    result$p.value[2, &quot;chi.square&quot;]
+  } else {
+    NA_real_
+  }
+  
+  list(
+    odds_ratio = or,
+    lower_ci = lower,
+    upper_ci = upper,
+    chi_sq_p = pval_chisq
+  )
+})</code></pre>
+<pre class="r"><code># Create a list of matrices, named by status type
+EPI_24_status_matrices &lt;- map(status_columns, function(status_col) {
+  # Extract prefix (e.g., &quot;TE&quot;, &quot;SINE&quot;) from column name like &quot;TE_status&quot;
+  prefix &lt;- sub(&quot;_status$&quot;, &quot;&quot;, status_col)
+  expected_rows &lt;- c(paste0(prefix, &quot;_peak&quot;), paste0(&quot;not_&quot;, prefix, &quot;_peak&quot;))
+  expected_cols &lt;- c(&quot;sig&quot;, &quot;not_sig&quot;)
+  
+  # Build matrix
+  mat &lt;- annotated_peaks %&gt;%
+    group_by(across(all_of(status_col)), EPI_sig_24) %&gt;%
+    tally() %&gt;%
+    pivot_wider(
+      names_from = EPI_sig_24,
+      values_from = n,
+      values_fill = list(n = 0)
+    ) %&gt;%
+    column_to_rownames(var = status_col) %&gt;%
+    as.matrix()
+   print(mat)
+  
+  # Fill missing expected rows
+  for (r in setdiff(expected_rows, rownames(mat))) {
+    mat &lt;- rbind(mat, setNames(rep(0, length(expected_cols)), expected_cols))
+    rownames(mat)[nrow(mat)] &lt;- r
+  }
+
+  # Fill missing expected columns
+  for (c in setdiff(expected_cols, colnames(mat))) {
+    mat &lt;- cbind(mat, setNames(rep(0, nrow(mat)), c))
+  }
+
+  # Order
+  mat &lt;- mat[expected_rows, expected_cols, drop = FALSE]
+})</code></pre>
+<pre><code>              sig not_sig
+TE_peak     45302   58847
+not_TE_peak 21199   30209
+                sig not_sig
+SINE_peak     19441   23353
+not_SINE_peak 47060   65703
+                sig not_sig
+LINE_peak     15530   18622
+not_LINE_peak 50971   70434
+               sig not_sig
+LTR_peak     10179   12510
+not_LTR_peak 56322   76546
+               sig not_sig
+DNA_peak      6903    8190
+not_DNA_peak 59598   80866
+               sig not_sig
+SVA_peak       105     186
+not_SVA_peak 66396   88870</code></pre>
+<pre class="r"><code># Set names so you can easily refer to each status
+names(EPI_24_status_matrices) &lt;- status_columns
+
+
+odds_ratio_results_EPI_24 &lt;- map(EPI_24_status_matrices, function(mat) {
+  if (!all(dim(mat) == c(2, 2))) return(NULL)
+  
+  result &lt;- epitools::oddsratio(mat, method = &quot;wald&quot;)
+  
+  or &lt;- result$measure[2, &quot;estimate&quot;]
+  lower &lt;- result$measure[2, &quot;lower&quot;]
+  upper &lt;- result$measure[2, &quot;upper&quot;]
+  
+  pval_chisq &lt;- if(&quot;chi.square&quot; %in% colnames(result$p.value) &amp;&amp; nrow(result$p.value) &gt;= 2) {
+    result$p.value[2, &quot;chi.square&quot;]
+  } else {
+    NA_real_
+  }
+  
+  list(
+    odds_ratio = or,
+    lower_ci = lower,
+    upper_ci = upper,
+    chi_sq_p = pval_chisq
+  )
+})</code></pre>
+</div>
+<div id="dnr" class="section level4">
+<h4>DNR</h4>
+<pre class="r"><code># Vector of status-type column names in your data
+status_columns &lt;- c(&quot;TE_status&quot;, &quot;SINE_status&quot;, &quot;LINE_status&quot;, &quot;LTR_status&quot;, &quot;DNA_status&quot;, &quot;SVA_status&quot;)
+
+# Create a list of matrices, named by status type
+DNR_3_status_matrices &lt;- map(status_columns, function(status_col) {
+  # Extract prefix (e.g., &quot;TE&quot;, &quot;SINE&quot;) from column name like &quot;TE_status&quot;
+  prefix &lt;- sub(&quot;_status$&quot;, &quot;&quot;, status_col)
+  expected_rows &lt;- c(paste0(prefix, &quot;_peak&quot;), paste0(&quot;not_&quot;, prefix, &quot;_peak&quot;))
+  expected_cols &lt;- c(&quot;sig&quot;, &quot;not_sig&quot;)
+  
+  # Build matrix
+  mat &lt;- annotated_peaks %&gt;%
+    group_by(across(all_of(status_col)), DNR_sig_3) %&gt;%
+    tally() %&gt;%
+    pivot_wider(
+      names_from = DNR_sig_3,
+      values_from = n,
+      values_fill = list(n = 0)
+    ) %&gt;%
+    column_to_rownames(var = status_col) %&gt;%
+    as.matrix()
+   print(mat)
+  
+  # Fill missing expected rows
+  for (r in setdiff(expected_rows, rownames(mat))) {
+    mat &lt;- rbind(mat, setNames(rep(0, length(expected_cols)), expected_cols))
+    rownames(mat)[nrow(mat)] &lt;- r
+  }
+
+  # Fill missing expected columns
+  for (c in setdiff(expected_cols, colnames(mat))) {
+    mat &lt;- cbind(mat, setNames(rep(0, nrow(mat)), c))
+  }
+
+  # Order
+  mat &lt;- mat[expected_rows, expected_cols, drop = FALSE]
+})</code></pre>
+<pre><code>              sig not_sig
+TE_peak     15675   88474
+not_TE_peak  7063   44345
+                sig not_sig
+SINE_peak      6517   36277
+not_SINE_peak 16221   96542
+                sig not_sig
+LINE_peak      4652   29500
+not_LINE_peak 18086  103319
+               sig not_sig
+LTR_peak      2529   20160
+not_LTR_peak 20209  112659
+               sig not_sig
+DNA_peak      1923   13170
+not_DNA_peak 20815  119649
+               sig not_sig
+SVA_peak        56     235
+not_SVA_peak 22682  132584</code></pre>
+<pre class="r"><code># Set names so you can easily refer to each status
+names(DNR_3_status_matrices) &lt;- status_columns
+
+
+odds_ratio_results_DNR_3 &lt;- map(DNR_3_status_matrices, function(mat) {
+  if (!all(dim(mat) == c(2, 2))) return(NULL)
+  
+  result &lt;- epitools::oddsratio(mat, method = &quot;wald&quot;)
+  
+  or &lt;- result$measure[2, &quot;estimate&quot;]
+  lower &lt;- result$measure[2, &quot;lower&quot;]
+  upper &lt;- result$measure[2, &quot;upper&quot;]
+  
+  pval_chisq &lt;- if(&quot;chi.square&quot; %in% colnames(result$p.value) &amp;&amp; nrow(result$p.value) &gt;= 2) {
+    result$p.value[2, &quot;chi.square&quot;]
+  } else {
+    NA_real_
+  }
+  
+  list(
+    odds_ratio = or,
+    lower_ci = lower,
+    upper_ci = upper,
+    chi_sq_p = pval_chisq
+  )
+})</code></pre>
+<pre class="r"><code># Create a list of matrices, named by status type
+DNR_24_status_matrices &lt;- map(status_columns, function(status_col) {
+  # Extract prefix (e.g., &quot;TE&quot;, &quot;SINE&quot;) from column name like &quot;TE_status&quot;
+  prefix &lt;- sub(&quot;_status$&quot;, &quot;&quot;, status_col)
+  expected_rows &lt;- c(paste0(prefix, &quot;_peak&quot;), paste0(&quot;not_&quot;, prefix, &quot;_peak&quot;))
+  expected_cols &lt;- c(&quot;sig&quot;, &quot;not_sig&quot;)
+  
+  # Build matrix
+  mat &lt;- annotated_peaks %&gt;%
+    group_by(across(all_of(status_col)), DNR_sig_24) %&gt;%
+    tally() %&gt;%
+    pivot_wider(
+      names_from = DNR_sig_24,
+      values_from = n,
+      values_fill = list(n = 0)
+    ) %&gt;%
+    column_to_rownames(var = status_col) %&gt;%
+    as.matrix()
+   print(mat)
+  
+  # Fill missing expected rows
+  for (r in setdiff(expected_rows, rownames(mat))) {
+    mat &lt;- rbind(mat, setNames(rep(0, length(expected_cols)), expected_cols))
+    rownames(mat)[nrow(mat)] &lt;- r
+  }
+
+  # Fill missing expected columns
+  for (c in setdiff(expected_cols, colnames(mat))) {
+    mat &lt;- cbind(mat, setNames(rep(0, nrow(mat)), c))
+  }
+
+  # Order
+  mat &lt;- mat[expected_rows, expected_cols, drop = FALSE]
+})</code></pre>
+<pre><code>              sig not_sig
+TE_peak     54566   49583
+not_TE_peak 25429   25979
+                sig not_sig
+SINE_peak     22919   19875
+not_SINE_peak 57076   55687
+                sig not_sig
+LINE_peak     18231   15921
+not_LINE_peak 61764   59641
+               sig not_sig
+LTR_peak     12018   10671
+not_LTR_peak 67977   64891
+               sig not_sig
+DNA_peak      8057    7036
+not_DNA_peak 71938   68526
+               sig not_sig
+SVA_peak       122     169
+not_SVA_peak 79873   75393</code></pre>
+<pre class="r"><code># Set names so you can easily refer to each status
+names(DNR_24_status_matrices) &lt;- status_columns
+
+
+odds_ratio_results_DNR_24 &lt;- map(DNR_24_status_matrices, function(mat) {
+  if (!all(dim(mat) == c(2, 2))) return(NULL)
+  
+  result &lt;- epitools::oddsratio(mat, method = &quot;wald&quot;)
+  
+  or &lt;- result$measure[2, &quot;estimate&quot;]
+  lower &lt;- result$measure[2, &quot;lower&quot;]
+  upper &lt;- result$measure[2, &quot;upper&quot;]
+  
+  pval_chisq &lt;- if(&quot;chi.square&quot; %in% colnames(result$p.value) &amp;&amp; nrow(result$p.value) &gt;= 2) {
+    result$p.value[2, &quot;chi.square&quot;]
+  } else {
+    NA_real_
+  }
+  
+  list(
+    odds_ratio = or,
+    lower_ci = lower,
+    upper_ci = upper,
+    chi_sq_p = pval_chisq
+  )
+})</code></pre>
+</div>
+<div id="mtx" class="section level4">
+<h4>MTX</h4>
+<pre class="r"><code># Vector of status-type column names in your data
+status_columns &lt;- c(&quot;TE_status&quot;, &quot;SINE_status&quot;, &quot;LINE_status&quot;, &quot;LTR_status&quot;, &quot;DNA_status&quot;, &quot;SVA_status&quot;)
+
+# Create a list of matrices, named by status type
+MTX_3_status_matrices &lt;- map(status_columns, function(status_col) {
+  # Extract prefix (e.g., &quot;TE&quot;, &quot;SINE&quot;) from column name like &quot;TE_status&quot;
+  prefix &lt;- sub(&quot;_status$&quot;, &quot;&quot;, status_col)
+  expected_rows &lt;- c(paste0(prefix, &quot;_peak&quot;), paste0(&quot;not_&quot;, prefix, &quot;_peak&quot;))
+  expected_cols &lt;- c(&quot;sig&quot;, &quot;not_sig&quot;)
+  
+  # Build matrix
+  mat &lt;- annotated_peaks %&gt;%
+    group_by(across(all_of(status_col)), MTX_sig_3) %&gt;%
+    tally() %&gt;%
+    pivot_wider(
+      names_from = MTX_sig_3,
+      values_from = n,
+      values_fill = list(n = 0)
+    ) %&gt;%
+    column_to_rownames(var = status_col) %&gt;%
+    as.matrix()
+   print(mat)
+  
+  # Fill missing expected rows
+  for (r in setdiff(expected_rows, rownames(mat))) {
+    mat &lt;- rbind(mat, setNames(rep(0, length(expected_cols)), expected_cols))
+    rownames(mat)[nrow(mat)] &lt;- r
+  }
+
+  # Fill missing expected columns
+  for (c in setdiff(expected_cols, colnames(mat))) {
+    mat &lt;- cbind(mat, setNames(rep(0, nrow(mat)), c))
+  }
+
+  # Order
+  mat &lt;- mat[expected_rows, expected_cols, drop = FALSE]
+})</code></pre>
+<pre><code>            sig not_sig
+TE_peak     568  103581
+not_TE_peak 236   51172
+              sig not_sig
+SINE_peak     220   42574
+not_SINE_peak 584  112179
+              sig not_sig
+LINE_peak     174   33978
+not_LINE_peak 630  120775
+             sig not_sig
+LTR_peak     114   22575
+not_LTR_peak 690  132178
+             sig not_sig
+DNA_peak      86   15007
+not_DNA_peak 718  139746
+             sig not_sig
+SVA_peak       1     290
+not_SVA_peak 803  154463</code></pre>
+<pre class="r"><code># Set names so you can easily refer to each status
+names(MTX_3_status_matrices) &lt;- status_columns
+
+
+odds_ratio_results_MTX_3 &lt;- map(MTX_3_status_matrices, function(mat) {
+  if (!all(dim(mat) == c(2, 2))) return(NULL)
+  
+  result &lt;- epitools::oddsratio(mat, method = &quot;wald&quot;)
+  
+  or &lt;- result$measure[2, &quot;estimate&quot;]
+  lower &lt;- result$measure[2, &quot;lower&quot;]
+  upper &lt;- result$measure[2, &quot;upper&quot;]
+  
+  pval_chisq &lt;- if(&quot;chi.square&quot; %in% colnames(result$p.value) &amp;&amp; nrow(result$p.value) &gt;= 2) {
+    result$p.value[2, &quot;chi.square&quot;]
+  } else {
+    NA_real_
+  }
+  
+  list(
+    odds_ratio = or,
+    lower_ci = lower,
+    upper_ci = upper,
+    chi_sq_p = pval_chisq
+  )
+})</code></pre>
+<pre class="r"><code># Create a list of matrices, named by status type
+MTX_24_status_matrices &lt;- map(status_columns, function(status_col) {
+  # Extract prefix (e.g., &quot;TE&quot;, &quot;SINE&quot;) from column name like &quot;TE_status&quot;
+  prefix &lt;- sub(&quot;_status$&quot;, &quot;&quot;, status_col)
+  expected_rows &lt;- c(paste0(prefix, &quot;_peak&quot;), paste0(&quot;not_&quot;, prefix, &quot;_peak&quot;))
+  expected_cols &lt;- c(&quot;sig&quot;, &quot;not_sig&quot;)
+  
+  # Build matrix
+  mat &lt;- annotated_peaks %&gt;%
+    group_by(across(all_of(status_col)), MTX_sig_24) %&gt;%
+    tally() %&gt;%
+    pivot_wider(
+      names_from = MTX_sig_24,
+      values_from = n,
+      values_fill = list(n = 0)
+    ) %&gt;%
+    column_to_rownames(var = status_col) %&gt;%
+    as.matrix()
+   print(mat)
+  
+  # Fill missing expected rows
+  for (r in setdiff(expected_rows, rownames(mat))) {
+    mat &lt;- rbind(mat, setNames(rep(0, length(expected_cols)), expected_cols))
+    rownames(mat)[nrow(mat)] &lt;- r
+  }
+
+  # Fill missing expected columns
+  for (c in setdiff(expected_cols, colnames(mat))) {
+    mat &lt;- cbind(mat, setNames(rep(0, nrow(mat)), c))
+  }
+
+  # Order
+  mat &lt;- mat[expected_rows, expected_cols, drop = FALSE]
+})</code></pre>
+<pre><code>              sig not_sig
+TE_peak     16922   87227
+not_TE_peak  7328   44080
+                sig not_sig
+SINE_peak      7114   35680
+not_SINE_peak 17136   95627
+                sig not_sig
+LINE_peak      5596   28556
+not_LINE_peak 18654  102751
+               sig not_sig
+LTR_peak      3564   19125
+not_LTR_peak 20686  112182
+               sig not_sig
+DNA_peak      2445   12648
+not_DNA_peak 21805  118659
+               sig not_sig
+SVA_peak        17     274
+not_SVA_peak 24233  131033</code></pre>
+<pre class="r"><code># Set names so you can easily refer to each status
+names(MTX_24_status_matrices) &lt;- status_columns
+
+
+odds_ratio_results_MTX_24 &lt;- map(MTX_24_status_matrices, function(mat) {
+  if (!all(dim(mat) == c(2, 2))) return(NULL)
+  
+  result &lt;- epitools::oddsratio(mat, method = &quot;wald&quot;)
+  
+  or &lt;- result$measure[2, &quot;estimate&quot;]
+  lower &lt;- result$measure[2, &quot;lower&quot;]
+  upper &lt;- result$measure[2, &quot;upper&quot;]
+  
+  pval_chisq &lt;- if(&quot;chi.square&quot; %in% colnames(result$p.value) &amp;&amp; nrow(result$p.value) &gt;= 2) {
+    result$p.value[2, &quot;chi.square&quot;]
+  } else {
+    NA_real_
+  }
+  
+  list(
+    odds_ratio = or,
+    lower_ci = lower,
+    upper_ci = upper,
+    chi_sq_p = pval_chisq
+  )
+})</code></pre>
+</div>
+<div id="combining-the-data-and-applying-bh-pvalue-adjustments"
+class="section level4">
+<h4>Combining the data and applying BH pvalue adjustments</h4>
+<pre class="r"><code># odds_ratio_results_DOX_3
+# odds_ratio_results_DOX_24
+# odds_ratio_results_DOX_24_sig_up
+# odds_ratio_results_DOX_24_sig_down
+
+combined_df &lt;- bind_rows(
+  map_dfr(odds_ratio_results_DOX_3, ~as.data.frame(.x), .id = &quot;status&quot;) %&gt;% mutate(source = &quot;DOX_3hr&quot;),
+  map_dfr(odds_ratio_results_DOX_24, ~as.data.frame(.x), .id = &quot;status&quot;) %&gt;% mutate(source = &quot;DOX_24hr&quot;),
+  map_dfr(odds_ratio_results_EPI_3, ~as.data.frame(.x), .id = &quot;status&quot;) %&gt;% mutate(source = &quot;EPI_3hr&quot;),
+  map_dfr(odds_ratio_results_EPI_24, ~as.data.frame(.x), .id = &quot;status&quot;) %&gt;% mutate(source = &quot;EPI_24hr&quot;),
+  map_dfr(odds_ratio_results_DNR_3, ~as.data.frame(.x), .id = &quot;status&quot;) %&gt;% mutate(source = &quot;DNR_3hr&quot;),
+  map_dfr(odds_ratio_results_DNR_24, ~as.data.frame(.x), .id = &quot;status&quot;) %&gt;% mutate(source = &quot;DNR_24hr&quot;),
+  map_dfr(odds_ratio_results_MTX_3, ~as.data.frame(.x), .id = &quot;status&quot;) %&gt;% mutate(source = &quot;MTX_3hr&quot;),
+  map_dfr(odds_ratio_results_MTX_24, ~as.data.frame(.x), .id = &quot;status&quot;) %&gt;% mutate(source = &quot;MTX_24hr&quot;)
+)</code></pre>
+<pre class="r"><code>TE_sig_mat &lt;- combined_df %&gt;% 
+  dplyr::select( status,source,chi_sq_p) %&gt;%
+  group_by(source) %&gt;%
+  mutate(rank_val=rank(chi_sq_p, ties.method = &quot;first&quot;)) %&gt;%
+  mutate(BH_correction= p.adjust(chi_sq_p,method= &quot;BH&quot;)) %&gt;% 
+  pivot_wider(., id_cols = status, names_from = source, values_from = BH_correction) %&gt;% 
+  column_to_rownames(&quot;status&quot;) %&gt;% 
+  as.matrix()
+
+col_fun_OR = colorRamp2(c(0,1,1.5,5), c(&quot;blueviolet&quot;,&quot;white&quot;,&quot;lightgreen&quot;,&quot;green3&quot; ))
+
+# TE_od_mat &lt;- 
+combined_df %&gt;% 
+  dplyr::select(status, source, odds_ratio) %&gt;%
+  group_by(source) %&gt;%
+  pivot_wider(., id_cols = status, names_from = source, values_from = odds_ratio) %&gt;% 
+  column_to_rownames(&quot;status&quot;) %&gt;% 
+  as.matrix() %&gt;% 
+   ComplexHeatmap::Heatmap(. ,col = col_fun_OR, 
+                          cluster_rows=FALSE, 
+                          cluster_columns=FALSE, 
+                          column_names_side = &quot;top&quot;, 
+                          column_names_rot = 45,
+                          # na_col = &quot;black&quot;,
+                          cell_fun = function(j, i, x, y, width, height, fill) {if (!is.na(TE_sig_mat[i, j]) &amp;&amp; TE_sig_mat[i, j] &lt; 0.05  &amp;&amp; .[i, j] &gt; 1) {
+            grid.text(&quot;*&quot;, x, y, gp = gpar(fontsize = 20))}})</code></pre>
+<p><img src="figure/TE_analysis_ALL_DAR.Rmd/unnamed-chunk-4-1.png" width="672" style="display: block; margin: auto;" /></p>
+<br>
+<p>
+<button type="button" class="btn btn-default btn-workflowr btn-workflowr-sessioninfo" data-toggle="collapse" data-target="#workflowr-sessioninfo" style="display: block;">
+<span class="glyphicon glyphicon-wrench" aria-hidden="true"></span>
+Session information
+</button>
+</p>
+<div id="workflowr-sessioninfo" class="collapse">
+<pre class="r"><code>sessionInfo()</code></pre>
+<pre><code>R version 4.4.2 (2024-10-31 ucrt)
+Platform: x86_64-w64-mingw32/x64
+Running under: Windows 11 x64 (build 26100)
+
+Matrix products: default
+
+
+locale:
+[1] LC_COLLATE=English_United States.utf8 
+[2] LC_CTYPE=English_United States.utf8   
+[3] LC_MONETARY=English_United States.utf8
+[4] LC_NUMERIC=C                          
+[5] LC_TIME=English_United States.utf8    
+
+time zone: America/Chicago
+tzcode source: internal
+
+attached base packages:
+[1] grid      stats4    stats     graphics  grDevices utils     datasets 
+[8] methods   base     
+
+other attached packages:
+ [1] circlize_0.4.16                         
+ [2] epitools_0.5-10.1                       
+ [3] ggrepel_0.9.6                           
+ [4] plyranges_1.26.0                        
+ [5] ggsignif_0.6.4                          
+ [6] genomation_1.38.0                       
+ [7] smplot2_0.2.5                           
+ [8] eulerr_7.0.2                            
+ [9] biomaRt_2.62.1                          
+[10] devtools_2.4.5                          
+[11] usethis_3.1.0                           
+[12] ggpubr_0.6.0                            
+[13] BiocParallel_1.40.0                     
+[14] scales_1.3.0                            
+[15] VennDiagram_1.7.3                       
+[16] futile.logger_1.4.3                     
+[17] gridExtra_2.3                           
+[18] ggfortify_0.4.17                        
+[19] edgeR_4.4.2                             
+[20] limma_3.62.2                            
+[21] rtracklayer_1.66.0                      
+[22] org.Hs.eg.db_3.20.0                     
+[23] TxDb.Hsapiens.UCSC.hg38.knownGene_3.20.0
+[24] GenomicFeatures_1.58.0                  
+[25] AnnotationDbi_1.68.0                    
+[26] Biobase_2.66.0                          
+[27] GenomicRanges_1.58.0                    
+[28] GenomeInfoDb_1.42.3                     
+[29] IRanges_2.40.1                          
+[30] S4Vectors_0.44.0                        
+[31] BiocGenerics_0.52.0                     
+[32] ChIPseeker_1.42.1                       
+[33] RColorBrewer_1.1-3                      
+[34] broom_1.0.7                             
+[35] kableExtra_1.4.0                        
+[36] lubridate_1.9.4                         
+[37] forcats_1.0.0                           
+[38] stringr_1.5.1                           
+[39] dplyr_1.1.4                             
+[40] purrr_1.0.4                             
+[41] readr_2.1.5                             
+[42] tidyr_1.3.1                             
+[43] tibble_3.2.1                            
+[44] ggplot2_3.5.1                           
+[45] tidyverse_2.0.0                         
+[46] workflowr_1.7.1                         
+
+loaded via a namespace (and not attached):
+  [1] fs_1.6.5                               
+  [2] matrixStats_1.5.0                      
+  [3] bitops_1.0-9                           
+  [4] enrichplot_1.26.6                      
+  [5] doParallel_1.0.17                      
+  [6] httr_1.4.7                             
+  [7] profvis_0.4.0                          
+  [8] tools_4.4.2                            
+  [9] backports_1.5.0                        
+ [10] utf8_1.2.6                             
+ [11] R6_2.6.1                               
+ [12] lazyeval_0.2.2                         
+ [13] GetoptLong_1.0.5                       
+ [14] urlchecker_1.0.1                       
+ [15] withr_3.0.2                            
+ [16] prettyunits_1.2.0                      
+ [17] cli_3.6.4                              
+ [18] formatR_1.14                           
+ [19] Cairo_1.6-2                            
+ [20] sass_0.4.9                             
+ [21] Rsamtools_2.22.0                       
+ [22] systemfonts_1.2.1                      
+ [23] yulab.utils_0.2.0                      
+ [24] foreign_0.8-88                         
+ [25] DOSE_4.0.1                             
+ [26] svglite_2.1.3                          
+ [27] R.utils_2.13.0                         
+ [28] sessioninfo_1.2.3                      
+ [29] plotrix_3.8-4                          
+ [30] BSgenome_1.74.0                        
+ [31] pwr_1.3-0                              
+ [32] impute_1.80.0                          
+ [33] rstudioapi_0.17.1                      
+ [34] RSQLite_2.3.9                          
+ [35] shape_1.4.6.1                          
+ [36] generics_0.1.4                         
+ [37] gridGraphics_0.5-1                     
+ [38] TxDb.Hsapiens.UCSC.hg19.knownGene_3.2.2
+ [39] BiocIO_1.16.0                          
+ [40] vroom_1.6.5                            
+ [41] gtools_3.9.5                           
+ [42] car_3.1-3                              
+ [43] GO.db_3.20.0                           
+ [44] Matrix_1.7-3                           
+ [45] abind_1.4-8                            
+ [46] R.methodsS3_1.8.2                      
+ [47] lifecycle_1.0.4                        
+ [48] whisker_0.4.1                          
+ [49] yaml_2.3.10                            
+ [50] carData_3.0-5                          
+ [51] SummarizedExperiment_1.36.0            
+ [52] gplots_3.2.0                           
+ [53] qvalue_2.38.0                          
+ [54] SparseArray_1.6.2                      
+ [55] BiocFileCache_2.14.0                   
+ [56] blob_1.2.4                             
+ [57] promises_1.3.2                         
+ [58] crayon_1.5.3                           
+ [59] miniUI_0.1.2                           
+ [60] ggtangle_0.0.6                         
+ [61] lattice_0.22-6                         
+ [62] cowplot_1.1.3                          
+ [63] KEGGREST_1.46.0                        
+ [64] magick_2.8.7                           
+ [65] ComplexHeatmap_2.22.0                  
+ [66] pillar_1.10.2                          
+ [67] knitr_1.50                             
+ [68] fgsea_1.32.2                           
+ [69] rjson_0.2.23                           
+ [70] boot_1.3-31                            
+ [71] codetools_0.2-20                       
+ [72] fastmatch_1.1-6                        
+ [73] glue_1.8.0                             
+ [74] getPass_0.2-4                          
+ [75] ggfun_0.1.8                            
+ [76] data.table_1.17.0                      
+ [77] remotes_2.5.0                          
+ [78] vctrs_0.6.5                            
+ [79] png_0.1-8                              
+ [80] treeio_1.30.0                          
+ [81] gtable_0.3.6                           
+ [82] cachem_1.1.0                           
+ [83] xfun_0.51                              
+ [84] S4Arrays_1.6.0                         
+ [85] mime_0.12                              
+ [86] iterators_1.0.14                       
+ [87] statmod_1.5.0                          
+ [88] ellipsis_0.3.2                         
+ [89] nlme_3.1-167                           
+ [90] ggtree_3.14.0                          
+ [91] bit64_4.6.0-1                          
+ [92] filelock_1.0.3                         
+ [93] progress_1.2.3                         
+ [94] rprojroot_2.0.4                        
+ [95] bslib_0.9.0                            
+ [96] rpart_4.1.24                           
+ [97] KernSmooth_2.23-26                     
+ [98] Hmisc_5.2-2                            
+ [99] colorspace_2.1-1                       
+[100] DBI_1.2.3                              
+[101] seqPattern_1.38.0                      
+[102] nnet_7.3-20                            
+[103] tidyselect_1.2.1                       
+[104] processx_3.8.6                         
+[105] bit_4.6.0                              
+[106] compiler_4.4.2                         
+[107] curl_6.2.1                             
+[108] git2r_0.35.0                           
+[109] httr2_1.1.2                            
+[110] htmlTable_2.4.3                        
+[111] xml2_1.3.7                             
+[112] DelayedArray_0.32.0                    
+[113] checkmate_2.3.2                        
+[114] caTools_1.18.3                         
+[115] callr_3.7.6                            
+[116] rappdirs_0.3.3                         
+[117] digest_0.6.37                          
+[118] rmarkdown_2.29                         
+[119] XVector_0.46.0                         
+[120] base64enc_0.1-3                        
+[121] htmltools_0.5.8.1                      
+[122] pkgconfig_2.0.3                        
+[123] MatrixGenerics_1.18.1                  
+[124] dbplyr_2.5.0                           
+[125] fastmap_1.2.0                          
+[126] GlobalOptions_0.1.2                    
+[127] rlang_1.1.5                            
+[128] htmlwidgets_1.6.4                      
+[129] UCSC.utils_1.2.0                       
+[130] shiny_1.10.0                           
+[131] farver_2.1.2                           
+[132] jquerylib_0.1.4                        
+[133] zoo_1.8-13                             
+[134] jsonlite_1.9.1                         
+[135] GOSemSim_2.32.0                        
+[136] R.oo_1.27.1                            
+[137] RCurl_1.98-1.16                        
+[138] magrittr_2.0.3                         
+[139] Formula_1.2-5                          
+[140] GenomeInfoDbData_1.2.13                
+[141] ggplotify_0.1.2                        
+[142] patchwork_1.3.0                        
+[143] munsell_0.5.1                          
+[144] Rcpp_1.0.14                            
+[145] ape_5.8-1                              
+[146] stringi_1.8.4                          
+[147] zlibbioc_1.52.0                        
+[148] plyr_1.8.9                             
+[149] pkgbuild_1.4.8                         
+[150] parallel_4.4.2                         
+[151] Biostrings_2.74.1                      
+[152] splines_4.4.2                          
+[153] hms_1.1.3                              
+[154] locfit_1.5-9.12                        
+[155] ps_1.9.0                               
+[156] igraph_2.1.4                           
+[157] reshape2_1.4.4                         
+[158] pkgload_1.4.0                          
+[159] futile.options_1.0.1                   
+[160] XML_3.99-0.18                          
+[161] evaluate_1.0.3                         
+[162] lambda.r_1.2.4                         
+[163] foreach_1.5.2                          
+[164] tzdb_0.4.0                             
+[165] httpuv_1.6.15                          
+[166] clue_0.3-66                            
+[167] gridBase_0.4-7                         
+[168] xtable_1.8-4                           
+[169] restfulr_0.0.15                        
+[170] tidytree_0.4.6                         
+[171] rstatix_0.7.2                          
+[172] later_1.4.1                            
+[173] viridisLite_0.4.2                      
+[174] aplot_0.2.6                            
+[175] memoise_2.0.1                          
+[176] GenomicAlignments_1.42.0               
+[177] cluster_2.1.8.1                        
+[178] timechange_0.3.0                       </code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+
+<!-- Adjust MathJax settings so that all math formulae are shown using
+TeX fonts only; see
+https://docs.mathjax.org/en/latest/web/configuration.html. This will make
+the presentation more consistent at the cost of the webpage sometimes
+taking slightly longer to load. Note that this only works because the
+footer is added to webpages before the MathJax javascript. -->
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    "HTML-CSS": { availableFonts: ["TeX"] }
+  });
+</script>
+
+
+
+
+</div>
+</div>
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+function bootstrapStylePandocTables() {
+  $('tr.odd').parent('tbody').parent('table').addClass('table table-condensed');
+}
+$(document).ready(function () {
+  bootstrapStylePandocTables();
+});
+
+
+</script>
+
+<!-- tabsets -->
+
+<script>
+$(document).ready(function () {
+  window.buildTabsets("TOC");
+});
+
+$(document).ready(function () {
+  $('.tabset-dropdown > .nav-tabs > li').click(function () {
+    $(this).parent().toggleClass('nav-tabs-open');
+  });
+});
+</script>
+
+<!-- code folding -->
+
+<script>
+$(document).ready(function ()  {
+
+    // temporarily add toc-ignore selector to headers for the consistency with Pandoc
+    $('.unlisted.unnumbered').addClass('toc-ignore')
+
+    // move toc-ignore selectors from section div to header
+    $('div.section.toc-ignore')
+        .removeClass('toc-ignore')
+        .children('h1,h2,h3,h4,h5').addClass('toc-ignore');
+
+    // establish options
+    var options = {
+      selectors: "h1,h2,h3",
+      theme: "bootstrap3",
+      context: '.toc-content',
+      hashGenerator: function (text) {
+        return text.replace(/[.\\/?&!#<>]/g, '').replace(/\s/g, '_');
+      },
+      ignoreSelector: ".toc-ignore",
+      scrollTo: 0
+    };
+    options.showAndHide = true;
+    options.smoothScroll = true;
+
+    // tocify
+    var toc = $("#TOC").tocify(options).data("toc-tocify");
+});
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
