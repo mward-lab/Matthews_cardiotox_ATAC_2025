@@ -11,9 +11,9 @@
 
 <meta name="author" content="Renee Matthews" />
 
-<meta name="date" content="2025-06-05" />
+<meta name="date" content="2025-05-07" />
 
-<title>TE_analysis_DOX_DAR</title>
+<title>TSS and CUG overlap</title>
 
 <script src="site_libs/header-attrs-2.29/header-attrs.js"></script>
 <script src="site_libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
@@ -359,9 +359,9 @@ div.tocify {
 
 
 
-<h1 class="title toc-ignore">TE_analysis_DOX_DAR</h1>
+<h1 class="title toc-ignore">TSS and CUG overlap</h1>
 <h4 class="author">Renee Matthews</h4>
-<h4 class="date">2025-06-05</h4>
+<h4 class="date">2025-05-07</h4>
 
 </div>
 
@@ -766,8 +766,8 @@ have uncommitted changes.
 <div id="versions" class="tab-pane fade">
 <p>
 These are the previous versions of the repository in which changes were
-made to the R Markdown (<code>analysis/TE_analysis_ALL_DAR.Rmd</code>)
-and HTML (<code>docs/TE_analysis_ALL_DAR.html</code>) files. If you’ve
+made to the R Markdown (<code>analysis/TSS_and_CUG_ALL_DAR.Rmd</code>)
+and HTML (<code>docs/TSS_and_CUG_ALL_DAR.html</code>) files. If you’ve
 configured a remote Git repository (see <code>?wflow_git_remote</code>),
 click on the hyperlinks in the table below to view the files as they
 were in that past version.
@@ -799,7 +799,7 @@ Message
 Rmd
 </td>
 <td>
-<a href="https://github.com/mward-lab/Matthews_cardiotox_ATAC_2025/blob/c78c9738a3a07302834312181d03fb759ee74802/analysis/TE_analysis_ALL_DAR.Rmd" target="_blank">c78c973</a>
+<a href="https://github.com/mward-lab/Matthews_cardiotox_ATAC_2025/blob/c78c9738a3a07302834312181d03fb759ee74802/analysis/TSS_and_CUG_ALL_DAR.Rmd" target="_blank">c78c973</a>
 </td>
 <td>
 reneeisnowhere
@@ -809,40 +809,6 @@ reneeisnowhere
 </td>
 <td>
 updates using all trts
-</td>
-</tr>
-<tr>
-<td>
-html
-</td>
-<td>
-<a href="https://rawcdn.githack.com/mward-lab/Matthews_cardiotox_ATAC_2025/af91ecf12bf64643efe97d5a880df6c7573225b9/docs/TE_analysis_ALL_DAR.html" target="_blank">af91ecf</a>
-</td>
-<td>
-reneeisnowhere
-</td>
-<td>
-2025-06-18
-</td>
-<td>
-Build site.
-</td>
-</tr>
-<tr>
-<td>
-Rmd
-</td>
-<td>
-<a href="https://github.com/mward-lab/Matthews_cardiotox_ATAC_2025/blob/62bafc3c128f880ecc56f75a484f7a186d4a0e42/analysis/TE_analysis_ALL_DAR.Rmd" target="_blank">62bafc3</a>
-</td>
-<td>
-reneeisnowhere
-</td>
-<td>
-2025-06-18
-</td>
-<td>
-adding all trts
 </td>
 </tr>
 </tbody>
@@ -890,38 +856,31 @@ library(plyranges)
 library(ggrepel)
 library(epitools)
 library(circlize)</code></pre>
-<p>Loading repeatmasker data:</p>
-<pre class="r"><code>repeatmasker &lt;- read.delim(&quot;data/other_papers/repeatmasker.tsv&quot;)</code></pre>
-<p>Subsetting repeatmasker for analysis by class/family</p>
-<pre class="r"><code>reClass_list &lt;- repeatmasker %&gt;% 
-  distinct(repClass)
-
-Line_repeats &lt;- repeatmasker %&gt;% 
-  dplyr::filter(repClass == &quot;LINE&quot;) %&gt;% 
- makeGRangesFromDataFrame(., keep.extra.columns = TRUE, seqnames.field = &quot;genoName&quot;, start.field = &quot;genoStart&quot;, end.field = &quot;genoEnd&quot;,starts.in.df.are.0based=TRUE)
-
-Sine_repeats &lt;- repeatmasker %&gt;% 
-  dplyr::filter(repClass == &quot;SINE&quot;) %&gt;% 
- makeGRangesFromDataFrame(., keep.extra.columns = TRUE, seqnames.field = &quot;genoName&quot;, start.field = &quot;genoStart&quot;, end.field = &quot;genoEnd&quot;,starts.in.df.are.0based=TRUE)
-
-LTR_repeats &lt;- repeatmasker %&gt;% 
-  dplyr::filter(repClass == &quot;LTR&quot;) %&gt;% 
- makeGRangesFromDataFrame(., keep.extra.columns = TRUE, seqnames.field = &quot;genoName&quot;, start.field = &quot;genoStart&quot;, end.field = &quot;genoEnd&quot;,starts.in.df.are.0based=TRUE)
-
-DNA_repeats &lt;- repeatmasker %&gt;% 
-  dplyr::filter(repClass == &quot;DNA&quot;) %&gt;% 
- makeGRangesFromDataFrame(., keep.extra.columns = TRUE, seqnames.field = &quot;genoName&quot;, start.field = &quot;genoStart&quot;, end.field = &quot;genoEnd&quot;,starts.in.df.are.0based=TRUE)
-
-retroposon_repeats &lt;- repeatmasker %&gt;% 
-  dplyr::filter(repClass == &quot;Retroposon&quot;) %&gt;% 
- makeGRangesFromDataFrame(., keep.extra.columns = TRUE, seqnames.field = &quot;genoName&quot;, start.field = &quot;genoStart&quot;, end.field = &quot;genoEnd&quot;,starts.in.df.are.0based=TRUE)
-
-all_TEs_gr &lt;- repeatmasker %&gt;% 
- makeGRangesFromDataFrame(., keep.extra.columns = TRUE, seqnames.field = &quot;genoName&quot;, start.field = &quot;genoStart&quot;, end.field = &quot;genoEnd&quot;,starts.in.df.are.0based=TRUE)</code></pre>
-<div id="initial-overlaps-of-tes-vs-all-regions-155557"
+<div id="getting-tss-locations-for-all-genes" class="section level3">
+<h3>Getting TSS locations for all genes:</h3>
+<pre class="r"><code>txdb &lt;- TxDb.Hsapiens.UCSC.hg38.knownGene
+tss_gr &lt;- transcripts(txdb)
+tss_gr &lt;- resize(tss_gr, width = 1, fix = &quot;start&quot;)  # TSS is start for both strands</code></pre>
+</div>
+<div
+id="loading-cpg-island-locations-from-ucsc-and-converting-to-granges"
 class="section level3">
-<h3>Initial overlaps of TEs vs all regions (155,557)</h3>
-<pre class="r"><code>toptable_results &lt;- readRDS(&quot;data/Final_four_data/re_analysis/Toptable_results.RDS&quot;)
+<h3>Loading CpG-island locations from UCSC and converting to
+granges</h3>
+<pre class="r"><code>session &lt;- browserSession(&quot;UCSC&quot;)
+genome(session) &lt;- &quot;hg38&quot;
+cpg_table &lt;- getTable(ucscTableQuery(session, track = &quot;CpG Islands&quot;))
+cpg_gr &lt;- GRanges(seqnames = cpg_table$chrom,
+                  ranges = IRanges(start = cpg_table$chromStart + 1, end = cpg_table$chromEnd),
+                  strand = &quot;*&quot;)</code></pre>
+<div id="loading-region-data" class="section level4">
+<h4>Loading region data</h4>
+<pre class="r"><code>Collapsed_peaks &lt;- read_delim(&quot;data/Final_four_data/collapsed_new_peaks.txt&quot;,
+                              delim = &quot;\t&quot;, 
+                              escape_double = FALSE, 
+                              trim_ws = TRUE)
+
+toptable_results &lt;- readRDS(&quot;data/Final_four_data/re_analysis/Toptable_results.RDS&quot;)
 all_regions &lt;- toptable_results$DOX_24$genes
 
 Collapsed_peaks &lt;- read_delim(&quot;data/Final_four_data/collapsed_new_peaks.txt&quot;,
@@ -929,7 +888,7 @@ Collapsed_peaks &lt;- read_delim(&quot;data/Final_four_data/collapsed_new_peaks.
                               escape_double = FALSE, 
                               trim_ws = TRUE)
 
-Col_TSS_data_gr &lt;- Collapsed_peaks %&gt;% 
+final_peaks &lt;- Collapsed_peaks %&gt;% 
   dplyr::filter(chr != &quot;chrY&quot;) %&gt;%
   dplyr::filter(Peakid %in% all_regions) %&gt;% 
   GRanges()
@@ -959,93 +918,77 @@ my_MTX_data &lt;- all_results %&gt;%
   dplyr::select(source,genes,logFC,adj.P.Val) %&gt;% 
   pivot_wider(.,id_cols=genes,names_from = source, values_from = c(logFC, adj.P.Val))</code></pre>
 </div>
-<div id="overlapping-all-peaks-with-tes" class="section level3">
-<h3>Overlapping all peaks with TEs</h3>
-<pre class="r"><code>overlap_TE_gr &lt;- join_overlap_intersect(Col_TSS_data_gr,all_TEs_gr)
-TE_peaks &lt;- overlap_TE_gr %&gt;% 
-  as.data.frame() %&gt;% 
-  distinct(Peakid)
+</div>
+<div id="assess-the-overlap-between-my-data-sets"
+class="section level3">
+<h3>Assess the overlap between my data sets</h3>
+<pre class="r"><code>peaks_tss_annotated &lt;- final_peaks %&gt;%
+  join_overlap_left(tss_gr) %&gt;%
+  mutate(TSS_status = ifelse(is.na(tx_id), &quot;non-TSS&quot;, &quot;TSS&quot;))  </code></pre>
+<pre class="r"><code>olap &lt;- findOverlaps(final_peaks, cpg_gr)
+peak_cpg_status &lt;- rep(&quot;non-CpG&quot;, length(final_peaks))
+  
+# Mark peaks that overlap CpG islands
+peak_cpg_status[unique(queryHits(olap))] &lt;- &quot;CpG&quot;
 
-LINE_peaks &lt;- overlap_TE_gr %&gt;% 
-  as.data.frame() %&gt;%
-  dplyr::filter(repClass==&quot;LINE&quot;) %&gt;% 
-  distinct(Peakid)
-
-SINE_peaks &lt;- overlap_TE_gr %&gt;% 
-  as.data.frame() %&gt;%
-  dplyr::filter(repClass==&quot;SINE&quot;) %&gt;% 
-  distinct(Peakid)
-
-LTR_peaks &lt;- overlap_TE_gr %&gt;% 
-  as.data.frame() %&gt;%
-  dplyr::filter(repClass==&quot;LTR&quot;) %&gt;% 
-  distinct(Peakid)
-
-DNA_peaks &lt;- overlap_TE_gr %&gt;% 
-  as.data.frame() %&gt;%
-  dplyr::filter(repClass==&quot;DNA&quot;) %&gt;% 
-  distinct(Peakid)
-
-SVA_peaks &lt;- overlap_TE_gr %&gt;% 
-  as.data.frame() %&gt;%
-  dplyr::filter(repClass==&quot;Retroposon&quot;) %&gt;% 
-  distinct(Peakid)
-
-# join sig data by toptable information 
-
-all_results  &lt;- toptable_results %&gt;%
+final_peaks$CpG_status &lt;- peak_cpg_status</code></pre>
+<pre class="r"><code>all_results  &lt;- toptable_results %&gt;%
   imap(~ .x %&gt;% tibble::rownames_to_column(var = &quot;rowname&quot;) %&gt;%
          mutate(source = .y)) %&gt;%
   bind_rows()
 
-annotated_peaks &lt;-   all_results %&gt;%
-  dplyr::filter(source==&quot;DOX_3&quot;|source==&quot;DOX_24&quot;) %&gt;% 
-  dplyr::select(source,genes,logFC,adj.P.Val) %&gt;% 
-  pivot_wider(.,id_cols=genes,names_from = source, values_from = c(logFC, adj.P.Val)) %&gt;% 
-  mutate(TE_status=if_else(genes %in% TE_peaks$Peakid,&quot;TE_peak&quot;,&quot;not_TE_peak&quot;),
-         LINE_status=if_else(genes %in% LINE_peaks$Peakid,&quot;LINE_peak&quot;,&quot;not_LINE_peak&quot;),
-         SINE_status=if_else(genes %in% SINE_peaks$Peakid,&quot;SINE_peak&quot;,&quot;not_SINE_peak&quot;),
-         LTR_status=if_else(genes %in% LTR_peaks$Peakid,&quot;LTR_peak&quot;,&quot;not_LTR_peak&quot;),
-         DNA_status=if_else(genes %in% DNA_peaks$Peakid,&quot;DNA_peak&quot;,&quot;not_DNA_peak&quot;),
-         SVA_status=if_else(genes %in% SVA_peaks$Peakid,&quot;SVA_peak&quot;,&quot;not_SVA_peak&quot;)) %&gt;% 
+
+CPG_TSS_status_df &lt;- final_peaks %&gt;%
+  as.data.frame() %&gt;% 
+  dplyr::select(Peakid,CpG_status) %&gt;% 
+  left_join(.,(peaks_tss_annotated %&gt;% 
+              as.data.frame() %&gt;% 
+  dplyr::select(Peakid,TSS_status) %&gt;% 
+    distinct()), by=c(&quot;Peakid&quot;=&quot;Peakid&quot;)) %&gt;% 
+  left_join(.,my_DOX_data,by=c(&quot;Peakid&quot;=&quot;genes&quot;)) %&gt;% 
   mutate(DOX_sig_3=if_else(adj.P.Val_DOX_3&lt;0.05,&quot;sig&quot;,&quot;not_sig&quot;),
          DOX_sig_24=if_else(adj.P.Val_DOX_24&lt;0.05,&quot;sig&quot;,&quot;not_sig&quot;)) %&gt;% 
   mutate(DOX_sig_3=factor(DOX_sig_3,levels=c(&quot;sig&quot;,&quot;not_sig&quot;)),
          DOX_sig_24=factor(DOX_sig_24,levels=c(&quot;sig&quot;,&quot;not_sig&quot;))) %&gt;% 
-  left_join(.,my_EPI_data,by=c(&quot;genes&quot;=&quot;genes&quot;)) %&gt;% 
+  left_join(.,my_EPI_data,by=c(&quot;Peakid&quot;=&quot;genes&quot;)) %&gt;% 
   mutate(EPI_sig_3=if_else(adj.P.Val_EPI_3&lt;0.05,&quot;sig&quot;,&quot;not_sig&quot;),
          EPI_sig_24=if_else(adj.P.Val_EPI_24&lt;0.05,&quot;sig&quot;,&quot;not_sig&quot;)) %&gt;% 
   mutate(EPI_sig_3=factor(EPI_sig_3,levels=c(&quot;sig&quot;,&quot;not_sig&quot;)),
          EPI_sig_24=factor(EPI_sig_24,levels=c(&quot;sig&quot;,&quot;not_sig&quot;))) %&gt;% 
-  left_join(.,my_DNR_data,by=c(&quot;genes&quot;=&quot;genes&quot;)) %&gt;% 
+  left_join(.,my_DNR_data,by=c(&quot;Peakid&quot;=&quot;genes&quot;)) %&gt;% 
   mutate(DNR_sig_3=if_else(adj.P.Val_DNR_3&lt;0.05,&quot;sig&quot;,&quot;not_sig&quot;),
          DNR_sig_24=if_else(adj.P.Val_DNR_24&lt;0.05,&quot;sig&quot;,&quot;not_sig&quot;)) %&gt;% 
   mutate(DNR_sig_3=factor(DNR_sig_3,levels=c(&quot;sig&quot;,&quot;not_sig&quot;)),
          DNR_sig_24=factor(DNR_sig_24,levels=c(&quot;sig&quot;,&quot;not_sig&quot;))) %&gt;% 
-  left_join(.,my_MTX_data,by=c(&quot;genes&quot;=&quot;genes&quot;)) %&gt;% 
+  left_join(.,my_MTX_data,by=c(&quot;Peakid&quot;=&quot;genes&quot;)) %&gt;% 
   mutate(MTX_sig_3=if_else(adj.P.Val_MTX_3&lt;0.05,&quot;sig&quot;,&quot;not_sig&quot;),
          MTX_sig_24=if_else(adj.P.Val_MTX_24&lt;0.05,&quot;sig&quot;,&quot;not_sig&quot;)) %&gt;% 
   mutate(MTX_sig_3=factor(MTX_sig_3,levels=c(&quot;sig&quot;,&quot;not_sig&quot;)),
-         MTX_sig_24=factor(MTX_sig_24,levels=c(&quot;sig&quot;,&quot;not_sig&quot;))) </code></pre>
-<pre class="r"><code>DOX_3_TE_mat &lt;- annotated_peaks %&gt;% 
-  group_by(TE_status,DOX_sig_3) %&gt;% 
-  tally() %&gt;% 
-  pivot_wider(., id_cols=TE_status,names_from = DOX_sig_3,values_from = n) %&gt;% 
-  column_to_rownames(&quot;TE_status&quot;) %&gt;% 
-  as.matrix()</code></pre>
-<p>From the code above, #### DOX</p>
-<pre class="r"><code># Vector of status-type column names in your data
-status_columns &lt;- c(&quot;TE_status&quot;, &quot;SINE_status&quot;, &quot;LINE_status&quot;, &quot;LTR_status&quot;, &quot;DNA_status&quot;, &quot;SVA_status&quot;)
+         MTX_sig_24=factor(MTX_sig_24,levels=c(&quot;sig&quot;,&quot;not_sig&quot;))) 
 
-# Create a list of matrices, named by status type
+
+CPG_TSS_status_df %&gt;% 
+  group_by(CpG_status,DOX_sig_3) %&gt;% 
+  tally()</code></pre>
+<pre><code># A tibble: 4 × 3
+# Groups:   CpG_status [2]
+  CpG_status DOX_sig_3      n
+  &lt;chr&gt;      &lt;fct&gt;      &lt;int&gt;
+1 CpG        sig          377
+2 CpG        not_sig    18392
+3 non-CpG    sig         3096
+4 non-CpG    not_sig   133692</code></pre>
+<div id="dox" class="section level4">
+<h4>DOX</h4>
+<pre class="r"><code>status_columns &lt;- c(&quot;CpG_status&quot;, &quot;TSS_status&quot;)
 DOX_3_status_matrices &lt;- map(status_columns, function(status_col) {
   # Extract prefix (e.g., &quot;TE&quot;, &quot;SINE&quot;) from column name like &quot;TE_status&quot;
   prefix &lt;- sub(&quot;_status$&quot;, &quot;&quot;, status_col)
-  expected_rows &lt;- c(paste0(prefix, &quot;_peak&quot;), paste0(&quot;not_&quot;, prefix, &quot;_peak&quot;))
+  expected_rows &lt;- c(paste0(prefix), paste0(&quot;non-&quot;, prefix))
   expected_cols &lt;- c(&quot;sig&quot;, &quot;not_sig&quot;)
   
   # Build matrix
-  mat &lt;- annotated_peaks %&gt;%
+  mat &lt;- CPG_TSS_status_df %&gt;%
     group_by(across(all_of(status_col)), DOX_sig_3) %&gt;%
     tally() %&gt;%
     pivot_wider(
@@ -1055,7 +998,6 @@ DOX_3_status_matrices &lt;- map(status_columns, function(status_col) {
     ) %&gt;%
     column_to_rownames(var = status_col) %&gt;%
     as.matrix()
-   print(mat)
   
   # Fill missing expected rows
   for (r in setdiff(expected_rows, rownames(mat))) {
@@ -1070,31 +1012,16 @@ DOX_3_status_matrices &lt;- map(status_columns, function(status_col) {
 
   # Order
   mat &lt;- mat[expected_rows, expected_cols, drop = FALSE]
-})</code></pre>
-<pre><code>             sig not_sig
-TE_peak     2316  101833
-not_TE_peak 1157   50251
-               sig not_sig
-SINE_peak     1028   41766
-not_SINE_peak 2445  110318
-               sig not_sig
-LINE_peak      780   33372
-not_LINE_peak 2693  118712
-              sig not_sig
-LTR_peak      407   22282
-not_LTR_peak 3066  129802
-              sig not_sig
-DNA_peak      297   14796
-not_DNA_peak 3176  137288
-              sig not_sig
-SVA_peak        3     288
-not_SVA_peak 3470  151796</code></pre>
-<pre class="r"><code># Set names so you can easily refer to each status
+})
+
+# Set names so you can easily refer to each status
 names(DOX_3_status_matrices) &lt;- status_columns
 
 
 odds_ratio_results_DOX_3 &lt;- map(DOX_3_status_matrices, function(mat) {
-  if (!all(dim(mat) == c(2, 2))) return(NULL)
+  if (!all(dim(mat) == c(2, 2)) || any(!is.finite(mat)) || sum(mat) == 0 || any(rowSums(mat) == 0) || any(colSums(mat) == 0)) {
+    return(NULL)
+  }
   
   result &lt;- epitools::oddsratio(mat, method = &quot;wald&quot;)
   
@@ -1115,15 +1042,14 @@ odds_ratio_results_DOX_3 &lt;- map(DOX_3_status_matrices, function(mat) {
     chi_sq_p = pval_chisq
   )
 })</code></pre>
-<pre class="r"><code># Create a list of matrices, named by status type
-DOX_24_status_matrices &lt;- map(status_columns, function(status_col) {
+<pre class="r"><code>DOX_24_status_matrices &lt;- map(status_columns, function(status_col) {
   # Extract prefix (e.g., &quot;TE&quot;, &quot;SINE&quot;) from column name like &quot;TE_status&quot;
   prefix &lt;- sub(&quot;_status$&quot;, &quot;&quot;, status_col)
-  expected_rows &lt;- c(paste0(prefix, &quot;_peak&quot;), paste0(&quot;not_&quot;, prefix, &quot;_peak&quot;))
+  expected_rows &lt;- c(paste0(prefix), paste0(&quot;non-&quot;, prefix))
   expected_cols &lt;- c(&quot;sig&quot;, &quot;not_sig&quot;)
   
   # Build matrix
-  mat &lt;- annotated_peaks %&gt;%
+  mat &lt;- CPG_TSS_status_df %&gt;%
     group_by(across(all_of(status_col)), DOX_sig_24) %&gt;%
     tally() %&gt;%
     pivot_wider(
@@ -1133,7 +1059,6 @@ DOX_24_status_matrices &lt;- map(status_columns, function(status_col) {
     ) %&gt;%
     column_to_rownames(var = status_col) %&gt;%
     as.matrix()
-   print(mat)
   
   # Fill missing expected rows
   for (r in setdiff(expected_rows, rownames(mat))) {
@@ -1148,31 +1073,16 @@ DOX_24_status_matrices &lt;- map(status_columns, function(status_col) {
 
   # Order
   mat &lt;- mat[expected_rows, expected_cols, drop = FALSE]
-})</code></pre>
-<pre><code>              sig not_sig
-TE_peak     44303   59846
-not_TE_peak 20517   30891
-                sig not_sig
-SINE_peak     19128   23666
-not_SINE_peak 45692   67071
-                sig not_sig
-LINE_peak     15208   18944
-not_LINE_peak 49612   71793
-               sig not_sig
-LTR_peak      9971   12718
-not_LTR_peak 54849   78019
-               sig not_sig
-DNA_peak      6778    8315
-not_DNA_peak 58042   82422
-               sig not_sig
-SVA_peak        79     212
-not_SVA_peak 64741   90525</code></pre>
-<pre class="r"><code># Set names so you can easily refer to each status
+})
+
+# Set names so you can easily refer to each status
 names(DOX_24_status_matrices) &lt;- status_columns
 
 
 odds_ratio_results_DOX_24 &lt;- map(DOX_24_status_matrices, function(mat) {
-  if (!all(dim(mat) == c(2, 2))) return(NULL)
+  if (!all(dim(mat) == c(2, 2)) || any(!is.finite(mat)) || sum(mat) == 0 || any(rowSums(mat) == 0) || any(colSums(mat) == 0)) {
+    return(NULL)
+  }
   
   result &lt;- epitools::oddsratio(mat, method = &quot;wald&quot;)
   
@@ -1193,20 +1103,18 @@ odds_ratio_results_DOX_24 &lt;- map(DOX_24_status_matrices, function(mat) {
     chi_sq_p = pval_chisq
   )
 })</code></pre>
+</div>
 <div id="epi" class="section level4">
 <h4>EPI</h4>
-<pre class="r"><code># Vector of status-type column names in your data
-status_columns &lt;- c(&quot;TE_status&quot;, &quot;SINE_status&quot;, &quot;LINE_status&quot;, &quot;LTR_status&quot;, &quot;DNA_status&quot;, &quot;SVA_status&quot;)
-
-# Create a list of matrices, named by status type
+<pre class="r"><code>status_columns &lt;- c(&quot;CpG_status&quot;, &quot;TSS_status&quot;)
 EPI_3_status_matrices &lt;- map(status_columns, function(status_col) {
   # Extract prefix (e.g., &quot;TE&quot;, &quot;SINE&quot;) from column name like &quot;TE_status&quot;
   prefix &lt;- sub(&quot;_status$&quot;, &quot;&quot;, status_col)
-  expected_rows &lt;- c(paste0(prefix, &quot;_peak&quot;), paste0(&quot;not_&quot;, prefix, &quot;_peak&quot;))
+  expected_rows &lt;- c(paste0(prefix), paste0(&quot;non-&quot;, prefix))
   expected_cols &lt;- c(&quot;sig&quot;, &quot;not_sig&quot;)
   
   # Build matrix
-  mat &lt;- annotated_peaks %&gt;%
+  mat &lt;- CPG_TSS_status_df %&gt;%
     group_by(across(all_of(status_col)), EPI_sig_3) %&gt;%
     tally() %&gt;%
     pivot_wider(
@@ -1216,7 +1124,6 @@ EPI_3_status_matrices &lt;- map(status_columns, function(status_col) {
     ) %&gt;%
     column_to_rownames(var = status_col) %&gt;%
     as.matrix()
-   print(mat)
   
   # Fill missing expected rows
   for (r in setdiff(expected_rows, rownames(mat))) {
@@ -1231,31 +1138,16 @@ EPI_3_status_matrices &lt;- map(status_columns, function(status_col) {
 
   # Order
   mat &lt;- mat[expected_rows, expected_cols, drop = FALSE]
-})</code></pre>
-<pre><code>             sig not_sig
-TE_peak     9688   94461
-not_TE_peak 4546   46862
-                sig not_sig
-SINE_peak      4196   38598
-not_SINE_peak 10038  102725
-                sig not_sig
-LINE_peak      3031   31121
-not_LINE_peak 11203  110202
-               sig not_sig
-LTR_peak      1590   21099
-not_LTR_peak 12644  120224
-               sig not_sig
-DNA_peak      1265   13828
-not_DNA_peak 12969  127495
-               sig not_sig
-SVA_peak        32     259
-not_SVA_peak 14202  141064</code></pre>
-<pre class="r"><code># Set names so you can easily refer to each status
+})
+
+# Set names so you can easily refer to each status
 names(EPI_3_status_matrices) &lt;- status_columns
 
 
 odds_ratio_results_EPI_3 &lt;- map(EPI_3_status_matrices, function(mat) {
-  if (!all(dim(mat) == c(2, 2))) return(NULL)
+  if (!all(dim(mat) == c(2, 2)) || any(!is.finite(mat)) || sum(mat) == 0 || any(rowSums(mat) == 0) || any(colSums(mat) == 0)) {
+    return(NULL)
+  }
   
   result &lt;- epitools::oddsratio(mat, method = &quot;wald&quot;)
   
@@ -1276,15 +1168,14 @@ odds_ratio_results_EPI_3 &lt;- map(EPI_3_status_matrices, function(mat) {
     chi_sq_p = pval_chisq
   )
 })</code></pre>
-<pre class="r"><code># Create a list of matrices, named by status type
-EPI_24_status_matrices &lt;- map(status_columns, function(status_col) {
+<pre class="r"><code>EPI_24_status_matrices &lt;- map(status_columns, function(status_col) {
   # Extract prefix (e.g., &quot;TE&quot;, &quot;SINE&quot;) from column name like &quot;TE_status&quot;
   prefix &lt;- sub(&quot;_status$&quot;, &quot;&quot;, status_col)
-  expected_rows &lt;- c(paste0(prefix, &quot;_peak&quot;), paste0(&quot;not_&quot;, prefix, &quot;_peak&quot;))
+  expected_rows &lt;- c(paste0(prefix), paste0(&quot;non-&quot;, prefix))
   expected_cols &lt;- c(&quot;sig&quot;, &quot;not_sig&quot;)
   
   # Build matrix
-  mat &lt;- annotated_peaks %&gt;%
+  mat &lt;- CPG_TSS_status_df %&gt;%
     group_by(across(all_of(status_col)), EPI_sig_24) %&gt;%
     tally() %&gt;%
     pivot_wider(
@@ -1294,7 +1185,6 @@ EPI_24_status_matrices &lt;- map(status_columns, function(status_col) {
     ) %&gt;%
     column_to_rownames(var = status_col) %&gt;%
     as.matrix()
-   print(mat)
   
   # Fill missing expected rows
   for (r in setdiff(expected_rows, rownames(mat))) {
@@ -1309,31 +1199,16 @@ EPI_24_status_matrices &lt;- map(status_columns, function(status_col) {
 
   # Order
   mat &lt;- mat[expected_rows, expected_cols, drop = FALSE]
-})</code></pre>
-<pre><code>              sig not_sig
-TE_peak     45302   58847
-not_TE_peak 21199   30209
-                sig not_sig
-SINE_peak     19441   23353
-not_SINE_peak 47060   65703
-                sig not_sig
-LINE_peak     15530   18622
-not_LINE_peak 50971   70434
-               sig not_sig
-LTR_peak     10179   12510
-not_LTR_peak 56322   76546
-               sig not_sig
-DNA_peak      6903    8190
-not_DNA_peak 59598   80866
-               sig not_sig
-SVA_peak       105     186
-not_SVA_peak 66396   88870</code></pre>
-<pre class="r"><code># Set names so you can easily refer to each status
+})
+
+# Set names so you can easily refer to each status
 names(EPI_24_status_matrices) &lt;- status_columns
 
 
 odds_ratio_results_EPI_24 &lt;- map(EPI_24_status_matrices, function(mat) {
-  if (!all(dim(mat) == c(2, 2))) return(NULL)
+  if (!all(dim(mat) == c(2, 2)) || any(!is.finite(mat)) || sum(mat) == 0 || any(rowSums(mat) == 0) || any(colSums(mat) == 0)) {
+    return(NULL)
+  }
   
   result &lt;- epitools::oddsratio(mat, method = &quot;wald&quot;)
   
@@ -1357,18 +1232,15 @@ odds_ratio_results_EPI_24 &lt;- map(EPI_24_status_matrices, function(mat) {
 </div>
 <div id="dnr" class="section level4">
 <h4>DNR</h4>
-<pre class="r"><code># Vector of status-type column names in your data
-status_columns &lt;- c(&quot;TE_status&quot;, &quot;SINE_status&quot;, &quot;LINE_status&quot;, &quot;LTR_status&quot;, &quot;DNA_status&quot;, &quot;SVA_status&quot;)
-
-# Create a list of matrices, named by status type
+<pre class="r"><code>status_columns &lt;- c(&quot;CpG_status&quot;, &quot;TSS_status&quot;)
 DNR_3_status_matrices &lt;- map(status_columns, function(status_col) {
   # Extract prefix (e.g., &quot;TE&quot;, &quot;SINE&quot;) from column name like &quot;TE_status&quot;
   prefix &lt;- sub(&quot;_status$&quot;, &quot;&quot;, status_col)
-  expected_rows &lt;- c(paste0(prefix, &quot;_peak&quot;), paste0(&quot;not_&quot;, prefix, &quot;_peak&quot;))
+  expected_rows &lt;- c(paste0(prefix), paste0(&quot;non-&quot;, prefix))
   expected_cols &lt;- c(&quot;sig&quot;, &quot;not_sig&quot;)
   
   # Build matrix
-  mat &lt;- annotated_peaks %&gt;%
+  mat &lt;- CPG_TSS_status_df %&gt;%
     group_by(across(all_of(status_col)), DNR_sig_3) %&gt;%
     tally() %&gt;%
     pivot_wider(
@@ -1378,7 +1250,6 @@ DNR_3_status_matrices &lt;- map(status_columns, function(status_col) {
     ) %&gt;%
     column_to_rownames(var = status_col) %&gt;%
     as.matrix()
-   print(mat)
   
   # Fill missing expected rows
   for (r in setdiff(expected_rows, rownames(mat))) {
@@ -1393,31 +1264,16 @@ DNR_3_status_matrices &lt;- map(status_columns, function(status_col) {
 
   # Order
   mat &lt;- mat[expected_rows, expected_cols, drop = FALSE]
-})</code></pre>
-<pre><code>              sig not_sig
-TE_peak     15675   88474
-not_TE_peak  7063   44345
-                sig not_sig
-SINE_peak      6517   36277
-not_SINE_peak 16221   96542
-                sig not_sig
-LINE_peak      4652   29500
-not_LINE_peak 18086  103319
-               sig not_sig
-LTR_peak      2529   20160
-not_LTR_peak 20209  112659
-               sig not_sig
-DNA_peak      1923   13170
-not_DNA_peak 20815  119649
-               sig not_sig
-SVA_peak        56     235
-not_SVA_peak 22682  132584</code></pre>
-<pre class="r"><code># Set names so you can easily refer to each status
+})
+
+# Set names so you can easily refer to each status
 names(DNR_3_status_matrices) &lt;- status_columns
 
 
 odds_ratio_results_DNR_3 &lt;- map(DNR_3_status_matrices, function(mat) {
-  if (!all(dim(mat) == c(2, 2))) return(NULL)
+  if (!all(dim(mat) == c(2, 2)) || any(!is.finite(mat)) || sum(mat) == 0 || any(rowSums(mat) == 0) || any(colSums(mat) == 0)) {
+    return(NULL)
+  }
   
   result &lt;- epitools::oddsratio(mat, method = &quot;wald&quot;)
   
@@ -1438,15 +1294,14 @@ odds_ratio_results_DNR_3 &lt;- map(DNR_3_status_matrices, function(mat) {
     chi_sq_p = pval_chisq
   )
 })</code></pre>
-<pre class="r"><code># Create a list of matrices, named by status type
-DNR_24_status_matrices &lt;- map(status_columns, function(status_col) {
+<pre class="r"><code>DNR_24_status_matrices &lt;- map(status_columns, function(status_col) {
   # Extract prefix (e.g., &quot;TE&quot;, &quot;SINE&quot;) from column name like &quot;TE_status&quot;
   prefix &lt;- sub(&quot;_status$&quot;, &quot;&quot;, status_col)
-  expected_rows &lt;- c(paste0(prefix, &quot;_peak&quot;), paste0(&quot;not_&quot;, prefix, &quot;_peak&quot;))
+  expected_rows &lt;- c(paste0(prefix), paste0(&quot;non-&quot;, prefix))
   expected_cols &lt;- c(&quot;sig&quot;, &quot;not_sig&quot;)
   
   # Build matrix
-  mat &lt;- annotated_peaks %&gt;%
+  mat &lt;- CPG_TSS_status_df %&gt;%
     group_by(across(all_of(status_col)), DNR_sig_24) %&gt;%
     tally() %&gt;%
     pivot_wider(
@@ -1456,7 +1311,6 @@ DNR_24_status_matrices &lt;- map(status_columns, function(status_col) {
     ) %&gt;%
     column_to_rownames(var = status_col) %&gt;%
     as.matrix()
-   print(mat)
   
   # Fill missing expected rows
   for (r in setdiff(expected_rows, rownames(mat))) {
@@ -1471,31 +1325,16 @@ DNR_24_status_matrices &lt;- map(status_columns, function(status_col) {
 
   # Order
   mat &lt;- mat[expected_rows, expected_cols, drop = FALSE]
-})</code></pre>
-<pre><code>              sig not_sig
-TE_peak     54566   49583
-not_TE_peak 25429   25979
-                sig not_sig
-SINE_peak     22919   19875
-not_SINE_peak 57076   55687
-                sig not_sig
-LINE_peak     18231   15921
-not_LINE_peak 61764   59641
-               sig not_sig
-LTR_peak     12018   10671
-not_LTR_peak 67977   64891
-               sig not_sig
-DNA_peak      8057    7036
-not_DNA_peak 71938   68526
-               sig not_sig
-SVA_peak       122     169
-not_SVA_peak 79873   75393</code></pre>
-<pre class="r"><code># Set names so you can easily refer to each status
+})
+
+# Set names so you can easily refer to each status
 names(DNR_24_status_matrices) &lt;- status_columns
 
 
 odds_ratio_results_DNR_24 &lt;- map(DNR_24_status_matrices, function(mat) {
-  if (!all(dim(mat) == c(2, 2))) return(NULL)
+  if (!all(dim(mat) == c(2, 2)) || any(!is.finite(mat)) || sum(mat) == 0 || any(rowSums(mat) == 0) || any(colSums(mat) == 0)) {
+    return(NULL)
+  }
   
   result &lt;- epitools::oddsratio(mat, method = &quot;wald&quot;)
   
@@ -1519,18 +1358,15 @@ odds_ratio_results_DNR_24 &lt;- map(DNR_24_status_matrices, function(mat) {
 </div>
 <div id="mtx" class="section level4">
 <h4>MTX</h4>
-<pre class="r"><code># Vector of status-type column names in your data
-status_columns &lt;- c(&quot;TE_status&quot;, &quot;SINE_status&quot;, &quot;LINE_status&quot;, &quot;LTR_status&quot;, &quot;DNA_status&quot;, &quot;SVA_status&quot;)
-
-# Create a list of matrices, named by status type
+<pre class="r"><code>status_columns &lt;- c(&quot;CpG_status&quot;, &quot;TSS_status&quot;)
 MTX_3_status_matrices &lt;- map(status_columns, function(status_col) {
   # Extract prefix (e.g., &quot;TE&quot;, &quot;SINE&quot;) from column name like &quot;TE_status&quot;
   prefix &lt;- sub(&quot;_status$&quot;, &quot;&quot;, status_col)
-  expected_rows &lt;- c(paste0(prefix, &quot;_peak&quot;), paste0(&quot;not_&quot;, prefix, &quot;_peak&quot;))
+  expected_rows &lt;- c(paste0(prefix), paste0(&quot;non-&quot;, prefix))
   expected_cols &lt;- c(&quot;sig&quot;, &quot;not_sig&quot;)
   
   # Build matrix
-  mat &lt;- annotated_peaks %&gt;%
+  mat &lt;- CPG_TSS_status_df %&gt;%
     group_by(across(all_of(status_col)), MTX_sig_3) %&gt;%
     tally() %&gt;%
     pivot_wider(
@@ -1540,7 +1376,6 @@ MTX_3_status_matrices &lt;- map(status_columns, function(status_col) {
     ) %&gt;%
     column_to_rownames(var = status_col) %&gt;%
     as.matrix()
-   print(mat)
   
   # Fill missing expected rows
   for (r in setdiff(expected_rows, rownames(mat))) {
@@ -1555,31 +1390,16 @@ MTX_3_status_matrices &lt;- map(status_columns, function(status_col) {
 
   # Order
   mat &lt;- mat[expected_rows, expected_cols, drop = FALSE]
-})</code></pre>
-<pre><code>            sig not_sig
-TE_peak     568  103581
-not_TE_peak 236   51172
-              sig not_sig
-SINE_peak     220   42574
-not_SINE_peak 584  112179
-              sig not_sig
-LINE_peak     174   33978
-not_LINE_peak 630  120775
-             sig not_sig
-LTR_peak     114   22575
-not_LTR_peak 690  132178
-             sig not_sig
-DNA_peak      86   15007
-not_DNA_peak 718  139746
-             sig not_sig
-SVA_peak       1     290
-not_SVA_peak 803  154463</code></pre>
-<pre class="r"><code># Set names so you can easily refer to each status
+})
+
+# Set names so you can easily refer to each status
 names(MTX_3_status_matrices) &lt;- status_columns
 
 
 odds_ratio_results_MTX_3 &lt;- map(MTX_3_status_matrices, function(mat) {
-  if (!all(dim(mat) == c(2, 2))) return(NULL)
+  if (!all(dim(mat) == c(2, 2)) || any(!is.finite(mat)) || sum(mat) == 0 || any(rowSums(mat) == 0) || any(colSums(mat) == 0)) {
+    return(NULL)
+  }
   
   result &lt;- epitools::oddsratio(mat, method = &quot;wald&quot;)
   
@@ -1600,15 +1420,14 @@ odds_ratio_results_MTX_3 &lt;- map(MTX_3_status_matrices, function(mat) {
     chi_sq_p = pval_chisq
   )
 })</code></pre>
-<pre class="r"><code># Create a list of matrices, named by status type
-MTX_24_status_matrices &lt;- map(status_columns, function(status_col) {
+<pre class="r"><code>MTX_24_status_matrices &lt;- map(status_columns, function(status_col) {
   # Extract prefix (e.g., &quot;TE&quot;, &quot;SINE&quot;) from column name like &quot;TE_status&quot;
   prefix &lt;- sub(&quot;_status$&quot;, &quot;&quot;, status_col)
-  expected_rows &lt;- c(paste0(prefix, &quot;_peak&quot;), paste0(&quot;not_&quot;, prefix, &quot;_peak&quot;))
+  expected_rows &lt;- c(paste0(prefix), paste0(&quot;non-&quot;, prefix))
   expected_cols &lt;- c(&quot;sig&quot;, &quot;not_sig&quot;)
   
   # Build matrix
-  mat &lt;- annotated_peaks %&gt;%
+  mat &lt;- CPG_TSS_status_df %&gt;%
     group_by(across(all_of(status_col)), MTX_sig_24) %&gt;%
     tally() %&gt;%
     pivot_wider(
@@ -1618,7 +1437,6 @@ MTX_24_status_matrices &lt;- map(status_columns, function(status_col) {
     ) %&gt;%
     column_to_rownames(var = status_col) %&gt;%
     as.matrix()
-   print(mat)
   
   # Fill missing expected rows
   for (r in setdiff(expected_rows, rownames(mat))) {
@@ -1633,31 +1451,16 @@ MTX_24_status_matrices &lt;- map(status_columns, function(status_col) {
 
   # Order
   mat &lt;- mat[expected_rows, expected_cols, drop = FALSE]
-})</code></pre>
-<pre><code>              sig not_sig
-TE_peak     16922   87227
-not_TE_peak  7328   44080
-                sig not_sig
-SINE_peak      7114   35680
-not_SINE_peak 17136   95627
-                sig not_sig
-LINE_peak      5596   28556
-not_LINE_peak 18654  102751
-               sig not_sig
-LTR_peak      3564   19125
-not_LTR_peak 20686  112182
-               sig not_sig
-DNA_peak      2445   12648
-not_DNA_peak 21805  118659
-               sig not_sig
-SVA_peak        17     274
-not_SVA_peak 24233  131033</code></pre>
-<pre class="r"><code># Set names so you can easily refer to each status
+})
+
+# Set names so you can easily refer to each status
 names(MTX_24_status_matrices) &lt;- status_columns
 
 
 odds_ratio_results_MTX_24 &lt;- map(MTX_24_status_matrices, function(mat) {
-  if (!all(dim(mat) == c(2, 2))) return(NULL)
+  if (!all(dim(mat) == c(2, 2)) || any(!is.finite(mat)) || sum(mat) == 0 || any(rowSums(mat) == 0) || any(colSums(mat) == 0)) {
+    return(NULL)
+  }
   
   result &lt;- epitools::oddsratio(mat, method = &quot;wald&quot;)
   
@@ -1679,13 +1482,10 @@ odds_ratio_results_MTX_24 &lt;- map(MTX_24_status_matrices, function(mat) {
   )
 })</code></pre>
 </div>
-<div id="combining-the-data-and-applying-bh-pvalue-adjustments"
-class="section level4">
-<h4>Combining the data and applying BH pvalue adjustments</h4>
-<pre class="r"><code># odds_ratio_results_DOX_3
-# odds_ratio_results_DOX_24
-# odds_ratio_results_DOX_24_sig_up
-# odds_ratio_results_DOX_24_sig_down
+</div>
+<div id="odds-ratio-results" class="section level3">
+<h3>odds ratio results</h3>
+<pre class="r"><code>col_fun_OR = colorRamp2(c(0,1,1.5,5), c(&quot;blueviolet&quot;,&quot;white&quot;,&quot;lightgreen&quot;,&quot;green3&quot; ))
 
 combined_df &lt;- bind_rows(
   map_dfr(odds_ratio_results_DOX_3, ~as.data.frame(.x), .id = &quot;status&quot;) %&gt;% mutate(source = &quot;DOX_3hr&quot;),
@@ -1695,10 +1495,10 @@ combined_df &lt;- bind_rows(
   map_dfr(odds_ratio_results_DNR_3, ~as.data.frame(.x), .id = &quot;status&quot;) %&gt;% mutate(source = &quot;DNR_3hr&quot;),
   map_dfr(odds_ratio_results_DNR_24, ~as.data.frame(.x), .id = &quot;status&quot;) %&gt;% mutate(source = &quot;DNR_24hr&quot;),
   map_dfr(odds_ratio_results_MTX_3, ~as.data.frame(.x), .id = &quot;status&quot;) %&gt;% mutate(source = &quot;MTX_3hr&quot;),
-  map_dfr(odds_ratio_results_MTX_24, ~as.data.frame(.x), .id = &quot;status&quot;) %&gt;% mutate(source = &quot;MTX_24hr&quot;)
-)
-# saveRDS(combined_df,&quot;data/Final_four_data/re_analysis/OR_results_TE_df_1bp_alltrt.RDS&quot;)</code></pre>
-<pre class="r"><code>TE_sig_mat &lt;- combined_df %&gt;% 
+  map_dfr(odds_ratio_results_MTX_24, ~as.data.frame(.x), .id = &quot;status&quot;) %&gt;% mutate(source = &quot;MTX_24hr&quot;))
+
+
+sig_mat_OR &lt;-combined_df %&gt;% 
   dplyr::select( status,source,chi_sq_p) %&gt;%
   group_by(source) %&gt;%
   mutate(rank_val=rank(chi_sq_p, ties.method = &quot;first&quot;)) %&gt;%
@@ -1707,61 +1507,24 @@ combined_df &lt;- bind_rows(
   column_to_rownames(&quot;status&quot;) %&gt;% 
   as.matrix()
 
-col_fun_OR = colorRamp2(c(0,1,1.5,5), c(&quot;blueviolet&quot;,&quot;white&quot;,&quot;lightgreen&quot;,&quot;green3&quot; ))
-
-# TE_od_mat &lt;- 
-combined_df %&gt;% 
-  dplyr::select(status, source, odds_ratio) %&gt;%
+# saveRDS(combined_df,&quot;data/Final_four_data/re_analysis/OR_results_TSS_CpG_df_1bp_ALLtrt.RDS&quot;)</code></pre>
+<pre class="r"><code>combined_df %&gt;% 
+ dplyr::select(status, source, odds_ratio) %&gt;%
   group_by(source) %&gt;%
   pivot_wider(., id_cols = status, names_from = source, values_from = odds_ratio) %&gt;% 
   column_to_rownames(&quot;status&quot;) %&gt;% 
   as.matrix() %&gt;% 
-   ComplexHeatmap::Heatmap(. ,col = col_fun_OR, 
+  ComplexHeatmap::Heatmap(. ,col = col_fun_OR, 
                           cluster_rows=FALSE, 
                           cluster_columns=FALSE, 
                           column_names_side = &quot;top&quot;, 
                           column_names_rot = 45,
                           # na_col = &quot;black&quot;,
-                          cell_fun = function(j, i, x, y, width, height, fill) {if (!is.na(TE_sig_mat[i, j]) &amp;&amp; TE_sig_mat[i, j] &lt; 0.05  &amp;&amp; .[i, j] &gt; 1) {
+                          cell_fun = function(j, i, x, y, width, height, fill) {if (!is.na(sig_mat_OR[i, j]) &amp;&amp; sig_mat_OR[i, j] &lt; 0.05  &amp;&amp; .[i, j] &gt; 1) {
             grid.text(&quot;*&quot;, x, y, gp = gpar(fontsize = 20))}})</code></pre>
-<p><img src="figure/TE_analysis_ALL_DAR.Rmd/unnamed-chunk-4-1.png" width="672" style="display: block; margin: auto;" /></p>
-<p>
-<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-unnamed-chunk-4-1">
-Past versions of unnamed-chunk-4-1.png
-</button>
-</p>
-<div id="fig-unnamed-chunk-4-1" class="collapse">
-<div class="table-responsive">
-<table class="table table-condensed table-hover">
-<thead>
-<tr>
-<th>
-Version
-</th>
-<th>
-Author
-</th>
-<th>
-Date
-</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>
-<a href="https://github.com/mward-lab/Matthews_cardiotox_ATAC_2025/blob/af91ecf12bf64643efe97d5a880df6c7573225b9/docs/figure/TE_analysis_ALL_DAR.Rmd/unnamed-chunk-4-1.png" target="_blank">af91ecf</a>
-</td>
-<td>
-reneeisnowhere
-</td>
-<td>
-2025-06-18
-</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
+<p><img src="figure/TSS_and_CUG_ALL_DAR.Rmd/heatmap%20of%20OR%20results-1.png" width="672" style="display: block; margin: auto;" />
+note, this is corrected for multiple testing across TSS and CUG tests
+only in each motif cluster.</p>
 <br>
 <p>
 <button type="button" class="btn btn-default btn-workflowr btn-workflowr-sessioninfo" data-toggle="collapse" data-target="#workflowr-sessioninfo" style="display: block;">
@@ -1850,175 +1613,175 @@ loaded via a namespace (and not attached):
   [7] profvis_0.4.0                          
   [8] tools_4.4.2                            
   [9] backports_1.5.0                        
- [10] R6_2.6.1                               
- [11] lazyeval_0.2.2                         
- [12] GetoptLong_1.0.5                       
- [13] urlchecker_1.0.1                       
- [14] withr_3.0.2                            
- [15] prettyunits_1.2.0                      
- [16] cli_3.6.4                              
- [17] formatR_1.14                           
- [18] Cairo_1.6-2                            
- [19] sass_0.4.9                             
- [20] Rsamtools_2.22.0                       
- [21] systemfonts_1.2.1                      
- [22] yulab.utils_0.2.0                      
- [23] foreign_0.8-88                         
- [24] DOSE_4.0.1                             
- [25] svglite_2.1.3                          
- [26] R.utils_2.13.0                         
- [27] sessioninfo_1.2.3                      
- [28] plotrix_3.8-4                          
- [29] BSgenome_1.74.0                        
- [30] pwr_1.3-0                              
- [31] impute_1.80.0                          
- [32] rstudioapi_0.17.1                      
- [33] RSQLite_2.3.9                          
- [34] shape_1.4.6.1                          
- [35] generics_0.1.4                         
- [36] gridGraphics_0.5-1                     
- [37] TxDb.Hsapiens.UCSC.hg19.knownGene_3.2.2
- [38] BiocIO_1.16.0                          
- [39] vroom_1.6.5                            
- [40] gtools_3.9.5                           
- [41] car_3.1-3                              
- [42] GO.db_3.20.0                           
- [43] Matrix_1.7-3                           
- [44] abind_1.4-8                            
- [45] R.methodsS3_1.8.2                      
- [46] lifecycle_1.0.4                        
- [47] whisker_0.4.1                          
- [48] yaml_2.3.10                            
- [49] carData_3.0-5                          
- [50] SummarizedExperiment_1.36.0            
- [51] gplots_3.2.0                           
- [52] qvalue_2.38.0                          
- [53] SparseArray_1.6.2                      
- [54] BiocFileCache_2.14.0                   
- [55] blob_1.2.4                             
- [56] promises_1.3.2                         
- [57] crayon_1.5.3                           
- [58] miniUI_0.1.2                           
- [59] ggtangle_0.0.6                         
- [60] lattice_0.22-6                         
- [61] cowplot_1.1.3                          
- [62] KEGGREST_1.46.0                        
- [63] magick_2.8.7                           
- [64] ComplexHeatmap_2.22.0                  
- [65] pillar_1.10.2                          
- [66] knitr_1.50                             
- [67] fgsea_1.32.2                           
- [68] rjson_0.2.23                           
- [69] boot_1.3-31                            
- [70] codetools_0.2-20                       
- [71] fastmatch_1.1-6                        
- [72] glue_1.8.0                             
- [73] getPass_0.2-4                          
- [74] ggfun_0.1.8                            
- [75] data.table_1.17.0                      
- [76] remotes_2.5.0                          
- [77] vctrs_0.6.5                            
- [78] png_0.1-8                              
- [79] treeio_1.30.0                          
- [80] gtable_0.3.6                           
- [81] cachem_1.1.0                           
- [82] xfun_0.51                              
- [83] S4Arrays_1.6.0                         
- [84] mime_0.12                              
- [85] iterators_1.0.14                       
- [86] statmod_1.5.0                          
- [87] ellipsis_0.3.2                         
- [88] nlme_3.1-167                           
- [89] ggtree_3.14.0                          
- [90] bit64_4.6.0-1                          
- [91] filelock_1.0.3                         
- [92] progress_1.2.3                         
- [93] rprojroot_2.0.4                        
- [94] bslib_0.9.0                            
- [95] rpart_4.1.24                           
- [96] KernSmooth_2.23-26                     
- [97] Hmisc_5.2-2                            
- [98] colorspace_2.1-1                       
- [99] DBI_1.2.3                              
-[100] seqPattern_1.38.0                      
-[101] nnet_7.3-20                            
-[102] tidyselect_1.2.1                       
-[103] processx_3.8.6                         
-[104] bit_4.6.0                              
-[105] compiler_4.4.2                         
-[106] curl_6.2.1                             
-[107] git2r_0.35.0                           
-[108] httr2_1.1.2                            
-[109] htmlTable_2.4.3                        
-[110] xml2_1.3.7                             
-[111] DelayedArray_0.32.0                    
-[112] checkmate_2.3.2                        
-[113] caTools_1.18.3                         
-[114] callr_3.7.6                            
-[115] rappdirs_0.3.3                         
-[116] digest_0.6.37                          
-[117] rmarkdown_2.29                         
-[118] XVector_0.46.0                         
-[119] base64enc_0.1-3                        
-[120] htmltools_0.5.8.1                      
-[121] pkgconfig_2.0.3                        
-[122] MatrixGenerics_1.18.1                  
-[123] dbplyr_2.5.0                           
-[124] fastmap_1.2.0                          
-[125] GlobalOptions_0.1.2                    
-[126] rlang_1.1.5                            
-[127] htmlwidgets_1.6.4                      
-[128] UCSC.utils_1.2.0                       
-[129] shiny_1.10.0                           
-[130] farver_2.1.2                           
-[131] jquerylib_0.1.4                        
-[132] zoo_1.8-13                             
-[133] jsonlite_1.9.1                         
-[134] GOSemSim_2.32.0                        
-[135] R.oo_1.27.1                            
-[136] RCurl_1.98-1.16                        
-[137] magrittr_2.0.3                         
-[138] Formula_1.2-5                          
-[139] GenomeInfoDbData_1.2.13                
-[140] ggplotify_0.1.2                        
-[141] patchwork_1.3.0                        
-[142] munsell_0.5.1                          
-[143] Rcpp_1.0.14                            
-[144] ape_5.8-1                              
-[145] stringi_1.8.4                          
-[146] zlibbioc_1.52.0                        
-[147] plyr_1.8.9                             
-[148] pkgbuild_1.4.8                         
-[149] parallel_4.4.2                         
-[150] Biostrings_2.74.1                      
-[151] splines_4.4.2                          
-[152] hms_1.1.3                              
-[153] locfit_1.5-9.12                        
-[154] ps_1.9.0                               
-[155] igraph_2.1.4                           
-[156] reshape2_1.4.4                         
-[157] pkgload_1.4.0                          
-[158] futile.options_1.0.1                   
-[159] XML_3.99-0.18                          
-[160] evaluate_1.0.3                         
-[161] lambda.r_1.2.4                         
-[162] foreach_1.5.2                          
-[163] tzdb_0.4.0                             
-[164] httpuv_1.6.15                          
-[165] clue_0.3-66                            
-[166] gridBase_0.4-7                         
-[167] xtable_1.8-4                           
-[168] restfulr_0.0.15                        
-[169] tidytree_0.4.6                         
-[170] rstatix_0.7.2                          
-[171] later_1.4.1                            
-[172] viridisLite_0.4.2                      
-[173] aplot_0.2.6                            
-[174] memoise_2.0.1                          
-[175] GenomicAlignments_1.42.0               
-[176] cluster_2.1.8.1                        
-[177] timechange_0.3.0                       </code></pre>
-</div>
+ [10] utf8_1.2.6                             
+ [11] R6_2.6.1                               
+ [12] lazyeval_0.2.2                         
+ [13] GetoptLong_1.0.5                       
+ [14] urlchecker_1.0.1                       
+ [15] withr_3.0.2                            
+ [16] prettyunits_1.2.0                      
+ [17] cli_3.6.4                              
+ [18] formatR_1.14                           
+ [19] Cairo_1.6-2                            
+ [20] sass_0.4.9                             
+ [21] Rsamtools_2.22.0                       
+ [22] systemfonts_1.2.1                      
+ [23] yulab.utils_0.2.0                      
+ [24] foreign_0.8-88                         
+ [25] DOSE_4.0.1                             
+ [26] svglite_2.1.3                          
+ [27] R.utils_2.13.0                         
+ [28] sessioninfo_1.2.3                      
+ [29] plotrix_3.8-4                          
+ [30] BSgenome_1.74.0                        
+ [31] pwr_1.3-0                              
+ [32] impute_1.80.0                          
+ [33] rstudioapi_0.17.1                      
+ [34] RSQLite_2.3.9                          
+ [35] shape_1.4.6.1                          
+ [36] generics_0.1.4                         
+ [37] gridGraphics_0.5-1                     
+ [38] TxDb.Hsapiens.UCSC.hg19.knownGene_3.2.2
+ [39] BiocIO_1.16.0                          
+ [40] vroom_1.6.5                            
+ [41] gtools_3.9.5                           
+ [42] car_3.1-3                              
+ [43] GO.db_3.20.0                           
+ [44] Matrix_1.7-3                           
+ [45] abind_1.4-8                            
+ [46] R.methodsS3_1.8.2                      
+ [47] lifecycle_1.0.4                        
+ [48] whisker_0.4.1                          
+ [49] yaml_2.3.10                            
+ [50] carData_3.0-5                          
+ [51] SummarizedExperiment_1.36.0            
+ [52] gplots_3.2.0                           
+ [53] qvalue_2.38.0                          
+ [54] SparseArray_1.6.2                      
+ [55] BiocFileCache_2.14.0                   
+ [56] blob_1.2.4                             
+ [57] promises_1.3.2                         
+ [58] crayon_1.5.3                           
+ [59] miniUI_0.1.2                           
+ [60] ggtangle_0.0.6                         
+ [61] lattice_0.22-6                         
+ [62] cowplot_1.1.3                          
+ [63] KEGGREST_1.46.0                        
+ [64] magick_2.8.7                           
+ [65] ComplexHeatmap_2.22.0                  
+ [66] pillar_1.10.2                          
+ [67] knitr_1.50                             
+ [68] fgsea_1.32.2                           
+ [69] rjson_0.2.23                           
+ [70] boot_1.3-31                            
+ [71] codetools_0.2-20                       
+ [72] fastmatch_1.1-6                        
+ [73] glue_1.8.0                             
+ [74] getPass_0.2-4                          
+ [75] ggfun_0.1.8                            
+ [76] data.table_1.17.0                      
+ [77] remotes_2.5.0                          
+ [78] vctrs_0.6.5                            
+ [79] png_0.1-8                              
+ [80] treeio_1.30.0                          
+ [81] gtable_0.3.6                           
+ [82] cachem_1.1.0                           
+ [83] xfun_0.51                              
+ [84] S4Arrays_1.6.0                         
+ [85] mime_0.12                              
+ [86] iterators_1.0.14                       
+ [87] statmod_1.5.0                          
+ [88] ellipsis_0.3.2                         
+ [89] nlme_3.1-167                           
+ [90] ggtree_3.14.0                          
+ [91] bit64_4.6.0-1                          
+ [92] filelock_1.0.3                         
+ [93] progress_1.2.3                         
+ [94] rprojroot_2.0.4                        
+ [95] bslib_0.9.0                            
+ [96] rpart_4.1.24                           
+ [97] KernSmooth_2.23-26                     
+ [98] Hmisc_5.2-2                            
+ [99] colorspace_2.1-1                       
+[100] DBI_1.2.3                              
+[101] seqPattern_1.38.0                      
+[102] nnet_7.3-20                            
+[103] tidyselect_1.2.1                       
+[104] processx_3.8.6                         
+[105] bit_4.6.0                              
+[106] compiler_4.4.2                         
+[107] curl_6.2.1                             
+[108] git2r_0.35.0                           
+[109] httr2_1.1.2                            
+[110] htmlTable_2.4.3                        
+[111] xml2_1.3.7                             
+[112] DelayedArray_0.32.0                    
+[113] checkmate_2.3.2                        
+[114] caTools_1.18.3                         
+[115] callr_3.7.6                            
+[116] rappdirs_0.3.3                         
+[117] digest_0.6.37                          
+[118] rmarkdown_2.29                         
+[119] XVector_0.46.0                         
+[120] base64enc_0.1-3                        
+[121] htmltools_0.5.8.1                      
+[122] pkgconfig_2.0.3                        
+[123] MatrixGenerics_1.18.1                  
+[124] dbplyr_2.5.0                           
+[125] fastmap_1.2.0                          
+[126] GlobalOptions_0.1.2                    
+[127] rlang_1.1.5                            
+[128] htmlwidgets_1.6.4                      
+[129] UCSC.utils_1.2.0                       
+[130] shiny_1.10.0                           
+[131] farver_2.1.2                           
+[132] jquerylib_0.1.4                        
+[133] zoo_1.8-13                             
+[134] jsonlite_1.9.1                         
+[135] GOSemSim_2.32.0                        
+[136] R.oo_1.27.1                            
+[137] RCurl_1.98-1.16                        
+[138] magrittr_2.0.3                         
+[139] Formula_1.2-5                          
+[140] GenomeInfoDbData_1.2.13                
+[141] ggplotify_0.1.2                        
+[142] patchwork_1.3.0                        
+[143] munsell_0.5.1                          
+[144] Rcpp_1.0.14                            
+[145] ape_5.8-1                              
+[146] stringi_1.8.4                          
+[147] zlibbioc_1.52.0                        
+[148] plyr_1.8.9                             
+[149] pkgbuild_1.4.8                         
+[150] parallel_4.4.2                         
+[151] Biostrings_2.74.1                      
+[152] splines_4.4.2                          
+[153] hms_1.1.3                              
+[154] locfit_1.5-9.12                        
+[155] ps_1.9.0                               
+[156] igraph_2.1.4                           
+[157] reshape2_1.4.4                         
+[158] pkgload_1.4.0                          
+[159] futile.options_1.0.1                   
+[160] XML_3.99-0.18                          
+[161] evaluate_1.0.3                         
+[162] lambda.r_1.2.4                         
+[163] foreach_1.5.2                          
+[164] tzdb_0.4.0                             
+[165] httpuv_1.6.15                          
+[166] clue_0.3-66                            
+[167] gridBase_0.4-7                         
+[168] xtable_1.8-4                           
+[169] restfulr_0.0.15                        
+[170] tidytree_0.4.6                         
+[171] rstatix_0.7.2                          
+[172] later_1.4.1                            
+[173] viridisLite_0.4.2                      
+[174] aplot_0.2.6                            
+[175] memoise_2.0.1                          
+[176] GenomicAlignments_1.42.0               
+[177] cluster_2.1.8.1                        
+[178] timechange_0.3.0                       </code></pre>
 </div>
 </div>
 </div>

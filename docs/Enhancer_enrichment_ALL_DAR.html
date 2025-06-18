@@ -11,9 +11,9 @@
 
 <meta name="author" content="Renee Matthews" />
 
-<meta name="date" content="2025-06-05" />
+<meta name="date" content="2025-05-07" />
 
-<title>TE_analysis_DOX_DAR</title>
+<title>Enhancer_enrichment for all treatments</title>
 
 <script src="site_libs/header-attrs-2.29/header-attrs.js"></script>
 <script src="site_libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
@@ -37,6 +37,8 @@
 <script src="site_libs/navigation-1.1/tabsets.js"></script>
 <link href="site_libs/highlightjs-9.12.0/textmate.css" rel="stylesheet" />
 <script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+<script src="site_libs/kePrint-0.0.1/kePrint.js"></script>
+<link href="site_libs/lightable-0.0.1/lightable.css" rel="stylesheet" />
 <link href="site_libs/font-awesome-6.5.2/css/all.min.css" rel="stylesheet" />
 <link href="site_libs/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet" />
 
@@ -359,9 +361,9 @@ div.tocify {
 
 
 
-<h1 class="title toc-ignore">TE_analysis_DOX_DAR</h1>
+<h1 class="title toc-ignore">Enhancer_enrichment for all treatments</h1>
 <h4 class="author">Renee Matthews</h4>
-<h4 class="date">2025-06-05</h4>
+<h4 class="date">2025-05-07</h4>
 
 </div>
 
@@ -766,8 +768,9 @@ have uncommitted changes.
 <div id="versions" class="tab-pane fade">
 <p>
 These are the previous versions of the repository in which changes were
-made to the R Markdown (<code>analysis/TE_analysis_ALL_DAR.Rmd</code>)
-and HTML (<code>docs/TE_analysis_ALL_DAR.html</code>) files. If you’ve
+made to the R Markdown
+(<code>analysis/Enhancer_enrichment_ALL_DAR.Rmd</code>) and HTML
+(<code>docs/Enhancer_enrichment_ALL_DAR.html</code>) files. If you’ve
 configured a remote Git repository (see <code>?wflow_git_remote</code>),
 click on the hyperlinks in the table below to view the files as they
 were in that past version.
@@ -799,7 +802,7 @@ Message
 Rmd
 </td>
 <td>
-<a href="https://github.com/mward-lab/Matthews_cardiotox_ATAC_2025/blob/c78c9738a3a07302834312181d03fb759ee74802/analysis/TE_analysis_ALL_DAR.Rmd" target="_blank">c78c973</a>
+<a href="https://github.com/mward-lab/Matthews_cardiotox_ATAC_2025/blob/c78c9738a3a07302834312181d03fb759ee74802/analysis/Enhancer_enrichment_ALL_DAR.Rmd" target="_blank">c78c973</a>
 </td>
 <td>
 reneeisnowhere
@@ -809,40 +812,6 @@ reneeisnowhere
 </td>
 <td>
 updates using all trts
-</td>
-</tr>
-<tr>
-<td>
-html
-</td>
-<td>
-<a href="https://rawcdn.githack.com/mward-lab/Matthews_cardiotox_ATAC_2025/af91ecf12bf64643efe97d5a880df6c7573225b9/docs/TE_analysis_ALL_DAR.html" target="_blank">af91ecf</a>
-</td>
-<td>
-reneeisnowhere
-</td>
-<td>
-2025-06-18
-</td>
-<td>
-Build site.
-</td>
-</tr>
-<tr>
-<td>
-Rmd
-</td>
-<td>
-<a href="https://github.com/mward-lab/Matthews_cardiotox_ATAC_2025/blob/62bafc3c128f880ecc56f75a484f7a186d4a0e42/analysis/TE_analysis_ALL_DAR.Rmd" target="_blank">62bafc3</a>
-</td>
-<td>
-reneeisnowhere
-</td>
-<td>
-2025-06-18
-</td>
-<td>
-adding all trts
 </td>
 </tr>
 </tbody>
@@ -890,38 +859,12 @@ library(plyranges)
 library(ggrepel)
 library(epitools)
 library(circlize)</code></pre>
-<p>Loading repeatmasker data:</p>
-<pre class="r"><code>repeatmasker &lt;- read.delim(&quot;data/other_papers/repeatmasker.tsv&quot;)</code></pre>
-<p>Subsetting repeatmasker for analysis by class/family</p>
-<pre class="r"><code>reClass_list &lt;- repeatmasker %&gt;% 
-  distinct(repClass)
+<pre class="r"><code>Collapsed_peaks &lt;- read_delim(&quot;data/Final_four_data/collapsed_new_peaks.txt&quot;,
+                              delim = &quot;\t&quot;, 
+                              escape_double = FALSE, 
+                              trim_ws = TRUE)
 
-Line_repeats &lt;- repeatmasker %&gt;% 
-  dplyr::filter(repClass == &quot;LINE&quot;) %&gt;% 
- makeGRangesFromDataFrame(., keep.extra.columns = TRUE, seqnames.field = &quot;genoName&quot;, start.field = &quot;genoStart&quot;, end.field = &quot;genoEnd&quot;,starts.in.df.are.0based=TRUE)
-
-Sine_repeats &lt;- repeatmasker %&gt;% 
-  dplyr::filter(repClass == &quot;SINE&quot;) %&gt;% 
- makeGRangesFromDataFrame(., keep.extra.columns = TRUE, seqnames.field = &quot;genoName&quot;, start.field = &quot;genoStart&quot;, end.field = &quot;genoEnd&quot;,starts.in.df.are.0based=TRUE)
-
-LTR_repeats &lt;- repeatmasker %&gt;% 
-  dplyr::filter(repClass == &quot;LTR&quot;) %&gt;% 
- makeGRangesFromDataFrame(., keep.extra.columns = TRUE, seqnames.field = &quot;genoName&quot;, start.field = &quot;genoStart&quot;, end.field = &quot;genoEnd&quot;,starts.in.df.are.0based=TRUE)
-
-DNA_repeats &lt;- repeatmasker %&gt;% 
-  dplyr::filter(repClass == &quot;DNA&quot;) %&gt;% 
- makeGRangesFromDataFrame(., keep.extra.columns = TRUE, seqnames.field = &quot;genoName&quot;, start.field = &quot;genoStart&quot;, end.field = &quot;genoEnd&quot;,starts.in.df.are.0based=TRUE)
-
-retroposon_repeats &lt;- repeatmasker %&gt;% 
-  dplyr::filter(repClass == &quot;Retroposon&quot;) %&gt;% 
- makeGRangesFromDataFrame(., keep.extra.columns = TRUE, seqnames.field = &quot;genoName&quot;, start.field = &quot;genoStart&quot;, end.field = &quot;genoEnd&quot;,starts.in.df.are.0based=TRUE)
-
-all_TEs_gr &lt;- repeatmasker %&gt;% 
- makeGRangesFromDataFrame(., keep.extra.columns = TRUE, seqnames.field = &quot;genoName&quot;, start.field = &quot;genoStart&quot;, end.field = &quot;genoEnd&quot;,starts.in.df.are.0based=TRUE)</code></pre>
-<div id="initial-overlaps-of-tes-vs-all-regions-155557"
-class="section level3">
-<h3>Initial overlaps of TEs vs all regions (155,557)</h3>
-<pre class="r"><code>toptable_results &lt;- readRDS(&quot;data/Final_four_data/re_analysis/Toptable_results.RDS&quot;)
+toptable_results &lt;- readRDS(&quot;data/Final_four_data/re_analysis/Toptable_results.RDS&quot;)
 all_regions &lt;- toptable_results$DOX_24$genes
 
 Collapsed_peaks &lt;- read_delim(&quot;data/Final_four_data/collapsed_new_peaks.txt&quot;,
@@ -929,11 +872,10 @@ Collapsed_peaks &lt;- read_delim(&quot;data/Final_four_data/collapsed_new_peaks.
                               escape_double = FALSE, 
                               trim_ws = TRUE)
 
-Col_TSS_data_gr &lt;- Collapsed_peaks %&gt;% 
+final_peaks &lt;- Collapsed_peaks %&gt;% 
   dplyr::filter(chr != &quot;chrY&quot;) %&gt;%
   dplyr::filter(Peakid %in% all_regions) %&gt;% 
   GRanges()
-
 all_results  &lt;- toptable_results %&gt;%
   imap(~ .x %&gt;% tibble::rownames_to_column(var = &quot;rowname&quot;) %&gt;%
          mutate(source = .y)) %&gt;%
@@ -958,94 +900,191 @@ my_MTX_data &lt;- all_results %&gt;%
   dplyr::filter(source==&quot;MTX_3&quot;|source==&quot;MTX_24&quot;) %&gt;% 
   dplyr::select(source,genes,logFC,adj.P.Val) %&gt;% 
   pivot_wider(.,id_cols=genes,names_from = source, values_from = c(logFC, adj.P.Val))</code></pre>
-</div>
-<div id="overlapping-all-peaks-with-tes" class="section level3">
-<h3>Overlapping all peaks with TEs</h3>
-<pre class="r"><code>overlap_TE_gr &lt;- join_overlap_intersect(Col_TSS_data_gr,all_TEs_gr)
-TE_peaks &lt;- overlap_TE_gr %&gt;% 
+<div id="enhancers-and-response-clusters" class="section level3">
+<h3>Enhancers and Response clusters</h3>
+<p>First: obtained a list of cis Regulatory Elements from Encode Screen
+[(<a href="https://screen.encodeproject.org/#"
+class="uri">https://screen.encodeproject.org/#</a>)]</p>
+<pre class="r"><code>cREs_HLV_46F &lt;- genomation::readBed(&quot;data/enhancerdata/ENCFF867HAD_ENCFF152PBB_ENCFF352YYH_ENCFF252IVK.7group.bed&quot;)
+
+Whole_peaks &lt;- join_overlap_intersect(final_peaks, cREs_HLV_46F)
+
+Whole_peaks %&gt;% 
   as.data.frame() %&gt;% 
-  distinct(Peakid)
+  group_by(blockCount) %&gt;% 
+  tally() %&gt;% 
+  kable(., caption=&quot;Breakdown of peaks overlapping cREs&quot;) %&gt;% 
+  kable_paper(&quot;striped&quot;, full_width = TRUE) %&gt;%
+  kable_styling(full_width = FALSE, font_size = 14)</code></pre>
+<table class=" lightable-paper lightable-striped table" style="font-family: &quot;Arial Narrow&quot;, arial, helvetica, sans-serif; margin-left: auto; margin-right: auto; font-size: 14px; width: auto !important; margin-left: auto; margin-right: auto;">
+<caption style="font-size: initial !important;">
+Breakdown of peaks overlapping cREs
+</caption>
+<thead>
+<tr>
+<th style="text-align:left;">
+blockCount
+</th>
+<th style="text-align:right;">
+n
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+CTCF-only,CTCF-bound
+</td>
+<td style="text-align:right;">
+7161
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+DNase-H3K4me3
+</td>
+<td style="text-align:right;">
+1239
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+DNase-H3K4me3,CTCF-bound
+</td>
+<td style="text-align:right;">
+819
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+DNase-only
+</td>
+<td style="text-align:right;">
+5502
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Low-DNase
+</td>
+<td style="text-align:right;">
+174148
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+PLS
+</td>
+<td style="text-align:right;">
+13986
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+PLS,CTCF-bound
+</td>
+<td style="text-align:right;">
+3703
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+dELS
+</td>
+<td style="text-align:right;">
+11809
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+dELS,CTCF-bound
+</td>
+<td style="text-align:right;">
+2542
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+pELS
+</td>
+<td style="text-align:right;">
+16069
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+pELS,CTCF-bound
+</td>
+<td style="text-align:right;">
+3572
+</td>
+</tr>
+</tbody>
+</table>
+<pre class="r"><code>keep_cRE_names &lt;- c(&quot;CTCF-only,CTCF-bound&quot; ,&quot;PLS,CTCF-bound&quot;,&quot;PLS&quot;,&quot;dELS,CTCF-bound&quot;, &quot;pELS&quot;,&quot;pELS,CTCF-bound&quot;,&quot;dELS&quot;)
+is_cRE &lt;- Whole_peaks %&gt;% 
+  as.data.frame() %&gt;% 
+  dplyr::filter(blockCount %in% keep_cRE_names) %&gt;% 
+  distinct(Peakid,blockCount) 
 
-LINE_peaks &lt;- overlap_TE_gr %&gt;% 
-  as.data.frame() %&gt;%
-  dplyr::filter(repClass==&quot;LINE&quot;) %&gt;% 
-  distinct(Peakid)
+is_CTCF &lt;- Whole_peaks %&gt;% 
+  as.data.frame() %&gt;% 
+  dplyr::filter(blockCount == &quot;CTCF-only,CTCF-bound&quot;) %&gt;% 
+  distinct(Peakid,blockCount) 
 
-SINE_peaks &lt;- overlap_TE_gr %&gt;% 
-  as.data.frame() %&gt;%
-  dplyr::filter(repClass==&quot;SINE&quot;) %&gt;% 
-  distinct(Peakid)
+is_dELS &lt;- Whole_peaks %&gt;% 
+  as.data.frame() %&gt;% 
+  dplyr::filter(blockCount == &quot;dELS,CTCF-bound&quot;|blockCount == &quot;dELS&quot;) %&gt;% 
+  distinct(Peakid,blockCount) 
+is_pELS &lt;- Whole_peaks %&gt;% 
+  as.data.frame() %&gt;% 
+  dplyr::filter(blockCount == &quot;pELS,CTCF-bound&quot;|blockCount == &quot;pELS&quot;) %&gt;% 
+  distinct(Peakid,blockCount) 
+is_PLS &lt;- Whole_peaks %&gt;% 
+  as.data.frame() %&gt;% 
+  dplyr::filter(blockCount == &quot;PLS,CTCF-bound&quot;|blockCount == &quot;PLS&quot;) %&gt;% 
+  distinct(Peakid,blockCount) 
 
-LTR_peaks &lt;- overlap_TE_gr %&gt;% 
-  as.data.frame() %&gt;%
-  dplyr::filter(repClass==&quot;LTR&quot;) %&gt;% 
-  distinct(Peakid)
 
-DNA_peaks &lt;- overlap_TE_gr %&gt;% 
-  as.data.frame() %&gt;%
-  dplyr::filter(repClass==&quot;DNA&quot;) %&gt;% 
-  distinct(Peakid)
-
-SVA_peaks &lt;- overlap_TE_gr %&gt;% 
-  as.data.frame() %&gt;%
-  dplyr::filter(repClass==&quot;Retroposon&quot;) %&gt;% 
-  distinct(Peakid)
-
-# join sig data by toptable information 
-
-all_results  &lt;- toptable_results %&gt;%
-  imap(~ .x %&gt;% tibble::rownames_to_column(var = &quot;rowname&quot;) %&gt;%
-         mutate(source = .y)) %&gt;%
-  bind_rows()
-
-annotated_peaks &lt;-   all_results %&gt;%
-  dplyr::filter(source==&quot;DOX_3&quot;|source==&quot;DOX_24&quot;) %&gt;% 
-  dplyr::select(source,genes,logFC,adj.P.Val) %&gt;% 
-  pivot_wider(.,id_cols=genes,names_from = source, values_from = c(logFC, adj.P.Val)) %&gt;% 
-  mutate(TE_status=if_else(genes %in% TE_peaks$Peakid,&quot;TE_peak&quot;,&quot;not_TE_peak&quot;),
-         LINE_status=if_else(genes %in% LINE_peaks$Peakid,&quot;LINE_peak&quot;,&quot;not_LINE_peak&quot;),
-         SINE_status=if_else(genes %in% SINE_peaks$Peakid,&quot;SINE_peak&quot;,&quot;not_SINE_peak&quot;),
-         LTR_status=if_else(genes %in% LTR_peaks$Peakid,&quot;LTR_peak&quot;,&quot;not_LTR_peak&quot;),
-         DNA_status=if_else(genes %in% DNA_peaks$Peakid,&quot;DNA_peak&quot;,&quot;not_DNA_peak&quot;),
-         SVA_status=if_else(genes %in% SVA_peaks$Peakid,&quot;SVA_peak&quot;,&quot;not_SVA_peak&quot;)) %&gt;% 
+CRE_summary &lt;-final_peaks %&gt;% 
+  as.data.frame() %&gt;% 
+   mutate(cRE_status=if_else(Peakid %in% is_cRE$Peakid,&quot;cRE_peak&quot;,&quot;not_cRE_peak&quot;)) %&gt;% 
+   mutate(CTCF_status=if_else(Peakid %in% is_CTCF$Peakid,&quot;CTCF_peak&quot;,&quot;not_CTCF_peak&quot;)) %&gt;% 
+    mutate(dELS_status=if_else(Peakid %in% is_dELS$Peakid,&quot;dELS_peak&quot;,&quot;not_dELS_peak&quot;)) %&gt;% 
+    mutate(pELS_status=if_else(Peakid %in% is_pELS$Peakid,&quot;pELS_peak&quot;,&quot;not_pELS_peak&quot;)) %&gt;% 
+    mutate(PLS_status=if_else(Peakid %in% is_PLS$Peakid,&quot;PLS_peak&quot;,&quot;not_PLS_peak&quot;)) %&gt;% 
+  dplyr::select(Peakid:PLS_status) %&gt;% 
+  left_join(.,my_DOX_data,by=c(&quot;Peakid&quot;=&quot;genes&quot;)) %&gt;% 
   mutate(DOX_sig_3=if_else(adj.P.Val_DOX_3&lt;0.05,&quot;sig&quot;,&quot;not_sig&quot;),
          DOX_sig_24=if_else(adj.P.Val_DOX_24&lt;0.05,&quot;sig&quot;,&quot;not_sig&quot;)) %&gt;% 
   mutate(DOX_sig_3=factor(DOX_sig_3,levels=c(&quot;sig&quot;,&quot;not_sig&quot;)),
          DOX_sig_24=factor(DOX_sig_24,levels=c(&quot;sig&quot;,&quot;not_sig&quot;))) %&gt;% 
-  left_join(.,my_EPI_data,by=c(&quot;genes&quot;=&quot;genes&quot;)) %&gt;% 
+  left_join(.,my_EPI_data,by=c(&quot;Peakid&quot;=&quot;genes&quot;)) %&gt;% 
   mutate(EPI_sig_3=if_else(adj.P.Val_EPI_3&lt;0.05,&quot;sig&quot;,&quot;not_sig&quot;),
          EPI_sig_24=if_else(adj.P.Val_EPI_24&lt;0.05,&quot;sig&quot;,&quot;not_sig&quot;)) %&gt;% 
   mutate(EPI_sig_3=factor(EPI_sig_3,levels=c(&quot;sig&quot;,&quot;not_sig&quot;)),
          EPI_sig_24=factor(EPI_sig_24,levels=c(&quot;sig&quot;,&quot;not_sig&quot;))) %&gt;% 
-  left_join(.,my_DNR_data,by=c(&quot;genes&quot;=&quot;genes&quot;)) %&gt;% 
+  left_join(.,my_DNR_data,by=c(&quot;Peakid&quot;=&quot;genes&quot;)) %&gt;% 
   mutate(DNR_sig_3=if_else(adj.P.Val_DNR_3&lt;0.05,&quot;sig&quot;,&quot;not_sig&quot;),
          DNR_sig_24=if_else(adj.P.Val_DNR_24&lt;0.05,&quot;sig&quot;,&quot;not_sig&quot;)) %&gt;% 
   mutate(DNR_sig_3=factor(DNR_sig_3,levels=c(&quot;sig&quot;,&quot;not_sig&quot;)),
          DNR_sig_24=factor(DNR_sig_24,levels=c(&quot;sig&quot;,&quot;not_sig&quot;))) %&gt;% 
-  left_join(.,my_MTX_data,by=c(&quot;genes&quot;=&quot;genes&quot;)) %&gt;% 
+  left_join(.,my_MTX_data,by=c(&quot;Peakid&quot;=&quot;genes&quot;)) %&gt;% 
   mutate(MTX_sig_3=if_else(adj.P.Val_MTX_3&lt;0.05,&quot;sig&quot;,&quot;not_sig&quot;),
          MTX_sig_24=if_else(adj.P.Val_MTX_24&lt;0.05,&quot;sig&quot;,&quot;not_sig&quot;)) %&gt;% 
   mutate(MTX_sig_3=factor(MTX_sig_3,levels=c(&quot;sig&quot;,&quot;not_sig&quot;)),
-         MTX_sig_24=factor(MTX_sig_24,levels=c(&quot;sig&quot;,&quot;not_sig&quot;))) </code></pre>
-<pre class="r"><code>DOX_3_TE_mat &lt;- annotated_peaks %&gt;% 
-  group_by(TE_status,DOX_sig_3) %&gt;% 
-  tally() %&gt;% 
-  pivot_wider(., id_cols=TE_status,names_from = DOX_sig_3,values_from = n) %&gt;% 
-  column_to_rownames(&quot;TE_status&quot;) %&gt;% 
-  as.matrix()</code></pre>
-<p>From the code above, #### DOX</p>
-<pre class="r"><code># Vector of status-type column names in your data
-status_columns &lt;- c(&quot;TE_status&quot;, &quot;SINE_status&quot;, &quot;LINE_status&quot;, &quot;LTR_status&quot;, &quot;DNA_status&quot;, &quot;SVA_status&quot;)
-
-# Create a list of matrices, named by status type
+         MTX_sig_24=factor(MTX_sig_24,levels=c(&quot;sig&quot;,&quot;not_sig&quot;)))</code></pre>
+<div id="dox-3-hour-matrix" class="section level4">
+<h4>DOX 3 hour matrix</h4>
+<pre class="r"><code>status_columns &lt;- c(&quot;cRE_status&quot;, &quot;CTCF_status&quot;,&quot;dELS_status&quot;, &quot;pELS_status&quot;,&quot;PLS_status&quot;)
 DOX_3_status_matrices &lt;- map(status_columns, function(status_col) {
   # Extract prefix (e.g., &quot;TE&quot;, &quot;SINE&quot;) from column name like &quot;TE_status&quot;
   prefix &lt;- sub(&quot;_status$&quot;, &quot;&quot;, status_col)
-  expected_rows &lt;- c(paste0(prefix, &quot;_peak&quot;), paste0(&quot;not_&quot;, prefix, &quot;_peak&quot;))
+  expected_rows &lt;- c(paste0(prefix,&quot;_peak&quot;), paste0(&quot;not_&quot;, prefix,&quot;_peak&quot;))
   expected_cols &lt;- c(&quot;sig&quot;, &quot;not_sig&quot;)
   
   # Build matrix
-  mat &lt;- annotated_peaks %&gt;%
+  mat &lt;- CRE_summary %&gt;%
     group_by(across(all_of(status_col)), DOX_sig_3) %&gt;%
     tally() %&gt;%
     pivot_wider(
@@ -1055,7 +1094,6 @@ DOX_3_status_matrices &lt;- map(status_columns, function(status_col) {
     ) %&gt;%
     column_to_rownames(var = status_col) %&gt;%
     as.matrix()
-   print(mat)
   
   # Fill missing expected rows
   for (r in setdiff(expected_rows, rownames(mat))) {
@@ -1070,31 +1108,16 @@ DOX_3_status_matrices &lt;- map(status_columns, function(status_col) {
 
   # Order
   mat &lt;- mat[expected_rows, expected_cols, drop = FALSE]
-})</code></pre>
-<pre><code>             sig not_sig
-TE_peak     2316  101833
-not_TE_peak 1157   50251
-               sig not_sig
-SINE_peak     1028   41766
-not_SINE_peak 2445  110318
-               sig not_sig
-LINE_peak      780   33372
-not_LINE_peak 2693  118712
-              sig not_sig
-LTR_peak      407   22282
-not_LTR_peak 3066  129802
-              sig not_sig
-DNA_peak      297   14796
-not_DNA_peak 3176  137288
-              sig not_sig
-SVA_peak        3     288
-not_SVA_peak 3470  151796</code></pre>
-<pre class="r"><code># Set names so you can easily refer to each status
+})
+
+# Set names so you can easily refer to each status
 names(DOX_3_status_matrices) &lt;- status_columns
 
 
 odds_ratio_results_DOX_3 &lt;- map(DOX_3_status_matrices, function(mat) {
-  if (!all(dim(mat) == c(2, 2))) return(NULL)
+  if (!all(dim(mat) == c(2, 2)) || any(!is.finite(mat)) || sum(mat) == 0 || any(rowSums(mat) == 0) || any(colSums(mat) == 0)) {
+    return(NULL)
+  }
   
   result &lt;- epitools::oddsratio(mat, method = &quot;wald&quot;)
   
@@ -1115,15 +1138,17 @@ odds_ratio_results_DOX_3 &lt;- map(DOX_3_status_matrices, function(mat) {
     chi_sq_p = pval_chisq
   )
 })</code></pre>
-<pre class="r"><code># Create a list of matrices, named by status type
-DOX_24_status_matrices &lt;- map(status_columns, function(status_col) {
+</div>
+<div id="dox-24-hour-matrix" class="section level4">
+<h4>DOX 24 hour matrix</h4>
+<pre class="r"><code>DOX_24_status_matrices &lt;- map(status_columns, function(status_col) {
   # Extract prefix (e.g., &quot;TE&quot;, &quot;SINE&quot;) from column name like &quot;TE_status&quot;
   prefix &lt;- sub(&quot;_status$&quot;, &quot;&quot;, status_col)
-  expected_rows &lt;- c(paste0(prefix, &quot;_peak&quot;), paste0(&quot;not_&quot;, prefix, &quot;_peak&quot;))
+  expected_rows &lt;- c(paste0(prefix,&quot;_peak&quot;), paste0(&quot;not_&quot;, prefix,&quot;_peak&quot;))
   expected_cols &lt;- c(&quot;sig&quot;, &quot;not_sig&quot;)
   
   # Build matrix
-  mat &lt;- annotated_peaks %&gt;%
+  mat &lt;- CRE_summary %&gt;%
     group_by(across(all_of(status_col)), DOX_sig_24) %&gt;%
     tally() %&gt;%
     pivot_wider(
@@ -1133,7 +1158,6 @@ DOX_24_status_matrices &lt;- map(status_columns, function(status_col) {
     ) %&gt;%
     column_to_rownames(var = status_col) %&gt;%
     as.matrix()
-   print(mat)
   
   # Fill missing expected rows
   for (r in setdiff(expected_rows, rownames(mat))) {
@@ -1148,31 +1172,16 @@ DOX_24_status_matrices &lt;- map(status_columns, function(status_col) {
 
   # Order
   mat &lt;- mat[expected_rows, expected_cols, drop = FALSE]
-})</code></pre>
-<pre><code>              sig not_sig
-TE_peak     44303   59846
-not_TE_peak 20517   30891
-                sig not_sig
-SINE_peak     19128   23666
-not_SINE_peak 45692   67071
-                sig not_sig
-LINE_peak     15208   18944
-not_LINE_peak 49612   71793
-               sig not_sig
-LTR_peak      9971   12718
-not_LTR_peak 54849   78019
-               sig not_sig
-DNA_peak      6778    8315
-not_DNA_peak 58042   82422
-               sig not_sig
-SVA_peak        79     212
-not_SVA_peak 64741   90525</code></pre>
-<pre class="r"><code># Set names so you can easily refer to each status
+})
+
+# Set names so you can easily refer to each status
 names(DOX_24_status_matrices) &lt;- status_columns
 
 
 odds_ratio_results_DOX_24 &lt;- map(DOX_24_status_matrices, function(mat) {
-  if (!all(dim(mat) == c(2, 2))) return(NULL)
+  if (!all(dim(mat) == c(2, 2)) || any(!is.finite(mat)) || sum(mat) == 0 || any(rowSums(mat) == 0) || any(colSums(mat) == 0)) {
+    return(NULL)
+  }
   
   result &lt;- epitools::oddsratio(mat, method = &quot;wald&quot;)
   
@@ -1193,20 +1202,18 @@ odds_ratio_results_DOX_24 &lt;- map(DOX_24_status_matrices, function(mat) {
     chi_sq_p = pval_chisq
   )
 })</code></pre>
-<div id="epi" class="section level4">
-<h4>EPI</h4>
-<pre class="r"><code># Vector of status-type column names in your data
-status_columns &lt;- c(&quot;TE_status&quot;, &quot;SINE_status&quot;, &quot;LINE_status&quot;, &quot;LTR_status&quot;, &quot;DNA_status&quot;, &quot;SVA_status&quot;)
-
-# Create a list of matrices, named by status type
+</div>
+<div id="epi-3-hour-matrix" class="section level4">
+<h4>EPI 3 hour matrix</h4>
+<pre class="r"><code>status_columns &lt;- c(&quot;cRE_status&quot;, &quot;CTCF_status&quot;,&quot;dELS_status&quot;, &quot;pELS_status&quot;,&quot;PLS_status&quot;)
 EPI_3_status_matrices &lt;- map(status_columns, function(status_col) {
   # Extract prefix (e.g., &quot;TE&quot;, &quot;SINE&quot;) from column name like &quot;TE_status&quot;
   prefix &lt;- sub(&quot;_status$&quot;, &quot;&quot;, status_col)
-  expected_rows &lt;- c(paste0(prefix, &quot;_peak&quot;), paste0(&quot;not_&quot;, prefix, &quot;_peak&quot;))
+  expected_rows &lt;- c(paste0(prefix,&quot;_peak&quot;), paste0(&quot;not_&quot;, prefix,&quot;_peak&quot;))
   expected_cols &lt;- c(&quot;sig&quot;, &quot;not_sig&quot;)
   
   # Build matrix
-  mat &lt;- annotated_peaks %&gt;%
+  mat &lt;- CRE_summary %&gt;%
     group_by(across(all_of(status_col)), EPI_sig_3) %&gt;%
     tally() %&gt;%
     pivot_wider(
@@ -1216,7 +1223,6 @@ EPI_3_status_matrices &lt;- map(status_columns, function(status_col) {
     ) %&gt;%
     column_to_rownames(var = status_col) %&gt;%
     as.matrix()
-   print(mat)
   
   # Fill missing expected rows
   for (r in setdiff(expected_rows, rownames(mat))) {
@@ -1231,31 +1237,16 @@ EPI_3_status_matrices &lt;- map(status_columns, function(status_col) {
 
   # Order
   mat &lt;- mat[expected_rows, expected_cols, drop = FALSE]
-})</code></pre>
-<pre><code>             sig not_sig
-TE_peak     9688   94461
-not_TE_peak 4546   46862
-                sig not_sig
-SINE_peak      4196   38598
-not_SINE_peak 10038  102725
-                sig not_sig
-LINE_peak      3031   31121
-not_LINE_peak 11203  110202
-               sig not_sig
-LTR_peak      1590   21099
-not_LTR_peak 12644  120224
-               sig not_sig
-DNA_peak      1265   13828
-not_DNA_peak 12969  127495
-               sig not_sig
-SVA_peak        32     259
-not_SVA_peak 14202  141064</code></pre>
-<pre class="r"><code># Set names so you can easily refer to each status
+})
+
+# Set names so you can easily refer to each status
 names(EPI_3_status_matrices) &lt;- status_columns
 
 
 odds_ratio_results_EPI_3 &lt;- map(EPI_3_status_matrices, function(mat) {
-  if (!all(dim(mat) == c(2, 2))) return(NULL)
+  if (!all(dim(mat) == c(2, 2)) || any(!is.finite(mat)) || sum(mat) == 0 || any(rowSums(mat) == 0) || any(colSums(mat) == 0)) {
+    return(NULL)
+  }
   
   result &lt;- epitools::oddsratio(mat, method = &quot;wald&quot;)
   
@@ -1276,15 +1267,17 @@ odds_ratio_results_EPI_3 &lt;- map(EPI_3_status_matrices, function(mat) {
     chi_sq_p = pval_chisq
   )
 })</code></pre>
-<pre class="r"><code># Create a list of matrices, named by status type
-EPI_24_status_matrices &lt;- map(status_columns, function(status_col) {
+</div>
+<div id="epi-24-hour-matrix" class="section level4">
+<h4>EPI 24 hour matrix</h4>
+<pre class="r"><code>EPI_24_status_matrices &lt;- map(status_columns, function(status_col) {
   # Extract prefix (e.g., &quot;TE&quot;, &quot;SINE&quot;) from column name like &quot;TE_status&quot;
   prefix &lt;- sub(&quot;_status$&quot;, &quot;&quot;, status_col)
-  expected_rows &lt;- c(paste0(prefix, &quot;_peak&quot;), paste0(&quot;not_&quot;, prefix, &quot;_peak&quot;))
+  expected_rows &lt;- c(paste0(prefix,&quot;_peak&quot;), paste0(&quot;not_&quot;, prefix,&quot;_peak&quot;))
   expected_cols &lt;- c(&quot;sig&quot;, &quot;not_sig&quot;)
   
   # Build matrix
-  mat &lt;- annotated_peaks %&gt;%
+  mat &lt;- CRE_summary %&gt;%
     group_by(across(all_of(status_col)), EPI_sig_24) %&gt;%
     tally() %&gt;%
     pivot_wider(
@@ -1294,7 +1287,6 @@ EPI_24_status_matrices &lt;- map(status_columns, function(status_col) {
     ) %&gt;%
     column_to_rownames(var = status_col) %&gt;%
     as.matrix()
-   print(mat)
   
   # Fill missing expected rows
   for (r in setdiff(expected_rows, rownames(mat))) {
@@ -1309,31 +1301,16 @@ EPI_24_status_matrices &lt;- map(status_columns, function(status_col) {
 
   # Order
   mat &lt;- mat[expected_rows, expected_cols, drop = FALSE]
-})</code></pre>
-<pre><code>              sig not_sig
-TE_peak     45302   58847
-not_TE_peak 21199   30209
-                sig not_sig
-SINE_peak     19441   23353
-not_SINE_peak 47060   65703
-                sig not_sig
-LINE_peak     15530   18622
-not_LINE_peak 50971   70434
-               sig not_sig
-LTR_peak     10179   12510
-not_LTR_peak 56322   76546
-               sig not_sig
-DNA_peak      6903    8190
-not_DNA_peak 59598   80866
-               sig not_sig
-SVA_peak       105     186
-not_SVA_peak 66396   88870</code></pre>
-<pre class="r"><code># Set names so you can easily refer to each status
+})
+
+# Set names so you can easily refer to each status
 names(EPI_24_status_matrices) &lt;- status_columns
 
 
 odds_ratio_results_EPI_24 &lt;- map(EPI_24_status_matrices, function(mat) {
-  if (!all(dim(mat) == c(2, 2))) return(NULL)
+  if (!all(dim(mat) == c(2, 2)) || any(!is.finite(mat)) || sum(mat) == 0 || any(rowSums(mat) == 0) || any(colSums(mat) == 0)) {
+    return(NULL)
+  }
   
   result &lt;- epitools::oddsratio(mat, method = &quot;wald&quot;)
   
@@ -1355,20 +1332,17 @@ odds_ratio_results_EPI_24 &lt;- map(EPI_24_status_matrices, function(mat) {
   )
 })</code></pre>
 </div>
-<div id="dnr" class="section level4">
-<h4>DNR</h4>
-<pre class="r"><code># Vector of status-type column names in your data
-status_columns &lt;- c(&quot;TE_status&quot;, &quot;SINE_status&quot;, &quot;LINE_status&quot;, &quot;LTR_status&quot;, &quot;DNA_status&quot;, &quot;SVA_status&quot;)
-
-# Create a list of matrices, named by status type
+<div id="dnr-3-hour-matrix" class="section level4">
+<h4>DNR 3 hour matrix</h4>
+<pre class="r"><code>status_columns &lt;- c(&quot;cRE_status&quot;, &quot;CTCF_status&quot;,&quot;dELS_status&quot;, &quot;pELS_status&quot;,&quot;PLS_status&quot;)
 DNR_3_status_matrices &lt;- map(status_columns, function(status_col) {
   # Extract prefix (e.g., &quot;TE&quot;, &quot;SINE&quot;) from column name like &quot;TE_status&quot;
   prefix &lt;- sub(&quot;_status$&quot;, &quot;&quot;, status_col)
-  expected_rows &lt;- c(paste0(prefix, &quot;_peak&quot;), paste0(&quot;not_&quot;, prefix, &quot;_peak&quot;))
+  expected_rows &lt;- c(paste0(prefix,&quot;_peak&quot;), paste0(&quot;not_&quot;, prefix,&quot;_peak&quot;))
   expected_cols &lt;- c(&quot;sig&quot;, &quot;not_sig&quot;)
   
   # Build matrix
-  mat &lt;- annotated_peaks %&gt;%
+  mat &lt;- CRE_summary %&gt;%
     group_by(across(all_of(status_col)), DNR_sig_3) %&gt;%
     tally() %&gt;%
     pivot_wider(
@@ -1378,7 +1352,6 @@ DNR_3_status_matrices &lt;- map(status_columns, function(status_col) {
     ) %&gt;%
     column_to_rownames(var = status_col) %&gt;%
     as.matrix()
-   print(mat)
   
   # Fill missing expected rows
   for (r in setdiff(expected_rows, rownames(mat))) {
@@ -1393,31 +1366,16 @@ DNR_3_status_matrices &lt;- map(status_columns, function(status_col) {
 
   # Order
   mat &lt;- mat[expected_rows, expected_cols, drop = FALSE]
-})</code></pre>
-<pre><code>              sig not_sig
-TE_peak     15675   88474
-not_TE_peak  7063   44345
-                sig not_sig
-SINE_peak      6517   36277
-not_SINE_peak 16221   96542
-                sig not_sig
-LINE_peak      4652   29500
-not_LINE_peak 18086  103319
-               sig not_sig
-LTR_peak      2529   20160
-not_LTR_peak 20209  112659
-               sig not_sig
-DNA_peak      1923   13170
-not_DNA_peak 20815  119649
-               sig not_sig
-SVA_peak        56     235
-not_SVA_peak 22682  132584</code></pre>
-<pre class="r"><code># Set names so you can easily refer to each status
+})
+
+# Set names so you can easily refer to each status
 names(DNR_3_status_matrices) &lt;- status_columns
 
 
 odds_ratio_results_DNR_3 &lt;- map(DNR_3_status_matrices, function(mat) {
-  if (!all(dim(mat) == c(2, 2))) return(NULL)
+  if (!all(dim(mat) == c(2, 2)) || any(!is.finite(mat)) || sum(mat) == 0 || any(rowSums(mat) == 0) || any(colSums(mat) == 0)) {
+    return(NULL)
+  }
   
   result &lt;- epitools::oddsratio(mat, method = &quot;wald&quot;)
   
@@ -1438,15 +1396,17 @@ odds_ratio_results_DNR_3 &lt;- map(DNR_3_status_matrices, function(mat) {
     chi_sq_p = pval_chisq
   )
 })</code></pre>
-<pre class="r"><code># Create a list of matrices, named by status type
-DNR_24_status_matrices &lt;- map(status_columns, function(status_col) {
+</div>
+<div id="dnr-24-hour-matrix" class="section level4">
+<h4>DNR 24 hour matrix</h4>
+<pre class="r"><code>DNR_24_status_matrices &lt;- map(status_columns, function(status_col) {
   # Extract prefix (e.g., &quot;TE&quot;, &quot;SINE&quot;) from column name like &quot;TE_status&quot;
   prefix &lt;- sub(&quot;_status$&quot;, &quot;&quot;, status_col)
-  expected_rows &lt;- c(paste0(prefix, &quot;_peak&quot;), paste0(&quot;not_&quot;, prefix, &quot;_peak&quot;))
+  expected_rows &lt;- c(paste0(prefix,&quot;_peak&quot;), paste0(&quot;not_&quot;, prefix,&quot;_peak&quot;))
   expected_cols &lt;- c(&quot;sig&quot;, &quot;not_sig&quot;)
   
   # Build matrix
-  mat &lt;- annotated_peaks %&gt;%
+  mat &lt;- CRE_summary %&gt;%
     group_by(across(all_of(status_col)), DNR_sig_24) %&gt;%
     tally() %&gt;%
     pivot_wider(
@@ -1456,7 +1416,6 @@ DNR_24_status_matrices &lt;- map(status_columns, function(status_col) {
     ) %&gt;%
     column_to_rownames(var = status_col) %&gt;%
     as.matrix()
-   print(mat)
   
   # Fill missing expected rows
   for (r in setdiff(expected_rows, rownames(mat))) {
@@ -1471,31 +1430,16 @@ DNR_24_status_matrices &lt;- map(status_columns, function(status_col) {
 
   # Order
   mat &lt;- mat[expected_rows, expected_cols, drop = FALSE]
-})</code></pre>
-<pre><code>              sig not_sig
-TE_peak     54566   49583
-not_TE_peak 25429   25979
-                sig not_sig
-SINE_peak     22919   19875
-not_SINE_peak 57076   55687
-                sig not_sig
-LINE_peak     18231   15921
-not_LINE_peak 61764   59641
-               sig not_sig
-LTR_peak     12018   10671
-not_LTR_peak 67977   64891
-               sig not_sig
-DNA_peak      8057    7036
-not_DNA_peak 71938   68526
-               sig not_sig
-SVA_peak       122     169
-not_SVA_peak 79873   75393</code></pre>
-<pre class="r"><code># Set names so you can easily refer to each status
+})
+
+# Set names so you can easily refer to each status
 names(DNR_24_status_matrices) &lt;- status_columns
 
 
 odds_ratio_results_DNR_24 &lt;- map(DNR_24_status_matrices, function(mat) {
-  if (!all(dim(mat) == c(2, 2))) return(NULL)
+  if (!all(dim(mat) == c(2, 2)) || any(!is.finite(mat)) || sum(mat) == 0 || any(rowSums(mat) == 0) || any(colSums(mat) == 0)) {
+    return(NULL)
+  }
   
   result &lt;- epitools::oddsratio(mat, method = &quot;wald&quot;)
   
@@ -1517,20 +1461,17 @@ odds_ratio_results_DNR_24 &lt;- map(DNR_24_status_matrices, function(mat) {
   )
 })</code></pre>
 </div>
-<div id="mtx" class="section level4">
-<h4>MTX</h4>
-<pre class="r"><code># Vector of status-type column names in your data
-status_columns &lt;- c(&quot;TE_status&quot;, &quot;SINE_status&quot;, &quot;LINE_status&quot;, &quot;LTR_status&quot;, &quot;DNA_status&quot;, &quot;SVA_status&quot;)
-
-# Create a list of matrices, named by status type
+<div id="mtx-3-hour-matrix" class="section level4">
+<h4>MTX 3 hour matrix</h4>
+<pre class="r"><code>status_columns &lt;- c(&quot;cRE_status&quot;, &quot;CTCF_status&quot;,&quot;dELS_status&quot;, &quot;pELS_status&quot;,&quot;PLS_status&quot;)
 MTX_3_status_matrices &lt;- map(status_columns, function(status_col) {
   # Extract prefix (e.g., &quot;TE&quot;, &quot;SINE&quot;) from column name like &quot;TE_status&quot;
   prefix &lt;- sub(&quot;_status$&quot;, &quot;&quot;, status_col)
-  expected_rows &lt;- c(paste0(prefix, &quot;_peak&quot;), paste0(&quot;not_&quot;, prefix, &quot;_peak&quot;))
+  expected_rows &lt;- c(paste0(prefix,&quot;_peak&quot;), paste0(&quot;not_&quot;, prefix,&quot;_peak&quot;))
   expected_cols &lt;- c(&quot;sig&quot;, &quot;not_sig&quot;)
   
   # Build matrix
-  mat &lt;- annotated_peaks %&gt;%
+  mat &lt;- CRE_summary %&gt;%
     group_by(across(all_of(status_col)), MTX_sig_3) %&gt;%
     tally() %&gt;%
     pivot_wider(
@@ -1540,7 +1481,6 @@ MTX_3_status_matrices &lt;- map(status_columns, function(status_col) {
     ) %&gt;%
     column_to_rownames(var = status_col) %&gt;%
     as.matrix()
-   print(mat)
   
   # Fill missing expected rows
   for (r in setdiff(expected_rows, rownames(mat))) {
@@ -1555,109 +1495,16 @@ MTX_3_status_matrices &lt;- map(status_columns, function(status_col) {
 
   # Order
   mat &lt;- mat[expected_rows, expected_cols, drop = FALSE]
-})</code></pre>
-<pre><code>            sig not_sig
-TE_peak     568  103581
-not_TE_peak 236   51172
-              sig not_sig
-SINE_peak     220   42574
-not_SINE_peak 584  112179
-              sig not_sig
-LINE_peak     174   33978
-not_LINE_peak 630  120775
-             sig not_sig
-LTR_peak     114   22575
-not_LTR_peak 690  132178
-             sig not_sig
-DNA_peak      86   15007
-not_DNA_peak 718  139746
-             sig not_sig
-SVA_peak       1     290
-not_SVA_peak 803  154463</code></pre>
-<pre class="r"><code># Set names so you can easily refer to each status
+})
+
+# Set names so you can easily refer to each status
 names(MTX_3_status_matrices) &lt;- status_columns
 
 
 odds_ratio_results_MTX_3 &lt;- map(MTX_3_status_matrices, function(mat) {
-  if (!all(dim(mat) == c(2, 2))) return(NULL)
-  
-  result &lt;- epitools::oddsratio(mat, method = &quot;wald&quot;)
-  
-  or &lt;- result$measure[2, &quot;estimate&quot;]
-  lower &lt;- result$measure[2, &quot;lower&quot;]
-  upper &lt;- result$measure[2, &quot;upper&quot;]
-  
-  pval_chisq &lt;- if(&quot;chi.square&quot; %in% colnames(result$p.value) &amp;&amp; nrow(result$p.value) &gt;= 2) {
-    result$p.value[2, &quot;chi.square&quot;]
-  } else {
-    NA_real_
+  if (!all(dim(mat) == c(2, 2)) || any(!is.finite(mat)) || sum(mat) == 0 || any(rowSums(mat) == 0) || any(colSums(mat) == 0)) {
+    return(NULL)
   }
-  
-  list(
-    odds_ratio = or,
-    lower_ci = lower,
-    upper_ci = upper,
-    chi_sq_p = pval_chisq
-  )
-})</code></pre>
-<pre class="r"><code># Create a list of matrices, named by status type
-MTX_24_status_matrices &lt;- map(status_columns, function(status_col) {
-  # Extract prefix (e.g., &quot;TE&quot;, &quot;SINE&quot;) from column name like &quot;TE_status&quot;
-  prefix &lt;- sub(&quot;_status$&quot;, &quot;&quot;, status_col)
-  expected_rows &lt;- c(paste0(prefix, &quot;_peak&quot;), paste0(&quot;not_&quot;, prefix, &quot;_peak&quot;))
-  expected_cols &lt;- c(&quot;sig&quot;, &quot;not_sig&quot;)
-  
-  # Build matrix
-  mat &lt;- annotated_peaks %&gt;%
-    group_by(across(all_of(status_col)), MTX_sig_24) %&gt;%
-    tally() %&gt;%
-    pivot_wider(
-      names_from = MTX_sig_24,
-      values_from = n,
-      values_fill = list(n = 0)
-    ) %&gt;%
-    column_to_rownames(var = status_col) %&gt;%
-    as.matrix()
-   print(mat)
-  
-  # Fill missing expected rows
-  for (r in setdiff(expected_rows, rownames(mat))) {
-    mat &lt;- rbind(mat, setNames(rep(0, length(expected_cols)), expected_cols))
-    rownames(mat)[nrow(mat)] &lt;- r
-  }
-
-  # Fill missing expected columns
-  for (c in setdiff(expected_cols, colnames(mat))) {
-    mat &lt;- cbind(mat, setNames(rep(0, nrow(mat)), c))
-  }
-
-  # Order
-  mat &lt;- mat[expected_rows, expected_cols, drop = FALSE]
-})</code></pre>
-<pre><code>              sig not_sig
-TE_peak     16922   87227
-not_TE_peak  7328   44080
-                sig not_sig
-SINE_peak      7114   35680
-not_SINE_peak 17136   95627
-                sig not_sig
-LINE_peak      5596   28556
-not_LINE_peak 18654  102751
-               sig not_sig
-LTR_peak      3564   19125
-not_LTR_peak 20686  112182
-               sig not_sig
-DNA_peak      2445   12648
-not_DNA_peak 21805  118659
-               sig not_sig
-SVA_peak        17     274
-not_SVA_peak 24233  131033</code></pre>
-<pre class="r"><code># Set names so you can easily refer to each status
-names(MTX_24_status_matrices) &lt;- status_columns
-
-
-odds_ratio_results_MTX_24 &lt;- map(MTX_24_status_matrices, function(mat) {
-  if (!all(dim(mat) == c(2, 2))) return(NULL)
   
   result &lt;- epitools::oddsratio(mat, method = &quot;wald&quot;)
   
@@ -1679,13 +1526,74 @@ odds_ratio_results_MTX_24 &lt;- map(MTX_24_status_matrices, function(mat) {
   )
 })</code></pre>
 </div>
-<div id="combining-the-data-and-applying-bh-pvalue-adjustments"
-class="section level4">
-<h4>Combining the data and applying BH pvalue adjustments</h4>
-<pre class="r"><code># odds_ratio_results_DOX_3
-# odds_ratio_results_DOX_24
-# odds_ratio_results_DOX_24_sig_up
-# odds_ratio_results_DOX_24_sig_down
+<div id="mtx-24-hour-matrix" class="section level4">
+<h4>MTX 24 hour matrix</h4>
+<pre class="r"><code>MTX_24_status_matrices &lt;- map(status_columns, function(status_col) {
+  # Extract prefix (e.g., &quot;TE&quot;, &quot;SINE&quot;) from column name like &quot;TE_status&quot;
+  prefix &lt;- sub(&quot;_status$&quot;, &quot;&quot;, status_col)
+  expected_rows &lt;- c(paste0(prefix,&quot;_peak&quot;), paste0(&quot;not_&quot;, prefix,&quot;_peak&quot;))
+  expected_cols &lt;- c(&quot;sig&quot;, &quot;not_sig&quot;)
+  
+  # Build matrix
+  mat &lt;- CRE_summary %&gt;%
+    group_by(across(all_of(status_col)), MTX_sig_24) %&gt;%
+    tally() %&gt;%
+    pivot_wider(
+      names_from = MTX_sig_24,
+      values_from = n,
+      values_fill = list(n = 0)
+    ) %&gt;%
+    column_to_rownames(var = status_col) %&gt;%
+    as.matrix()
+  
+  # Fill missing expected rows
+  for (r in setdiff(expected_rows, rownames(mat))) {
+    mat &lt;- rbind(mat, setNames(rep(0, length(expected_cols)), expected_cols))
+    rownames(mat)[nrow(mat)] &lt;- r
+  }
+
+  # Fill missing expected columns
+  for (c in setdiff(expected_cols, colnames(mat))) {
+    mat &lt;- cbind(mat, setNames(rep(0, nrow(mat)), c))
+  }
+
+  # Order
+  mat &lt;- mat[expected_rows, expected_cols, drop = FALSE]
+})
+
+# Set names so you can easily refer to each status
+names(MTX_24_status_matrices) &lt;- status_columns
+
+
+odds_ratio_results_MTX_24 &lt;- map(MTX_24_status_matrices, function(mat) {
+  if (!all(dim(mat) == c(2, 2)) || any(!is.finite(mat)) || sum(mat) == 0 || any(rowSums(mat) == 0) || any(colSums(mat) == 0)) {
+    return(NULL)
+  }
+  
+  result &lt;- epitools::oddsratio(mat, method = &quot;wald&quot;)
+  
+  or &lt;- result$measure[2, &quot;estimate&quot;]
+  lower &lt;- result$measure[2, &quot;lower&quot;]
+  upper &lt;- result$measure[2, &quot;upper&quot;]
+  
+  pval_chisq &lt;- if(&quot;chi.square&quot; %in% colnames(result$p.value) &amp;&amp; nrow(result$p.value) &gt;= 2) {
+    result$p.value[2, &quot;chi.square&quot;]
+  } else {
+    NA_real_
+  }
+  
+  list(
+    odds_ratio = or,
+    lower_ci = lower,
+    upper_ci = upper,
+    chi_sq_p = pval_chisq
+  )
+})</code></pre>
+</div>
+</div>
+<div id="odds-ratio-results" class="section level3">
+<h3>odds ratio results</h3>
+<pre class="r"><code>col_fun_OR = colorRamp2(c(0,1,1.5,5), c(&quot;blueviolet&quot;,&quot;white&quot;,&quot;lightgreen&quot;,&quot;green3&quot; ))
 
 combined_df &lt;- bind_rows(
   map_dfr(odds_ratio_results_DOX_3, ~as.data.frame(.x), .id = &quot;status&quot;) %&gt;% mutate(source = &quot;DOX_3hr&quot;),
@@ -1697,71 +1605,35 @@ combined_df &lt;- bind_rows(
   map_dfr(odds_ratio_results_MTX_3, ~as.data.frame(.x), .id = &quot;status&quot;) %&gt;% mutate(source = &quot;MTX_3hr&quot;),
   map_dfr(odds_ratio_results_MTX_24, ~as.data.frame(.x), .id = &quot;status&quot;) %&gt;% mutate(source = &quot;MTX_24hr&quot;)
 )
-# saveRDS(combined_df,&quot;data/Final_four_data/re_analysis/OR_results_TE_df_1bp_alltrt.RDS&quot;)</code></pre>
-<pre class="r"><code>TE_sig_mat &lt;- combined_df %&gt;% 
+# saveRDS(combined_df,&quot;data/Final_four_data/re_analysis/OR_results_cREs_df_1bp_alltrt.RDS&quot;)
+sig_mat_OR &lt;-combined_df %&gt;% 
   dplyr::select( status,source,chi_sq_p) %&gt;%
   group_by(source) %&gt;%
   mutate(rank_val=rank(chi_sq_p, ties.method = &quot;first&quot;)) %&gt;%
   mutate(BH_correction= p.adjust(chi_sq_p,method= &quot;BH&quot;)) %&gt;% 
   pivot_wider(., id_cols = status, names_from = source, values_from = BH_correction) %&gt;% 
   column_to_rownames(&quot;status&quot;) %&gt;% 
-  as.matrix()
-
-col_fun_OR = colorRamp2(c(0,1,1.5,5), c(&quot;blueviolet&quot;,&quot;white&quot;,&quot;lightgreen&quot;,&quot;green3&quot; ))
-
-# TE_od_mat &lt;- 
-combined_df %&gt;% 
-  dplyr::select(status, source, odds_ratio) %&gt;%
+  as.matrix()</code></pre>
+<pre class="r"><code>combined_df %&gt;% 
+ dplyr::select(status, source, odds_ratio) %&gt;%
+  mutate(status=factor(status, levels=c(&quot;cRE_status&quot;,&quot;PLS_status&quot;,&quot;pELS_status&quot;,&quot;dELS_status&quot;,&quot;CTCF_status&quot;))) %&gt;% 
+  arrange(status) %&gt;% 
   group_by(source) %&gt;%
   pivot_wider(., id_cols = status, names_from = source, values_from = odds_ratio) %&gt;% 
   column_to_rownames(&quot;status&quot;) %&gt;% 
+  
   as.matrix() %&gt;% 
-   ComplexHeatmap::Heatmap(. ,col = col_fun_OR, 
+  ComplexHeatmap::Heatmap(. ,col = col_fun_OR, 
                           cluster_rows=FALSE, 
                           cluster_columns=FALSE, 
                           column_names_side = &quot;top&quot;, 
                           column_names_rot = 45,
                           # na_col = &quot;black&quot;,
-                          cell_fun = function(j, i, x, y, width, height, fill) {if (!is.na(TE_sig_mat[i, j]) &amp;&amp; TE_sig_mat[i, j] &lt; 0.05  &amp;&amp; .[i, j] &gt; 1) {
+                          cell_fun = function(j, i, x, y, width, height, fill) {if (!is.na(sig_mat_OR[i, j]) &amp;&amp; sig_mat_OR[i, j] &lt; 0.05  &amp;&amp; .[i, j] &gt; 1) {
             grid.text(&quot;*&quot;, x, y, gp = gpar(fontsize = 20))}})</code></pre>
-<p><img src="figure/TE_analysis_ALL_DAR.Rmd/unnamed-chunk-4-1.png" width="672" style="display: block; margin: auto;" /></p>
-<p>
-<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-unnamed-chunk-4-1">
-Past versions of unnamed-chunk-4-1.png
-</button>
-</p>
-<div id="fig-unnamed-chunk-4-1" class="collapse">
-<div class="table-responsive">
-<table class="table table-condensed table-hover">
-<thead>
-<tr>
-<th>
-Version
-</th>
-<th>
-Author
-</th>
-<th>
-Date
-</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>
-<a href="https://github.com/mward-lab/Matthews_cardiotox_ATAC_2025/blob/af91ecf12bf64643efe97d5a880df6c7573225b9/docs/figure/TE_analysis_ALL_DAR.Rmd/unnamed-chunk-4-1.png" target="_blank">af91ecf</a>
-</td>
-<td>
-reneeisnowhere
-</td>
-<td>
-2025-06-18
-</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
+<p><img src="figure/Enhancer_enrichment_ALL_DAR.Rmd/heatmap%20of%20OR%20results-1.png" width="672" style="display: block; margin: auto;" />
+note, this is corrected for multiple testing across categories within
+each trt-DAR column.</p>
 <br>
 <p>
 <button type="button" class="btn btn-default btn-workflowr btn-workflowr-sessioninfo" data-toggle="collapse" data-target="#workflowr-sessioninfo" style="display: block;">
@@ -2018,7 +1890,6 @@ loaded via a namespace (and not attached):
 [175] GenomicAlignments_1.42.0               
 [176] cluster_2.1.8.1                        
 [177] timechange_0.3.0                       </code></pre>
-</div>
 </div>
 </div>
 </div>
