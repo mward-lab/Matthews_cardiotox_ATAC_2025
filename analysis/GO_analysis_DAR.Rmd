@@ -1,0 +1,1506 @@
+---
+title: "GO_analysis_DARs"
+author: "Renee Matthews"
+date: "2025-06-16"
+output: html_document
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE,
+	warning = FALSE,
+		dev = c("png","pdf")
+)
+```
+
+```{css, echo=FALSE}
+pre {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+pre[class] {
+  max-height: 200px;
+}
+```
+
+```{r package loading, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(kableExtra)
+library(broom)
+library(RColorBrewer)
+library(ChIPseeker)
+library("TxDb.Hsapiens.UCSC.hg38.knownGene")
+library("org.Hs.eg.db")
+library(rtracklayer)
+library(edgeR)
+library(ggfortify)
+library(limma)
+library(readr)
+library(BiocGenerics)
+library(gridExtra)
+library(VennDiagram)
+library(scales)
+library(BiocParallel)
+library(ggpubr)
+library(devtools)
+library(biomaRt)
+library(eulerr)
+library(smplot2)
+library(genomation)
+library(ggsignif)
+library(plyranges)
+library(ggrepel)
+library(epitools)
+library(circlize)
+library(readxl)
+library(gprofiler2)
+
+```
+### Loading DATA 
+
+```{r adding dataframes}
+## significant DAR regions associated to TSS
+
+toplistall_RNA <- readRDS("data/other_papers/toplistall_RNA.RDS") %>% 
+  mutate(logFC = logFC*(-1))
+peakAnnoList_DOX_DAR <- readRDS("data/Final_four_data/re_analysis/DOX_DAR_annotated_peaks_chipannno.RDS")
+Assigned_genes_toPeak <- peakAnnoList_DOX_DAR$DOX_24 %>% as.data.frame() %>% 
+  dplyr::select(mcols.genes,annotation, geneId, distanceToTSS) %>% 
+  dplyr::rename("Peakid"=mcols.genes)
+
+DOX3_DAR <- peakAnnoList_DOX_DAR$DOX_3 %>% 
+  as.data.frame() %>% 
+  dplyr::filter(mcols.adj.P.Val <0.05) %>% 
+   dplyr::rename("Peakid"=mcols.genes) %>% 
+  distinct(Peakid)
+DOX24_DAR <- peakAnnoList_DOX_DAR$DOX_24 %>% 
+  as.data.frame() %>% 
+  dplyr::filter(mcols.adj.P.Val <0.05) %>% 
+   dplyr::rename("Peakid"=mcols.genes) %>% 
+  distinct(Peakid)
+
+EPI3_DAR <- peakAnnoList_DOX_DAR$EPI_3 %>% 
+  as.data.frame() %>% 
+  dplyr::filter(mcols.adj.P.Val <0.05) %>% 
+   dplyr::rename("Peakid"=mcols.genes) %>% 
+  distinct(Peakid)
+EPI24_DAR <- peakAnnoList_DOX_DAR$EPI_24 %>% 
+  as.data.frame() %>% 
+  dplyr::filter(mcols.adj.P.Val <0.05) %>% 
+   dplyr::rename("Peakid"=mcols.genes) %>% 
+  distinct(Peakid)
+
+DNR3_DAR <- peakAnnoList_DOX_DAR$DNR_3 %>% 
+  as.data.frame() %>% 
+  dplyr::filter(mcols.adj.P.Val <0.05) %>% 
+   dplyr::rename("Peakid"=mcols.genes) %>% 
+  distinct(Peakid)
+DNR24_DAR <- peakAnnoList_DOX_DAR$DNR_24 %>% 
+  as.data.frame() %>% 
+  dplyr::filter(mcols.adj.P.Val <0.05) %>% 
+   dplyr::rename("Peakid"=mcols.genes) %>% 
+  distinct(Peakid)
+
+MTX3_DAR <- peakAnnoList_DOX_DAR$MTX_3 %>% 
+  as.data.frame() %>% 
+  dplyr::filter(mcols.adj.P.Val <0.05) %>% 
+   dplyr::rename("Peakid"=mcols.genes) %>% 
+  distinct(Peakid)
+MTX24_DAR <- peakAnnoList_DOX_DAR$MTX_24 %>% 
+  as.data.frame() %>% 
+  dplyr::filter(mcols.adj.P.Val <0.05) %>% 
+   dplyr::rename("Peakid"=mcols.genes) %>% 
+  distinct(Peakid)
+
+
+
+RNA_results <-
+toplistall_RNA %>% 
+  dplyr::select(time:logFC) %>% 
+  tidyr::unite("sample",time, id) %>% 
+  pivot_wider(., id_cols = c(ENTREZID,SYMBOL),names_from = sample, values_from = logFC) %>% 
+  rename_with(~ str_replace(., "hours", "RNA"))
+
+
+DOX24_degs <- toplistall_RNA %>%
+  dplyr::select(time:logFC,adj.P.Val) %>% 
+  dplyr::filter(id=="DOX") %>% 
+  tidyr::unite("sample",time, id) %>% 
+  dplyr::select(sample:SYMBOL,adj.P.Val) %>% 
+  dplyr::filter(adj.P.Val<0.05) %>% 
+  dplyr::filter(sample=="24_hours_DOX")
+
+DOX3_degs <- toplistall_RNA %>%
+  dplyr::select(time:logFC,adj.P.Val) %>% 
+  dplyr::filter(id=="DOX") %>% 
+  tidyr::unite("sample",time, id) %>% 
+  dplyr::select(sample:SYMBOL,adj.P.Val) %>% 
+  dplyr::filter(adj.P.Val<0.05) %>% 
+  dplyr::filter(sample=="3_hours_DOX")
+
+
+MTX24_degs <- toplistall_RNA %>%
+  dplyr::select(time:logFC,adj.P.Val) %>% 
+  dplyr::filter(id=="MTX") %>% 
+  tidyr::unite("sample",time, id) %>% 
+  dplyr::select(sample:SYMBOL,adj.P.Val) %>% 
+  dplyr::filter(adj.P.Val<0.05) %>% 
+  dplyr::filter(sample=="24_hours_MTX")
+
+MTX3_degs <- toplistall_RNA %>%
+  dplyr::select(time:logFC,adj.P.Val) %>% 
+  dplyr::filter(id=="MTX") %>% 
+  tidyr::unite("sample",time, id) %>% 
+  dplyr::select(sample:SYMBOL,adj.P.Val) %>% 
+  dplyr::filter(adj.P.Val<0.05) %>% 
+  dplyr::filter(sample=="3_hours_MTX")
+
+EPI24_degs <- toplistall_RNA %>%
+  dplyr::select(time:logFC,adj.P.Val) %>% 
+  dplyr::filter(id=="EPI") %>% 
+  tidyr::unite("sample",time, id) %>% 
+  dplyr::select(sample:SYMBOL,adj.P.Val) %>% 
+  dplyr::filter(adj.P.Val<0.05) %>% 
+  dplyr::filter(sample=="24_hours_EPI")
+
+EPI3_degs <- toplistall_RNA %>%
+  dplyr::select(time:logFC,adj.P.Val) %>% 
+  dplyr::filter(id=="EPI") %>% 
+  tidyr::unite("sample",time, id) %>% 
+  dplyr::select(sample:SYMBOL,adj.P.Val) %>% 
+  dplyr::filter(adj.P.Val<0.05) %>% 
+  dplyr::filter(sample=="3_hours_EPI")
+
+DNR24_degs <- toplistall_RNA %>%
+  dplyr::select(time:logFC,adj.P.Val) %>% 
+  dplyr::filter(id=="DNR") %>% 
+  tidyr::unite("sample",time, id) %>% 
+  dplyr::select(sample:SYMBOL,adj.P.Val) %>% 
+  dplyr::filter(adj.P.Val<0.05) %>% 
+  dplyr::filter(sample=="24_hours_DNR")
+
+DNR3_degs <- toplistall_RNA %>%
+  dplyr::select(time:logFC,adj.P.Val) %>% 
+  dplyr::filter(id=="DNR") %>% 
+  tidyr::unite("sample",time, id) %>% 
+  dplyr::select(sample:SYMBOL,adj.P.Val) %>% 
+  dplyr::filter(adj.P.Val<0.05) %>% 
+  dplyr::filter(sample=="3_hours_DNR")
+
+RNA_all_expressed <-toplistall_RNA %>% 
+  dplyr::select(time:logFC,adj.P.Val) %>% 
+  dplyr::filter(id=="DOX") %>% 
+  dplyr::filter(time=="24_hours") %>% 
+  tidyr::unite("sample",time, id) %>% 
+  dplyr::select(ENTREZID, SYMBOL)  
+
+Peak_gene_RNA_LFC <- Assigned_genes_toPeak %>% 
+  left_join(., RNA_results, by =c("geneId"="ENTREZID"))
+
+
+entrez_ids <- Assigned_genes_toPeak$geneId  
+
+
+gene_info <- AnnotationDbi::select(
+  org.Hs.eg.db,
+  keys = entrez_ids,
+  columns = c("SYMBOL"),
+  keytype = "ENTREZID"
+)
+gene_info_collapsed <- gene_info %>%
+  group_by(ENTREZID) %>%
+  summarise(SYMBOL = paste(unique(SYMBOL), collapse = ","), .groups = "drop")
+```
+
+
+### DOX
+```{r making DOX dFs}
+
+DOX_DAR_DEG_3hour_2kb <- Assigned_genes_toPeak %>% 
+  dplyr::filter(Peakid %in%DOX3_DAR$Peakid) %>% 
+  dplyr::filter(geneId %in% DOX3_degs$ENTREZID) %>% 
+  dplyr::filter(distanceToTSS >-2000 & distanceToTSS <2000) %>% 
+  distinct(geneId)
+
+DOX_DAR_DEG_24hour_2kb <- Assigned_genes_toPeak %>% 
+  dplyr::filter(Peakid %in%DOX24_DAR$Peakid) %>% 
+  dplyr::filter(geneId %in% DOX24_degs$ENTREZID) %>% 
+  dplyr::filter(distanceToTSS >-2000 & distanceToTSS <2000) %>%
+  distinct(geneId)
+
+length(DOX_DAR_DEG_3hour_2kb$geneId)
+length(DOX_DAR_DEG_24hour_2kb$geneId)
+
+DOX_DAR_DEG_24hour_2kb_res <- gost(query = DOX_DAR_DEG_24hour_2kb$geneId,
+                    organism = "hsapiens",
+                    significant = FALSE,
+                    ordered_query = FALSE,
+                    domain_scope = "custom",
+                    measure_underrepresentation = FALSE,
+                    evcodes = FALSE,
+                    user_threshold = 0.05,
+                    correction_method = c("fdr"),
+                    custom_bg = RNA_all_expressed$ENTREZID,
+                    sources=c("GO:BP","KEGG"))
+
+```
+
+#### DOX 24hr 2kb  
+
+
+```{r DOX_DAR GO, fig.height=10}
+
+DOX_DAR_DEG_24hour_2kb_res$result
+
+DOX_DD_24_nomtable <-  DOX_DAR_DEG_24hour_2kb_res$result %>%
+  dplyr::select(c(source, term_id,
+                  term_name,intersection_size, 
+                   term_size, p_value))
+
+DOX_DD_24_nomtable %>%
+  dplyr::filter(source=="GO:BP") %>% 
+  dplyr::filter(p_value < 0.05) %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(.,caption = "Significant (p < 0.05 )terms found in DOX_DAR_DEG_pairs 24hours") %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
+
+DOX_DD_24_nomtable %>%
+  dplyr::filter(source=="GO:BP") %>% 
+  dplyr::filter(p_value < 0.05) %>% 
+  mutate(log10_p=(-log(p_value, base=10))) %>% 
+  slice_max(log10_p, n=60) %>% 
+  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
+    geom_col()+
+  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
+  theme_bw()+
+  ylab("")+
+  xlab(paste0("-log10 p-value"))+
+  guides(fill="none")+
+  theme(axis.text.y = element_text(color="black"))+
+  ggtitle("24 hour DOX_DAR pairs (within 2kb of TSS) GO:BP enriched terms top 60")
+
+### parsing similar terms:  
+```
+```{r similar terms, eval=FALSE}
+
+# library(GOSemSim)
+# library(rrvgo)
+# library(simplifyEnrichment)
+go_df <- DD_24_nomtable %>%
+  filter(source == "GO:BP", p_value < 0.05)
+
+go_ids <- go_df$term_id
+names(go_ids) <- go_df$term_name
+
+scores <- -log10(go_df$p_value)
+names(scores) <- go_df$term_id
+###computing similarity matrix
+simMatrix <- calculateSimMatrix(
+  go_ids,
+  orgdb = "org.Hs.eg.db",
+  ont = "BP",
+  method = "Rel"  # "Rel" or "Wang" are good defaults
+)
+
+### REducing similar terms
+
+reducedTerms <- reduceSimMatrix(
+  simMatrix,
+  scores = scores,  # or use raw p-values if you prefer
+  threshold = 0.7,  # adjust to control stringency
+  orgdb = "org.Hs.eg.db"
+)
+head(reducedTerms)
+# BiocManager::install("simplifyEnrichment")
+treemapPlot(reducedTerms)        # Dendrogram-style
+wordcloudPlot(reducedTerms)     # Cluster scatter plot
+
+
+```
+
+#### DOX 24 KEGG  
+
+```{r DOX 24 KEGG GO}
+DOX_DD_24_nomtable %>%
+  dplyr::filter(source=="KEGG") %>% 
+  # dplyr::filter(p_value < 0.05) %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(.,caption = "ALL Kegg terms found in DOX_DAR_DEG_pairs 24 hours") %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
+DOX_DD_24_nomtable %>%
+  dplyr::filter(source=="KEGG") %>% 
+  dplyr::filter(p_value < 0.05) %>%
+  mutate(log10_p=(-log(p_value, base=10))) %>% 
+  slice_max(log10_p, n=40) %>% 
+  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
+    geom_col()+
+  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
+  theme_bw()+
+  ylab("")+
+  xlab(paste0("-log10 p-value"))+
+  guides(fill="none")+
+  theme(axis.text.y = element_text(color="black"))+
+  ggtitle("24 hour DOX_DAR pairs (within 2kb of TSS) KEGG enriched terms top 60")
+```
+
+#### DOX 20kb
+```{r}
+
+DOX_DAR_DEG_3hour_20kb <- Assigned_genes_toPeak %>% 
+  dplyr::filter(Peakid %in%DOX3_DAR$Peakid) %>% 
+  dplyr::filter(geneId %in% DOX3_degs$ENTREZID) %>% 
+  dplyr::filter(distanceToTSS >-20000 & distanceToTSS <20000) %>% 
+  distinct(geneId)
+
+DOX_DAR_DEG_24hour_20kb <- Assigned_genes_toPeak %>% 
+  dplyr::filter(Peakid %in%DOX24_DAR$Peakid) %>% 
+  dplyr::filter(geneId %in% DOX24_degs$ENTREZID) %>% 
+  dplyr::filter(distanceToTSS >-20000 & distanceToTSS <20000) %>%
+  distinct(geneId)
+
+length(DOX_DAR_DEG_3hour_20kb$geneId)
+length(DOX_DAR_DEG_24hour_20kb$geneId)
+
+DOX_DAR_DEG_24hour_20kb_res <- gost(query = DOX_DAR_DEG_24hour_20kb$geneId,
+organism = "hsapiens",
+significant = FALSE,
+ordered_query = FALSE,
+domain_scope = "custom",
+measure_underrepresentation = FALSE,
+evcodes = FALSE,
+user_threshold = 0.05,
+correction_method = c("fdr"),
+custom_bg = RNA_all_expressed$ENTREZID,
+sources=c("GO:BP","KEGG"))
+
+```
+
+
+```{r, fig.height=10}
+
+
+
+DOX_DD_2420kb_nomtable <-  DOX_DAR_DEG_24hour_20kb_res$result %>%
+  dplyr::select(c(source, term_id,
+                  term_name,intersection_size, 
+                   term_size, p_value))
+
+DOX_DD_2420kb_nomtable %>%
+  dplyr::filter(source=="GO:BP") %>% 
+  dplyr::filter(p_value < 0.05) %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(.,caption = "Significant (p < 0.05 )terms found in DOX_DAR_DEG_pairs 24hours 20kb") %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
+
+DOX_DD_2420kb_nomtable %>%
+  dplyr::filter(source=="GO:BP") %>% 
+  dplyr::filter(p_value < 0.05) %>% 
+  mutate(log10_p=(-log(p_value, base=10))) %>% 
+  slice_max(log10_p, n=60) %>% 
+  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
+    geom_col()+
+  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
+  theme_bw()+
+  ylab("")+
+  xlab(paste0("-log10 p-value"))+
+  guides(fill="none")+
+  theme(axis.text.y = element_text(color="black"))+
+  ggtitle("24 hour DOX_DAR pairs (within 2kb of TSS) GO:BP enriched terms top 60 20kb")
+```
+KEGG
+
+```{r}
+
+DOX_DD_2420kb_nomtable %>%
+  dplyr::filter(source=="KEGG") %>% 
+  # dplyr::filter(p_value < 0.05) %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(.,caption = "KEGG terms found in DOX_DAR_DEG_pairs 24hours 20kb") %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
+
+DOX_DD_2420kb_nomtable %>%
+  dplyr::filter(source=="KEGG") %>% 
+  dplyr::filter(p_value < 0.05) %>% 
+  mutate(log10_p=(-log(p_value, base=10))) %>% 
+  slice_max(log10_p, n=60) %>% 
+  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
+    geom_col()+
+  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
+  theme_bw()+
+  ylab("")+
+  xlab(paste0("-log10 p-value"))+
+  guides(fill="none")+
+  theme(axis.text.y = element_text(color="black"))+
+  ggtitle("24 hour DOX_DAR pairs (within 20kb of TSS) KEGG enriched terms top 60")
+```
+
+
+
+
+### EPI
+```{r}
+
+EPI_DAR_DEG_3hour_2kb <- Assigned_genes_toPeak %>% 
+  dplyr::filter(Peakid %in%EPI3_DAR$Peakid) %>% 
+  dplyr::filter(geneId %in% EPI3_degs$ENTREZID) %>% 
+  dplyr::filter(distanceToTSS >-2000 & distanceToTSS <2000) %>% 
+  distinct(geneId)
+
+EPI_DAR_DEG_24hour_2kb <- Assigned_genes_toPeak %>% 
+  dplyr::filter(Peakid %in%EPI24_DAR$Peakid) %>% 
+  dplyr::filter(geneId %in% EPI24_degs$ENTREZID) %>% 
+  dplyr::filter(distanceToTSS >-2000 & distanceToTSS <2000) %>%
+  distinct(geneId)
+
+length(EPI_DAR_DEG_3hour_2kb$geneId)
+length(EPI_DAR_DEG_24hour_2kb$geneId)
+
+EPI_DAR_DEG_3hour_2kb_res <- gost(query = EPI_DAR_DEG_3hour_2kb$geneId,
+                    organism = "hsapiens",
+                    significant = FALSE,
+                    ordered_query = FALSE,
+                    domain_scope = "custom",
+                    measure_underrepresentation = FALSE,
+                    evcodes = FALSE,
+                    user_threshold = 0.05,
+                    correction_method = c("fdr"),
+                    custom_bg = RNA_all_expressed$ENTREZID,
+                    sources=c("GO:BP","KEGG"))
+
+
+
+
+EPI_DAR_DEG_24hour_2kb_res <- gost(query = EPI_DAR_DEG_24hour_2kb$geneId,
+                    organism = "hsapiens",
+                    significant = FALSE,
+                    ordered_query = FALSE,
+                    domain_scope = "custom",
+                    measure_underrepresentation = FALSE,
+                    evcodes = FALSE,
+                    user_threshold = 0.05,
+                    correction_method = c("fdr"),
+                    custom_bg = RNA_all_expressed$ENTREZID,
+                    sources=c("GO:BP","KEGG"))
+
+```
+ 
+#### EPI 3hr 2kb  
+
+
+```{r EPI_DAR_DEG_3hour_2kb GO, fig.height=10}
+
+EPI_DAR_DEG_3hour_2kb_res$result
+
+EPI_DD_3_nomtable <-  EPI_DAR_DEG_3hour_2kb_res$result %>%
+  dplyr::select(c(source, term_id,
+                  term_name,intersection_size, 
+                   term_size, p_value))
+
+EPI_DD_3_nomtable %>%
+  dplyr::filter(source=="GO:BP") %>% 
+  dplyr::filter(p_value < 0.05) %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(.,caption = "Significant (p < 0.05 )terms found in EPI_DAR_DEG_pairs 3 hours") %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
+
+EPI_DD_3_nomtable %>%
+  dplyr::filter(source=="GO:BP") %>% 
+  dplyr::filter(p_value < 0.05) %>% 
+  mutate(log10_p=(-log(p_value, base=10))) %>% 
+  slice_max(log10_p, n=60) %>% 
+  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
+    geom_col()+
+  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
+  theme_bw()+
+  ylab("")+
+  xlab(paste0("-log10 p-value"))+
+  guides(fill="none")+
+  theme(axis.text.y = element_text(color="black"))+
+  ggtitle("3 hour EPI_DAR pairs (within 2kb of TSS) GO:BP enriched terms top 60")
+
+### parsing similar terms:  
+```
+
+#### EPI 3 KEGG  
+
+```{r EPI_DD_3_nomtable KEGG}
+EPI_DD_3_nomtable %>%
+  dplyr::filter(source=="KEGG") %>% 
+  # dplyr::filter(p_value < 0.05) %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(.,caption = "ALL Kegg terms found in EPI_DAR_DEG_pairs 3 hours") %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
+EPI_DD_3_nomtable %>%
+  dplyr::filter(source=="KEGG") %>% 
+  dplyr::filter(p_value < 0.05) %>%
+  mutate(log10_p=(-log(p_value, base=10))) %>% 
+  slice_max(log10_p, n=40) %>% 
+  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
+    geom_col()+
+  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
+  theme_bw()+
+  ylab("")+
+  xlab(paste0("-log10 p-value"))+
+  guides(fill="none")+
+  theme(axis.text.y = element_text(color="black"))+
+  ggtitle("3 hour EPI_DAR pairs (within 2kb of TSS) KEGG enriched terms top 60")
+```
+
+#### EPI  3 hour 20kb
+```{r}
+
+EPI_DAR_DEG_3hour_20kb <- Assigned_genes_toPeak %>% 
+  dplyr::filter(Peakid %in%EPI3_DAR$Peakid) %>% 
+  dplyr::filter(geneId %in% EPI3_degs$ENTREZID) %>% 
+  dplyr::filter(distanceToTSS >-20000 & distanceToTSS <20000) %>% 
+  distinct(geneId)
+
+EPI_DAR_DEG_24hour_20kb <- Assigned_genes_toPeak %>% 
+  dplyr::filter(Peakid %in%EPI24_DAR$Peakid) %>% 
+  dplyr::filter(geneId %in% EPI24_degs$ENTREZID) %>% 
+  dplyr::filter(distanceToTSS >-20000 & distanceToTSS <20000) %>%
+  distinct(geneId)
+
+length(EPI_DAR_DEG_3hour_20kb$geneId)
+length(EPI_DAR_DEG_24hour_20kb$geneId)
+
+EPI_DAR_DEG_3hour_20kb_res <- gost(query = EPI_DAR_DEG_3hour_20kb$geneId,
+organism = "hsapiens",
+significant = FALSE,
+ordered_query = FALSE,
+domain_scope = "custom",
+measure_underrepresentation = FALSE,
+evcodes = FALSE,
+user_threshold = 0.05,
+correction_method = c("fdr"),
+custom_bg = RNA_all_expressed$ENTREZID,
+sources=c("GO:BP","KEGG"))
+
+```
+
+
+```{r 3hr 20kb ePI, fig.height=10}
+
+
+
+EPI_DD_320kb_nomtable <-  EPI_DAR_DEG_3hour_20kb_res$result %>%
+  dplyr::select(c(source, term_id,
+                  term_name,intersection_size, 
+                   term_size, p_value))
+
+EPI_DD_320kb_nomtable %>%
+  dplyr::filter(source=="GO:BP") %>% 
+  dplyr::filter(p_value < 0.05) %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(.,caption = "Significant (p < 0.05 )terms found in EPI_DAR_DEG_pairs 3 hours 20kb") %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
+
+EPI_DD_320kb_nomtable %>%
+  dplyr::filter(source=="GO:BP") %>% 
+  dplyr::filter(p_value < 0.05) %>% 
+  mutate(log10_p=(-log(p_value, base=10))) %>% 
+  slice_max(log10_p, n=60) %>% 
+  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
+    geom_col()+
+  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
+  theme_bw()+
+  ylab("")+
+  xlab(paste0("-log10 p-value"))+
+  guides(fill="none")+
+  theme(axis.text.y = element_text(color="black"))+
+  ggtitle("3 hour EPI_DAR pairs (within 2kb of TSS) GO:BP enriched terms top 60 20kb")
+```
+KEGG
+
+```{r}
+
+EPI_DD_320kb_nomtable %>%
+  dplyr::filter(source=="KEGG") %>% 
+  # dplyr::filter(p_value < 0.05) %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(.,caption = "KEGG terms found in EPI_DAR_DEG_pairs 3 hours 20kb") %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
+
+EPI_DD_320kb_nomtable %>%
+  dplyr::filter(source=="KEGG") %>% 
+  dplyr::filter(p_value < 0.05) %>% 
+  mutate(log10_p=(-log(p_value, base=10))) %>% 
+  slice_max(log10_p, n=60) %>% 
+  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
+    geom_col()+
+  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
+  theme_bw()+
+  ylab("")+
+  xlab(paste0("-log10 p-value"))+
+  guides(fill="none")+
+  theme(axis.text.y = element_text(color="black"))+
+  ggtitle("3 hour EPI_DAR pairs (within 20kb of TSS) KEGG enriched terms top 60")
+```
+
+
+
+ 
+#### EPI 24hr 2kb  
+
+
+```{r EPI_DD_24 GO, fig.height=10}
+
+EPI_DAR_DEG_24hour_2kb_res$result
+
+EPI_DD_24_nomtable <-  EPI_DAR_DEG_24hour_2kb_res$result %>%
+  dplyr::select(c(source, term_id,
+                  term_name,intersection_size, 
+                   term_size, p_value))
+
+EPI_DD_24_nomtable %>%
+  dplyr::filter(source=="GO:BP") %>% 
+  dplyr::filter(p_value < 0.05) %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(.,caption = "Significant (p < 0.05 )terms found in EPI_DAR_DEG_pairs 24hours") %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
+
+EPI_DD_24_nomtable %>%
+  dplyr::filter(source=="GO:BP") %>% 
+  dplyr::filter(p_value < 0.05) %>% 
+  mutate(log10_p=(-log(p_value, base=10))) %>% 
+  slice_max(log10_p, n=60) %>% 
+  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
+    geom_col()+
+  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
+  theme_bw()+
+  ylab("")+
+  xlab(paste0("-log10 p-value"))+
+  guides(fill="none")+
+  theme(axis.text.y = element_text(color="black"))+
+  ggtitle("24 hour EPI_DAR pairs (within 2kb of TSS) GO:BP enriched terms top 60")
+
+### parsing similar terms:  
+```
+
+#### EPI 24 KEGG  
+
+```{r EPI 24 hour KEGG}
+EPI_DD_24_nomtable %>%
+  dplyr::filter(source=="KEGG") %>% 
+  # dplyr::filter(p_value < 0.05) %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(.,caption = "ALL Kegg terms found in EPI_DAR_DEG_pairs 24 hours") %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
+EPI_DD_24_nomtable %>%
+  dplyr::filter(source=="KEGG") %>% 
+  dplyr::filter(p_value < 0.05) %>%
+  mutate(log10_p=(-log(p_value, base=10))) %>% 
+  slice_max(log10_p, n=40) %>% 
+  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
+    geom_col()+
+  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
+  theme_bw()+
+  ylab("")+
+  xlab(paste0("-log10 p-value"))+
+  guides(fill="none")+
+  theme(axis.text.y = element_text(color="black"))+
+  ggtitle("24 hour EPI_DAR pairs (within 2kb of TSS) KEGG enriched terms top 60")
+```
+
+#### EPI  24 hour 20kb
+```{r EPI  24 hour 20kb}
+
+EPI_DAR_DEG_24hour_20kb_res <- gost(query = EPI_DAR_DEG_24hour_20kb$geneId,
+organism = "hsapiens",
+significant = FALSE,
+ordered_query = FALSE,
+domain_scope = "custom",
+measure_underrepresentation = FALSE,
+evcodes = FALSE,
+user_threshold = 0.05,
+correction_method = c("fdr"),
+custom_bg = RNA_all_expressed$ENTREZID,
+sources=c("GO:BP","KEGG"))
+
+```
+
+
+```{r, fig.height=10}
+
+
+
+EPI_DD_2420kb_nomtable <-  EPI_DAR_DEG_24hour_20kb_res$result %>%
+  dplyr::select(c(source, term_id,
+                  term_name,intersection_size, 
+                   term_size, p_value))
+
+EPI_DD_2420kb_nomtable %>%
+  dplyr::filter(source=="GO:BP") %>% 
+  dplyr::filter(p_value < 0.05) %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(.,caption = "Significant (p < 0.05 )terms found in EPI_DAR_DEG_pairs 24hours 20kb") %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
+
+EPI_DD_2420kb_nomtable %>%
+  dplyr::filter(source=="GO:BP") %>% 
+  dplyr::filter(p_value < 0.05) %>% 
+  mutate(log10_p=(-log(p_value, base=10))) %>% 
+  slice_max(log10_p, n=60) %>% 
+  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
+    geom_col()+
+  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
+  theme_bw()+
+  ylab("")+
+  xlab(paste0("-log10 p-value"))+
+  guides(fill="none")+
+  theme(axis.text.y = element_text(color="black"))+
+  ggtitle("24 hour EPI_DAR pairs (within 2kb of TSS) GO:BP enriched terms top 60 20kb")
+```
+KEGG
+
+```{r EPI  24 hour 20kb KEGG}
+
+EPI_DD_2420kb_nomtable %>%
+  dplyr::filter(source=="KEGG") %>% 
+  # dplyr::filter(p_value < 0.05) %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(.,caption = "KEGG terms found in EPI_DAR_DEG_pairs 24hours 20kb") %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
+
+EPI_DD_2420kb_nomtable %>%
+  dplyr::filter(source=="KEGG") %>% 
+  dplyr::filter(p_value < 0.05) %>% 
+  mutate(log10_p=(-log(p_value, base=10))) %>% 
+  slice_max(log10_p, n=60) %>% 
+  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
+    geom_col()+
+  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
+  theme_bw()+
+  ylab("")+
+  xlab(paste0("-log10 p-value"))+
+  guides(fill="none")+
+  theme(axis.text.y = element_text(color="black"))+
+  ggtitle("24 hour EPI_DAR pairs (within 20kb of TSS) KEGG enriched terms top 60")
+```
+
+
+
+
+
+### DNR
+```{r}
+
+DNR_DAR_DEG_3hour_2kb <- Assigned_genes_toPeak %>% 
+  dplyr::filter(Peakid %in%DNR3_DAR$Peakid) %>% 
+  dplyr::filter(geneId %in% DNR3_degs$ENTREZID) %>% 
+  dplyr::filter(distanceToTSS >-2000 & distanceToTSS <2000) %>% 
+  distinct(geneId)
+
+DNR_DAR_DEG_24hour_2kb <- Assigned_genes_toPeak %>% 
+  dplyr::filter(Peakid %in%DNR24_DAR$Peakid) %>% 
+  dplyr::filter(geneId %in% DNR24_degs$ENTREZID) %>% 
+  dplyr::filter(distanceToTSS >-2000 & distanceToTSS <2000) %>%
+  distinct(geneId)
+
+length(DNR_DAR_DEG_3hour_2kb$geneId)
+length(DNR_DAR_DEG_24hour_2kb$geneId)
+
+DNR_DAR_DEG_3hour_2kb_res <- gost(query = DNR_DAR_DEG_3hour_2kb$geneId,
+                    organism = "hsapiens",
+                    significant = FALSE,
+                    ordered_query = FALSE,
+                    domain_scope = "custom",
+                    measure_underrepresentation = FALSE,
+                    evcodes = FALSE,
+                    user_threshold = 0.05,
+                    correction_method = c("fdr"),
+                    custom_bg = RNA_all_expressed$ENTREZID,
+                    sources=c("GO:BP","KEGG"))
+
+
+
+
+DNR_DAR_DEG_24hour_2kb_res <- gost(query = DNR_DAR_DEG_24hour_2kb$geneId,
+                    organism = "hsapiens",
+                    significant = FALSE,
+                    ordered_query = FALSE,
+                    domain_scope = "custom",
+                    measure_underrepresentation = FALSE,
+                    evcodes = FALSE,
+                    user_threshold = 0.05,
+                    correction_method = c("fdr"),
+                    custom_bg = RNA_all_expressed$ENTREZID,
+                    sources=c("GO:BP","KEGG"))
+
+```
+ 
+#### DNR 3hr 2kb  
+
+
+```{r DNR 3hr 2kb GO, fig.height=10}
+
+DNR_DAR_DEG_3hour_2kb_res$result
+
+DNR_DD_3_nomtable <-  DNR_DAR_DEG_3hour_2kb_res$result %>%
+  dplyr::select(c(source, term_id,
+                  term_name,intersection_size, 
+                   term_size, p_value))
+
+DNR_DD_3_nomtable %>%
+  dplyr::filter(source=="GO:BP") %>% 
+  dplyr::filter(p_value < 0.05) %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(.,caption = "Significant (p < 0.05 )terms found in DNR_DAR_DEG_pairs 3 hours") %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
+
+DNR_DD_3_nomtable %>%
+  dplyr::filter(source=="GO:BP") %>% 
+  dplyr::filter(p_value < 0.05) %>% 
+  mutate(log10_p=(-log(p_value, base=10))) %>% 
+  slice_max(log10_p, n=60) %>% 
+  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
+    geom_col()+
+  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
+  theme_bw()+
+  ylab("")+
+  xlab(paste0("-log10 p-value"))+
+  guides(fill="none")+
+  theme(axis.text.y = element_text(color="black"))+
+  ggtitle("3 hour DNR_DAR pairs (within 2kb of TSS) GO:BP enriched terms top 60")
+
+### parsing similar terms:  
+```
+
+#### DNR 3 KEGG  
+
+```{r DNR 3 KEGG}
+DNR_DD_3_nomtable %>%
+  dplyr::filter(source=="KEGG") %>% 
+  # dplyr::filter(p_value < 0.05) %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(.,caption = "ALL Kegg terms found in DNR_DAR_DEG_pairs 3 hours") %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
+DNR_DD_3_nomtable %>%
+  dplyr::filter(source=="KEGG") %>% 
+  dplyr::filter(p_value < 0.05) %>%
+  mutate(log10_p=(-log(p_value, base=10))) %>% 
+  slice_max(log10_p, n=40) %>% 
+  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
+    geom_col()+
+  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
+  theme_bw()+
+  ylab("")+
+  xlab(paste0("-log10 p-value"))+
+  guides(fill="none")+
+  theme(axis.text.y = element_text(color="black"))+
+  ggtitle("3 hour DNR_DAR pairs (within 2kb of TSS) KEGG enriched terms top 60")
+```
+
+#### DNR  3 hour 20kb
+```{r DNR  3 hour 20kb}
+
+DNR_DAR_DEG_3hour_20kb <- Assigned_genes_toPeak %>% 
+  dplyr::filter(Peakid %in%DNR3_DAR$Peakid) %>% 
+  dplyr::filter(geneId %in% DNR3_degs$ENTREZID) %>% 
+  dplyr::filter(distanceToTSS >-20000 & distanceToTSS <20000) %>% 
+  distinct(geneId)
+
+DNR_DAR_DEG_24hour_20kb <- Assigned_genes_toPeak %>% 
+  dplyr::filter(Peakid %in%DNR24_DAR$Peakid) %>% 
+  dplyr::filter(geneId %in% DNR24_degs$ENTREZID) %>% 
+  dplyr::filter(distanceToTSS >-20000 & distanceToTSS <20000) %>%
+  distinct(geneId)
+
+length(DNR_DAR_DEG_3hour_20kb$geneId)
+length(DNR_DAR_DEG_24hour_20kb$geneId)
+
+DNR_DAR_DEG_3hour_20kb_res <- gost(query = DNR_DAR_DEG_3hour_20kb$geneId,
+organism = "hsapiens",
+significant = FALSE,
+ordered_query = FALSE,
+domain_scope = "custom",
+measure_underrepresentation = FALSE,
+evcodes = FALSE,
+user_threshold = 0.05,
+correction_method = c("fdr"),
+custom_bg = RNA_all_expressed$ENTREZID,
+sources=c("GO:BP","KEGG"))
+
+```
+
+
+```{r 3hr 20kb DNR, fig.height=10}
+
+
+
+DNR_DD_320kb_nomtable <-  DNR_DAR_DEG_3hour_20kb_res$result %>%
+  dplyr::select(c(source, term_id,
+                  term_name,intersection_size, 
+                   term_size, p_value))
+
+DNR_DD_320kb_nomtable %>%
+  dplyr::filter(source=="GO:BP") %>% 
+  dplyr::filter(p_value < 0.05) %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(.,caption = "Significant (p < 0.05 )terms found in DNR_DAR_DEG_pairs 3 hours 20kb") %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
+
+DNR_DD_320kb_nomtable %>%
+  dplyr::filter(source=="GO:BP") %>% 
+  dplyr::filter(p_value < 0.05) %>% 
+  mutate(log10_p=(-log(p_value, base=10))) %>% 
+  slice_max(log10_p, n=60) %>% 
+  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
+    geom_col()+
+  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
+  theme_bw()+
+  ylab("")+
+  xlab(paste0("-log10 p-value"))+
+  guides(fill="none")+
+  theme(axis.text.y = element_text(color="black"))+
+  ggtitle("3 hour DNR_DAR pairs (within 2kb of TSS) GO:BP enriched terms top 60 20kb")
+```
+KEGG
+
+```{r DNR  3 hour 20kb KEGG }
+
+DNR_DD_320kb_nomtable %>%
+  dplyr::filter(source=="KEGG") %>% 
+  # dplyr::filter(p_value < 0.05) %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(.,caption = "KEGG terms found in DNR_DAR_DEG_pairs 3 hours 20kb") %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
+
+DNR_DD_320kb_nomtable %>%
+  dplyr::filter(source=="KEGG") %>% 
+  dplyr::filter(p_value < 0.05) %>% 
+  mutate(log10_p=(-log(p_value, base=10))) %>% 
+  slice_max(log10_p, n=60) %>% 
+  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
+    geom_col()+
+  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
+  theme_bw()+
+  ylab("")+
+  xlab(paste0("-log10 p-value"))+
+  guides(fill="none")+
+  theme(axis.text.y = element_text(color="black"))+
+  ggtitle("3 hour DNR_DAR pairs (within 20kb of TSS) KEGG enriched terms top 60")
+```
+
+
+
+ 
+#### DNR 24hr 2kb  
+
+
+```{r DNR 24hr 2kb GO, fig.height=10}
+
+DNR_DAR_DEG_24hour_2kb_res$result
+
+DNR_DD_24_nomtable <-  DNR_DAR_DEG_24hour_2kb_res$result %>%
+  dplyr::select(c(source, term_id,
+                  term_name,intersection_size, 
+                   term_size, p_value))
+
+DNR_DD_24_nomtable %>%
+  dplyr::filter(source=="GO:BP") %>% 
+  dplyr::filter(p_value < 0.05) %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(.,caption = "Significant (p < 0.05 )terms found in DNR_DAR_DEG_pairs 24hours") %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
+
+DNR_DD_24_nomtable %>%
+  dplyr::filter(source=="GO:BP") %>% 
+  dplyr::filter(p_value < 0.05) %>% 
+  mutate(log10_p=(-log(p_value, base=10))) %>% 
+  slice_max(log10_p, n=60) %>% 
+  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
+    geom_col()+
+  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
+  theme_bw()+
+  ylab("")+
+  xlab(paste0("-log10 p-value"))+
+  guides(fill="none")+
+  theme(axis.text.y = element_text(color="black"))+
+  ggtitle("24 hour DNR_DAR pairs (within 2kb of TSS) GO:BP enriched terms top 60")
+
+### parsing similar terms:  
+```
+
+#### DNR 24 KEGG  
+
+```{r DNR 24 hour KEGG}
+DNR_DD_24_nomtable %>%
+  dplyr::filter(source=="KEGG") %>% 
+  # dplyr::filter(p_value < 0.05) %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(.,caption = "ALL Kegg terms found in DNR_DAR_DEG_pairs 24 hours") %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
+DNR_DD_24_nomtable %>%
+  dplyr::filter(source=="KEGG") %>% 
+  dplyr::filter(p_value < 0.05) %>%
+  mutate(log10_p=(-log(p_value, base=10))) %>% 
+  slice_max(log10_p, n=40) %>% 
+  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
+    geom_col()+
+  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
+  theme_bw()+
+  ylab("")+
+  xlab(paste0("-log10 p-value"))+
+  guides(fill="none")+
+  theme(axis.text.y = element_text(color="black"))+
+  ggtitle("24 hour DNR_DAR pairs (within 2kb of TSS) KEGG enriched terms top 60")
+```
+
+#### DNR  24 hour 20kb
+```{r DNR  24 hour 20kb}
+
+DNR_DAR_DEG_24hour_20kb_res <- gost(query = DNR_DAR_DEG_24hour_20kb$geneId,
+organism = "hsapiens",
+significant = FALSE,
+ordered_query = FALSE,
+domain_scope = "custom",
+measure_underrepresentation = FALSE,
+evcodes = FALSE,
+user_threshold = 0.05,
+correction_method = c("fdr"),
+custom_bg = RNA_all_expressed$ENTREZID,
+sources=c("GO:BP","KEGG"))
+
+```
+
+
+```{r, fig.height=10}
+
+
+
+DNR_DD_2420kb_nomtable <-  DNR_DAR_DEG_24hour_20kb_res$result %>%
+  dplyr::select(c(source, term_id,
+                  term_name,intersection_size, 
+                   term_size, p_value))
+
+DNR_DD_2420kb_nomtable %>%
+  dplyr::filter(source=="GO:BP") %>% 
+  dplyr::filter(p_value < 0.05) %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(.,caption = "Significant (p < 0.05 )terms found in DNR_DAR_DEG_pairs 24hours 20kb") %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
+
+DNR_DD_2420kb_nomtable %>%
+  dplyr::filter(source=="GO:BP") %>% 
+  dplyr::filter(p_value < 0.05) %>% 
+  mutate(log10_p=(-log(p_value, base=10))) %>% 
+  slice_max(log10_p, n=60) %>% 
+  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
+    geom_col()+
+  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
+  theme_bw()+
+  ylab("")+
+  xlab(paste0("-log10 p-value"))+
+  guides(fill="none")+
+  theme(axis.text.y = element_text(color="black"))+
+  ggtitle("24 hour EPI_DAR pairs (within 2kb of TSS) GO:BP enriched terms top 60 20kb")
+```
+KEGG
+
+```{r DNR  24 hour 20kb KEGG}
+
+DNR_DD_2420kb_nomtable %>%
+  dplyr::filter(source=="KEGG") %>% 
+  # dplyr::filter(p_value < 0.05) %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(.,caption = "KEGG terms found in DNR_DAR_DEG_pairs 24hours 20kb") %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
+
+DNR_DD_2420kb_nomtable %>%
+  dplyr::filter(source=="KEGG") %>% 
+  dplyr::filter(p_value < 0.05) %>% 
+  mutate(log10_p=(-log(p_value, base=10))) %>% 
+  slice_max(log10_p, n=60) %>% 
+  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
+    geom_col()+
+  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
+  theme_bw()+
+  ylab("")+
+  xlab(paste0("-log10 p-value"))+
+  guides(fill="none")+
+  theme(axis.text.y = element_text(color="black"))+
+  ggtitle("24 hour DNR_DAR pairs (within 20kb of TSS) KEGG enriched terms top 60")
+```
+
+
+ 
+ 
+### MTX
+```{r}
+
+MTX_DAR_DEG_3hour_2kb <- Assigned_genes_toPeak %>% 
+  dplyr::filter(Peakid %in%MTX3_DAR$Peakid) %>% 
+  dplyr::filter(geneId %in% MTX3_degs$ENTREZID) %>% 
+  dplyr::filter(distanceToTSS >-2000 & distanceToTSS <2000) %>% 
+  distinct(geneId)
+
+MTX_DAR_DEG_24hour_2kb <- Assigned_genes_toPeak %>% 
+  dplyr::filter(Peakid %in%MTX24_DAR$Peakid) %>% 
+  dplyr::filter(geneId %in% MTX24_degs$ENTREZID) %>% 
+  dplyr::filter(distanceToTSS >-2000 & distanceToTSS <2000) %>%
+  distinct(geneId)
+
+length(MTX_DAR_DEG_3hour_2kb$geneId)
+length(MTX_DAR_DEG_24hour_2kb$geneId)
+
+
+MTX_DAR_DEG_24hour_2kb_res <- gost(query = MTX_DAR_DEG_24hour_2kb$geneId,
+                    organism = "hsapiens",
+                    significant = FALSE,
+                    ordered_query = FALSE,
+                    domain_scope = "custom",
+                    measure_underrepresentation = FALSE,
+                    evcodes = FALSE,
+                    user_threshold = 0.05,
+                    correction_method = c("fdr"),
+                    custom_bg = RNA_all_expressed$ENTREZID,
+                    sources=c("GO:BP","KEGG"))
+
+```
+ 
+#### MTX 3hr 2kb  
+
+#### MTX  3 hour 20kb
+```{r MTX  3 hour 20kb}
+
+MTX_DAR_DEG_3hour_20kb <- Assigned_genes_toPeak %>% 
+  dplyr::filter(Peakid %in%MTX3_DAR$Peakid) %>% 
+  dplyr::filter(geneId %in% MTX3_degs$ENTREZID) %>% 
+  dplyr::filter(distanceToTSS >-20000 & distanceToTSS <20000) %>% 
+  distinct(geneId)
+
+MTX_DAR_DEG_24hour_20kb <- Assigned_genes_toPeak %>% 
+  dplyr::filter(Peakid %in%MTX24_DAR$Peakid) %>% 
+  dplyr::filter(geneId %in% MTX24_degs$ENTREZID) %>% 
+  dplyr::filter(distanceToTSS >-20000 & distanceToTSS <20000) %>%
+  distinct(geneId)
+
+length(MTX_DAR_DEG_3hour_20kb$geneId)
+length(MTX_DAR_DEG_24hour_20kb$geneId)
+
+# MTX_DAR_DEG_3hour_20kb_res <- gost(query = MTX_DAR_DEG_3hour_20kb$geneId,
+# organism = "hsapiens",
+# significant = FALSE,
+# ordered_query = FALSE,
+# domain_scope = "custom",
+# measure_underrepresentation = FALSE,
+# evcodes = FALSE,
+# user_threshold = 0.05,
+# correction_method = c("fdr"),
+# custom_bg = RNA_all_expressed$ENTREZID,
+# sources=c("GO:BP","KEGG"))
+
+```
+
+
+#### MTX 24hr 2kb  
+
+
+```{r MTX 24hr 2kb GO, fig.height=10}
+
+MTX_DAR_DEG_24hour_2kb_res$result
+
+MTX_DD_24_nomtable <-  MTX_DAR_DEG_24hour_2kb_res$result %>%
+  dplyr::select(c(source, term_id,
+                  term_name,intersection_size, 
+                   term_size, p_value))
+
+MTX_DD_24_nomtable %>%
+  dplyr::filter(source=="GO:BP") %>% 
+  dplyr::filter(p_value < 0.05) %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(.,caption = "Significant (p < 0.05 )terms found in MTX_DAR_DEG_pairs 24hours") %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
+
+MTX_DD_24_nomtable %>%
+  dplyr::filter(source=="GO:BP") %>% 
+  dplyr::filter(p_value < 0.05) %>% 
+  mutate(log10_p=(-log(p_value, base=10))) %>% 
+  slice_max(log10_p, n=60) %>% 
+  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
+    geom_col()+
+  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
+  theme_bw()+
+  ylab("")+
+  xlab(paste0("-log10 p-value"))+
+  guides(fill="none")+
+  theme(axis.text.y = element_text(color="black"))+
+  ggtitle("24 hour MTX_DAR pairs (within 2kb of TSS) GO:BP enriched terms top 60")
+
+### parsing similar terms:  
+```
+
+#### MTX 24 KEGG  
+
+```{r MTX 24 hour KEGG}
+MTX_DD_24_nomtable %>%
+  dplyr::filter(source=="KEGG") %>% 
+  # dplyr::filter(p_value < 0.05) %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(.,caption = "ALL Kegg terms found in MTX_DAR_DEG_pairs 24 hours") %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
+MTX_DD_24_nomtable %>%
+  dplyr::filter(source=="KEGG") %>% 
+  dplyr::filter(p_value < 0.05) %>%
+  mutate(log10_p=(-log(p_value, base=10))) %>% 
+  slice_max(log10_p, n=40) %>% 
+  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
+    geom_col()+
+  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
+  theme_bw()+
+  ylab("")+
+  xlab(paste0("-log10 p-value"))+
+  guides(fill="none")+
+  theme(axis.text.y = element_text(color="black"))+
+  ggtitle("24 hour MTX_DAR pairs (within 2kb of TSS) KEGG enriched terms top 60")
+```
+
+#### MTX  24 hour 20kb
+```{r MTX  24 hour 20kb}
+
+MTX_DAR_DEG_24hour_20kb_res <- gost(query = MTX_DAR_DEG_24hour_20kb$geneId,
+organism = "hsapiens",
+significant = FALSE,
+ordered_query = FALSE,
+domain_scope = "custom",
+measure_underrepresentation = FALSE,
+evcodes = FALSE,
+user_threshold = 0.05,
+correction_method = c("fdr"),
+custom_bg = RNA_all_expressed$ENTREZID,
+sources=c("GO:BP","KEGG"))
+
+```
+
+
+```{r, fig.height=10}
+
+
+
+MTX_DD_2420kb_nomtable <-  MTX_DAR_DEG_24hour_20kb_res$result %>%
+  dplyr::select(c(source, term_id,
+                  term_name,intersection_size, 
+                   term_size, p_value))
+
+MTX_DD_2420kb_nomtable %>%
+  dplyr::filter(source=="GO:BP") %>% 
+  dplyr::filter(p_value < 0.05) %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(.,caption = "Significant (p < 0.05 )terms found in MTX_DAR_DEG_pairs 24hours 20kb") %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
+
+MTX_DD_2420kb_nomtable %>%
+  dplyr::filter(source=="GO:BP") %>% 
+  dplyr::filter(p_value < 0.05) %>% 
+  mutate(log10_p=(-log(p_value, base=10))) %>% 
+  slice_max(log10_p, n=60) %>% 
+  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
+    geom_col()+
+  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
+  theme_bw()+
+  ylab("")+
+  xlab(paste0("-log10 p-value"))+
+  guides(fill="none")+
+  theme(axis.text.y = element_text(color="black"))+
+  ggtitle("24 hour EPI_DAR pairs (within 2kb of TSS) GO:BP enriched terms top 60 20kb")
+```
+KEGG
+
+```{r MTX  24 hour 20kb KEGG}
+
+MTX_DD_2420kb_nomtable %>%
+  dplyr::filter(source=="KEGG") %>% 
+  # dplyr::filter(p_value < 0.05) %>% 
+  mutate_at(.vars = 6, .funs = scientific_format()) %>%
+  kable(.,caption = "KEGG terms found in MTX_DAR_DEG_pairs 24hours 20kb") %>%
+  kable_paper("striped", full_width = FALSE) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "left",
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  scroll_box(width = "100%", height = "400px")
+
+
+MTX_DD_2420kb_nomtable %>%
+  dplyr::filter(source=="KEGG") %>% 
+  dplyr::filter(p_value < 0.05) %>% 
+  mutate(log10_p=(-log(p_value, base=10))) %>% 
+  slice_max(log10_p, n=60) %>% 
+  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
+    geom_col()+
+  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
+  theme_bw()+
+  ylab("")+
+  xlab(paste0("-log10 p-value"))+
+  guides(fill="none")+
+  theme(axis.text.y = element_text(color="black"))+
+  ggtitle("24 hour MTX_DAR pairs (within 20kb of TSS) KEGG enriched terms top 60")
+```
+
+
