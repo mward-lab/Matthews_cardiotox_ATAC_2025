@@ -1,0 +1,699 @@
+---
+title: "DOX_DAR_heatmaps"
+author: "Renee Matthews"
+date: "2025-06-26"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE,
+	warning = FALSE,
+		dev = c("png","pdf")
+)
+```
+
+```{css, echo=FALSE}
+pre {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+pre[class] {
+  max-height: 200px;
+}
+```
+
+```{r package loading, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(kableExtra)
+library(broom)
+library(RColorBrewer)
+library(ChIPseeker)
+library("TxDb.Hsapiens.UCSC.hg38.knownGene")
+library("org.Hs.eg.db")
+library(rtracklayer)
+library(edgeR)
+library(ggfortify)
+library(limma)
+library(readr)
+library(BiocGenerics)
+library(gridExtra)
+library(VennDiagram)
+library(scales)
+library(BiocParallel)
+library(ggpubr)
+library(devtools)
+library(biomaRt)
+library(eulerr)
+library(smplot2)
+library(genomation)
+library(ggsignif)
+library(plyranges)
+library(ggrepel)
+library(epitools)
+library(circlize)
+library(readxl)
+library(ComplexHeatmap)
+
+```
+
+
+Loading counts matrix and making filtered matrix
+```{r countmatrix loading}
+raw_counts <- read_delim("data/Final_four_data/re_analysis/Raw_unfiltered_counts.tsv",delim="\t") %>% 
+  column_to_rownames("Peakid") %>% 
+  as.matrix()
+
+lcpm <- cpm(raw_counts, log= TRUE)
+  ### for determining the basic cutoffs
+filt_raw_counts <- raw_counts[rowMeans(lcpm)> 0,]
+
+filt_raw_counts_noY <- filt_raw_counts[!grepl("chrY",rownames(filt_raw_counts)),]
+
+```
+
+Subsetting count matrix and adding log2cpm
+```{r creating dataframes with all regions}
+# annotation_mat <- data.frame(timeset=colnames(filt_raw_counts_noY)) %>%
+#   mutate(sample = timeset) %>% 
+#   separate(timeset, into = c("indv","trt","time"), sep= "_") %>% 
+#   mutate(time = factor(time, levels = c("3h", "24h"))) %>% 
+#   mutate(trt = factor(trt, levels = c("DOX","EPI", "DNR", "MTX", "TRZ", "VEH"))) %>% 
+#   mutate(indv=factor(indv, levels = c("A","B","C","D"))) %>% 
+#   mutate(trt_time=paste0(trt,"_",time))
+
+DOX_VEH_3hr <- filt_raw_counts_noY %>% 
+  as.data.frame() %>% 
+  dplyr::select(contains("VEH")& ends_with("3h")| contains("DOX")& ends_with("3h")) %>% 
+  # dplyr::select(where(~ grepl("VEH|DOX", .col) & grepl("3h$", .col))) %>% ### this also works
+  cpm(., log=TRUE)
+
+
+DOX_VEH_24hr <- filt_raw_counts_noY %>% 
+  as.data.frame() %>% 
+  dplyr::select((contains("VEH")& ends_with("24h"))| (contains("DOX")& ends_with("24h"))) %>% 
+  # dplyr::select(where(~ grepl("VEH|DOX", .col) & grepl("3h$", .col))) %>% ### this also works
+  cpm(., log=TRUE)
+
+EPI_VEH_3hr <- filt_raw_counts_noY %>% 
+  as.data.frame() %>% 
+  dplyr::select(contains("VEH")& ends_with("3h")| contains("EPI")& ends_with("3h")) %>% 
+  # dplyr::select(where(~ grepl("VEH|EPI", .col) & grepl("3h$", .col))) %>% ### this also works
+  cpm(., log=TRUE)
+
+
+EPI_VEH_24hr <- filt_raw_counts_noY %>% 
+  as.data.frame() %>% 
+  dplyr::select((contains("VEH")& ends_with("24h"))| (contains("EPI")& ends_with("24h"))) %>% 
+  # dplyr::select(where(~ grepl("VEH|EPI", .col) & grepl("3h$", .col))) %>% ### this also works
+  cpm(., log=TRUE)
+
+DNR_VEH_3hr <- filt_raw_counts_noY %>% 
+  as.data.frame() %>% 
+  dplyr::select(contains("VEH")& ends_with("3h")| contains("DNR")& ends_with("3h")) %>% 
+  # dplyr::select(where(~ grepl("VEH|DNR", .col) & grepl("3h$", .col))) %>% ### this also works
+  cpm(., log=TRUE)
+
+
+DNR_VEH_24hr <- filt_raw_counts_noY %>% 
+  as.data.frame() %>% 
+  dplyr::select((contains("VEH")& ends_with("24h"))| (contains("DNR")& ends_with("24h"))) %>% 
+  # dplyr::select(where(~ grepl("VEH|DNR", .col) & grepl("3h$", .col))) %>% ### this also works
+  cpm(., log=TRUE)
+
+MTX_VEH_3hr <- filt_raw_counts_noY %>% 
+  as.data.frame() %>% 
+  dplyr::select(contains("VEH")& ends_with("3h")| contains("MTX")& ends_with("3h")) %>% 
+  # dplyr::select(where(~ grepl("VEH|MTX", .col) & grepl("3h$", .col))) %>% ### this also works
+  cpm(., log=TRUE)
+
+
+MTX_VEH_24hr <- filt_raw_counts_noY %>% 
+  as.data.frame() %>% 
+  dplyr::select((contains("VEH")& ends_with("24h"))| (contains("MTX")& ends_with("24h"))) %>% 
+  # dplyr::select(where(~ grepl("VEH|MTX", .col) & grepl("3h$", .col))) %>% ### this also works
+  cpm(., log=TRUE)
+
+TRZ_VEH_3hr <- filt_raw_counts_noY %>% 
+  as.data.frame() %>% 
+  dplyr::select(contains("VEH")& ends_with("3h")| contains("TRZ")& ends_with("3h")) %>% 
+  # dplyr::select(where(~ grepl("VEH|TRZ", .col) & grepl("3h$", .col))) %>% ### this also works
+  cpm(., log=TRUE)
+
+
+TRZ_VEH_24hr <- filt_raw_counts_noY %>% 
+  as.data.frame() %>% 
+  dplyr::select((contains("VEH")& ends_with("24h"))| (contains("TRZ")& ends_with("24h"))) %>% 
+  # dplyr::select(where(~ grepl("VEH|TRZ", .col) & grepl("3h$", .col))) %>% ### this also works
+  cpm(., log=TRUE)
+
+
+```
+
+loading DOX DARs for 3 hours and 24 hours
+```{r}
+toptable_results <- readRDS("data/Final_four_data/re_analysis/Toptable_results.RDS")
+
+all_results  <- toptable_results %>%
+  imap(~ .x %>% tibble::rownames_to_column(var = "rowname") %>%
+         mutate(source = .y)) %>%
+  bind_rows()
+
+DOX_3_sig <-all_results %>% 
+  dplyr::select(source,genes, logFC,adj.P.Val) %>% 
+  mutate("Peakid"=genes) %>% 
+  dplyr::filter(source=="DOX_3") %>% 
+   dplyr::filter(adj.P.Val<0.05) 
+
+DOX_24_sig <-all_results %>% 
+  dplyr::select(source,genes, logFC,adj.P.Val) %>% 
+  mutate("Peakid"=genes) %>% 
+  dplyr::filter(source=="DOX_24") %>% 
+   dplyr::filter(adj.P.Val<0.05) 
+
+EPI_3_sig <-all_results %>% 
+  dplyr::select(source,genes, logFC,adj.P.Val) %>% 
+  mutate("Peakid"=genes) %>% 
+  dplyr::filter(source=="EPI_3") %>% 
+   dplyr::filter(adj.P.Val<0.05) 
+
+EPI_24_sig <-all_results %>% 
+  dplyr::select(source,genes, logFC,adj.P.Val) %>% 
+  mutate("Peakid"=genes) %>% 
+  dplyr::filter(source=="EPI_24") %>% 
+   dplyr::filter(adj.P.Val<0.05) 
+
+DNR_3_sig <-all_results %>% 
+  dplyr::select(source,genes, logFC,adj.P.Val) %>% 
+  mutate("Peakid"=genes) %>% 
+  dplyr::filter(source=="DNR_3") %>% 
+   dplyr::filter(adj.P.Val<0.05) 
+
+DNR_24_sig <-all_results %>% 
+  dplyr::select(source,genes, logFC,adj.P.Val) %>% 
+  mutate("Peakid"=genes) %>% 
+  dplyr::filter(source=="DNR_24") %>% 
+   dplyr::filter(adj.P.Val<0.05) 
+
+MTX_3_sig <-all_results %>% 
+  dplyr::select(source,genes, logFC,adj.P.Val) %>% 
+  mutate("Peakid"=genes) %>% 
+  dplyr::filter(source=="MTX_3") %>% 
+   dplyr::filter(adj.P.Val<0.05) 
+
+MTX_24_sig <-all_results %>% 
+  dplyr::select(source,genes, logFC,adj.P.Val) %>% 
+  mutate("Peakid"=genes) %>% 
+  dplyr::filter(source=="MTX_24") %>% 
+   dplyr::filter(adj.P.Val<0.05) 
+
+TRZ_3_sig <-all_results %>% 
+  dplyr::select(source,genes, logFC,adj.P.Val) %>% 
+  mutate("Peakid"=genes) %>% 
+  dplyr::filter(source=="TRZ_3") 
+
+TRZ_24_sig <-all_results %>% 
+  dplyr::select(source,genes, logFC,adj.P.Val) %>% 
+  mutate("Peakid"=genes) %>% 
+  dplyr::filter(source=="TRZ_24") 
+
+```
+
+### DOX 3 hour filtering matrix  
+
+
+```{r DOX 3hr heatmap, fig.height=8, fig.width=5}
+DOX_VEH_3hr_mat <-  DOX_VEH_3hr %>% 
+  as.data.frame() %>% 
+  dplyr::filter(rownames(.) %in%DOX_3_sig$Peakid) %>% 
+  as.matrix()
+
+DOX3_annot_mat <- tibble(timeset=colnames(DOX_VEH_3hr)) %>%
+  mutate(sample = timeset) %>%
+  separate(timeset, into = c("indv","trt","time"), sep= "_") %>%
+  # mutate(time = factor(time, levels = c("3h", "24h"))) %>%
+  mutate(trt = factor(trt, levels = c("DOX","EPI", "DNR", "MTX", "TRZ", "VEH"))) %>%
+  mutate(indv=factor(indv, levels = c("A","B","C","D"))) %>% 
+  column_to_rownames("sample")
+  # mutate(trt_time=paste0(trt,"_",time))
+# drug_pal <- c("#8B006D","#DF707E","#F1B72B", "#3386DD","#707031","#41B333")
+indv_color <- setNames(brewer.pal(n = 4, name = "Dark2"), unique(DOX3_annot_mat$indv))
+col_ha_3hr <- HeatmapAnnotation(df=DOX3_annot_mat,
+                                col=list(
+                                  trt = c(DOX="#8B006D",VEH="#41B333"),
+                                  indv = indv_color)) 
+wss <- sapply(1:15, function(k) {
+  kmeans(DOX_VEH_3hr_mat, centers = k, nstart = 10)$tot.withinss
+})
+
+plot(1:15, wss, type = "b", pch = 19,
+     xlab = "Number of Clusters (K)",
+     ylab = "Total Within-Cluster Sum of Squares",
+     main = "Elbow Method for Choosing K") 
+
+                              
+
+Heatmap(DOX_VEH_3hr_mat, 
+        top_annotation = col_ha_3hr,
+        show_column_names = TRUE,
+        show_row_names = FALSE,
+        cluster_columns = TRUE,
+        cluster_rows = FALSE,
+        use_raster=TRUE,
+        raster_device="png",
+        raster_quality = 2,
+        row_km = 5,
+        column_title = "3 Hour Log2cpm of 3 hr DOX DARs")
+  
+```
+
+
+### DOX 24 hour filtering matrix
+
+```{r DOX 24hr heatmap, fig.height=8, fig.width=5}
+DOX_VEH_24hr_mat <-  DOX_VEH_24hr %>% 
+  as.data.frame() %>% 
+  dplyr::filter(rownames(.) %in%DOX_24_sig$Peakid) %>% 
+  as.matrix()
+
+DOX24_annot_mat <- tibble(timeset=colnames(DOX_VEH_24hr)) %>%
+  mutate(sample = timeset) %>%
+  separate(timeset, into = c("indv","trt","time"), sep= "_") %>%
+  # mutate(time = factor(time, levels = c("3h", "24h"))) %>%
+  mutate(trt = factor(trt, levels = c("DOX","EPI", "DNR", "MTX", "TRZ", "VEH"))) %>%
+  mutate(indv=factor(indv, levels = c("A","B","C","D"))) %>% 
+  column_to_rownames("sample")
+  # mutate(trt_time=paste0(trt,"_",time))
+# drug_pal <- c("#8B006D","#DF707E","#F1B72B", "#3386DD","#707031","#41B333")
+indv_24color <- setNames(brewer.pal(n = 4, name = "Dark2"), unique(DOX24_annot_mat$indv))
+col_ha_24hr <- HeatmapAnnotation(df=DOX24_annot_mat,
+                                col=list(
+                                  trt = c(DOX="#8B006D",VEH="#41B333"),
+                                  indv = indv_24color)) 
+ set.seed(123)
+wss <- sapply(1:15, function(k) {
+  kmeans(DOX_VEH_24hr_mat, centers = k, nstart = 10)$tot.withinss
+})
+
+plot(1:15, wss, type = "b", pch = 19,
+     xlab = "Number of Clusters (K)",
+     ylab = "Total Within-Cluster Sum of Squares",
+     main = "Elbow Method for Choosing K") 
+
+
+
+Heatmap(DOX_VEH_24hr_mat, 
+        top_annotation = col_ha_24hr,
+        show_column_names = TRUE,
+        show_row_names = FALSE,
+        cluster_columns = TRUE,
+        cluster_rows = FALSE,
+        use_raster=TRUE,
+        raster_device="png",
+        raster_quality = 2,
+        row_km = 3,
+        column_title = "24 Hour Log2cpm of 24 hr DARs")
+  
+```
+
+### EPI 3 hour filtering matrix  
+
+
+```{r EPI 3hr heatmap, fig.height=8, fig.width=5}
+
+
+EPI_VEH_3hr_mat <-  EPI_VEH_3hr %>% 
+  as.data.frame() %>% 
+  dplyr::filter(rownames(.) %in%EPI_3_sig$Peakid) %>% 
+  as.matrix()
+
+EPI3_annot_mat <- tibble(timeset=colnames(EPI_VEH_3hr)) %>%
+  mutate(sample = timeset) %>%
+  separate(timeset, into = c("indv","trt","time"), sep= "_") %>%
+  # mutate(time = factor(time, levels = c("3h", "24h"))) %>%
+  mutate(trt = factor(trt, levels = c("DOX","EPI", "DNR", "MTX", "TRZ", "VEH"))) %>%
+  mutate(indv=factor(indv, levels = c("A","B","C","D"))) %>% 
+  column_to_rownames("sample")
+  # mutate(trt_time=paste0(trt,"_",time))
+# drug_pal <- c("#8B006D","#DF707E","#F1B72B", "#3386DD","#707031","#41B333")
+indv_color <- setNames(brewer.pal(n = 4, name = "Dark2"), unique(EPI3_annot_mat$indv))
+col_ha_3hr <- HeatmapAnnotation(df=EPI3_annot_mat,
+                                col=list(
+                                  trt = c(EPI="#DF707E",VEH="#41B333"),
+                                  indv = indv_color)) 
+wss <- sapply(1:15, function(k) {
+  kmeans(EPI_VEH_3hr_mat, centers = k, nstart = 10)$tot.withinss
+})
+
+plot(1:15, wss, type = "b", pch = 19,
+     xlab = "Number of Clusters (K)",
+     ylab = "Total Within-Cluster Sum of Squares",
+     main = "Elbow Method for Choosing K") 
+
+                              
+
+Heatmap(EPI_VEH_3hr_mat, 
+        top_annotation = col_ha_3hr,
+        show_column_names = TRUE,
+        show_row_names = FALSE,
+        cluster_columns = TRUE,
+        cluster_rows = FALSE,
+        use_raster=TRUE,
+        raster_device="png",
+        raster_quality = 2,
+        row_km = 5,
+        column_title = "3 Hour Log2cpm of 3 hr DARs")
+  
+```
+
+
+### EPI 24 hour filtering matrix
+
+```{r EPI 24hr heatmap, fig.height=8, fig.width=5}
+EPI_VEH_24hr_mat <-  EPI_VEH_24hr %>% 
+  as.data.frame() %>% 
+  dplyr::filter(rownames(.) %in%EPI_24_sig$Peakid) %>% 
+  as.matrix()
+
+EPI24_annot_mat <- tibble(timeset=colnames(EPI_VEH_24hr)) %>%
+  mutate(sample = timeset) %>%
+  separate(timeset, into = c("indv","trt","time"), sep= "_") %>%
+  # mutate(time = factor(time, levels = c("3h", "24h"))) %>%
+  mutate(trt = factor(trt, levels = c("DOX","EPI", "DNR", "MTX", "TRZ", "VEH"))) %>%
+  mutate(indv=factor(indv, levels = c("A","B","C","D"))) %>% 
+  column_to_rownames("sample")
+  # mutate(trt_time=paste0(trt,"_",time))
+# drug_pal <- c("#8B006D","#DF707E","#F1B72B", "#3386DD","#707031","#41B333")
+indv_24color <- setNames(brewer.pal(n = 4, name = "Dark2"), unique(EPI24_annot_mat$indv))
+col_ha_24hr <- HeatmapAnnotation(df=EPI24_annot_mat,
+                                col=list(
+                                  trt = c(EPI="#DF707E",VEH="#41B333"),
+                                  indv = indv_24color)) 
+ wss <- sapply(1:15, function(k) {
+  kmeans(EPI_VEH_24hr_mat, centers = k, nstart = 10)$tot.withinss
+})
+
+plot(1:15, wss, type = "b", pch = 19,
+     xlab = "Number of Clusters (K)",
+     ylab = "Total Within-Cluster Sum of Squares",
+     main = "Elbow Method for Choosing K")                              
+
+Heatmap(EPI_VEH_24hr_mat, 
+        top_annotation = col_ha_24hr,
+        show_column_names = TRUE,
+        show_row_names = FALSE,
+        cluster_columns = TRUE,
+        cluster_rows = FALSE,
+        use_raster=TRUE,
+        raster_device="png",
+        raster_quality = 2,
+        row_km = 5,
+        column_title = "24 Hour Log2cpm of 24 hr DARs")
+  
+```
+
+### DNR 3 hour filtering matrix  
+
+
+```{r DNR 3hr heatmap, fig.height=8, fig.width=5}
+DNR_VEH_3hr_mat <-  DNR_VEH_3hr %>% 
+  as.data.frame() %>% 
+  dplyr::filter(rownames(.) %in%DNR_3_sig$Peakid) %>% 
+  as.matrix()
+
+DNR3_annot_mat <- tibble(timeset=colnames(DNR_VEH_3hr)) %>%
+  mutate(sample = timeset) %>%
+  separate(timeset, into = c("indv","trt","time"), sep= "_") %>%
+  # mutate(time = factor(time, levels = c("3h", "24h"))) %>%
+  mutate(trt = factor(trt, levels = c("DOX","EPI", "DNR", "MTX", "TRZ", "VEH"))) %>%
+  mutate(indv=factor(indv, levels = c("A","B","C","D"))) %>% 
+  column_to_rownames("sample")
+  # mutate(trt_time=paste0(trt,"_",time))
+# drug_pal <- c("#8B006D","#DF707E","#F1B72B", "#3386DD","#707031","#41B333")
+indv_color <- setNames(brewer.pal(n = 4, name = "Dark2"), unique(DNR3_annot_mat$indv))
+col_ha_3hr <- HeatmapAnnotation(df=DNR3_annot_mat,
+                                col=list(
+                                  trt = c(DNR="#F1B72B",VEH="#41B333"),
+                                  indv = indv_color)) 
+wss <- sapply(1:15, function(k) {
+  kmeans(DNR_VEH_3hr_mat, centers = k, nstart = 10)$tot.withinss
+})
+
+plot(1:15, wss, type = "b", pch = 19,
+     xlab = "Number of Clusters (K)",
+     ylab = "Total Within-Cluster Sum of Squares",
+     main = "Elbow Method for Choosing K")                               
+
+Heatmap(DNR_VEH_3hr_mat, 
+        top_annotation = col_ha_3hr,
+        show_column_names = TRUE,
+        show_row_names = FALSE,
+        cluster_columns = TRUE,
+        cluster_rows = FALSE,
+        use_raster=TRUE,
+        raster_device="png",
+        raster_quality = 2,
+        row_km = 5,
+        column_title = "3 Hour Log2cpm of 3 hr DARs")
+  
+```
+
+
+### DNR 24 hour filtering matrix
+
+```{r DNR 24hr heatmap, fig.height=8, fig.width=5}
+DNR_VEH_24hr_mat <-  DNR_VEH_24hr %>% 
+  as.data.frame() %>% 
+  dplyr::filter(rownames(.) %in%DNR_24_sig$Peakid) %>% 
+  as.matrix()
+
+DNR24_annot_mat <- tibble(timeset=colnames(DNR_VEH_24hr)) %>%
+  mutate(sample = timeset) %>%
+  separate(timeset, into = c("indv","trt","time"), sep= "_") %>%
+  # mutate(time = factor(time, levels = c("3h", "24h"))) %>%
+  mutate(trt = factor(trt, levels = c("DOX","EPI", "DNR", "MTX", "TRZ", "VEH"))) %>%
+  mutate(indv=factor(indv, levels = c("A","B","C","D"))) %>% 
+  column_to_rownames("sample")
+  # mutate(trt_time=paste0(trt,"_",time))
+# drug_pal <- c("#8B006D","#DF707E","#F1B72B", "#3386DD","#707031","#41B333")
+indv_24color <- setNames(brewer.pal(n = 4, name = "Dark2"), unique(DNR24_annot_mat$indv))
+col_ha_24hr <- HeatmapAnnotation(df=DNR24_annot_mat,
+                                col=list(
+                                  trt = c(DNR="#F1B72B",VEH="#41B333"),
+                                  indv = indv_24color)) 
+wss <- sapply(1:15, function(k) {
+  kmeans(DNR_VEH_24hr_mat, centers = k, nstart = 10)$tot.withinss
+})
+
+plot(1:15, wss, type = "b", pch = 19,
+     xlab = "Number of Clusters (K)",
+     ylab = "Total Within-Cluster Sum of Squares",
+     main = "Elbow Method for Choosing K")                               
+
+Heatmap(DNR_VEH_24hr_mat, 
+        top_annotation = col_ha_24hr,
+        show_column_names = TRUE,
+        show_row_names = FALSE,
+        cluster_columns = TRUE,
+        cluster_rows = FALSE,
+        use_raster=TRUE,
+        raster_device="png",
+        raster_quality = 2,
+        row_km = 5,
+        column_title = "24 Hour Log2cpm of 24 hr DARs")
+  
+```
+
+
+### MTX 3 hour filtering matrix  
+
+
+```{r MTX 3hr heatmap, fig.height=8, fig.width=5}
+MTX_VEH_3hr_mat <-  MTX_VEH_3hr %>% 
+  as.data.frame() %>% 
+  dplyr::filter(rownames(.) %in%MTX_3_sig$Peakid) %>% 
+  as.matrix()
+
+MTX3_annot_mat <- tibble(timeset=colnames(MTX_VEH_3hr)) %>%
+  mutate(sample = timeset) %>%
+  separate(timeset, into = c("indv","trt","time"), sep= "_") %>%
+  # mutate(time = factor(time, levels = c("3h", "24h"))) %>%
+  mutate(trt = factor(trt, levels = c("DOX","EPI", "DNR", "MTX", "TRZ", "VEH"))) %>%
+  mutate(indv=factor(indv, levels = c("A","B","C","D"))) %>% 
+  column_to_rownames("sample")
+  # mutate(trt_time=paste0(trt,"_",time))
+# drug_pal <- c("#8B006D","#DF707E","#F1B72B", "#3386DD","#707031","#41B333")
+indv_color <- setNames(brewer.pal(n = 4, name = "Dark2"), unique(MTX3_annot_mat$indv))
+col_ha_3hr <- HeatmapAnnotation(df=MTX3_annot_mat,
+                                col=list(
+                                  trt = c(MTX="#3386DD",VEH="#41B333"),
+                                  indv = indv_color)) 
+wss <- sapply(1:15, function(k) {
+  kmeans(MTX_VEH_3hr_mat, centers = k, nstart = 10)$tot.withinss
+})
+
+plot(1:15, wss, type = "b", pch = 19,
+     xlab = "Number of Clusters (K)",
+     ylab = "Total Within-Cluster Sum of Squares",
+     main = "Elbow Method for Choosing K")                               
+
+Heatmap(MTX_VEH_3hr_mat, 
+        top_annotation = col_ha_3hr,
+        show_column_names = TRUE,
+        show_row_names = FALSE,
+        cluster_columns = TRUE,
+        cluster_rows = FALSE,
+        use_raster=TRUE,
+        raster_device="png",
+        raster_quality = 2,
+        row_km = 7,
+        column_title = "3 Hour Log2cpm of 3 hr DARs")
+  
+```
+
+
+### MTX 24 hour filtering matrix
+
+```{r MTX 24hr heatmap, fig.height=8, fig.width=5}
+MTX_VEH_24hr_mat <-  MTX_VEH_24hr %>% 
+  as.data.frame() %>% 
+  dplyr::filter(rownames(.) %in%MTX_24_sig$Peakid) %>% 
+  as.matrix()
+
+MTX24_annot_mat <- tibble(timeset=colnames(MTX_VEH_24hr)) %>%
+  mutate(sample = timeset) %>%
+  separate(timeset, into = c("indv","trt","time"), sep= "_") %>%
+  # mutate(time = factor(time, levels = c("3h", "24h"))) %>%
+  mutate(trt = factor(trt, levels = c("DOX","EPI", "DNR", "MTX", "TRZ", "VEH"))) %>%
+  mutate(indv=factor(indv, levels = c("A","B","C","D"))) %>% 
+  column_to_rownames("sample")
+  # mutate(trt_time=paste0(trt,"_",time))
+# drug_pal <- c("#8B006D","#DF707E","#F1B72B", "#3386DD","#707031","#41B333")
+indv_24color <- setNames(brewer.pal(n = 4, name = "Dark2"), unique(MTX24_annot_mat$indv))
+col_ha_24hr <- HeatmapAnnotation(df=MTX24_annot_mat,
+                                col=list(
+                                  trt = c(MTX="#3386DD",VEH="#41B333"),
+                                  indv = indv_24color)) 
+wss <- sapply(1:15, function(k) {
+  kmeans(MTX_VEH_24hr_mat, centers = k, nstart = 10)$tot.withinss
+})
+
+plot(1:15, wss, type = "b", pch = 19,
+     xlab = "Number of Clusters (K)",
+     ylab = "Total Within-Cluster Sum of Squares",
+     main = "Elbow Method for Choosing K")                               
+
+Heatmap(MTX_VEH_24hr_mat, 
+        top_annotation = col_ha_24hr,
+        show_column_names = TRUE,
+        show_row_names = FALSE,
+        cluster_columns = TRUE,
+        cluster_rows = FALSE,
+        use_raster=TRUE,
+        raster_device="png",
+        raster_quality = 2,
+        row_km = 5,
+        column_title = "24 Hour Log2cpm of 24 hr DARs")
+  
+```
+
+### TRZ 3 hour filtering matrix  
+
+
+```{r TRZ 3hr heatmap, fig.height=8, fig.width=5}
+TRZ_VEH_3hr_mat <-  TRZ_VEH_3hr %>% 
+  as.data.frame() %>% 
+  dplyr::filter(rownames(.) %in%TRZ_3_sig$Peakid) %>% 
+  as.matrix()
+
+TRZ3_annot_mat <- tibble(timeset=colnames(TRZ_VEH_3hr)) %>%
+  mutate(sample = timeset) %>%
+  separate(timeset, into = c("indv","trt","time"), sep= "_") %>%
+  # mutate(time = factor(time, levels = c("3h", "24h"))) %>%
+  mutate(trt = factor(trt, levels = c("DOX","EPI", "DNR", "MTX", "TRZ", "VEH"))) %>%
+  mutate(indv=factor(indv, levels = c("A","B","C","D"))) %>% 
+  column_to_rownames("sample")
+  # mutate(trt_time=paste0(trt,"_",time))
+# drug_pal <- c("#8B006D","#DF707E","#F1B72B", "#3386DD","#707031","#41B333")
+indv_color <- setNames(brewer.pal(n = 4, name = "Dark2"), unique(TRZ3_annot_mat$indv))
+col_ha_3hr <- HeatmapAnnotation(df=TRZ3_annot_mat,
+                                col=list(
+                                  trt = c(TRZ="#707031",VEH="#41B333"),
+                                  indv = indv_color)) 
+wss <- sapply(1:15, function(k) {
+  kmeans(TRZ_VEH_3hr_mat, centers = k, nstart = 10)$tot.withinss
+})
+
+plot(1:15, wss, type = "b", pch = 19,
+     xlab = "Number of Clusters (K)",
+     ylab = "Total Within-Cluster Sum of Squares",
+     main = "Elbow Method for Choosing K")
+```
+
+
+```{r TRZ 3hr heatmap map, fig.height=8, fig.width=5}
+Heatmap(TRZ_VEH_3hr_mat, 
+        top_annotation = col_ha_3hr,
+        show_column_names = TRUE,
+        show_row_names = FALSE,
+        cluster_columns = TRUE,
+        cluster_rows = FALSE,
+        use_raster=TRUE,
+        raster_device="png",
+        raster_quality = 2,
+        row_km = 4,
+        column_title = "3 Hour Log2cpm of 3 hr all regions")
+  
+```
+
+
+### TRZ 24 hour filtering matrix
+
+```{r TRZ 24hr heatmap, fig.height=8, fig.width=5}
+TRZ_VEH_24hr_mat <-  TRZ_VEH_24hr %>% 
+  as.data.frame() %>% 
+  dplyr::filter(rownames(.) %in%TRZ_24_sig$Peakid) %>% 
+  as.matrix()
+
+TRZ24_annot_mat <- tibble(timeset=colnames(TRZ_VEH_24hr)) %>%
+  mutate(sample = timeset) %>%
+  separate(timeset, into = c("indv","trt","time"), sep= "_") %>%
+  # mutate(time = factor(time, levels = c("3h", "24h"))) %>%
+  mutate(trt = factor(trt, levels = c("DOX","EPI", "DNR", "MTX", "TRZ", "VEH"))) %>%
+  mutate(indv=factor(indv, levels = c("A","B","C","D"))) %>% 
+  column_to_rownames("sample")
+  # mutate(trt_time=paste0(trt,"_",time))
+# drug_pal <- c("#8B006D","#DF707E","#F1B72B", "#3386DD","#707031","#41B333")
+indv_24color <- setNames(brewer.pal(n = 4, name = "Dark2"), unique(TRZ24_annot_mat$indv))
+col_ha_24hr <- HeatmapAnnotation(df=TRZ24_annot_mat,
+                                col=list(
+                                  trt = c(TRZ="#707031",VEH="#41B333"),
+                                  indv = indv_24color))
+wss <- sapply(1:15, function(k) {
+  kmeans(TRZ_VEH_24hr_mat, centers = k, nstart = 10)$tot.withinss
+})
+
+plot(1:15, wss, type = "b", pch = 19,
+     xlab = "Number of Clusters (K)",
+     ylab = "Total Within-Cluster Sum of Squares",
+     main = "Elbow Method for Choosing K")                                   
+```
+
+
+```{r TRZ 24hr heatmap map, fig.height=8, fig.width=5}
+Heatmap(TRZ_VEH_24hr_mat, 
+        top_annotation = col_ha_24hr,
+        show_column_names = TRUE,
+        show_row_names = FALSE,
+        cluster_columns = TRUE,
+        cluster_rows = FALSE,
+        use_raster=TRUE,
+        raster_device="png",
+        raster_quality = 2,
+        row_km = 5,
+        column_title = "24 Hour Log2cpm of 24 hr DARs")
+  
+```
+
