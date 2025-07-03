@@ -1,0 +1,1689 @@
+---
+title: "SharedDAR"
+author: "Renee Matthews"
+date: "2025-06-12"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE,
+	warning = FALSE,
+		dev = c("png","pdf")
+)
+```
+
+```{css, echo=FALSE}
+pre {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+pre[class] {
+  max-height: 200px;
+}
+```
+
+```{r package loading, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(kableExtra)
+library(broom)
+library(RColorBrewer)
+library(ChIPseeker)
+library("TxDb.Hsapiens.UCSC.hg38.knownGene")
+library("org.Hs.eg.db")
+library(rtracklayer)
+library(edgeR)
+library(ggfortify)
+library(limma)
+library(readr)
+library(BiocGenerics)
+library(gridExtra)
+library(VennDiagram)
+library(scales)
+library(BiocParallel)
+library(ggpubr)
+library(devtools)
+library(biomaRt)
+library(eulerr)
+library(smplot2)
+library(genomation)
+library(ggsignif)
+library(plyranges)
+library(ggrepel)
+library(epitools)
+library(circlize)
+library(readxl)
+
+```
+
+
+#### Loading in dataframes  
+```{r}
+sig_3hr_shared <- readRDS("data/Final_four_data/re_analysis/AC_shared_3hour_DARs.RDS")
+sig_24hr_shared <-  readRDS("data/Final_four_data/re_analysis/AC_shared_24hour_DARs.RDS")
+toptable_results <- readRDS("data/Final_four_data/re_analysis/Toptable_results.RDS")
+
+all_results  <- toptable_results %>%
+  imap(~ .x %>% tibble::rownames_to_column(var = "rowname") %>%
+         mutate(source = .y)) %>%
+  bind_rows()
+
+toplistall_RNA <- readRDS("data/other_papers/toplistall_RNA.RDS") %>% 
+  mutate(logFC = logFC*(-1))
+
+peakAnnoList_DOX_DAR <- readRDS("data/Final_four_data/re_analysis/DOX_DAR_annotated_peaks_chipannno.RDS")
+
+Assigned_genes_toPeak <- peakAnnoList_DOX_DAR$DOX_24 %>% as.data.frame() %>% 
+  dplyr::select(mcols.genes,annotation, geneId, distanceToTSS) %>% 
+  dplyr::rename("Peakid"=mcols.genes)
+
+Top2b_peaks <- import(con="data/other_papers/ChIP3_TOP2B_CM_87-1.bed",format = "bed",genome="hg38")
+
+RNA_results <-
+toplistall_RNA %>% 
+  dplyr::select(time:logFC) %>% 
+  tidyr::unite("sample",time, id) %>% 
+  pivot_wider(., id_cols = c(ENTREZID,SYMBOL),names_from = sample, values_from = logFC) %>% 
+  rename_with(~ str_replace(., "hours", "RNA"))
+```
+
+
+```{r RNA DEG 3hr 24 hr}
+RNA_all_expressed <-toplistall_RNA %>% 
+  dplyr::select(time:logFC,adj.P.Val) %>% 
+  dplyr::filter(id=="DOX") %>% 
+  dplyr::filter(time=="24_hours") %>% 
+  tidyr::unite("sample",time, id) %>% 
+  dplyr::select(ENTREZID, SYMBOL)  
+
+
+RNA_24_DOX_DEG <-toplistall_RNA %>% 
+  dplyr::select(time:logFC,adj.P.Val) %>% 
+  dplyr::filter(id=="DOX") %>% 
+  dplyr::filter(time=="24_hours"& adj.P.Val<0.05) %>% 
+  tidyr::unite("sample",time, id) %>% 
+  dplyr::select(ENTREZID, SYMBOL)
+
+RNA_3_DOX_DEG <-toplistall_RNA %>% 
+  dplyr::select(time:logFC,adj.P.Val) %>% 
+  dplyr::filter(id=="DOX") %>% 
+  dplyr::filter(time=="3_hours"& adj.P.Val<0.05) %>% 
+  tidyr::unite("sample",time, id) %>% 
+  dplyr::select(ENTREZID, SYMBOL)
+
+RNA_24_EPI_DEG <-toplistall_RNA %>% 
+  dplyr::select(time:logFC,adj.P.Val) %>% 
+  dplyr::filter(id=="EPI") %>% 
+  dplyr::filter(time=="24_hours"& adj.P.Val<0.05) %>% 
+  tidyr::unite("sample",time, id) %>% 
+  dplyr::select(ENTREZID, SYMBOL)
+
+RNA_3_EPI_DEG <-toplistall_RNA %>% 
+  dplyr::select(time:logFC,adj.P.Val) %>% 
+  dplyr::filter(id=="EPI") %>% 
+  dplyr::filter(time=="3_hours"& adj.P.Val<0.05) %>% 
+  tidyr::unite("sample",time, id) %>% 
+  dplyr::select(ENTREZID, SYMBOL)
+
+RNA_24_DNR_DEG <-toplistall_RNA %>% 
+  dplyr::select(time:logFC,adj.P.Val) %>% 
+  dplyr::filter(id=="DNR") %>% 
+  dplyr::filter(time=="24_hours"& adj.P.Val<0.05) %>% 
+  tidyr::unite("sample",time, id) %>% 
+  dplyr::select(ENTREZID, SYMBOL)
+
+RNA_3_DNR_DEG <-toplistall_RNA %>% 
+  dplyr::select(time:logFC,adj.P.Val) %>% 
+  dplyr::filter(id=="DNR") %>% 
+  dplyr::filter(time=="3_hours"& adj.P.Val<0.05) %>% 
+  tidyr::unite("sample",time, id) %>% 
+  dplyr::select(ENTREZID, SYMBOL)
+
+RNA_24_MTX_DEG <-toplistall_RNA %>% 
+  dplyr::select(time:logFC,adj.P.Val) %>% 
+  dplyr::filter(id=="MTX") %>% 
+  dplyr::filter(time=="24_hours"& adj.P.Val<0.05) %>% 
+  tidyr::unite("sample",time, id) %>% 
+  dplyr::select(ENTREZID, SYMBOL)
+
+RNA_3_MTX_DEG <-toplistall_RNA %>% 
+  dplyr::select(time:logFC,adj.P.Val) %>% 
+  dplyr::filter(id=="MTX") %>% 
+  dplyr::filter(time=="3_hours"& adj.P.Val<0.05) %>% 
+  tidyr::unite("sample",time, id) %>% 
+  dplyr::select(ENTREZID, SYMBOL)
+
+Peak_gene_RNA_LFC <- Assigned_genes_toPeak %>% 
+  left_join(., RNA_results, by =c("geneId"="ENTREZID"))
+
+
+entrez_ids <- Assigned_genes_toPeak$geneId  
+
+
+gene_info <- AnnotationDbi::select(
+  org.Hs.eg.db,
+  keys = entrez_ids,
+  columns = c("SYMBOL"),
+  keytype = "ENTREZID"
+)
+gene_info_collapsed <- gene_info %>%
+  group_by(ENTREZID) %>%
+  summarise(SYMBOL = paste(unique(SYMBOL), collapse = ","), .groups = "drop")
+
+DOX_24_DAR <- all_results %>% 
+  dplyr::filter(source =="DOX_24") %>% 
+  dplyr::filter(adj.P.Val<0.05) %>% 
+  distinct(genes) %>% 
+  dplyr::rename("Peakid"=genes)
+
+DOX_3_DAR <- all_results %>% 
+  dplyr::filter(source =="DOX_3") %>% 
+  dplyr::filter(adj.P.Val<0.05) %>% 
+  distinct(genes) %>% 
+  dplyr::rename("Peakid"=genes)
+
+
+DOX_24_DAR_up <-   all_results %>%
+  dplyr::filter(source =="DOX_24") %>% 
+  dplyr::filter(adj.P.Val<0.05) %>% 
+     dplyr::filter(logFC>0) %>% 
+  distinct(genes) %>% 
+  dplyr::rename("Peakid"=genes)
+
+DOX_3_DAR_up <- all_results %>% 
+  dplyr::filter(source =="DOX_3") %>% 
+  dplyr::filter(adj.P.Val<0.05) %>%
+   dplyr::filter(logFC>0) %>% 
+  distinct(genes) %>% 
+  dplyr::rename("Peakid"=genes)
+
+DOX_24_DAR_down <- all_results %>% 
+  dplyr::filter(source =="DOX_24") %>% 
+  dplyr::filter(adj.P.Val<0.05) %>%
+   dplyr::filter(logFC<0) %>% 
+  distinct(genes) %>% 
+  dplyr::rename("Peakid"=genes)
+
+DOX_3_DAR_down <- all_results %>% 
+  dplyr::filter(source =="DOX_3") %>% 
+  dplyr::filter(adj.P.Val<0.05) %>% 
+   dplyr::filter(logFC<0) %>% 
+  distinct(genes) %>% 
+  dplyr::rename("Peakid"=genes)
+```
+
+TOP2B overlapping,  is 24 hour shared vs not shared enriched in TOP2b?
+```{r Top2b}
+Motif_list_gr <- readRDS( "data/Final_four_data/re_analysis/Motif_list_granges.RDS")
+list2env(Motif_list_gr[10],envir = .GlobalEnv)
+Allregion_ol <- join_overlap_intersect(all_regions,Top2b_peaks)%>% 
+  as.data.frame() %>% 
+  distinct(Peakid,.keep_all = TRUE)
+
+
+annotated_regions <-  Assigned_genes_toPeak %>%
+  mutate(top_2b_ol=case_when(Peakid %in% Allregion_ol$Peakid~"TOP2b_peak",
+         TRUE ~"not_TOP2b_peak")) %>% 
+  mutate(top_2b_ol=factor(top_2b_ol,levels=c("TOP2b_peak","not_TOP2b_peak"))) %>% 
+    mutate(ac_24_shared=case_when(Peakid %in%sig_24hr_shared~ "ac_shared",
+                               TRUE ~ "not_ac_shared")) %>% 
+   mutate(ac_3_shared=case_when(Peakid %in%sig_3hr_shared~ "ac_shared",
+                               TRUE ~ "not_ac_shared")) %>% 
+  mutate(RNA_expressed=case_when(geneId %in% RNA_all_expressed$ENTREZID ~"exp_RNA",
+                                 TRUE ~ "not_exp_RNA"))
+annotated_regions %>% 
+  group_by(ac_3_shared,top_2b_ol) %>% 
+  # tally() %>% 
+  ggplot(., aes(x=ac_3_shared,fill=top_2b_ol))+
+  geom_bar(position="fill")+
+  theme_bw()+
+  ggtitle(" 3 hour AC_shared proportion of Top2B peaks")+
+  ylab("proportion")
+
+
+annotated_regions %>% 
+  group_by(ac_24_shared,top_2b_ol) %>% 
+  # tally() %>% 
+  ggplot(., aes(x=ac_24_shared,fill=top_2b_ol))+
+  geom_bar(position="fill")+
+  theme_bw()+
+  ggtitle(" 24 hour AC_shared proportion of Top2B peaks")+
+  ylab("proportion")
+
+contingency_table_3hr_shared <- table(annotated_regions$ac_3_shared, annotated_regions$top_2b_ol)
+contingency_table_3hr_shared
+
+fisher.test(contingency_table_3hr_shared)  
+
+
+contingency_table_24hr_shared <- table(annotated_regions$ac_24_shared, annotated_regions$top_2b_ol)
+contingency_table_24hr_shared
+
+fisher.test(contingency_table_24hr_shared)  
+
+```
+
+
+Using the CARs (Constitutively Active regions) shared between treatments at 3 hours and 24 hours,  Do we have enrichment in GO:BP terms.  What about Motifs?
+
+Are CARs enriched in expressed genes?
+  using 2kb of TSS and
+  using 20kb of TSS
+AT 3 hours:
+
+```{r shared 3hour 2kb}
+annotated_regions %>% 
+  dplyr::filter(distanceToTSS >-2000 & distanceToTSS<2000) %>% 
+  ggplot(., aes(x=ac_3_shared,fill=RNA_expressed))+
+  geom_bar(position="fill")+
+  theme_bw()+
+  ggtitle("3 hour AC_shared peaks within 2kb of TSS")+
+  ylab("proportion")
+
+filt_annot_2kb <- annotated_regions %>%
+  dplyr::filter(distanceToTSS >-2000 & distanceToTSS<2000)
+contingency_table_3hr_sharedRNA <- table(filt_annot_2kb$ac_3_shared, filt_annot_2kb$RNA_expressed)
+contingency_table_3hr_sharedRNA
+
+fisher.test(contingency_table_3hr_sharedRNA)  
+```
+
+```{r shared 3hour 20kb}
+annotated_regions %>% 
+  dplyr::filter(distanceToTSS >-20000 & distanceToTSS<20000) %>% 
+  ggplot(., aes(x=ac_3_shared,fill=RNA_expressed))+
+  geom_bar(position="fill")+
+  theme_bw()+
+  ggtitle("3 hour AC_shared peaks within 20kb of TSS")+
+  ylab("proportion")
+
+filt_annot_20kb <- annotated_regions %>%
+  dplyr::filter(distanceToTSS >-20000 & distanceToTSS<20000)
+contingency_table_3hr_sharedRNA20 <- table(filt_annot_20kb$ac_3_shared, filt_annot_20kb$RNA_expressed)
+contingency_table_3hr_sharedRNA20
+
+fisher.test(contingency_table_3hr_sharedRNA20)  
+```
+
+AT 24 hours:
+
+```{r shared 24hour 2kb}
+annotated_regions %>% 
+  dplyr::filter(distanceToTSS >-2000 & distanceToTSS<2000) %>% 
+  ggplot(., aes(x=ac_24_shared,fill=RNA_expressed))+
+  geom_bar(position="fill")+
+  theme_bw()+
+  ggtitle("24 hour AC_shared peaks within 2kb of TSS")+
+  ylab("proportion")
+
+filt_annot_2kb24 <- annotated_regions %>%
+  dplyr::filter(distanceToTSS >-2000 & distanceToTSS<2000)
+contingency_table_24hr_sharedRNA <- table(filt_annot_2kb24$ac_24_shared, filt_annot_2kb24$RNA_expressed)
+contingency_table_24hr_sharedRNA
+
+fisher.test(contingency_table_24hr_sharedRNA)  
+```
+
+```{r shared 24hour 20kb}
+annotated_regions %>% 
+  dplyr::filter(distanceToTSS >-20000 & distanceToTSS<20000) %>% 
+  ggplot(., aes(x=ac_24_shared,fill=RNA_expressed))+
+  geom_bar(position="fill")+
+  theme_bw()+
+  ggtitle("24 hour AC_shared peaks within 20kb of TSS")+
+  ylab("proportion")
+
+filt_annot_2420kb <- annotated_regions %>%
+  dplyr::filter(distanceToTSS >-20000 & distanceToTSS<20000)
+contingency_table_24hr_sharedRNA20 <- table(filt_annot_2420kb$ac_24_shared, filt_annot_2420kb$RNA_expressed)
+contingency_table_24hr_sharedRNA20
+
+fisher.test(contingency_table_24hr_sharedRNA20)  
+```
+
+```{r making DOX 2kb and 20kb bedfiles, eval=FALSE}
+output_dir <- "data/Final_four_data/re_analysis/motif_beds_centered"
+DOX_24_DAR_2kb <- annotated_regions %>% 
+  dplyr::filter(Peakid %in%DOX_24_DAR$Peakid ) %>% 
+  dplyr::filter(distanceToTSS >-2000 & distanceToTSS<2000) %>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE)
+  
+
+DOX_24_notDAR_2kb <- annotated_regions %>% 
+  dplyr::filter(!Peakid %in%DOX_24_DAR$Peakid ) %>% 
+  dplyr::filter(distanceToTSS >-2000 & distanceToTSS<2000)%>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE)
+
+DOX_24_DAR_20kb<- annotated_regions %>% 
+  dplyr::filter(Peakid %in%DOX_24_DAR$Peakid ) %>% 
+  dplyr::filter(distanceToTSS >-20000 & distanceToTSS<20000)%>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE)
+
+DOX_24_notDAR_20kb<- annotated_regions %>% 
+  dplyr::filter(!Peakid %in%DOX_24_DAR$Peakid ) %>% 
+  dplyr::filter(distanceToTSS >-20000 & distanceToTSS<20000)%>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE)
+
+# Now convert to GRanges
+DOX_24_DAR_2kb_gr <- GRanges(
+  seqnames = DOX_24_DAR_2kb$seqnames,
+  ranges = IRanges(start = DOX_24_DAR_2kb$start, end = DOX_24_DAR_2kb$end),
+  mcols = DOX_24_DAR_2kb %>% select(-seqnames, -start, -end)
+)
+
+DOX_24_notDAR_2kb_gr <- GRanges(
+  seqnames = DOX_24_notDAR_2kb$seqnames,
+  ranges = IRanges(start = DOX_24_notDAR_2kb$start, end = DOX_24_notDAR_2kb$end),
+  mcols = DOX_24_notDAR_2kb %>% select(-seqnames, -start, -end)
+)
+
+DOX_24_DAR_20kb_gr <- GRanges(
+  seqnames = DOX_24_DAR_20kb$seqnames,
+  ranges = IRanges(start = DOX_24_DAR_20kb$start, end = DOX_24_DAR_20kb$end),
+  mcols = DOX_24_DAR_20kb %>% select(-seqnames, -start, -end)
+)
+
+DOX_24_notDAR_20kb_gr <- GRanges(
+  seqnames = DOX_24_notDAR_20kb$seqnames,
+  ranges = IRanges(start = DOX_24_notDAR_20kb$start, end = DOX_24_notDAR_20kb$end),
+  mcols = DOX_24_notDAR_20kb %>% select(-seqnames, -start, -end)
+)
+
+
+DOX_DAR_list_gr <- list("DOX_24_DAR_2kb"=DOX_24_DAR_2kb_gr,
+                        "DOX_24_notDAR_2kb"=DOX_24_notDAR_2kb_gr,
+                        "DOX_24_DAR_20kb"=DOX_24_DAR_20kb_gr,
+                        "DOX_24_notDAR_20kb"=DOX_24_notDAR_20kb_gr)
+for (name in names(DOX_DAR_list_gr)) {
+  gr <- DOX_DAR_list_gr[[name]]
+
+  # Recenter each region to 200 bp around its midpoint
+  gr_centered <- resize(gr, width = 200, fix = "center")
+
+  # Export to BED (auto converts to 0-based)
+  export(gr_centered, con = file.path(output_dir, paste0(name, "_centered.bed")), format = "BED")
+}
+
+
+```
+
+
+##### making DOX bedfiles  
+
+
+```{r making DOX 2kb and 20kb bedfiles, eval=FALSE}
+output_dir <- "data/Final_four_data/re_analysis/motif_beds_centered"
+DOX_24_DAR_2kb <- annotated_regions %>% 
+  dplyr::filter(Peakid %in%DOX_24_DAR$Peakid ) %>% 
+  dplyr::filter(distanceToTSS >-2000 & distanceToTSS<2000) %>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE)
+  
+
+DOX_24_notDAR_2kb <- annotated_regions %>% 
+  dplyr::filter(!Peakid %in%DOX_24_DAR$Peakid ) %>% 
+  dplyr::filter(distanceToTSS >-2000 & distanceToTSS<2000)%>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE)
+
+DOX_24_DAR_20kb<- annotated_regions %>% 
+  dplyr::filter(Peakid %in%DOX_24_DAR$Peakid ) %>% 
+  dplyr::filter(distanceToTSS >-20000 & distanceToTSS<20000)%>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE)
+
+DOX_24_notDAR_20kb<- annotated_regions %>% 
+  dplyr::filter(!Peakid %in%DOX_24_DAR$Peakid ) %>% 
+  dplyr::filter(distanceToTSS >-20000 & distanceToTSS<20000)%>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE)
+
+# Now convert to GRanges
+DOX_24_DAR_2kb_gr <- GRanges(
+  seqnames = DOX_24_DAR_2kb$seqnames,
+  ranges = IRanges(start = DOX_24_DAR_2kb$start, end = DOX_24_DAR_2kb$end),
+  mcols = DOX_24_DAR_2kb %>% select(-seqnames, -start, -end)
+)
+
+DOX_24_notDAR_2kb_gr <- GRanges(
+  seqnames = DOX_24_notDAR_2kb$seqnames,
+  ranges = IRanges(start = DOX_24_notDAR_2kb$start, end = DOX_24_notDAR_2kb$end),
+  mcols = DOX_24_notDAR_2kb %>% select(-seqnames, -start, -end)
+)
+
+DOX_24_DAR_20kb_gr <- GRanges(
+  seqnames = DOX_24_DAR_20kb$seqnames,
+  ranges = IRanges(start = DOX_24_DAR_20kb$start, end = DOX_24_DAR_20kb$end),
+  mcols = DOX_24_DAR_20kb %>% select(-seqnames, -start, -end)
+)
+
+DOX_24_notDAR_20kb_gr <- GRanges(
+  seqnames = DOX_24_notDAR_20kb$seqnames,
+  ranges = IRanges(start = DOX_24_notDAR_20kb$start, end = DOX_24_notDAR_20kb$end),
+  mcols = DOX_24_notDAR_20kb %>% select(-seqnames, -start, -end)
+)
+
+
+DOX_DAR_list_gr <- list("DOX_24_DAR_2kb"=DOX_24_DAR_2kb_gr,
+                        "DOX_24_notDAR_2kb"=DOX_24_notDAR_2kb_gr,
+                        "DOX_24_DAR_20kb"=DOX_24_DAR_20kb_gr,
+                        "DOX_24_notDAR_20kb"=DOX_24_notDAR_20kb_gr)
+for (name in names(DOX_DAR_list_gr)) {
+  gr <- DOX_DAR_list_gr[[name]]
+
+  # Recenter each region to 200 bp around its midpoint
+  gr_centered <- resize(gr, width = 200, fix = "center")
+
+  # Export to BED (auto converts to 0-based)
+  export(gr_centered, con = file.path(output_dir, paste0(name, "_centered.bed")), format = "BED")
+}
+
+
+```
+
+##### making EPI bedfiles
+
+```{r EPI dataframes}
+EPI_24_DAR <- all_results %>% 
+  dplyr::filter(source =="EPI_24") %>% 
+  dplyr::filter(adj.P.Val<0.05) %>% 
+  distinct(genes) %>% 
+  dplyr::rename("Peakid"=genes)
+EPI_3_DAR <- all_results %>% 
+  dplyr::filter(source =="EPI_3") %>% 
+  dplyr::filter(adj.P.Val<0.05) %>% 
+  distinct(genes) %>% 
+  dplyr::rename("Peakid"=genes)
+
+
+EPI_24_DAR_up <- all_results %>% 
+  dplyr::filter(source =="EPI_24") %>% 
+  dplyr::filter(adj.P.Val<0.05) %>%
+  dplyr::filter(logFC>0) %>% 
+  distinct(genes) %>% 
+  dplyr::rename("Peakid"=genes)
+EPI_3_DAR_up <- all_results %>% 
+  dplyr::filter(source =="EPI_3") %>% 
+  dplyr::filter(adj.P.Val<0.05) %>% 
+   dplyr::filter(logFC>0) %>% 
+  distinct(genes) %>% 
+  dplyr::rename("Peakid"=genes)
+EPI_24_DAR_down <- all_results %>% 
+  dplyr::filter(source =="EPI_24") %>% 
+  dplyr::filter(adj.P.Val<0.05) %>%
+   dplyr::filter(logFC<0) %>% 
+  distinct(genes) %>% 
+  dplyr::rename("Peakid"=genes)
+EPI_3_DAR_down <- all_results %>% 
+  dplyr::filter(source =="EPI_3") %>% 
+  dplyr::filter(adj.P.Val<0.05) %>%
+   dplyr::filter(logFC<0) %>% 
+  distinct(genes) %>% 
+  dplyr::rename("Peakid"=genes)
+```
+
+```{r making EPI 2kb and 20kb bedfiles, eval=FALSE}
+output_dir <- "data/Final_four_data/re_analysis/motif_beds_centered"
+EPI_24_DAR_2kb <- annotated_regions %>% 
+  dplyr::filter(Peakid %in%EPI_24_DAR$Peakid ) %>% 
+  dplyr::filter(distanceToTSS >-2000 & distanceToTSS<2000) %>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE)
+  
+
+EPI_24_notDAR_2kb <- annotated_regions %>% 
+  dplyr::filter(!Peakid %in%EPI_24_DAR$Peakid ) %>% 
+  dplyr::filter(distanceToTSS >-2000 & distanceToTSS<2000)%>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE)
+
+EPI_24_DAR_20kb<- annotated_regions %>% 
+  dplyr::filter(Peakid %in%EPI_24_DAR$Peakid ) %>% 
+  dplyr::filter(distanceToTSS >-20000 & distanceToTSS<20000)%>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE)
+
+EPI_24_notDAR_20kb<- annotated_regions %>% 
+  dplyr::filter(!Peakid %in%EPI_24_DAR$Peakid ) %>% 
+  dplyr::filter(distanceToTSS >-20000 & distanceToTSS<20000)%>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE)
+
+# Now convert to GRanges
+EPI_24_DAR_2kb_gr <- GRanges(
+  seqnames = EPI_24_DAR_2kb$seqnames,
+  ranges = IRanges(start = EPI_24_DAR_2kb$start, end = EPI_24_DAR_2kb$end),
+  mcols = EPI_24_DAR_2kb %>% select(-seqnames, -start, -end)
+)
+
+EPI_24_notDAR_2kb_gr <- GRanges(
+  seqnames = EPI_24_notDAR_2kb$seqnames,
+  ranges = IRanges(start = EPI_24_notDAR_2kb$start, end = EPI_24_notDAR_2kb$end),
+  mcols = EPI_24_notDAR_2kb %>% select(-seqnames, -start, -end)
+)
+
+EPI_24_DAR_20kb_gr <- GRanges(
+  seqnames = EPI_24_DAR_20kb$seqnames,
+  ranges = IRanges(start = EPI_24_DAR_20kb$start, end = EPI_24_DAR_20kb$end),
+  mcols = EPI_24_DAR_20kb %>% select(-seqnames, -start, -end)
+)
+
+EPI_24_notDAR_20kb_gr <- GRanges(
+  seqnames = EPI_24_notDAR_20kb$seqnames,
+  ranges = IRanges(start = EPI_24_notDAR_20kb$start, end = EPI_24_notDAR_20kb$end),
+  mcols = EPI_24_notDAR_20kb %>% select(-seqnames, -start, -end)
+)
+
+
+EPI_DAR_list_gr <- list("EPI_24_DAR_2kb"=EPI_24_DAR_2kb_gr,
+                        "EPI_24_notDAR_2kb"=EPI_24_notDAR_2kb_gr,
+                        "EPI_24_DAR_20kb"=EPI_24_DAR_20kb_gr,
+                        "EPI_24_notDAR_20kb"=EPI_24_notDAR_20kb_gr)
+for (name in names(EPI_DAR_list_gr)) {
+  gr <- EPI_DAR_list_gr[[name]]
+
+  # Recenter each region to 200 bp around its midpoint
+  gr_centered <- resize(gr, width = 200, fix = "center")
+
+  # Export to BED (auto converts to 0-based)
+  export(gr_centered, con = file.path(output_dir, paste0(name, "_centered.bed")), format = "BED")
+}
+
+
+```
+
+##### making DNR bedfiles
+
+```{r DNR dataframes}
+DNR_24_DAR <- all_results %>% 
+  dplyr::filter(source =="DNR_24") %>% 
+  dplyr::filter(adj.P.Val<0.05) %>% 
+  distinct(genes) %>% 
+  dplyr::rename("Peakid"=genes)
+DNR_3_DAR <- all_results %>% 
+  dplyr::filter(source =="DNR_3") %>% 
+  dplyr::filter(adj.P.Val<0.05) %>% 
+  distinct(genes) %>% 
+  dplyr::rename("Peakid"=genes)
+
+DNR_24_DAR_up <- all_results %>% 
+  dplyr::filter(source =="DNR_24") %>% 
+  dplyr::filter(adj.P.Val<0.05) %>%
+  dplyr::filter(logFC>0) %>% 
+  distinct(genes) %>% 
+  dplyr::rename("Peakid"=genes)
+DNR_3_DAR_up <- all_results %>% 
+  dplyr::filter(source =="DNR_3") %>% 
+  dplyr::filter(adj.P.Val<0.05) %>% 
+   dplyr::filter(logFC>0) %>% 
+  distinct(genes) %>% 
+  dplyr::rename("Peakid"=genes)
+DNR_24_DAR_down <- all_results %>% 
+  dplyr::filter(source =="DNR_24") %>% 
+  dplyr::filter(adj.P.Val<0.05) %>%
+   dplyr::filter(logFC<0) %>% 
+  distinct(genes) %>% 
+  dplyr::rename("Peakid"=genes)
+DNR_3_DAR_down <- all_results %>% 
+  dplyr::filter(source =="DNR_3") %>% 
+  dplyr::filter(adj.P.Val<0.05) %>%
+   dplyr::filter(logFC<0) %>% 
+  distinct(genes) %>% 
+  dplyr::rename("Peakid"=genes)
+```
+
+```{r making DNR 2kb and 20kb bedfiles, eval=FALSE}
+output_dir <- "data/Final_four_data/re_analysis/motif_beds_centered"
+DNR_24_DAR_2kb <- annotated_regions %>% 
+  dplyr::filter(Peakid %in%DNR_24_DAR$Peakid ) %>% 
+  dplyr::filter(distanceToTSS >-2000 & distanceToTSS<2000) %>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE)
+  
+
+DNR_24_notDAR_2kb <- annotated_regions %>% 
+  dplyr::filter(!Peakid %in%DNR_24_DAR$Peakid ) %>% 
+  dplyr::filter(distanceToTSS >-2000 & distanceToTSS<2000)%>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE)
+
+DNR_24_DAR_20kb<- annotated_regions %>% 
+  dplyr::filter(Peakid %in%DNR_24_DAR$Peakid ) %>% 
+  dplyr::filter(distanceToTSS >-20000 & distanceToTSS<20000)%>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE)
+
+DNR_24_notDAR_20kb<- annotated_regions %>% 
+  dplyr::filter(!Peakid %in%DNR_24_DAR$Peakid ) %>% 
+  dplyr::filter(distanceToTSS >-20000 & distanceToTSS<20000)%>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE)
+
+# Now convert to GRanges
+DNR_24_DAR_2kb_gr <- GRanges(
+  seqnames = DNR_24_DAR_2kb$seqnames,
+  ranges = IRanges(start = DNR_24_DAR_2kb$start, end = DNR_24_DAR_2kb$end),
+  mcols = DNR_24_DAR_2kb %>% select(-seqnames, -start, -end)
+)
+
+DNR_24_notDAR_2kb_gr <- GRanges(
+  seqnames = DNR_24_notDAR_2kb$seqnames,
+  ranges = IRanges(start = DNR_24_notDAR_2kb$start, end = DNR_24_notDAR_2kb$end),
+  mcols = DNR_24_notDAR_2kb %>% select(-seqnames, -start, -end)
+)
+
+DNR_24_DAR_20kb_gr <- GRanges(
+  seqnames = DNR_24_DAR_20kb$seqnames,
+  ranges = IRanges(start = DNR_24_DAR_20kb$start, end = DNR_24_DAR_20kb$end),
+  mcols = DNR_24_DAR_20kb %>% select(-seqnames, -start, -end)
+)
+
+DNR_24_notDAR_20kb_gr <- GRanges(
+  seqnames = DNR_24_notDAR_20kb$seqnames,
+  ranges = IRanges(start = DNR_24_notDAR_20kb$start, end = DNR_24_notDAR_20kb$end),
+  mcols = DNR_24_notDAR_20kb %>% select(-seqnames, -start, -end)
+)
+
+
+DNR_DAR_list_gr <- list("DNR_24_DAR_2kb"=DNR_24_DAR_2kb_gr,
+                        "DNR_24_notDAR_2kb"=DNR_24_notDAR_2kb_gr,
+                        "DNR_24_DAR_20kb"=DNR_24_DAR_20kb_gr,
+                        "DNR_24_notDAR_20kb"=DNR_24_notDAR_20kb_gr)
+for (name in names(DNR_DAR_list_gr)) {
+  gr <- DNR_DAR_list_gr[[name]]
+
+  # Recenter each region to 200 bp around its midpoint
+  gr_centered <- resize(gr, width = 200, fix = "center")
+
+  # Export to BED (auto converts to 0-based)
+  export(gr_centered, con = file.path(output_dir, paste0(name, "_centered.bed")), format = "BED")
+}
+
+
+```
+
+##### making MTX bedfiles
+
+```{r MTX dataframes}
+MTX_24_DAR <- all_results %>% 
+  dplyr::filter(source =="MTX_24") %>% 
+  dplyr::filter(adj.P.Val<0.05) %>% 
+  distinct(genes) %>% 
+  dplyr::rename("Peakid"=genes)
+MTX_3_DAR <- all_results %>% 
+  dplyr::filter(source =="MTX_3") %>% 
+  dplyr::filter(adj.P.Val<0.05) %>% 
+  distinct(genes) %>% 
+  dplyr::rename("Peakid"=genes)
+
+
+MTX_24_DAR_up <- all_results %>% 
+  dplyr::filter(source =="MTX_24") %>% 
+  dplyr::filter(adj.P.Val<0.05) %>%
+  dplyr::filter(logFC>0) %>% 
+  distinct(genes) %>% 
+  dplyr::rename("Peakid"=genes)
+MTX_3_DAR_up <- all_results %>% 
+  dplyr::filter(source =="MTX_3") %>% 
+  dplyr::filter(adj.P.Val<0.05) %>% 
+   dplyr::filter(logFC>0) %>% 
+  distinct(genes) %>% 
+  dplyr::rename("Peakid"=genes)
+MTX_24_DAR_down <- all_results %>% 
+  dplyr::filter(source =="MTX_24") %>% 
+  dplyr::filter(adj.P.Val<0.05) %>%
+   dplyr::filter(logFC<0) %>% 
+  distinct(genes) %>% 
+  dplyr::rename("Peakid"=genes)
+MTX_3_DAR_down <- all_results %>% 
+  dplyr::filter(source =="MTX_3") %>% 
+  dplyr::filter(adj.P.Val<0.05) %>%
+   dplyr::filter(logFC<0) %>% 
+  distinct(genes) %>% 
+  dplyr::rename("Peakid"=genes)
+```
+
+```{r making MTX 2kb and 20kb bedfiles, eval=FALSE}
+output_dir <- "data/Final_four_data/re_analysis/motif_beds_centered"
+MTX_24_DAR_2kb <- annotated_regions %>% 
+  dplyr::filter(Peakid %in%MTX_24_DAR$Peakid ) %>% 
+  dplyr::filter(distanceToTSS >-2000 & distanceToTSS<2000) %>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE)
+  
+
+MTX_24_notDAR_2kb <- annotated_regions %>% 
+  dplyr::filter(!Peakid %in%MTX_24_DAR$Peakid ) %>% 
+  dplyr::filter(distanceToTSS >-2000 & distanceToTSS<2000)%>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE)
+
+MTX_24_DAR_20kb<- annotated_regions %>% 
+  dplyr::filter(Peakid %in%MTX_24_DAR$Peakid ) %>% 
+  dplyr::filter(distanceToTSS >-20000 & distanceToTSS<20000)%>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE)
+
+MTX_24_notDAR_20kb<- annotated_regions %>% 
+  dplyr::filter(!Peakid %in%MTX_24_DAR$Peakid ) %>% 
+  dplyr::filter(distanceToTSS >-20000 & distanceToTSS<20000)%>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE)
+
+# Now convert to GRanges
+MTX_24_DAR_2kb_gr <- GRanges(
+  seqnames = MTX_24_DAR_2kb$seqnames,
+  ranges = IRanges(start = MTX_24_DAR_2kb$start, end = MTX_24_DAR_2kb$end),
+  mcols = MTX_24_DAR_2kb %>% select(-seqnames, -start, -end)
+)
+
+MTX_24_notDAR_2kb_gr <- GRanges(
+  seqnames = MTX_24_notDAR_2kb$seqnames,
+  ranges = IRanges(start = MTX_24_notDAR_2kb$start, end = MTX_24_notDAR_2kb$end),
+  mcols = MTX_24_notDAR_2kb %>% select(-seqnames, -start, -end)
+)
+
+MTX_24_DAR_20kb_gr <- GRanges(
+  seqnames = MTX_24_DAR_20kb$seqnames,
+  ranges = IRanges(start = MTX_24_DAR_20kb$start, end = MTX_24_DAR_20kb$end),
+  mcols = MTX_24_DAR_20kb %>% select(-seqnames, -start, -end)
+)
+
+MTX_24_notDAR_20kb_gr <- GRanges(
+  seqnames = MTX_24_notDAR_20kb$seqnames,
+  ranges = IRanges(start = MTX_24_notDAR_20kb$start, end = MTX_24_notDAR_20kb$end),
+  mcols = MTX_24_notDAR_20kb %>% select(-seqnames, -start, -end)
+)
+
+
+MTX_DAR_list_gr <- list("MTX_24_DAR_2kb"=MTX_24_DAR_2kb_gr,
+                        "MTX_24_notDAR_2kb"=MTX_24_notDAR_2kb_gr,
+                        "MTX_24_DAR_20kb"=MTX_24_DAR_20kb_gr,
+                        "MTX_24_notDAR_20kb"=MTX_24_notDAR_20kb_gr)
+for (name in names(MTX_DAR_list_gr)) {
+  gr <- MTX_DAR_list_gr[[name]]
+
+  # Recenter each region to 200 bp around its midpoint
+  gr_centered <- resize(gr, width = 200, fix = "center")
+
+  # Export to BED (auto converts to 0-based)
+  export(gr_centered, con = file.path(output_dir, paste0(name, "_centered.bed")), format = "BED")
+}
+
+
+```
+
+### Extracting top DAR-DEG BED files
+```{r DOX-DEG}
+DOX_3_DAR_DEG_2kb <-
+  annotated_regions %>% 
+  dplyr::filter(Peakid %in%DOX_3_DAR$Peakid ) %>% 
+  dplyr::filter(distanceToTSS >-2000 & distanceToTSS<2000) %>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE) %>% 
+  dplyr::filter(RNA_expressed=="exp_RNA")
+
+DOX_3_DAR_nonDEG_2kb <-
+  annotated_regions %>% 
+  dplyr::filter(Peakid %in%DOX_3_DAR$Peakid ) %>% 
+  dplyr::filter(distanceToTSS >-2000 & distanceToTSS<2000) %>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE) %>% 
+  dplyr::filter(RNA_expressed=="not_exp_RNA")
+
+
+DOX_3_DAR_DEG_20kb <-
+  annotated_regions %>% 
+  dplyr::filter(Peakid %in%DOX_3_DAR$Peakid ) %>% 
+  dplyr::filter(distanceToTSS >-20000 & distanceToTSS<20000) %>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE) %>% 
+  dplyr::filter(RNA_expressed=="exp_RNA")
+
+DOX_3_DAR_nonDEG_20kb <-
+  annotated_regions %>% 
+  dplyr::filter(Peakid %in%DOX_3_DAR$Peakid ) %>% 
+  dplyr::filter(distanceToTSS >-20000 & distanceToTSS<20000) %>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE) %>% 
+  dplyr::filter(RNA_expressed=="not_exp_RNA")
+```
+
+```{r EPI_deg}
+EPI_3_DAR_DEG_2kb <-
+  annotated_regions %>% 
+  dplyr::filter(Peakid %in%EPI_3_DAR$Peakid ) %>% 
+  dplyr::filter(distanceToTSS >-2000 & distanceToTSS<2000) %>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE) %>% 
+  dplyr::filter(RNA_expressed=="exp_RNA")
+
+EPI_3_DAR_nonDEG_2kb <-
+  annotated_regions %>% 
+  dplyr::filter(Peakid %in%EPI_3_DAR$Peakid ) %>% 
+  dplyr::filter(distanceToTSS >-2000 & distanceToTSS<2000) %>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE) %>% 
+  dplyr::filter(RNA_expressed=="not_exp_RNA")
+
+
+EPI_3_DAR_DEG_20kb <-
+  annotated_regions %>% 
+  dplyr::filter(Peakid %in%EPI_3_DAR$Peakid ) %>% 
+  dplyr::filter(distanceToTSS >-20000 & distanceToTSS<20000) %>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE) %>% 
+  dplyr::filter(RNA_expressed=="exp_RNA")
+
+EPI_3_DAR_nonDEG_20kb <-
+  annotated_regions %>% 
+  dplyr::filter(Peakid %in%EPI_3_DAR$Peakid ) %>% 
+  dplyr::filter(distanceToTSS >-20000 & distanceToTSS<20000) %>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE) %>% 
+  dplyr::filter(RNA_expressed=="not_exp_RNA")
+```
+
+```{r DNR-DEG}
+DNR_3_DAR_DEG_2kb <-
+  annotated_regions %>% 
+  dplyr::filter(Peakid %in%DNR_3_DAR$Peakid ) %>% 
+  dplyr::filter(distanceToTSS >-2000 & distanceToTSS<2000) %>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE) %>% 
+  dplyr::filter(RNA_expressed=="exp_RNA")
+
+DNR_3_DAR_nonDEG_2kb <-
+  annotated_regions %>% 
+  dplyr::filter(Peakid %in%DNR_3_DAR$Peakid ) %>% 
+  dplyr::filter(distanceToTSS >-2000 & distanceToTSS<2000) %>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE) %>% 
+  dplyr::filter(RNA_expressed=="not_exp_RNA")
+
+
+DNR_3_DAR_DEG_20kb <-
+  annotated_regions %>% 
+  dplyr::filter(Peakid %in%DNR_3_DAR$Peakid ) %>% 
+  dplyr::filter(distanceToTSS >-20000 & distanceToTSS<20000) %>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE) %>% 
+  dplyr::filter(RNA_expressed=="exp_RNA")
+
+DNR_3_DAR_nonDEG_20kb <-
+  annotated_regions %>% 
+  dplyr::filter(Peakid %in%DNR_3_DAR$Peakid ) %>% 
+  dplyr::filter(distanceToTSS >-20000 & distanceToTSS<20000) %>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE) %>% 
+  dplyr::filter(RNA_expressed=="not_exp_RNA")
+```
+
+```{r MTX-DEG}
+MTX_3_DAR_DEG_2kb <-
+  annotated_regions %>% 
+  dplyr::filter(Peakid %in%MTX_3_DAR$Peakid ) %>% 
+  dplyr::filter(distanceToTSS >-2000 & distanceToTSS<2000) %>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE) %>% 
+  dplyr::filter(RNA_expressed=="exp_RNA")
+
+MTX_3_DAR_nonDEG_2kb <-
+  annotated_regions %>% 
+  dplyr::filter(Peakid %in%MTX_3_DAR$Peakid ) %>% 
+  dplyr::filter(distanceToTSS >-2000 & distanceToTSS<2000) %>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE) %>% 
+  dplyr::filter(RNA_expressed=="not_exp_RNA")
+
+
+MTX_3_DAR_DEG_20kb <-
+  annotated_regions %>% 
+  dplyr::filter(Peakid %in%MTX_3_DAR$Peakid ) %>% 
+  dplyr::filter(distanceToTSS >-20000 & distanceToTSS<20000) %>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE) %>% 
+  dplyr::filter(RNA_expressed=="exp_RNA")
+
+MTX_3_DAR_nonDEG_20kb <-
+  annotated_regions %>% 
+  dplyr::filter(Peakid %in%MTX_3_DAR$Peakid ) %>% 
+  dplyr::filter(distanceToTSS >-20000 & distanceToTSS<20000) %>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE) %>% 
+  dplyr::filter(RNA_expressed=="not_exp_RNA")
+```
+
+```{r collect DAR-DEG data frames}
+df_names_DAR_DEGS <- ls(pattern = ".*_DAR_DEG_.*kb$")
+
+df_names_DAR_nonDEGS <- ls(pattern = ".*_DAR_nonDEG_.*kb$")
+
+
+df_list_DAR_DEGS <- mget(df_names_DAR_DEGS)
+
+df_list_DAR_nonDEGS <- mget(df_names_DAR_nonDEGS)
+
+
+# Step 3: Convert each dataframe to GRanges
+
+gr_list_DAR_DEGS <- lapply(df_list_DAR_DEGS, function(df) {
+  GRanges(
+    seqnames = df$seqnames,
+    ranges = IRanges(start = df$start, end = df$end),
+    mcols = df %>% select(-seqnames, -start, -end)
+  )
+})
+
+gr_list_DAR_nonDEGS <- lapply(df_list_DAR_nonDEGS, function(df) {
+  GRanges(
+    seqnames = df$seqnames,
+    ranges = IRanges(start = df$start, end = df$end),
+    mcols = df %>% select(-seqnames, -start, -end)
+  )
+})
+
+# Optional: Name the GRanges list same as original data frames
+
+names(gr_list_DAR_DEGS) <- df_names_DAR_DEGS
+names(gr_list_DAR_nonDEGS) <- df_names_DAR_nonDEGS
+```
+
+
+```{r exporting bed files, eval=FALSE}
+# Folder with input BED files
+
+output_dir <- "data/Final_four_data/re_analysis/motif_beds_centered"
+
+# Create output folder if needed
+dir.create(output_dir, showWarnings = FALSE)
+
+# Loop through each BED file
+for (name in names(gr_list_DAR_DEGS)) {
+  gr <- gr_list_DAR_DEGS[[name]]
+  
+  # Recenter each region to 200 bp around its midpoint
+  gr_centered <- resize(gr, width = 200, fix = "center")
+  
+  # Export to BED (auto converts to 0-based)
+  export(gr_centered, con = file.path(output_dir, paste0(name, "DAR_DEG_centered.bed")), format = "BED")
+}
+
+
+### not significant DAR regions for xstreme
+
+for (name in names(gr_list_DAR_nonDEGS)) {
+  gr <- gr_list_DAR_nonDEGS[[name]]
+  
+  # Recenter each region to 200 bp around its midpoint
+  gr_centered <- resize(gr, width = 200, fix = "center")
+  
+  # Export to BED (auto converts to 0-based)
+  export(gr_centered, con = file.path(output_dir, paste0(name, "DAR_nonDEG_centered.bed")), format = "BED")
+}
+
+```
+
+
+
+#### 24hour 2kb 20kb DAR_DEG bed files
+
+```{r DOX-DEG_24}
+DOX_24_DAR_DEG_2kb <-
+  annotated_regions %>% 
+  dplyr::filter(Peakid %in%DOX_24_DAR$Peakid ) %>% 
+  dplyr::filter(distanceToTSS >-2000 & distanceToTSS<2000) %>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE) %>% 
+  dplyr::filter(RNA_expressed=="exp_RNA")
+
+DOX_24_DAR_nonDEG_2kb <-
+  annotated_regions %>% 
+  dplyr::filter(Peakid %in%DOX_24_DAR$Peakid ) %>% 
+  dplyr::filter(distanceToTSS >-2000 & distanceToTSS<2000) %>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE) %>% 
+  dplyr::filter(RNA_expressed=="not_exp_RNA")
+
+
+DOX_24_DAR_DEG_20kb <-
+  annotated_regions %>% 
+  dplyr::filter(Peakid %in%DOX_24_DAR$Peakid ) %>% 
+  dplyr::filter(distanceToTSS >-20000 & distanceToTSS<20000) %>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE) %>% 
+  dplyr::filter(RNA_expressed=="exp_RNA")
+
+DOX_24_DAR_nonDEG_20kb <-
+  annotated_regions %>% 
+  dplyr::filter(Peakid %in%DOX_24_DAR$Peakid ) %>% 
+  dplyr::filter(distanceToTSS >-20000 & distanceToTSS<20000) %>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE) %>% 
+  dplyr::filter(RNA_expressed=="not_exp_RNA")
+```
+
+```{r EPI_deg_24}
+EPI_24_DAR_DEG_2kb <-
+  annotated_regions %>% 
+  dplyr::filter(Peakid %in%EPI_24_DAR$Peakid ) %>% 
+  dplyr::filter(distanceToTSS >-2000 & distanceToTSS<2000) %>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE) %>% 
+  dplyr::filter(RNA_expressed=="exp_RNA")
+
+EPI_24_DAR_nonDEG_2kb <-
+  annotated_regions %>% 
+  dplyr::filter(Peakid %in%EPI_24_DAR$Peakid ) %>% 
+  dplyr::filter(distanceToTSS >-2000 & distanceToTSS<2000) %>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE) %>% 
+  dplyr::filter(RNA_expressed=="not_exp_RNA")
+
+
+EPI_24_DAR_DEG_20kb <-
+  annotated_regions %>% 
+  dplyr::filter(Peakid %in%EPI_24_DAR$Peakid ) %>% 
+  dplyr::filter(distanceToTSS >-20000 & distanceToTSS<20000) %>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE) %>% 
+  dplyr::filter(RNA_expressed=="exp_RNA")
+
+EPI_24_DAR_nonDEG_20kb <-
+  annotated_regions %>% 
+  dplyr::filter(Peakid %in%EPI_24_DAR$Peakid ) %>% 
+  dplyr::filter(distanceToTSS >-20000 & distanceToTSS<20000) %>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE) %>% 
+  dplyr::filter(RNA_expressed=="not_exp_RNA")
+```
+
+```{r DNR-DEG_24}
+DNR_24_DAR_DEG_2kb <-
+  annotated_regions %>% 
+  dplyr::filter(Peakid %in%DNR_24_DAR$Peakid ) %>% 
+  dplyr::filter(distanceToTSS >-2000 & distanceToTSS<2000) %>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE) %>% 
+  dplyr::filter(RNA_expressed=="exp_RNA")
+
+DNR_24_DAR_nonDEG_2kb <-
+  annotated_regions %>% 
+  dplyr::filter(Peakid %in%DNR_24_DAR$Peakid ) %>% 
+  dplyr::filter(distanceToTSS >-2000 & distanceToTSS<2000) %>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE) %>% 
+  dplyr::filter(RNA_expressed=="not_exp_RNA")
+
+
+DNR_24_DAR_DEG_20kb <-
+  annotated_regions %>% 
+  dplyr::filter(Peakid %in%DNR_24_DAR$Peakid ) %>% 
+  dplyr::filter(distanceToTSS >-20000 & distanceToTSS<20000) %>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE) %>% 
+  dplyr::filter(RNA_expressed=="exp_RNA")
+
+DNR_24_DAR_nonDEG_20kb <-
+  annotated_regions %>% 
+  dplyr::filter(Peakid %in%DNR_24_DAR$Peakid ) %>% 
+  dplyr::filter(distanceToTSS >-20000 & distanceToTSS<20000) %>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE) %>% 
+  dplyr::filter(RNA_expressed=="not_exp_RNA")
+```
+
+```{r MTX-DEG_24}
+MTX_24_DAR_DEG_2kb <-
+  annotated_regions %>% 
+  dplyr::filter(Peakid %in%MTX_24_DAR$Peakid ) %>% 
+  dplyr::filter(distanceToTSS >-2000 & distanceToTSS<2000) %>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE) %>% 
+  dplyr::filter(RNA_expressed=="exp_RNA")
+
+MTX_24_DAR_nonDEG_2kb <-
+  annotated_regions %>% 
+  dplyr::filter(Peakid %in%MTX_24_DAR$Peakid ) %>% 
+  dplyr::filter(distanceToTSS >-2000 & distanceToTSS<2000) %>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE) %>% 
+  dplyr::filter(RNA_expressed=="not_exp_RNA")
+
+
+MTX_24_DAR_DEG_20kb <-
+  annotated_regions %>% 
+  dplyr::filter(Peakid %in%MTX_24_DAR$Peakid ) %>% 
+  dplyr::filter(distanceToTSS >-20000 & distanceToTSS<20000) %>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE) %>% 
+  dplyr::filter(RNA_expressed=="exp_RNA")
+
+MTX_24_DAR_nonDEG_20kb <-
+  annotated_regions %>% 
+  dplyr::filter(Peakid %in%MTX_24_DAR$Peakid ) %>% 
+  dplyr::filter(distanceToTSS >-20000 & distanceToTSS<20000) %>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE) %>% 
+  dplyr::filter(RNA_expressed=="not_exp_RNA")
+```
+
+```{r collect DAR-DEG data frames}
+df_names_DAR_DEGS <- ls(pattern = ".*_DAR_DEG_.*kb$")
+
+df_names_DAR_nonDEGS <- ls(pattern = ".*_DAR_nonDEG_.*kb$")
+
+
+df_list_DAR_DEGS <- mget(df_names_DAR_DEGS)
+
+df_list_DAR_nonDEGS <- mget(df_names_DAR_nonDEGS)
+
+
+# Step 3: Convert each dataframe to GRanges
+
+gr_list_DAR_DEGS <- lapply(df_list_DAR_DEGS, function(df) {
+  GRanges(
+    seqnames = df$seqnames,
+    ranges = IRanges(start = df$start, end = df$end),
+    mcols = df %>% select(-seqnames, -start, -end)
+  )
+})
+
+gr_list_DAR_nonDEGS <- lapply(df_list_DAR_nonDEGS, function(df) {
+  GRanges(
+    seqnames = df$seqnames,
+    ranges = IRanges(start = df$start, end = df$end),
+    mcols = df %>% select(-seqnames, -start, -end)
+  )
+})
+
+# Optional: Name the GRanges list same as original data frames
+
+names(gr_list_DAR_DEGS) <- df_names_DAR_DEGS
+names(gr_list_DAR_nonDEGS) <- df_names_DAR_nonDEGS
+```
+
+
+```{r exporting bed files, eval=FALSE}
+# Folder with input BED files
+
+output_dir <- "data/Final_four_data/re_analysis/motif_beds_centered"
+
+# Create output folder if needed
+dir.create(output_dir, showWarnings = FALSE)
+
+# Loop through each BED file
+for (name in names(gr_list_DAR_DEGS)) {
+  gr <- gr_list_DAR_DEGS[[name]]
+  
+  # Recenter each region to 200 bp around its midpoint
+  gr_centered <- resize(gr, width = 200, fix = "center")
+  
+  # Export to BED (auto converts to 0-based)
+  export(gr_centered, con = file.path(output_dir, paste0(name, "DAR_DEG_centered.bed")), format = "BED")
+}
+
+
+### not significant DAR regions for xstreme
+
+for (name in names(gr_list_DAR_nonDEGS)) {
+  gr <- gr_list_DAR_nonDEGS[[name]]
+  
+  # Recenter each region to 200 bp around its midpoint
+  gr_centered <- resize(gr, width = 200, fix = "center")
+  
+  # Export to BED (auto converts to 0-based)
+  export(gr_centered, con = file.path(output_dir, paste0(name, "DAR_nonDEG_centered.bed")), format = "BED")
+}
+
+```
+
+#### up down DAR DEG  ( just DAR_DEG DAR_nonDEG up and down)
+```{r DOX_DAR_DEG 3 and 24 only}
+DOX_24_up_DAR_DEG <-
+  annotated_regions %>%
+  dplyr::filter(Peakid %in%DOX_24_DAR_up$Peakid )%>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE) %>% 
+  dplyr::filter(geneId %in% RNA_24_DOX_DEG$ENTREZID)
+
+
+DOX_24_up_DAR_nonDEG <-
+  annotated_regions %>% 
+  dplyr::filter(Peakid %in%DOX_24_DAR_up$Peakid ) %>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE) %>% 
+   dplyr::filter(!geneId %in% RNA_24_DOX_DEG$ENTREZID)
+
+DOX_3_up_DAR_DEG <-
+  annotated_regions %>% 
+  dplyr::filter(Peakid %in%DOX_3_DAR_up$Peakid ) %>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE) %>% 
+  dplyr::filter(RNA_expressed=="exp_RNA") %>% 
+  dplyr::filter(geneId %in% RNA_3_DOX_DEG$ENTREZID)
+
+DOX_3_up_DAR_nonDEG <-
+  annotated_regions %>% 
+  dplyr::filter(Peakid %in%DOX_3_DAR_up$Peakid ) %>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE) %>% 
+  dplyr::filter(RNA_expressed=="not_exp_RNA") %>% 
+  dplyr::filter(!geneId %in% RNA_3_DOX_DEG$ENTREZID)
+
+DOX_24_down_DAR_DEG <-  annotated_regions %>%
+  dplyr::filter(Peakid %in%DOX_24_DAR_down$Peakid )%>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE) %>% 
+  dplyr::filter(RNA_expressed=="exp_RNA") %>% 
+  dplyr::filter(geneId %in% RNA_24_DOX_DEG$ENTREZID)
+
+DOX_24_down_DAR_nonDEG <-
+  annotated_regions %>% 
+  dplyr::filter(Peakid %in%DOX_24_DAR_down$Peakid ) %>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE) %>% 
+  dplyr::filter(RNA_expressed=="not_exp_RNA") %>% 
+  dplyr::filter(!geneId %in% RNA_24_DOX_DEG$ENTREZID)
+
+DOX_3_down_DAR_DEG <-
+  annotated_regions %>% 
+  dplyr::filter(Peakid %in%DOX_3_DAR_down$Peakid ) %>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE) %>% 
+  dplyr::filter(RNA_expressed=="exp_RNA") %>% 
+  dplyr::filter(geneId %in% RNA_3_DOX_DEG$ENTREZID)
+
+DOX_3_down_DAR_nonDEG <-
+  annotated_regions %>% 
+  dplyr::filter(Peakid %in%DOX_3_DAR_down$Peakid ) %>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE) %>% 
+  dplyr::filter(RNA_expressed=="not_exp_RNA") %>% 
+  dplyr::filter(!geneId %in% RNA_3_DOX_DEG$ENTREZID)
+
+
+
+```
+
+```{r EPI_DAR_DEG 3 and 24 only}
+EPI_24_up_DAR_DEG <-
+  annotated_regions %>%
+  dplyr::filter(Peakid %in% EPI_24_DAR_up$Peakid )%>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE) %>% 
+  dplyr::filter(geneId %in% RNA_24_EPI_DEG$ENTREZID)
+
+
+EPI_24_up_DAR_nonDEG <-
+  annotated_regions %>% 
+  dplyr::filter(Peakid %in% EPI_24_DAR_up$Peakid ) %>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE) %>% 
+   dplyr::filter(!geneId %in% RNA_24_EPI_DEG$ENTREZID)
+
+EPI_3_up_DAR_DEG <-
+  annotated_regions %>% 
+  dplyr::filter(Peakid %in%EPI_3_DAR_up$Peakid ) %>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE) %>% 
+  dplyr::filter(RNA_expressed=="exp_RNA") %>% 
+  dplyr::filter(geneId %in% RNA_3_EPI_DEG$ENTREZID)
+
+EPI_3_up_DAR_nonDEG <-
+  annotated_regions %>% 
+  dplyr::filter(Peakid %in%EPI_3_DAR_up$Peakid ) %>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE) %>% 
+  dplyr::filter(RNA_expressed=="not_exp_RNA") %>% 
+  dplyr::filter(geneId %in% RNA_3_EPI_DEG$ENTREZID)
+
+EPI_24_down_DAR_DEG <-  annotated_regions %>%
+  dplyr::filter(Peakid %in%EPI_24_DAR_down$Peakid )%>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE) %>% 
+  dplyr::filter(RNA_expressed=="exp_RNA") %>% 
+  dplyr::filter(geneId %in% RNA_24_EPI_DEG$ENTREZID)
+
+EPI_24_down_DAR_nonDEG <-
+  annotated_regions %>% 
+  dplyr::filter(Peakid %in%EPI_24_DAR_down$Peakid ) %>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE) %>% 
+  dplyr::filter(RNA_expressed=="not_exp_RNA") %>% 
+  dplyr::filter(!geneId %in% RNA_24_EPI_DEG$ENTREZID)
+
+EPI_3_down_DAR_DEG <-
+  annotated_regions %>% 
+  dplyr::filter(Peakid %in%EPI_3_DAR_down$Peakid ) %>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE) %>% 
+  dplyr::filter(RNA_expressed=="exp_RNA") %>% 
+  dplyr::filter(geneId %in% RNA_3_EPI_DEG$ENTREZID)
+
+EPI_3_down_DAR_nonDEG <-
+  annotated_regions %>% 
+  dplyr::filter(Peakid %in%EPI_3_DAR_down$Peakid ) %>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE) %>% 
+  dplyr::filter(RNA_expressed=="not_exp_RNA") %>% 
+  dplyr::filter(!geneId %in% RNA_3_EPI_DEG$ENTREZID)
+
+
+
+```
+
+
+```{r DNR_DAR_DEG 3 and 24 only}
+DNR_24_up_DAR_DEG <-
+  annotated_regions %>%
+  dplyr::filter(Peakid %in%DNR_24_DAR_up$Peakid )%>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE) %>% 
+  dplyr::filter(geneId %in% RNA_24_DNR_DEG$ENTREZID)
+
+
+DNR_24_up_DAR_nonDEG <-
+  annotated_regions %>% 
+  dplyr::filter(Peakid %in%DNR_24_DAR_up$Peakid ) %>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE) %>% 
+   dplyr::filter(!geneId %in% RNA_24_DNR_DEG$ENTREZID)
+
+DNR_3_up_DAR_DEG <-
+  annotated_regions %>% 
+  dplyr::filter(Peakid %in%DNR_3_DAR_up$Peakid ) %>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE) %>% 
+  dplyr::filter(RNA_expressed=="exp_RNA") %>% 
+  dplyr::filter(geneId %in% RNA_3_DNR_DEG$ENTREZID)
+
+DNR_3_up_DAR_nonDEG <-
+  annotated_regions %>% 
+  dplyr::filter(Peakid %in%DNR_3_DAR_up$Peakid ) %>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE) %>% 
+  dplyr::filter(RNA_expressed=="not_exp_RNA") %>% 
+  dplyr::filter(!geneId %in% RNA_3_DNR_DEG$ENTREZID)
+
+DNR_24_down_DAR_DEG <-  annotated_regions %>%
+  dplyr::filter(Peakid %in%DNR_24_DAR_down$Peakid )%>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE) %>% 
+  dplyr::filter(RNA_expressed=="exp_RNA") %>% 
+  dplyr::filter(geneId %in% RNA_24_DNR_DEG$ENTREZID)
+
+DNR_24_down_DAR_nonDEG <-
+  annotated_regions %>% 
+  dplyr::filter(Peakid %in%DNR_24_DAR_down$Peakid ) %>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE) %>% 
+  dplyr::filter(RNA_expressed=="not_exp_RNA") %>% 
+  dplyr::filter(!geneId %in% RNA_24_DNR_DEG$ENTREZID)
+
+DNR_3_down_DAR_DEG <-
+  annotated_regions %>% 
+  dplyr::filter(Peakid %in%DNR_3_DAR_down$Peakid ) %>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE) %>% 
+  dplyr::filter(RNA_expressed=="exp_RNA") %>% 
+  dplyr::filter(geneId %in% RNA_3_DNR_DEG$ENTREZID)
+
+DNR_3_down_DAR_nonDEG <-
+  annotated_regions %>% 
+  dplyr::filter(Peakid %in%DNR_3_DAR_down$Peakid ) %>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE) %>% 
+  dplyr::filter(RNA_expressed=="not_exp_RNA") %>% 
+  dplyr::filter(!geneId %in% RNA_3_DNR_DEG$ENTREZID)
+
+
+
+```
+
+
+```{r MTX_DAR_DEG 3 and 24 only}
+MTX_24_up_DAR_DEG <-
+  annotated_regions %>%
+  dplyr::filter(Peakid %in%MTX_24_DAR_up$Peakid )%>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE) %>% 
+  dplyr::filter(geneId %in% RNA_24_MTX_DEG$ENTREZID)
+
+
+MTX_24_up_DAR_nonDEG <-
+  annotated_regions %>% 
+  dplyr::filter(Peakid %in%MTX_24_DAR_up$Peakid ) %>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE) %>% 
+   dplyr::filter(!geneId %in% RNA_24_MTX_DEG$ENTREZID)
+
+MTX_3_up_DAR_DEG <-
+  annotated_regions %>% 
+  dplyr::filter(Peakid %in%MTX_3_DAR_up$Peakid ) %>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE) %>% 
+  dplyr::filter(RNA_expressed=="exp_RNA") %>% 
+  dplyr::filter(geneId %in% RNA_3_MTX_DEG$ENTREZID)
+
+MTX_3_up_DAR_nonDEG <-
+  annotated_regions %>% 
+  dplyr::filter(Peakid %in%MTX_3_DAR_up$Peakid ) %>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE) %>% 
+  dplyr::filter(RNA_expressed=="not_exp_RNA") %>% 
+  dplyr::filter(geneId %in% RNA_3_MTX_DEG$ENTREZID)
+
+MTX_24_down_DAR_DEG <-  annotated_regions %>%
+  dplyr::filter(Peakid %in%MTX_24_DAR_down$Peakid )%>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE) %>% 
+  dplyr::filter(RNA_expressed=="exp_RNA") %>% 
+  dplyr::filter(geneId %in% RNA_24_MTX_DEG$ENTREZID)
+
+MTX_24_down_DAR_nonDEG <-
+  annotated_regions %>% 
+  dplyr::filter(Peakid %in%MTX_24_DAR_down$Peakid ) %>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE) %>% 
+  dplyr::filter(RNA_expressed=="not_exp_RNA") %>% 
+  dplyr::filter(!geneId %in% RNA_24_MTX_DEG$ENTREZID)
+
+MTX_3_down_DAR_DEG <-
+  annotated_regions %>% 
+  dplyr::filter(Peakid %in%MTX_3_DAR_down$Peakid ) %>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE) %>% 
+  dplyr::filter(RNA_expressed=="exp_RNA") %>% 
+  dplyr::filter(geneId %in% RNA_3_MTX_DEG$ENTREZID)
+
+MTX_3_down_DAR_nonDEG <-
+  annotated_regions %>% 
+  dplyr::filter(Peakid %in%MTX_3_DAR_down$Peakid ) %>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE) %>% 
+  dplyr::filter(RNA_expressed=="not_exp_RNA") %>% 
+  dplyr::filter(!geneId %in% RNA_3_MTX_DEG$ENTREZID)
+
+
+
+```
+
+
+
+```{r}
+
+df_names_DAR_DEGs <- ls(pattern = ".*_DAR_DEG")
+
+df_names_DAR_nonDEGs <- ls(pattern = ".*_DAR_nonDEG")
+
+
+df_list_DAR_DEGs<- mget(df_names_DAR_DEGs)
+
+df_list_DAR_nonDEGs <- mget(df_names_DAR_nonDEGs)
+
+
+# Step 3: Convert each dataframe to GRanges
+
+gr_list_DAR_DEG <- lapply(df_list_DAR_DEGs, function(df) {
+  GRanges(
+    seqnames = df$seqnames,
+    ranges = IRanges(start = df$start, end = df$end),
+    mcols = df %>% select(-seqnames, -start, -end)
+  )
+})
+
+gr_list_DAR_nonDEG <- lapply(df_list_DAR_nonDEGs, function(df) {
+  GRanges(
+    seqnames = df$seqnames,
+    ranges = IRanges(start = df$start, end = df$end),
+    mcols = df %>% select(-seqnames, -start, -end)
+  )
+})
+
+# Optional: Name the GRanges list same as original data frames
+
+names(gr_list_DAR_DEG) <- df_names_DAR_DEGs
+names(gr_list_DAR_nonDEG) <- df_names_DAR_nonDEGs
+```
+
+```{r exporting bed files, eval=FALSE}
+# Folder with input BED files
+
+output_dir <- "data/Final_four_data/re_analysis/motif_beds_centered"
+
+# Create output folder if needed
+dir.create(output_dir, showWarnings = FALSE)
+
+# Loop through each BED file
+for (name in names(gr_list_DAR_DEG)) {
+  gr <- gr_list_DAR_DEG[[name]]
+  
+  # Recenter each region to 200 bp around its midpoint
+  gr_centered <- resize(gr, width = 200, fix = "center")
+  
+  # Export to BED (auto converts to 0-based)
+  export(gr_centered, con = file.path(output_dir, paste0(name, "_DEGcentered.bed")), format = "BED")
+}
+
+
+### not significant DAR regions for xstreme
+
+for (name in names(gr_list_DAR_nonDEG)) {
+  gr <- gr_list_DAR_nonDEG[[name]]
+  
+  # Recenter each region to 200 bp around its midpoint
+  gr_centered <- resize(gr, width = 200, fix = "center")
+  
+  # Export to BED (auto converts to 0-based)
+  export(gr_centered, con = file.path(output_dir, paste0(name, "_DEGcentered.bed")), format = "BED")
+}
+
+```
+
+##### REAL DAR DEG by time/trt  
+
+```{r DOX-DEG_24}
+DOX_24_DD <-
+  annotated_regions %>% 
+  dplyr::filter(Peakid %in%DOX_24_DAR$Peakid ) %>% 
+  dplyr::filter(geneId %in% RNA_24_DOX_DEG$ENTREZID) %>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE) 
+
+DOX_24_nDD <-
+  annotated_regions %>% 
+  dplyr::filter(Peakid %in%DOX_24_DAR$Peakid ) %>% 
+  dplyr::filter(!geneId %in% RNA_24_DOX_DEG$ENTREZID) %>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE)
+
+DOX_3_DD <-
+  annotated_regions %>% 
+  dplyr::filter(Peakid %in%DOX_3_DAR$Peakid ) %>% 
+  dplyr::filter(geneId %in% RNA_3_DOX_DEG$ENTREZID) %>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE)
+
+DOX_3_nDD <-
+  annotated_regions %>% 
+  dplyr::filter(Peakid %in%DOX_3_DAR$Peakid ) %>% 
+  dplyr::filter(!geneId %in% RNA_3_DOX_DEG$ENTREZID) %>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE)
+
+```
+
+
+```{r EPI-DEG_24}
+EPI_24_DD <-
+  annotated_regions %>% 
+  dplyr::filter(Peakid %in%EPI_24_DAR$Peakid ) %>% 
+  dplyr::filter(geneId %in% RNA_24_EPI_DEG$ENTREZID) %>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE) 
+
+EPI_24_nDD <-
+  annotated_regions %>% 
+  dplyr::filter(Peakid %in%EPI_24_DAR$Peakid ) %>% 
+  dplyr::filter(!geneId %in% RNA_24_EPI_DEG$ENTREZID) %>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE)
+
+EPI_3_DD <-
+  annotated_regions %>% 
+  dplyr::filter(Peakid %in%EPI_3_DAR$Peakid ) %>% 
+  dplyr::filter(geneId %in% RNA_3_EPI_DEG$ENTREZID) %>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE)
+
+EPI_3_nDD <-
+  annotated_regions %>% 
+  dplyr::filter(Peakid %in%EPI_3_DAR$Peakid ) %>% 
+  dplyr::filter(!geneId %in% RNA_3_EPI_DEG$ENTREZID) %>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE)
+
+```
+
+
+```{r DNR-DEG_24}
+DNR_24_DD <-
+  annotated_regions %>% 
+  dplyr::filter(Peakid %in%DNR_24_DAR$Peakid ) %>% 
+  dplyr::filter(geneId %in% RNA_24_DNR_DEG$ENTREZID) %>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE) 
+
+DNR_24_nDD <-
+  annotated_regions %>% 
+  dplyr::filter(Peakid %in%DNR_24_DAR$Peakid ) %>% 
+  dplyr::filter(!geneId %in% RNA_24_DNR_DEG$ENTREZID) %>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE)
+
+DNR_3_DD <-
+  annotated_regions %>% 
+  dplyr::filter(Peakid %in%DNR_3_DAR$Peakid ) %>% 
+  dplyr::filter(geneId %in% RNA_3_DNR_DEG$ENTREZID) %>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE)
+
+DNR_3_nDD <-
+  annotated_regions %>% 
+  dplyr::filter(Peakid %in%DNR_3_DAR$Peakid ) %>% 
+  dplyr::filter(!geneId %in% RNA_3_DNR_DEG$ENTREZID) %>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE)
+
+```
+
+
+```{r MTX-DEG_24}
+MTX_24_DD <-
+  annotated_regions %>% 
+  dplyr::filter(Peakid %in%MTX_24_DAR$Peakid ) %>% 
+  dplyr::filter(geneId %in% RNA_24_MTX_DEG$ENTREZID) %>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE) 
+
+MTX_24_nDD <-
+  annotated_regions %>% 
+  dplyr::filter(Peakid %in%MTX_24_DAR$Peakid ) %>% 
+  dplyr::filter(!geneId %in% RNA_24_MTX_DEG$ENTREZID) %>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE)
+
+MTX_3_DD <-
+  annotated_regions %>% 
+  dplyr::filter(Peakid %in%MTX_3_DAR$Peakid ) %>% 
+  dplyr::filter(geneId %in% RNA_3_MTX_DEG$ENTREZID) %>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE)
+
+MTX_3_nDD <-
+  annotated_regions %>% 
+  dplyr::filter(Peakid %in%MTX_3_DAR$Peakid ) %>% 
+  dplyr::filter(!geneId %in% RNA_3_MTX_DEG$ENTREZID) %>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE)
+
+```  
+
+
+```{r}
+
+df_names_DD <- ls(pattern = ".*_DD")
+
+df_names_nDD <- ls(pattern = ".*_nDD")
+
+
+df_list_DD<- mget(df_names_DD)
+
+df_list_nDD <- mget(df_names_nDD)
+
+
+# Step 3: Convert each dataframe to GRanges
+
+gr_list_DD <- lapply(df_list_DD, function(df) {
+  GRanges(
+    seqnames = df$seqnames,
+    ranges = IRanges(start = df$start, end = df$end),
+    mcols = df %>% select(-seqnames, -start, -end)
+  )
+})
+
+gr_list_nDD <- lapply(df_list_nDD, function(df) {
+  GRanges(
+    seqnames = df$seqnames,
+    ranges = IRanges(start = df$start, end = df$end),
+    mcols = df %>% select(-seqnames, -start, -end)
+  )
+})
+
+# Optional: Name the GRanges list same as original data frames
+
+names(gr_list_DD) <- df_names_DD
+names(gr_list_nDD) <- df_names_nDD
+```  
+
+
+```{r exporting bed files DD, eval=FALSE}
+# Folder with input BED files
+
+output_dir <- "data/Final_four_data/re_analysis/motif_beds_centered"
+
+# Create output folder if needed
+dir.create(output_dir, showWarnings = FALSE)
+
+# Loop through each BED file
+for (name in names(gr_list_DD)) {
+  gr <- gr_list_DD[[name]]
+  
+  # Recenter each region to 200 bp around its midpoint
+  gr_centered <- resize(gr, width = 200, fix = "center")
+  
+  # Export to BED (auto converts to 0-based)
+  export(gr_centered, con = file.path(output_dir, paste0(name, "_realcentered.bed")), format = "BED")
+}
+
+
+### not significant DAR regions for xstreme
+
+for (name in names(gr_list_nDD)) {
+  gr <- gr_list_nDD[[name]]
+  
+  # Recenter each region to 200 bp around its midpoint
+  gr_centered <- resize(gr, width = 200, fix = "center")
+  
+  # Export to BED (auto converts to 0-based)
+  export(gr_centered, con = file.path(output_dir, paste0(name, "_realcentered.bed")), format = "BED")
+}
+
+```
