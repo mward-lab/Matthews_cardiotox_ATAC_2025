@@ -1,0 +1,2055 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+
+<meta name="author" content="Renee Matthews" />
+
+<meta name="date" content="2025-06-10" />
+
+<title>SNP &amp; TAD</title>
+
+<script src="site_libs/header-attrs-2.29/header-attrs.js"></script>
+<script src="site_libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="site_libs/bootstrap-3.3.5/css/cosmo.min.css" rel="stylesheet" />
+<script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
+<style>h1 {font-size: 34px;}
+       h1.title {font-size: 38px;}
+       h2 {font-size: 30px;}
+       h3 {font-size: 24px;}
+       h4 {font-size: 18px;}
+       h5 {font-size: 16px;}
+       h6 {font-size: 12px;}
+       code {color: inherit; background-color: rgba(0, 0, 0, 0.04);}
+       pre:not([class]) { background-color: white }</style>
+<script src="site_libs/jqueryui-1.13.2/jquery-ui.min.js"></script>
+<link href="site_libs/tocify-1.9.1/jquery.tocify.css" rel="stylesheet" />
+<script src="site_libs/tocify-1.9.1/jquery.tocify.js"></script>
+<script src="site_libs/navigation-1.1/tabsets.js"></script>
+<link href="site_libs/highlightjs-9.12.0/textmate.css" rel="stylesheet" />
+<script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+<link href="site_libs/font-awesome-6.5.2/css/all.min.css" rel="stylesheet" />
+<link href="site_libs/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet" />
+
+<link rel="icon" href="https://github.com/workflowr/workflowr-assets/raw/main/img/reproducible.png">
+<!-- Add a small amount of space between sections. -->
+<style type="text/css">
+div.section {
+  padding-top: 12px;
+}
+</style>
+
+
+
+<style type="text/css">
+  code{white-space: pre-wrap;}
+  span.smallcaps{font-variant: small-caps;}
+  span.underline{text-decoration: underline;}
+  div.column{display: inline-block; vertical-align: top; width: 50%;}
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+  ul.task-list{list-style: none;}
+    </style>
+
+<style type="text/css">code{white-space: pre;}</style>
+<script type="text/javascript">
+if (window.hljs) {
+  hljs.configure({languages: []});
+  hljs.initHighlightingOnLoad();
+  if (document.readyState && document.readyState === "complete") {
+    window.setTimeout(function() { hljs.initHighlighting(); }, 0);
+  }
+}
+</script>
+
+
+
+
+
+
+
+
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+img {
+  max-width:100%;
+}
+.tabbed-pane {
+  padding-top: 12px;
+}
+.html-widget {
+  margin-bottom: 20px;
+}
+button.code-folding-btn:focus {
+  outline: none;
+}
+summary {
+  display: list-item;
+}
+details > summary > p:only-child {
+  display: inline;
+}
+pre code {
+  padding: 0;
+}
+</style>
+
+
+<style type="text/css">
+.dropdown-submenu {
+  position: relative;
+}
+.dropdown-submenu>.dropdown-menu {
+  top: 0;
+  left: 100%;
+  margin-top: -6px;
+  margin-left: -1px;
+  border-radius: 0 6px 6px 6px;
+}
+.dropdown-submenu:hover>.dropdown-menu {
+  display: block;
+}
+.dropdown-submenu>a:after {
+  display: block;
+  content: " ";
+  float: right;
+  width: 0;
+  height: 0;
+  border-color: transparent;
+  border-style: solid;
+  border-width: 5px 0 5px 5px;
+  border-left-color: #cccccc;
+  margin-top: 5px;
+  margin-right: -10px;
+}
+.dropdown-submenu:hover>a:after {
+  border-left-color: #adb5bd;
+}
+.dropdown-submenu.pull-left {
+  float: none;
+}
+.dropdown-submenu.pull-left>.dropdown-menu {
+  left: -100%;
+  margin-left: 10px;
+  border-radius: 6px 0 6px 6px;
+}
+</style>
+
+<script type="text/javascript">
+// manage active state of menu based on current page
+$(document).ready(function () {
+  // active menu anchor
+  href = window.location.pathname
+  href = href.substr(href.lastIndexOf('/') + 1)
+  if (href === "")
+    href = "index.html";
+  var menuAnchor = $('a[href="' + href + '"]');
+
+  // mark the anchor link active (and if it's in a dropdown, also mark that active)
+  var dropdown = menuAnchor.closest('li.dropdown');
+  if (window.bootstrap) { // Bootstrap 4+
+    menuAnchor.addClass('active');
+    dropdown.find('> .dropdown-toggle').addClass('active');
+  } else { // Bootstrap 3
+    menuAnchor.parent().addClass('active');
+    dropdown.addClass('active');
+  }
+
+  // Navbar adjustments
+  var navHeight = $(".navbar").first().height() + 15;
+  var style = document.createElement('style');
+  var pt = "padding-top: " + navHeight + "px; ";
+  var mt = "margin-top: -" + navHeight + "px; ";
+  var css = "";
+  // offset scroll position for anchor links (for fixed navbar)
+  for (var i = 1; i <= 6; i++) {
+    css += ".section h" + i + "{ " + pt + mt + "}\n";
+  }
+  style.innerHTML = "body {" + pt + "padding-bottom: 40px; }\n" + css;
+  document.head.appendChild(style);
+});
+</script>
+
+<!-- tabsets -->
+
+<style type="text/css">
+.tabset-dropdown > .nav-tabs {
+  display: inline-table;
+  max-height: 500px;
+  min-height: 44px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.tabset-dropdown > .nav-tabs > li.active:before, .tabset-dropdown > .nav-tabs.nav-tabs-open:before {
+  content: "\e259";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li.active:before {
+  content: "\e258";
+  font-family: 'Glyphicons Halflings';
+  border: none;
+}
+
+.tabset-dropdown > .nav-tabs > li.active {
+  display: block;
+}
+
+.tabset-dropdown > .nav-tabs > li > a,
+.tabset-dropdown > .nav-tabs > li > a:focus,
+.tabset-dropdown > .nav-tabs > li > a:hover {
+  border: none;
+  display: inline-block;
+  border-radius: 4px;
+  background-color: transparent;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li {
+  display: block;
+  float: none;
+}
+
+.tabset-dropdown > .nav-tabs > li {
+  display: none;
+}
+</style>
+
+<!-- code folding -->
+
+
+
+<style type="text/css">
+
+#TOC {
+  margin: 25px 0px 20px 0px;
+}
+@media (max-width: 768px) {
+#TOC {
+  position: relative;
+  width: 100%;
+}
+}
+
+@media print {
+.toc-content {
+  /* see https://github.com/w3c/csswg-drafts/issues/4434 */
+  float: right;
+}
+}
+
+.toc-content {
+  padding-left: 30px;
+  padding-right: 40px;
+}
+
+div.main-container {
+  max-width: 1200px;
+}
+
+div.tocify {
+  width: 20%;
+  max-width: 260px;
+  max-height: 85%;
+}
+
+@media (min-width: 768px) and (max-width: 991px) {
+  div.tocify {
+    width: 25%;
+  }
+}
+
+@media (max-width: 767px) {
+  div.tocify {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+.tocify ul, .tocify li {
+  line-height: 20px;
+}
+
+.tocify-subheader .tocify-item {
+  font-size: 0.90em;
+}
+
+.tocify .list-group-item {
+  border-radius: 0px;
+}
+
+
+</style>
+
+
+
+</head>
+
+<body>
+
+
+<div class="container-fluid main-container">
+
+
+<!-- setup 3col/9col grid for toc_float and main content  -->
+<div class="row">
+<div class="col-xs-12 col-sm-4 col-md-3">
+<div id="TOC" class="tocify">
+</div>
+</div>
+
+<div class="toc-content col-xs-12 col-sm-8 col-md-9">
+
+
+
+
+<div class="navbar navbar-default  navbar-fixed-top" role="navigation">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-bs-toggle="collapse" data-target="#navbar" data-bs-target="#navbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="index.html">Matthews_cardiotox_ATAC_2025</a>
+    </div>
+    <div id="navbar" class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+        <li>
+  <a href="index.html">Home</a>
+</li>
+<li>
+  <a href="about.html">About</a>
+</li>
+<li>
+  <a href="license.html">License</a>
+</li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        <li>
+  <a href="https://github.com/mward-lab/Matthews_cardiotox_ATAC_2025">
+    <span class="fab fa-github"></span>
+     
+    Source code
+  </a>
+</li>
+      </ul>
+    </div><!--/.nav-collapse -->
+  </div><!--/.container -->
+</div><!--/.navbar -->
+
+<div id="header">
+
+
+
+<h1 class="title toc-ignore">SNP &amp; TAD</h1>
+<h4 class="author">Renee Matthews</h4>
+<h4 class="date">2025-06-10</h4>
+
+</div>
+
+
+<p>
+<button type="button" class="btn btn-default btn-workflowr btn-workflowr-report" data-toggle="collapse" data-target="#workflowr-report">
+<span class="glyphicon glyphicon-list" aria-hidden="true"></span>
+workflowr <span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span>
+</button>
+</p>
+<div id="workflowr-report" class="collapse">
+<ul class="nav nav-tabs">
+<li class="active">
+<a data-toggle="tab" href="#summary">Summary</a>
+</li>
+<li>
+<a data-toggle="tab" href="#checks"> Checks <span
+class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span>
+</a>
+</li>
+<li>
+<a data-toggle="tab" href="#versions">Past versions</a>
+</li>
+</ul>
+<div class="tab-content">
+<div id="summary" class="tab-pane fade in active">
+<p>
+<strong>Last updated:</strong> 2025-07-09
+</p>
+<p>
+<strong>Checks:</strong> <span
+class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> 7
+<span class="glyphicon glyphicon-exclamation-sign text-danger"
+aria-hidden="true"></span> 0
+</p>
+<p>
+<strong>Knit directory:</strong> <code>ATAC_learning/</code> <span
+class="glyphicon glyphicon-question-sign" aria-hidden="true"
+title="This is the local directory in which the code in this file was executed.">
+</span>
+</p>
+<p>
+This reproducible <a href="https://rmarkdown.rstudio.com">R Markdown</a>
+analysis was created with <a
+  href="https://github.com/workflowr/workflowr">workflowr</a> (version
+1.7.1). The <em>Checks</em> tab describes the reproducibility checks
+that were applied when the results were created. The <em>Past
+versions</em> tab lists the development history.
+</p>
+<hr>
+</div>
+<div id="checks" class="tab-pane fade">
+<div id="workflowr-checks" class="panel-group">
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRMarkdownfilestronguptodate">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>R Markdown file:</strong> up-to-date
+</a>
+</p>
+</div>
+<div id="strongRMarkdownfilestronguptodate"
+class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great! Since the R Markdown file has been committed to the Git
+repository, you know the exact version of the code that produced these
+results.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongEnvironmentstrongempty">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Environment:</strong> empty </a>
+</p>
+</div>
+<div id="strongEnvironmentstrongempty" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great job! The global environment was empty. Objects defined in the
+global environment can affect the analysis in your R Markdown file in
+unknown ways. For reproduciblity it’s best to always run the code in an
+empty environment.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongSeedstrongcodesetseed20231016code">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Seed:</strong>
+<code>set.seed(20231016)</code> </a>
+</p>
+</div>
+<div id="strongSeedstrongcodesetseed20231016code"
+class="panel-collapse collapse">
+<div class="panel-body">
+<p>The command <code>set.seed(20231016)</code> was run prior to running
+the code in the R Markdown file. Setting a seed ensures that any results
+that rely on randomness, e.g. subsampling or permutations, are
+reproducible.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongSessioninformationstrongrecorded">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Session information:</strong>
+recorded </a>
+</p>
+</div>
+<div id="strongSessioninformationstrongrecorded"
+class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great job! Recording the operating system, R version, and package
+versions is critical for reproducibility.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongCachestrongnone">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Cache:</strong> none </a>
+</p>
+</div>
+<div id="strongCachestrongnone" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Nice! There were no cached chunks for this analysis, so you can be
+confident that you successfully produced the results during this
+run.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongFilepathsstrongrelative">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>File paths:</strong> relative </a>
+</p>
+</div>
+<div id="strongFilepathsstrongrelative" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great job! Using relative paths to the files within your workflowr
+project makes it easier to run your code on other machines.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcommwardlabMatthewscardiotoxATAC2025tree0fa75c35a00836ce7a848441008d9535370d0665targetblank0fa75c3a">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Repository version:</strong>
+<a href="https://github.com/mward-lab/Matthews_cardiotox_ATAC_2025/tree/0fa75c35a00836ce7a848441008d9535370d0665" target="_blank">0fa75c3</a>
+</a>
+</p>
+</div>
+<div
+id="strongRepositoryversionstrongahrefhttpsgithubcommwardlabMatthewscardiotoxATAC2025tree0fa75c35a00836ce7a848441008d9535370d0665targetblank0fa75c3a"
+class="panel-collapse collapse">
+<div class="panel-body">
+<p>
+Great! You are using Git for version control. Tracking code development
+and connecting the code version to the results is critical for
+reproducibility.
+</p>
+<p>
+The results in this page were generated with repository version
+<a href="https://github.com/mward-lab/Matthews_cardiotox_ATAC_2025/tree/0fa75c35a00836ce7a848441008d9535370d0665" target="_blank">0fa75c3</a>.
+See the <em>Past versions</em> tab to see a history of the changes made
+to the R Markdown and HTML files.
+</p>
+<p>
+Note that you need to be careful to ensure that all relevant files for
+the analysis have been committed to Git prior to generating the results
+(you can use <code>wflow_publish</code> or
+<code>wflow_git_commit</code>). workflowr only checks the R Markdown
+file, but you know if there are other scripts or data files that it
+depends on. Below is the status of the Git repository when the results
+were generated:
+</p>
+<pre><code>
+Ignored files:
+    Ignored:    .RData
+    Ignored:    .Rhistory
+    Ignored:    .Rproj.user/
+    Ignored:    analysis/H3K27ac_integration_noM.Rmd
+    Ignored:    analysis/figure/
+    Ignored:    data/ACresp_SNP_table.csv
+    Ignored:    data/ARR_SNP_table.csv
+    Ignored:    data/All_merged_peaks.tsv
+    Ignored:    data/CAD_gwas_dataframe.RDS
+    Ignored:    data/CTX_SNP_table.csv
+    Ignored:    data/Collapsed_expressed_NG_peak_table.csv
+    Ignored:    data/DEG_toplist_sep_n45.RDS
+    Ignored:    data/FRiP_first_run.txt
+    Ignored:    data/Final_four_data/
+    Ignored:    data/Frip_1_reads.csv
+    Ignored:    data/Frip_2_reads.csv
+    Ignored:    data/Frip_3_reads.csv
+    Ignored:    data/Frip_4_reads.csv
+    Ignored:    data/Frip_5_reads.csv
+    Ignored:    data/Frip_6_reads.csv
+    Ignored:    data/GO_KEGG_analysis/
+    Ignored:    data/HF_SNP_table.csv
+    Ignored:    data/Ind1_75DA24h_dedup_peaks.csv
+    Ignored:    data/Ind1_TSS_peaks.RDS
+    Ignored:    data/Ind1_firstfragment_files.txt
+    Ignored:    data/Ind1_fragment_files.txt
+    Ignored:    data/Ind1_peaks_list.RDS
+    Ignored:    data/Ind1_summary.txt
+    Ignored:    data/Ind2_TSS_peaks.RDS
+    Ignored:    data/Ind2_fragment_files.txt
+    Ignored:    data/Ind2_peaks_list.RDS
+    Ignored:    data/Ind2_summary.txt
+    Ignored:    data/Ind3_TSS_peaks.RDS
+    Ignored:    data/Ind3_fragment_files.txt
+    Ignored:    data/Ind3_peaks_list.RDS
+    Ignored:    data/Ind3_summary.txt
+    Ignored:    data/Ind4_79B24h_dedup_peaks.csv
+    Ignored:    data/Ind4_TSS_peaks.RDS
+    Ignored:    data/Ind4_V24h_fraglength.txt
+    Ignored:    data/Ind4_fragment_files.txt
+    Ignored:    data/Ind4_fragment_filesN.txt
+    Ignored:    data/Ind4_peaks_list.RDS
+    Ignored:    data/Ind4_summary.txt
+    Ignored:    data/Ind5_TSS_peaks.RDS
+    Ignored:    data/Ind5_fragment_files.txt
+    Ignored:    data/Ind5_fragment_filesN.txt
+    Ignored:    data/Ind5_peaks_list.RDS
+    Ignored:    data/Ind5_summary.txt
+    Ignored:    data/Ind6_TSS_peaks.RDS
+    Ignored:    data/Ind6_fragment_files.txt
+    Ignored:    data/Ind6_peaks_list.RDS
+    Ignored:    data/Ind6_summary.txt
+    Ignored:    data/Knowles_4.RDS
+    Ignored:    data/Knowles_5.RDS
+    Ignored:    data/Knowles_6.RDS
+    Ignored:    data/LiSiLTDNRe_TE_df.RDS
+    Ignored:    data/MI_gwas.RDS
+    Ignored:    data/SNP_GWAS_PEAK_MRC_id
+    Ignored:    data/SNP_GWAS_PEAK_MRC_id.csv
+    Ignored:    data/SNP_gene_cat_list.tsv
+    Ignored:    data/SNP_supp_schneider.RDS
+    Ignored:    data/TE_info/
+    Ignored:    data/TFmapnames.RDS
+    Ignored:    data/all_TSSE_scores.RDS
+    Ignored:    data/all_four_filtered_counts.txt
+    Ignored:    data/aln_run1_results.txt
+    Ignored:    data/anno_ind1_DA24h.RDS
+    Ignored:    data/anno_ind4_V24h.RDS
+    Ignored:    data/annotated_gwas_SNPS.csv
+    Ignored:    data/background_n45_he_peaks.RDS
+    Ignored:    data/cardiac_muscle_FRIP.csv
+    Ignored:    data/cardiomyocyte_FRIP.csv
+    Ignored:    data/col_ng_peak.csv
+    Ignored:    data/cormotif_full_4_run.RDS
+    Ignored:    data/cormotif_full_4_run_he.RDS
+    Ignored:    data/cormotif_full_6_run.RDS
+    Ignored:    data/cormotif_full_6_run_he.RDS
+    Ignored:    data/cormotif_probability_45_list.csv
+    Ignored:    data/cormotif_probability_45_list_he.csv
+    Ignored:    data/cormotif_probability_all_6_list.csv
+    Ignored:    data/cormotif_probability_all_6_list_he.csv
+    Ignored:    data/datasave.RDS
+    Ignored:    data/embryo_heart_FRIP.csv
+    Ignored:    data/enhancer_list_ENCFF126UHK.bed
+    Ignored:    data/enhancerdata/
+    Ignored:    data/filt_Peaks_efit2.RDS
+    Ignored:    data/filt_Peaks_efit2_bl.RDS
+    Ignored:    data/filt_Peaks_efit2_n45.RDS
+    Ignored:    data/first_Peaksummarycounts.csv
+    Ignored:    data/first_run_frag_counts.txt
+    Ignored:    data/full_bedfiles/
+    Ignored:    data/gene_ref.csv
+    Ignored:    data/gwas_1_dataframe.RDS
+    Ignored:    data/gwas_2_dataframe.RDS
+    Ignored:    data/gwas_3_dataframe.RDS
+    Ignored:    data/gwas_4_dataframe.RDS
+    Ignored:    data/gwas_5_dataframe.RDS
+    Ignored:    data/high_conf_peak_counts.csv
+    Ignored:    data/high_conf_peak_counts.txt
+    Ignored:    data/high_conf_peaks_bl_counts.txt
+    Ignored:    data/high_conf_peaks_counts.txt
+    Ignored:    data/hits_files/
+    Ignored:    data/hyper_files/
+    Ignored:    data/hypo_files/
+    Ignored:    data/ind1_DA24hpeaks.RDS
+    Ignored:    data/ind1_TSSE.RDS
+    Ignored:    data/ind2_TSSE.RDS
+    Ignored:    data/ind3_TSSE.RDS
+    Ignored:    data/ind4_TSSE.RDS
+    Ignored:    data/ind4_V24hpeaks.RDS
+    Ignored:    data/ind5_TSSE.RDS
+    Ignored:    data/ind6_TSSE.RDS
+    Ignored:    data/initial_complete_stats_run1.txt
+    Ignored:    data/left_ventricle_FRIP.csv
+    Ignored:    data/median_24_lfc.RDS
+    Ignored:    data/median_3_lfc.RDS
+    Ignored:    data/mergedPeads.gff
+    Ignored:    data/mergedPeaks.gff
+    Ignored:    data/motif_list_full
+    Ignored:    data/motif_list_n45
+    Ignored:    data/motif_list_n45.RDS
+    Ignored:    data/multiqc_fastqc_run1.txt
+    Ignored:    data/multiqc_fastqc_run2.txt
+    Ignored:    data/multiqc_genestat_run1.txt
+    Ignored:    data/multiqc_genestat_run2.txt
+    Ignored:    data/my_hc_filt_counts.RDS
+    Ignored:    data/my_hc_filt_counts_n45.RDS
+    Ignored:    data/n45_bedfiles/
+    Ignored:    data/n45_files
+    Ignored:    data/other_papers/
+    Ignored:    data/peakAnnoList_1.RDS
+    Ignored:    data/peakAnnoList_2.RDS
+    Ignored:    data/peakAnnoList_24_full.RDS
+    Ignored:    data/peakAnnoList_24_n45.RDS
+    Ignored:    data/peakAnnoList_3.RDS
+    Ignored:    data/peakAnnoList_3_full.RDS
+    Ignored:    data/peakAnnoList_3_n45.RDS
+    Ignored:    data/peakAnnoList_4.RDS
+    Ignored:    data/peakAnnoList_5.RDS
+    Ignored:    data/peakAnnoList_6.RDS
+    Ignored:    data/peakAnnoList_Eight.RDS
+    Ignored:    data/peakAnnoList_full_motif.RDS
+    Ignored:    data/peakAnnoList_n45_motif.RDS
+    Ignored:    data/siglist_full.RDS
+    Ignored:    data/siglist_n45.RDS
+    Ignored:    data/summarized_peaks_dataframe.txt
+    Ignored:    data/summary_peakIDandReHeat.csv
+    Ignored:    data/test.list.RDS
+    Ignored:    data/testnames.txt
+    Ignored:    data/toplist_6.RDS
+    Ignored:    data/toplist_full.RDS
+    Ignored:    data/toplist_full_DAR_6.RDS
+    Ignored:    data/toplist_n45.RDS
+    Ignored:    data/trimmed_seq_length.csv
+    Ignored:    data/unclassified_full_set_peaks.RDS
+    Ignored:    data/unclassified_n45_set_peaks.RDS
+    Ignored:    data/xstreme/
+
+Untracked files:
+    Untracked:  RNA_seq_integration.Rmd
+    Untracked:  Rplot.pdf
+    Untracked:  Sig_meta
+    Untracked:  analysis/.gitignore
+    Untracked:  analysis/AF_HF_SNP_DAR.Rmd
+    Untracked:  analysis/Cormotif_analysis_testing diff.Rmd
+    Untracked:  analysis/Diagnosis-tmm.Rmd
+    Untracked:  analysis/Expressed_RNA_associations.Rmd
+    Untracked:  analysis/LFC_corr.Rmd
+    Untracked:  analysis/SVA.Rmd
+    Untracked:  analysis/Tan2020.Rmd
+    Untracked:  analysis/Top2B_analysis.Rmd
+    Untracked:  analysis/making_master_peaks_list.Rmd
+    Untracked:  analysis/my_hc_filt_counts.csv
+    Untracked:  code/Concatenations_for_export.R
+    Untracked:  code/IGV_snapshot_code.R
+    Untracked:  code/LongDARlist.R
+    Untracked:  code/just_for_Fun.R
+    Untracked:  my_plot.pdf
+    Untracked:  my_plot.png
+    Untracked:  output/cormotif_probability_45_list.csv
+    Untracked:  output/cormotif_probability_all_6_list.csv
+    Untracked:  setup.RData
+
+Unstaged changes:
+    Modified:   ATAC_learning.Rproj
+    Modified:   analysis/AC_shared_analysis.Rmd
+    Modified:   analysis/AF_HF_SNPs.Rmd
+    Modified:   analysis/Cardiotox_SNPs.Rmd
+    Modified:   analysis/Cormotif_analysis.Rmd
+    Modified:   analysis/DEG_analysis.Rmd
+    Modified:   analysis/GO_analysis_DAR.Rmd
+    Modified:   analysis/H3K27ac_initial_QC.Rmd
+    Modified:   analysis/H3K27ac_integration.Rmd
+    Modified:   analysis/Jaspar_motif.Rmd
+    Modified:   analysis/Jaspar_motif_DAR.Rmd
+    Modified:   analysis/Jaspar_motif_ff.Rmd
+    Modified:   analysis/TE_analysis_norm.Rmd
+    Modified:   analysis/final_four_analysis.Rmd
+
+</code></pre>
+<p>
+Note that any generated files, e.g. HTML, png, CSS, etc., are not
+included in this status report because it is ok for generated content to
+have uncommitted changes.
+</p>
+</div>
+</div>
+</div>
+</div>
+<hr>
+</div>
+<div id="versions" class="tab-pane fade">
+<p>
+These are the previous versions of the repository in which changes were
+made to the R Markdown (<code>analysis/SNP_TAD_peaks.Rmd</code>) and
+HTML (<code>docs/SNP_TAD_peaks.html</code>) files. If you’ve configured
+a remote Git repository (see <code>?wflow_git_remote</code>), click on
+the hyperlinks in the table below to view the files as they were in that
+past version.
+</p>
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+File
+</th>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+<th>
+Message
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+Rmd
+</td>
+<td>
+<a href="https://github.com/mward-lab/Matthews_cardiotox_ATAC_2025/blob/0fa75c35a00836ce7a848441008d9535370d0665/analysis/SNP_TAD_peaks.Rmd" target="_blank">0fa75c3</a>
+</td>
+<td>
+reneeisnowhere
+</td>
+<td>
+2025-07-09
+</td>
+<td>
+wflow_publish("analysis/SNP_TAD_peaks.Rmd")
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<hr>
+</div>
+</div>
+</div>
+<style type="text/css">
+pre {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+pre[class] {
+  max-height: 200px;
+}
+</style>
+<pre class="r"><code>library(tidyverse)
+library(kableExtra)
+library(broom)
+library(RColorBrewer)
+library(ChIPseeker)
+library(ChIPpeakAnno)
+library(&quot;TxDb.Hsapiens.UCSC.hg38.knownGene&quot;)
+library(&quot;org.Hs.eg.db&quot;)
+library(rtracklayer)
+library(edgeR)
+library(ggfortify)
+library(limma)
+library(readr)
+library(BiocGenerics)
+library(gridExtra)
+library(VennDiagram)
+library(scales)
+library(BiocParallel)
+library(ggpubr)
+library(devtools)
+library(biomaRt)
+library(eulerr)
+library(smplot2)
+library(genomation)
+library(ggsignif)
+library(plyranges)
+library(ggrepel)
+library(epitools)
+library(circlize)
+library(readxl)
+library(ComplexHeatmap)
+library(gwascat)
+library(liftOver)</code></pre>
+<div id="loading-data-frames" class="section level3">
+<h3>Loading data frames</h3>
+<pre class="r"><code>### Pulling the all regions granges list from the motif list of lists
+Motif_list_gr &lt;- readRDS(&quot;data/Final_four_data/re_analysis/Motif_list_granges.RDS&quot;)
+### no change motif_list_gr names so they do not overwrite the dataframes
+names(Motif_list_gr) &lt;- paste0(names(Motif_list_gr), &quot;_gr&quot;)
+list2env(Motif_list_gr[10],envir= .GlobalEnv)</code></pre>
+<pre><code>&lt;environment: R_GlobalEnv&gt;</code></pre>
+<pre class="r"><code>annotated_DARs&lt;- readRDS(&quot;data/Final_four_data/re_analysis/DOX_DAR_annotated_peaks_chipannno.RDS&quot;)
+
+Left_ventricle_TAD &lt;- import(con = &quot;C://Users/renee/Downloads/hg38.TADs/hg38/VentricleLeft_STL003_Leung_2015-raw_TADs.txt&quot;, format = &quot;bed&quot;,genome=&quot;hg38&quot;)
+mcols(Left_ventricle_TAD)$TAD_id &lt;- paste0(&quot;TAD_&quot;, seq_along(Left_ventricle_TAD))
+
+
+
+# mcols(Left_ventricle_TAD)$name &lt;- Left_ventricle_TAD$TAD_id
+##exporting the LEFt ventricle tad  info for IGV visualization
+# export(Left_ventricle_TAD, con = &quot;data/Final_four_data/re_analysis/Other_bed_files/TAD_regions.bed&quot;, format=&quot;bed&quot;)
+
+Schneider_all_SNPS &lt;- read_delim(&quot;data/other_papers/Schneider_all_SNPS.txt&quot;, 
+    delim = &quot;\t&quot;, escape_double = FALSE, 
+    trim_ws = TRUE)
+
+Schneider_all_SNPS_df &lt;- Schneider_all_SNPS %&gt;%
+  dplyr::rename(&quot;RSID&quot;=&quot;#Uploaded_variation&quot;) %&gt;% 
+  dplyr::select(RSID,Location,SYMBOL,Gene, SOURCE) %&gt;%
+  distinct(RSID,Location,SYMBOL,.keep_all = TRUE) %&gt;% 
+  dplyr::rename(&quot;Close_SYMBOL&quot;=&quot;SYMBOL&quot;) %&gt;% 
+  dplyr::filter(!str_starts(Location, &quot;H&quot;)) %&gt;% 
+  separate_wider_delim(Location,delim=&quot;:&quot;,names=c(&quot;Chr&quot;,&quot;Coords&quot;)) %&gt;% 
+  separate_wider_delim(Coords,delim= &quot;-&quot;, names= c(&quot;Start&quot;,&quot;End&quot;)) %&gt;% 
+  mutate(Chr=paste0(&quot;chr&quot;,Chr)) %&gt;% 
+  group_by(RSID) %&gt;% 
+  reframe(Chr=unique(Chr),
+            Start=unique(Start),
+            End=unique(End),
+            Close_SYMBOL=paste(unique(Close_SYMBOL),collapse=&quot;;&quot;),
+            Gene=paste(Gene,collapse=&quot;;&quot;),
+            SOURCE=paste(SOURCE,collapse=&quot;;&quot;)
+            ) %&gt;% 
+  GRanges() %&gt;% as.data.frame 
+
+schneider_gr &lt;-Schneider_all_SNPS_df%&gt;%
+  dplyr::select(seqnames,start,end,RSID:SOURCE) %&gt;%
+  distinct() %&gt;% 
+  GRanges()
+
+# export(schneider_gr, con = &quot;data/Final_four_data/re_analysis/Other_bed_files/CardiotoxSNPs.bed&quot;, format=&quot;bed&quot;)
+
+toptable_results &lt;- readRDS(&quot;data/Final_four_data/re_analysis/Toptable_results.RDS&quot;)
+
+all_results  &lt;- toptable_results %&gt;%
+  imap(~ .x %&gt;% tibble::rownames_to_column(var = &quot;rowname&quot;) %&gt;%
+         mutate(source = .y)) %&gt;%
+  bind_rows()
+all_results_pivot &lt;- all_results %&gt;% 
+dplyr::select(genes,logFC,source) %&gt;% 
+  pivot_wider(., id_cols = genes, names_from = source, values_from = logFC) %&gt;% 
+  dplyr::select(genes,DOX_3,EPI_3,DNR_3,MTX_3,TRZ_3,DOX_24,EPI_24,DNR_24,MTX_24,TRZ_24)
+
+
+toplistall_RNA &lt;- readRDS(&quot;data/other_papers/toplistall_RNA.RDS&quot;) %&gt;% 
+  mutate(logFC = logFC*(-1))
+
+Assigned_genes_toPeak &lt;- annotated_DARs$DOX_24 %&gt;% as.data.frame() %&gt;% 
+  dplyr::select(mcols.genes,annotation, geneId, distanceToTSS) %&gt;% 
+  dplyr::rename(&quot;Peakid&quot;=mcols.genes)
+
+RNA_results &lt;-
+toplistall_RNA %&gt;% 
+  dplyr::select(time:logFC) %&gt;% 
+  tidyr::unite(&quot;sample&quot;,time, id) %&gt;% 
+  pivot_wider(., id_cols = c(ENTREZID,SYMBOL),names_from = sample, values_from = logFC) %&gt;% 
+  rename_with(~ str_replace(., &quot;hours&quot;, &quot;RNA&quot;))
+
+Peak_gene_RNA_LFC &lt;- Assigned_genes_toPeak %&gt;% 
+  left_join(., RNA_results, by =c(&quot;geneId&quot;=&quot;ENTREZID&quot;))
+
+
+entrez_ids &lt;- Assigned_genes_toPeak$geneId  
+
+
+gene_info &lt;- AnnotationDbi::select(
+  org.Hs.eg.db,
+  keys = entrez_ids,
+  columns = c(&quot;SYMBOL&quot;),
+  keytype = &quot;ENTREZID&quot;
+)
+gene_info_collapsed &lt;- gene_info %&gt;%
+  group_by(ENTREZID) %&gt;%
+  summarise(SYMBOL = paste(unique(SYMBOL), collapse = &quot;,&quot;), .groups = &quot;drop&quot;)
+DOX_DAR_24hr_table &lt;- annotated_DARs$DOX_24 %&gt;% 
+  as.data.frame()
+
+
+# for_export &lt;- DOX_24_DAR%&gt;%
+#   # as.data.frame() %&gt;%
+#   ### mark significance with color
+#   mutate(sig_24=if_else(mcols.adj.P.Val&lt;0.05,&quot;TRUE&quot;,&quot;FALSE&quot;)) %&gt;%
+#   dplyr::select(seqnames:mcols.genes,sig_24) %&gt;%
+#   GRanges
+# 
+# ### add to the granges thingy for exporting
+# mcols(for_export)$itemRgb &lt;-  ifelse(mcols(for_export)$sig_24,
+#                                  &quot;255,0,0&quot;,   # red for significant
+#                                  &quot;190,190,190&quot;)  # gray for not significant
+# mcols(for_export)$sig_24 &lt;- as.logical(mcols(for_export)$sig_24)
+# mcols(for_export)$itemRgb &lt;- as.character(mcols(for_export)$itemRgb)
+# 
+# bed_df &lt;- data.frame(
+#   seqnames = seqnames(for_export),
+#   start    = start(for_export) - 1,  # BED is 0-based
+#   end      = end(for_export),
+#   strand   = &quot;*&quot;,
+#   thickStart = start(for_export) - 1,
+#   thickEnd   = end(for_export),
+#   itemRgb  = ifelse(mcols(for_export)$sig_24, &quot;255,0,0&quot;, &quot;190,190,190&quot;),
+#   stringsAsFactors = FALSE)
+# # )
+# 
+# write.table(bed_df,
+#             file = &quot;data/Final_four_data/re_analysis/Other_bed_files/DOX_24hour_sig_notsig_regions.bed&quot;,
+#             quote = FALSE, sep = &quot;\t&quot;, row.names = FALSE, col.names = FALSE)</code></pre>
+</div>
+<div
+id="enrichment-test-of-sig-dar-and-non-sig-dar-of-dox-within-snp-containing-tads"
+class="section level3">
+<h3>Enrichment test of sig DAR and non-sig DAR of DOX within
+SNP-containing TADS</h3>
+<pre class="r"><code>test_ol &lt;- join_overlap_intersect(Left_ventricle_TAD, schneider_gr)
+df &lt;- as.data.frame(test_ol, row.names = NULL)
+TAD_SNP_ol &lt;- test_ol %&gt;% as.data.frame() %&gt;% 
+  distinct(TAD_id, RSID)
+peak_ol &lt;- join_overlap_intersect(all_regions_gr, Left_ventricle_TAD)
+
+TAD_SNP_Peak_ol &lt;- peak_ol %&gt;% 
+  as.data.frame() %&gt;% 
+  dplyr::filter(TAD_id %in% TAD_SNP_ol$TAD_id)
+snp_ol &lt;- join_overlap_inner(schneider_gr, Left_ventricle_TAD)
+TAD_peak_ol &lt;- peak_ol %&gt;% 
+  as.data.frame() %&gt;% 
+  distinct(Peakid,.keep_all = TRUE)
+
+left_ventricle_ol &lt;- join_overlap_inner(all_regions_gr ,Left_ventricle_TAD) %&gt;% 
+  as.data.frame() %&gt;% 
+  distinct(Peakid,.keep_all = TRUE) %&gt;% 
+  dplyr::filter(TAD_id %in% TAD_SNP_ol$TAD_id)
+
+peak_df &lt;- as.data.frame(left_ventricle_ol)
+SNP_df &lt;- as.data.frame(snp_ol)
+
+peak_snp_pairs &lt;- inner_join(peak_df, SNP_df, by = &quot;TAD_id&quot;, suffix = c(&quot;.peak&quot;, &quot;.snp&quot;)) %&gt;%
+  mutate(
+    peak_center = (start.peak + end.peak) / 2,
+    distance = abs(peak_center - start.snp)  # or any metric you prefer
+  )</code></pre>
+<pre class="r"><code>reds &lt;- colorRampPalette(brewer.pal(9, &quot;Reds&quot;)[3:9])(12)
+greens &lt;- colorRampPalette(brewer.pal(9, &quot;Greens&quot;)[3:9])(12)
+blues &lt;- colorRampPalette(brewer.pal(9, &quot;Blues&quot;)[3:9])(12)
+purples &lt;- colorRampPalette(brewer.pal(9, &quot;Purples&quot;)[3:9])(12)
+oranges &lt;- colorRampPalette(brewer.pal(9, &quot;Oranges&quot;)[3:9])(12)
+
+
+
+tads &lt;- unique(peak_snp_pairs$TAD_id)
+num_tads &lt;- length(tads)
+
+color_spectrum &lt;- c(reds, greens, blues, purples, oranges)[1:num_tads]
+
+if (num_tads &gt; length(color_spectrum)) {
+  stop(&quot;Not enough colors for TADs. Add more palettes.&quot;)
+}
+tad_colors &lt;- color_spectrum[1:num_tads]
+names(tad_colors) &lt;- tads  # Assign color names to TAD IDs
+
+
+#ha &lt;- HeatmapAnnotation(TAD = df$TAD_id, col = list(TAD = tad_colors))</code></pre>
+<pre class="r"><code>DOX_24_DAR &lt;- as.data.frame(annotated_DARs$DOX_24)
+EPI_24_DAR &lt;- as.data.frame(annotated_DARs$EPI_24)
+DNR_24_DAR &lt;- as.data.frame(annotated_DARs$DNR_24)
+MTX_24_DAR &lt;- as.data.frame(annotated_DARs$MTX_24)
+
+TAD_count_df &lt;- DOX_24_DAR %&gt;% 
+  dplyr::select(mcols.genes, mcols.adj.P.Val,annotation:distanceToTSS) %&gt;% 
+  mutate(sig_24=if_else(mcols.adj.P.Val&lt;0.05,&quot;sig&quot;,&quot;not_sig&quot;)) %&gt;% 
+  mutate(sig_24=factor(sig_24, levels = c(&quot;sig&quot;,&quot;not_sig&quot;))) %&gt;% 
+  mutate(TAD_all_status=if_else(mcols.genes %in% peak_ol$Peakid,&quot;TAD_peak&quot;,&quot;not_TAD_peak&quot;)) %&gt;% 
+  mutate(SNP_TAD_status= if_else(mcols.genes %in% TAD_SNP_Peak_ol$Peakid,&quot;SNP_TAD&quot;,&quot;not_SNP_TAD&quot;)) 
+  
+TAD_count_df %&gt;% #dplyr::filter(TAD_all_status==&quot;TAD_peak&quot;) %&gt;% 
+  group_by(sig_24,SNP_TAD_status,TAD_all_status) %&gt;% 
+  tally #%&gt;% </code></pre>
+<pre><code># A tibble: 6 × 4
+# Groups:   sig_24, SNP_TAD_status [4]
+  sig_24  SNP_TAD_status TAD_all_status     n
+  &lt;fct&gt;   &lt;chr&gt;          &lt;chr&gt;          &lt;int&gt;
+1 sig     SNP_TAD        TAD_peak        2047
+2 sig     not_SNP_TAD    TAD_peak       56865
+3 sig     not_SNP_TAD    not_TAD_peak    5908
+4 not_sig SNP_TAD        TAD_peak        3111
+5 not_sig not_SNP_TAD    TAD_peak       78627
+6 not_sig not_SNP_TAD    not_TAD_peak    8999</code></pre>
+<pre class="r"><code>  # pivot_wider(., id_cols = sig_24, names_from = SNP_TAD_status, values_from = n)
+# print(&quot;Odds ratio of SNP_TADs across DOXall regions, regardless of TAD_status&quot;)
+# TAD_count_df %&gt;% #dplyr::filter(TAD_all_status==&quot;TAD_peak&quot;) %&gt;% 
+#   group_by(sig_24,SNP_TAD_status) %&gt;% 
+#   tally %&gt;% 
+#   pivot_wider(., id_cols = sig_24, names_from = SNP_TAD_status, values_from = n) %&gt;% 
+#   column_to_rownames( &quot;sig_24&quot;) %&gt;% as.matrix() %&gt;% 
+#   # chisq.test()
+#   epitools::oddsratio()
+print(&quot;Odds ratio  testing proportion SNP-containing TADs of sig-DOX DARs vs non-sig DARs at 24 hours&quot;)</code></pre>
+<pre><code>[1] &quot;Odds ratio  testing proportion SNP-containing TADs of sig-DOX DARs vs non-sig DARs at 24 hours&quot;</code></pre>
+<pre class="r"><code>TAD_count_df %&gt;% dplyr::filter(TAD_all_status==&quot;TAD_peak&quot;) %&gt;% 
+  group_by(sig_24,SNP_TAD_status) %&gt;% 
+  tally %&gt;% 
+  pivot_wider(., id_cols = sig_24, names_from = SNP_TAD_status, values_from = n) %&gt;% 
+  column_to_rownames( &quot;sig_24&quot;) %&gt;% as.matrix() %&gt;% 
+  # chisq.test()
+  epitools::oddsratio()</code></pre>
+<pre><code>$data
+        SNP_TAD not_SNP_TAD  Total
+sig        2047       56865  58912
+not_sig    3111       78627  81738
+Total      5158      135492 140650
+
+$measure
+                        NA
+odds ratio with 95% C.I. estimate     lower     upper
+                 sig     1.000000        NA        NA
+                 not_sig 0.909844 0.8594795 0.9629201
+
+$p.value
+         NA
+two-sided midp.exact fisher.exact  chi.square
+  sig             NA           NA          NA
+  not_sig 0.00107761  0.001098901 0.001105101
+
+$correction
+[1] FALSE
+
+attr(,&quot;method&quot;)
+[1] &quot;median-unbiased estimate &amp; mid-p exact CI&quot;</code></pre>
+<pre class="r"><code>TAD_count_df %&gt;% 
+  dplyr::filter(TAD_all_status==&quot;TAD_peak&quot;) %&gt;% 
+   group_by(sig_24,SNP_TAD_status) %&gt;% 
+  tally ()%&gt;% 
+   mutate(sig_24=factor(sig_24, levels = c(&quot;sig&quot;,&quot;not_sig&quot;))) %&gt;% 
+  ggplot(.,aes(x=sig_24, y= n,fill=SNP_TAD_status))+
+  geom_col(position=&quot;fill&quot;)+
+  theme_bw()+
+  ggtitle(&quot;Proportion of significant regions by 24 hours&quot;)+
+  ylab(&quot;proportion&quot;)</code></pre>
+<p><img src="figure/SNP_TAD_peaks.Rmd/unnamed-chunk-3-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code># TAD_count_df %&gt;% 
+#   dplyr::filter(TAD_all_status==&quot;TAD_peak&quot;) %&gt;% 
+#  
+#   group_by(sig_24,SNP_TAD_status) %&gt;% 
+#   tally ()%&gt;% 
+#    mutate(sig_24=factor(sig_24, levels = c(&quot;sig&quot;,&quot;not_sig&quot;))) %&gt;% 
+#   ggplot(.,aes(x=SNP_TAD_status, y= n,fill=sig_24))+
+#   geom_col(position=&quot;fill&quot;)+
+#   theme_bw()+
+#   ggtitle(&quot;Proportion of significant regions by 24 hours&quot;)+
+#   ylab(&quot;proportion&quot;)</code></pre>
+</div>
+<div id="calculating-distance-to-tad-snp-from-peak"
+class="section level3">
+<h3>Calculating Distance to TAD-SNP from peak</h3>
+<div id="dox-24-hours" class="section level4">
+<h4>DOX 24 hours</h4>
+<pre class="r"><code>DOX_DAR_sig &lt;- DOX_24_DAR %&gt;%
+  dplyr::filter(mcols.adj.P.Val&lt;0.05) %&gt;% 
+  distinct (mcols.genes) %&gt;% 
+  dplyr::rename(&quot;Peakid&quot;=&quot;mcols.genes&quot;)
+
+EPI_DAR_sig &lt;- EPI_24_DAR %&gt;%
+  dplyr::filter(mcols.adj.P.Val&lt;0.05) %&gt;% 
+  distinct (mcols.genes) %&gt;% 
+  dplyr::rename(&quot;Peakid&quot;=&quot;mcols.genes&quot;)
+
+DNR_DAR_sig &lt;- DNR_24_DAR %&gt;%
+  dplyr::filter(mcols.adj.P.Val&lt;0.05) %&gt;% 
+  distinct (mcols.genes) %&gt;% 
+  dplyr::rename(&quot;Peakid&quot;=&quot;mcols.genes&quot;)
+
+MTX_DAR_sig &lt;- MTX_24_DAR %&gt;%
+  dplyr::filter(mcols.adj.P.Val&lt;0.05) %&gt;% 
+  distinct (mcols.genes) %&gt;% 
+  dplyr::rename(&quot;Peakid&quot;=&quot;mcols.genes&quot;)
+
+MCF7_DAR_snp_pairs_dist &lt;- readRDS(&quot;data/Final_four_data/re_analysis/MCF7_DAR_snp_pairs_dist.RDS&quot;) %&gt;% 
+  dplyr::rename(&quot;Peakid&quot;=names) %&gt;% 
+  mutate(sig_24=&quot;MCF7_DAR&quot;)
+
+snp_tad_df &lt;-
+  join_overlap_inner(schneider_gr, Left_ventricle_TAD) %&gt;%
+  as_tibble() %&gt;%
+  dplyr::select(RSID, snp_start = start, snp_chr = seqnames, TAD_id)
+
+
+peak_tad_df &lt;-
+join_overlap_inner(all_regions_gr, Left_ventricle_TAD) %&gt;%
+  as_tibble() %&gt;%
+  dplyr::select(Peakid, peak_start = start, peak_chr = seqnames, TAD_id)
+
+peak_snp_pairs &lt;- peak_tad_df %&gt;%
+  inner_join(snp_tad_df, by = &quot;TAD_id&quot;)
+
+
+peak_snp_pairs_dist &lt;- peak_snp_pairs %&gt;%
+  mutate(distance = abs(peak_start - snp_start)) %&gt;% 
+  mutate(sig_24= if_else(Peakid %in% DOX_DAR_sig$Peakid, &quot;sig&quot;,&quot;not_sig&quot;))
+
+
+
+peak_snp_pairs_dist %&gt;% 
+  mutate(sig_24=factor(sig_24, levels= c(&quot;sig&quot;,&quot;not_sig&quot;))) %&gt;% 
+  ggplot(., aes(x= sig_24, y=distance))+
+  geom_boxplot()+
+  theme_bw()+
+  geom_signif(comparisons = list(c(&quot;sig&quot;, &quot;not_sig&quot;)), 
+              map_signif_level = FALSE, test = &quot;wilcox.test&quot;)+
+  ggtitle(&quot;DOX 24 hour distances of DAR-SNP pairs and non-DAR-SNP pairs&quot;)</code></pre>
+<p><img src="figure/SNP_TAD_peaks.Rmd/unnamed-chunk-4-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>wilcox.test(distance ~ sig_24, data = peak_snp_pairs_dist)</code></pre>
+<pre><code>
+    Wilcoxon rank sum test with continuity correction
+
+data:  distance by sig_24
+W = 9463083, p-value = 0.002185
+alternative hypothesis: true location shift is not equal to 0</code></pre>
+<pre class="r"><code>Cardiotox_gwas_df &lt;- peak_snp_pairs_dist %&gt;% 
+  dplyr::filter(sig_24==&quot;sig&quot;) %&gt;% 
+  group_by(TAD_id,RSID) %&gt;% 
+  slice_min(order_by = distance, with_ties = FALSE) %&gt;%
+  ungroup() %&gt;% 
+  arrange(snp_chr,snp_start) %&gt;% 
+  left_join(., all_results_pivot, by=c(&quot;Peakid&quot;=&quot;genes&quot;)) %&gt;% 
+  tidyr::unite(., name,Peakid,RSID)
+
+
+Cardiotox_gwas_collaped_df &lt;-
+peak_snp_pairs_dist %&gt;% 
+  dplyr::filter(sig_24==&quot;sig&quot;) %&gt;% 
+  group_by(TAD_id,RSID) %&gt;% 
+  slice_min(order_by = distance, with_ties = FALSE) %&gt;%
+  ungroup() %&gt;% 
+  arrange(snp_chr,snp_start) %&gt;% 
+  group_by(Peakid, peak_chr, peak_start, TAD_id, sig_24) %&gt;%
+  summarise(
+    min_distance = min(distance),
+    mean_distance = mean(distance),
+    snp_list = paste(unique(RSID), collapse = &quot;,&quot;),
+    .groups = &quot;drop&quot;
+  ) %&gt;% 
+  left_join(., all_results_pivot, by=c(&quot;Peakid&quot;=&quot;genes&quot;)) %&gt;% 
+  left_join(., Peak_gene_RNA_LFC, by=c(&quot;Peakid&quot;=&quot;Peakid&quot;)) %&gt;% 
+  left_join(.,gene_info_collapsed, by=c(&quot;geneId&quot;=&quot;ENTREZID&quot;)) %&gt;% 
+  mutate(SYMBOL=if_else(is.na(SYMBOL.x),SYMBOL.y,if_else(SYMBOL.x==SYMBOL.y, SYMBOL.x,paste0(SYMBOL.x,&quot;_&quot;,SYMBOL.y)))) %&gt;% 
+  tidyr::unite(., name,Peakid,SYMBOL,snp_list) %&gt;% 
+  mutate(snp_dist=case_when(min_distance &lt;2000 ~&quot;2kb&quot;,
+                            min_distance &gt; 2000 &amp; min_distance&lt;20000 ~ &quot;20kb&quot;,
+                            min_distance &gt;20000 ~&quot;&gt;20kb&quot;))</code></pre>
+</div>
+<div id="dox_mcf7-added" class="section level4">
+<h4>DOX_MCF7 added</h4>
+<pre class="r"><code>bind_rows(MCF7_DAR_snp_pairs_dist,peak_snp_pairs_dist) %&gt;% 
+  mutate(sig_24=factor(sig_24, levels= c(&quot;sig&quot;,&quot;not_sig&quot;, &quot;MCF7_DAR&quot;))) %&gt;% ggplot(., aes(x= sig_24, y=distance))+
+  geom_boxplot()+
+  theme_bw()+
+  geom_signif(comparisons = list(c(&quot;sig&quot;, &quot;not_sig&quot;),
+                                 c(&quot;sig&quot;,&quot;MCF7_DAR&quot;),
+                               c(&quot;not_sig&quot;,&quot;MCF7_DAR&quot;)),
+              step_increase = 0.1, 
+              map_signif_level = FALSE, 
+              test = &quot;wilcox.test&quot;)+
+  ggtitle(&quot;DOX 24 hour distances of DAR-SNP pairs\n and non-DAR-SNP pairs with MCF7 DARs&quot;)</code></pre>
+<p><img src="figure/SNP_TAD_peaks.Rmd/unnamed-chunk-5-1.png" width="672" style="display: block; margin: auto;" /></p>
+</div>
+<div id="epi-24-hours" class="section level4">
+<h4>EPI 24 hours</h4>
+<pre class="r"><code>peak_snp_pairs_dist_EPI &lt;- peak_snp_pairs %&gt;%
+  mutate(distance = abs(peak_start - snp_start)) %&gt;% 
+  mutate(sig_24= if_else(Peakid %in% EPI_DAR_sig$Peakid, &quot;sig&quot;,&quot;not_sig&quot;))
+
+peak_snp_pairs_dist_EPI %&gt;% 
+  mutate(sig_24=factor(sig_24, levels= c(&quot;sig&quot;,&quot;not_sig&quot;))) %&gt;% 
+  ggplot(., aes(x= sig_24, y=distance))+
+  geom_boxplot()+
+  theme_bw()+
+  geom_signif(comparisons = list(c(&quot;sig&quot;, &quot;not_sig&quot;)), 
+              map_signif_level = FALSE, test = &quot;wilcox.test&quot;)</code></pre>
+<p><img src="figure/SNP_TAD_peaks.Rmd/EPI%20SNPpairs-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>wilcox.test(distance ~ sig_24, data = peak_snp_pairs_dist)</code></pre>
+<pre><code>
+    Wilcoxon rank sum test with continuity correction
+
+data:  distance by sig_24
+W = 9463083, p-value = 0.002185
+alternative hypothesis: true location shift is not equal to 0</code></pre>
+<pre class="r"><code>Cardiotox_gwas_EPI &lt;- peak_snp_pairs_dist_EPI %&gt;% 
+  dplyr::filter(sig_24==&quot;sig&quot;) %&gt;% 
+  group_by(TAD_id,RSID) %&gt;% 
+  slice_min(order_by = distance, with_ties = FALSE) %&gt;%
+  ungroup() %&gt;% 
+  arrange(snp_chr,snp_start) %&gt;% 
+  left_join(., all_results_pivot, by=c(&quot;Peakid&quot;=&quot;genes&quot;)) %&gt;% 
+  tidyr::unite(., name,Peakid,RSID)</code></pre>
+</div>
+<div id="epi_mcf7-added" class="section level4">
+<h4>EPI_MCF7 added</h4>
+<pre class="r"><code>bind_rows(MCF7_DAR_snp_pairs_dist,peak_snp_pairs_dist_EPI) %&gt;% 
+  mutate(sig_24=factor(sig_24, levels= c(&quot;sig&quot;,&quot;not_sig&quot;, &quot;MCF7_DAR&quot;))) %&gt;% ggplot(., aes(x= sig_24, y=distance))+
+  geom_boxplot()+
+  theme_bw()+
+  geom_signif(comparisons = list(c(&quot;sig&quot;, &quot;not_sig&quot;),
+                                 c(&quot;sig&quot;,&quot;MCF7_DAR&quot;),
+                               c(&quot;not_sig&quot;,&quot;MCF7_DAR&quot;)),
+              step_increase = 0.1, 
+              map_signif_level = FALSE, 
+              test = &quot;wilcox.test&quot;)+
+  ggtitle(&quot;EPI 24 hour distances of DAR-SNP pairs\n and non-DAR-SNP pairs with MCF7 DARs&quot;)</code></pre>
+<p><img src="figure/SNP_TAD_peaks.Rmd/unnamed-chunk-6-1.png" width="672" style="display: block; margin: auto;" /></p>
+</div>
+<div id="dnr-24-hours" class="section level4">
+<h4>DNR 24 hours</h4>
+<pre class="r"><code>peak_snp_pairs_dist_DNR &lt;- peak_snp_pairs %&gt;%
+  mutate(distance = abs(peak_start - snp_start)) %&gt;% 
+  mutate(sig_24= if_else(Peakid %in% DNR_DAR_sig$Peakid, &quot;sig&quot;,&quot;not_sig&quot;))
+
+peak_snp_pairs_dist_DNR %&gt;% 
+  mutate(sig_24=factor(sig_24, levels= c(&quot;sig&quot;,&quot;not_sig&quot;))) %&gt;% 
+  ggplot(., aes(x= sig_24, y=distance))+
+  geom_boxplot()+
+  theme_bw()+
+  geom_signif(comparisons = list(c(&quot;sig&quot;, &quot;not_sig&quot;)), 
+              map_signif_level = FALSE, test = &quot;wilcox.test&quot;)+
+  ggtitle(&quot;DNR 24 hour distances of DAR-SNP pairs and non-DAR-SNP pairs&quot;)</code></pre>
+<p><img src="figure/SNP_TAD_peaks.Rmd/DNR%20SNPpairs-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>wilcox.test(distance ~ sig_24, data = peak_snp_pairs_dist)</code></pre>
+<pre><code>
+    Wilcoxon rank sum test with continuity correction
+
+data:  distance by sig_24
+W = 9463083, p-value = 0.002185
+alternative hypothesis: true location shift is not equal to 0</code></pre>
+<pre class="r"><code>Cardiotox_gwas_DNR &lt;- peak_snp_pairs_dist_DNR %&gt;% 
+  dplyr::filter(sig_24==&quot;sig&quot;) %&gt;% 
+  group_by(TAD_id,RSID) %&gt;% 
+  slice_min(order_by = distance, with_ties = FALSE) %&gt;%
+  ungroup() %&gt;% 
+  arrange(snp_chr,snp_start) %&gt;% 
+  left_join(., all_results_pivot, by=c(&quot;Peakid&quot;=&quot;genes&quot;)) %&gt;% 
+  tidyr::unite(., name,Peakid,RSID)</code></pre>
+</div>
+<div id="dnr_mcf7-added" class="section level4">
+<h4>DNR_MCF7 added</h4>
+<pre class="r"><code>bind_rows(MCF7_DAR_snp_pairs_dist,peak_snp_pairs_dist_DNR) %&gt;% 
+  mutate(sig_24=factor(sig_24, levels= c(&quot;sig&quot;,&quot;not_sig&quot;, &quot;MCF7_DAR&quot;))) %&gt;% ggplot(., aes(x= sig_24, y=distance))+
+  geom_boxplot()+
+  theme_bw()+
+  geom_signif(comparisons = list(c(&quot;sig&quot;, &quot;not_sig&quot;),
+                                 c(&quot;sig&quot;,&quot;MCF7_DAR&quot;),
+                               c(&quot;not_sig&quot;,&quot;MCF7_DAR&quot;)),
+              step_increase = 0.1, 
+              map_signif_level = FALSE, 
+              test = &quot;wilcox.test&quot;)+
+  ggtitle(&quot;DNR 24 hour distances of DAR-SNP pairs\n and non-DAR-SNP pairs with MCF7 DARs&quot;)</code></pre>
+<p><img src="figure/SNP_TAD_peaks.Rmd/unnamed-chunk-7-1.png" width="672" style="display: block; margin: auto;" /></p>
+</div>
+<div id="mtx-24-hours" class="section level4">
+<h4>MTX 24 hours</h4>
+<pre class="r"><code>peak_snp_pairs_dist_MTX &lt;- peak_snp_pairs %&gt;%
+  mutate(distance = abs(peak_start - snp_start)) %&gt;% 
+  mutate(sig_24= if_else(Peakid %in% MTX_DAR_sig$Peakid, &quot;sig&quot;,&quot;not_sig&quot;))
+
+peak_snp_pairs_dist_MTX %&gt;% 
+  mutate(sig_24=factor(sig_24, levels= c(&quot;sig&quot;,&quot;not_sig&quot;))) %&gt;% 
+  ggplot(., aes(x= sig_24, y=distance))+
+  geom_boxplot()+
+  theme_bw()+
+  geom_signif(comparisons = list(c(&quot;sig&quot;, &quot;not_sig&quot;)), 
+              map_signif_level = FALSE, test = &quot;wilcox.test&quot;)+
+  ggtitle(&quot;MTX 24 hour distances of DAR-SNP pairs and non-DAR-SNP pairs&quot;)</code></pre>
+<p><img src="figure/SNP_TAD_peaks.Rmd/MTX%20SNPpairs-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>wilcox.test(distance ~ sig_24, data = peak_snp_pairs_dist)</code></pre>
+<pre><code>
+    Wilcoxon rank sum test with continuity correction
+
+data:  distance by sig_24
+W = 9463083, p-value = 0.002185
+alternative hypothesis: true location shift is not equal to 0</code></pre>
+<pre class="r"><code>Cardiotox_gwas_MTX &lt;- peak_snp_pairs_dist_MTX %&gt;% 
+  dplyr::filter(sig_24==&quot;sig&quot;) %&gt;% 
+  group_by(TAD_id,RSID) %&gt;% 
+  slice_min(order_by = distance, with_ties = FALSE) %&gt;%
+  ungroup() %&gt;% 
+  arrange(snp_chr,snp_start) %&gt;% 
+  left_join(., all_results_pivot, by=c(&quot;Peakid&quot;=&quot;genes&quot;)) %&gt;% 
+  tidyr::unite(., name,Peakid,RSID)</code></pre>
+</div>
+<div id="mtx_mcf7-added" class="section level4">
+<h4>MTX_MCF7 added</h4>
+<pre class="r"><code>bind_rows(MCF7_DAR_snp_pairs_dist,peak_snp_pairs_dist_MTX) %&gt;% 
+  mutate(sig_24=factor(sig_24, levels= c(&quot;sig&quot;,&quot;not_sig&quot;, &quot;MCF7_DAR&quot;))) %&gt;% ggplot(., aes(x= sig_24, y=distance))+
+  geom_boxplot()+
+  theme_bw()+
+  geom_signif(comparisons = list(c(&quot;sig&quot;, &quot;not_sig&quot;),
+                                 c(&quot;sig&quot;,&quot;MCF7_DAR&quot;),
+                               c(&quot;not_sig&quot;,&quot;MCF7_DAR&quot;)),
+              step_increase = 0.1, 
+              map_signif_level = FALSE, 
+              test = &quot;wilcox.test&quot;)+
+  ggtitle(&quot;MTX 24 hour distances of DAR-SNP pairs\n and non-DAR-SNP pairs with MCF7 DARs&quot;)</code></pre>
+<p><img src="figure/SNP_TAD_peaks.Rmd/unnamed-chunk-8-1.png" width="672" style="display: block; margin: auto;" />
+### Creating SNP_TAD distance DF</p>
+<p>For combining the above 24 hour trt-distance to SNP data frames for
+box-plots</p>
+<pre class="r"><code>SNP_TAD_dist_DF &lt;- bind_rows((peak_snp_pairs_dist_MTX %&gt;% 
+             mutate(trt=&quot;MTX&quot;)),
+          (peak_snp_pairs_dist %&gt;%
+               mutate(trt=&quot;DOX&quot;))) %&gt;% 
+  bind_rows(.,(peak_snp_pairs_dist_EPI %&gt;% 
+                 mutate(trt=&quot;EPI&quot;))) %&gt;% 
+  bind_rows(.,(peak_snp_pairs_dist_DNR %&gt;% 
+                 mutate(trt=&quot;DNR&quot;))) %&gt;% 
+  mutate(trt=factor(trt,levels=c(&quot;DOX&quot;,&quot;EPI&quot;,&quot;DNR&quot;,&quot;MTX&quot;))) %&gt;% 
+   mutate(sig_24=factor(sig_24, levels= c(&quot;sig&quot;,&quot;not_sig&quot;))) 
+
+SNP_TAD_dist_DF%&gt;% 
+  ggplot(., aes(x= interaction(sig_24,trt), y=distance))+
+  geom_boxplot(aes(fill=trt))+
+  theme_bw()+
+  geom_signif(comparisons = list(c(&quot;sig.DOX&quot;, &quot;not_sig.DOX&quot;),
+                                 c(&quot;sig.EPI&quot;,&quot;not_sig.EPI&quot;),
+                                 c(&quot;sig.DNR&quot;, &quot;not_sig.DNR&quot;),
+                                 c(&quot;sig.MTX&quot;, &quot;not_sig.MTX&quot;)),
+                              step_increase = 0.1, 
+              map_signif_level = FALSE, 
+              test = &quot;wilcox.test&quot;)+
+  ggtitle(&quot;ALL dist&quot;)</code></pre>
+<p><img src="figure/SNP_TAD_peaks.Rmd/Boxplot%20combo-1.png" width="672" style="display: block; margin: auto;" />
+### MCF7 tissue specific, non-tissue specific.</p>
+<p>Here I am overlapping my data with the MCF7 DAR data. This will
+create DARS for each treatment that overlap MCF7 DARS (tissue-shared
+regions) and DARS that do not overlap MCF7 DARS (tissue-specific
+regions). I will then calculate the distance between the SNPs in the
+shared vs specific for each treatment.</p>
+<pre class="r"><code>MCF7_DARs_hyper &lt;- read_excel(&quot;C:/Users/renee/Downloads/MCF7-doxATAC/Table 4.XLSX&quot;, 
+    sheet = &quot;hyper&quot;) %&gt;% GRanges()
+MCF7_DARs_hypo &lt;- read_excel(&quot;C:/Users/renee/Downloads/MCF7-doxATAC/Table 4.XLSX&quot;, 
+    sheet = &quot;hypo&quot;) %&gt;% GRanges()
+
+# MCF7_ARsmcf7_1 &lt;- read_excel(&quot;C:/Users/renee/Downloads/MCF7-doxATAC/Table 3.XLSX&quot;) %&gt;% 
+#   GRanges()
+  MCF7_DARs_hyper$names &lt;- paste0(&quot;hyper_&quot;, seq_along(seqnames(MCF7_DARs_hyper)))
+ MCF7_DARs_hypo$names &lt;- paste0(&quot;hypo_&quot;, seq_along(seqnames(MCF7_DARs_hypo)))
+ 
+ MCF7_DAR_all &lt;- c(MCF7_DARs_hyper,MCF7_DARs_hypo)
+ 
+ ch = import.chain(&quot;C:/Users/renee/ATAC_folder/liftOver_genome/hg19ToHg38.over.chain&quot;)
+# MCF7_ARsmcf7_1_LO &lt;- as.data.frame(liftOver(MCF7_ARsmcf7_1,ch)) %&gt;% 
+#   GRanges()
+
+MCF7_DARs_hyper_LO &lt;- as.data.frame(liftOver(MCF7_DARs_hyper,ch)) %&gt;% 
+  GRanges()
+
+MCF7_DARs_hypo_LO &lt;- as.data.frame(liftOver(MCF7_DARs_hypo,ch)) %&gt;% 
+  GRanges()
+
+MCF7_DAR_all_LO &lt;- c(MCF7_DARs_hyper_LO,MCF7_DARs_hypo_LO)
+
+MCF7DAR_AR_ol &lt;- join_overlap_intersect(all_regions_gr, MCF7_DAR_all_LO)
+
+DAR_AR_overlap_df &lt;-MCF7DAR_AR_ol %&gt;% 
+  as.data.frame() %&gt;% 
+  distinct(Peakid)</code></pre>
+<p>Attempting with DOX</p>
+<pre class="r"><code>peak_snp_pairs_dist %&gt;% 
+  dplyr::filter(sig_24 ==&quot;sig&quot;) %&gt;% 
+  mutate(specific=if_else(Peakid %in%DAR_AR_overlap_df$Peakid,&quot;specific&quot;,&quot;not_specific&quot;)) %&gt;% 
+  mutate(specific=factor(specific,levels= c(&quot;specific&quot;,&quot;not_specific&quot;))) %&gt;% 
+  ggplot(.,aes(x=specific, y=distance))+
+  geom_boxplot()+
+  theme_bw()+
+  geom_signif(comparisons = list(c(&quot;specific&quot;, &quot;not_specific&quot;)),
+              step_increase = 0.1,
+              map_signif_level = FALSE,
+              test = &quot;wilcox.test&quot;)+
+  ggtitle(&quot;DOX 24 hour distances of DAR-SNP pairs\n that are specific for iPSC-CMs or not-specific&quot;)</code></pre>
+<p><img src="figure/SNP_TAD_peaks.Rmd/unnamed-chunk-9-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>peak_snp_pairs_dist_EPI %&gt;% 
+  dplyr::filter(sig_24 ==&quot;sig&quot;) %&gt;% 
+  mutate(specific=if_else(Peakid %in%DAR_AR_overlap_df$Peakid,&quot;specific&quot;,&quot;not_specific&quot;)) %&gt;% 
+  mutate(specific=factor(specific,levels= c(&quot;specific&quot;,&quot;not_specific&quot;))) %&gt;% 
+  ggplot(.,aes(x=specific, y=distance))+
+  geom_boxplot()+
+  theme_bw()+
+  geom_signif(comparisons = list(c(&quot;specific&quot;, &quot;not_specific&quot;)),
+              step_increase = 0.1,
+              map_signif_level = FALSE,
+              test = &quot;wilcox.test&quot;)+
+  ggtitle(&quot;EPI 24 hour distances of DAR-SNP pairs\n that are specific for iPSC-CMs or not-specific&quot;)</code></pre>
+<p><img src="figure/SNP_TAD_peaks.Rmd/unnamed-chunk-9-2.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>peak_snp_pairs_dist_DNR %&gt;% 
+  dplyr::filter(sig_24 ==&quot;sig&quot;) %&gt;% 
+  mutate(specific=if_else(Peakid %in%DAR_AR_overlap_df$Peakid,&quot;specific&quot;,&quot;not_specific&quot;)) %&gt;% 
+  mutate(specific=factor(specific,levels= c(&quot;specific&quot;,&quot;not_specific&quot;))) %&gt;% 
+  ggplot(.,aes(x=specific, y=distance))+
+  geom_boxplot()+
+  theme_bw()+
+  geom_signif(comparisons = list(c(&quot;specific&quot;, &quot;not_specific&quot;)),
+              step_increase = 0.1,
+              map_signif_level = FALSE,
+              test = &quot;wilcox.test&quot;)+
+  ggtitle(&quot;DNR 24 hour distances of DAR-SNP pairs\n that are specific for iPSC-CMs or not-specific&quot;)</code></pre>
+<p><img src="figure/SNP_TAD_peaks.Rmd/unnamed-chunk-9-3.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>peak_snp_pairs_dist_MTX %&gt;% 
+  dplyr::filter(sig_24 ==&quot;sig&quot;) %&gt;% 
+  mutate(specific=if_else(Peakid %in%DAR_AR_overlap_df$Peakid,&quot;specific&quot;,&quot;not_specific&quot;)) %&gt;% 
+  mutate(specific=factor(specific,levels= c(&quot;specific&quot;,&quot;not_specific&quot;))) %&gt;% 
+  ggplot(.,aes(x=specific, y=distance))+
+  geom_boxplot()+
+  theme_bw()+
+  geom_signif(comparisons = list(c(&quot;specific&quot;, &quot;not_specific&quot;)),
+              step_increase = 0.1,
+              map_signif_level = FALSE,
+              test = &quot;wilcox.test&quot;)+
+  ggtitle(&quot;MTX 24 hour distances of DAR-SNP pairs\n that are specific for iPSC-CMs or not-specific&quot;)</code></pre>
+<p><img src="figure/SNP_TAD_peaks.Rmd/unnamed-chunk-9-4.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>peak_snp_pairs_dist %&gt;% 
+  dplyr::filter(!Peakid %in% DAR_AR_overlap_df$Peakid) %&gt;% 
+  mutate(sig_24=factor(sig_24,levels = c (&quot;sig&quot;,&quot;not_sig&quot;))) %&gt;%
+  ggplot(.,aes(x=sig_24, y=distance))+
+  geom_boxplot()+
+  theme_bw()+
+  geom_signif(comparisons = list(c(&quot;sig&quot;, &quot;not_sig&quot;)),
+              step_increase = 0.1,
+              map_signif_level = FALSE,
+              test = &quot;wilcox.test&quot;)+
+  ggtitle(&quot;DOX 24 hour distances of DAR-SNP pairs\n that are specific for iPSC-CMs&quot;)</code></pre>
+<p><img src="figure/SNP_TAD_peaks.Rmd/unnamed-chunk-10-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>peak_snp_pairs_dist_EPI %&gt;% 
+  dplyr::filter(!Peakid %in% DAR_AR_overlap_df$Peakid) %&gt;% 
+  mutate(sig_24=factor(sig_24,levels = c (&quot;sig&quot;,&quot;not_sig&quot;))) %&gt;%
+  ggplot(.,aes(x=sig_24, y=distance))+
+  geom_boxplot()+
+  theme_bw()+
+  geom_signif(comparisons = list(c(&quot;sig&quot;, &quot;not_sig&quot;)),
+              step_increase = 0.1,
+              map_signif_level = FALSE,
+              test = &quot;wilcox.test&quot;)+
+  ggtitle(&quot;EPI 24 hour distances of DAR-SNP pairs\n that are specific for iPSC-CMs&quot;)</code></pre>
+<p><img src="figure/SNP_TAD_peaks.Rmd/unnamed-chunk-10-2.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>peak_snp_pairs_dist_DNR %&gt;% 
+  dplyr::filter(!Peakid %in% DAR_AR_overlap_df$Peakid) %&gt;% 
+  mutate(sig_24=factor(sig_24,levels = c (&quot;sig&quot;,&quot;not_sig&quot;))) %&gt;%
+  ggplot(.,aes(x=sig_24, y=distance))+
+  geom_boxplot()+
+  theme_bw()+
+  geom_signif(comparisons = list(c(&quot;sig&quot;, &quot;not_sig&quot;)),
+              step_increase = 0.1,
+              map_signif_level = FALSE,
+              test = &quot;wilcox.test&quot;)+
+  ggtitle(&quot;DNR 24 hour distances of DAR-SNP pairs\n that are specific for iPSC-CMs&quot;)</code></pre>
+<p><img src="figure/SNP_TAD_peaks.Rmd/unnamed-chunk-10-3.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>peak_snp_pairs_dist_MTX %&gt;% 
+  dplyr::filter(!Peakid %in% DAR_AR_overlap_df$Peakid) %&gt;% 
+  mutate(sig_24=factor(sig_24,levels = c (&quot;sig&quot;,&quot;not_sig&quot;))) %&gt;%
+  ggplot(.,aes(x=sig_24, y=distance))+
+  geom_boxplot()+
+  theme_bw()+
+  geom_signif(comparisons = list(c(&quot;sig&quot;, &quot;not_sig&quot;)),
+              step_increase = 0.1,
+              map_signif_level = FALSE,
+              test = &quot;wilcox.test&quot;)+
+  ggtitle(&quot;MTX 24 hour distances of DAR-SNP pairs\n that are specific for iPSC-CMs&quot;)</code></pre>
+<p><img src="figure/SNP_TAD_peaks.Rmd/unnamed-chunk-10-4.png" width="672" style="display: block; margin: auto;" /></p>
+<p>Attempt at heatmap with RNA expression, decided not to use or plot
+here.</p>
+<pre class="r"><code>Cardotox_mat &lt;-   Cardiotox_gwas_collaped_df %&gt;%
+  dplyr::select(name,DOX_3:TRZ_24,`3_RNA_DOX`,`3_RNA_EPI`,`3_RNA_DNR`,`3_RNA_MTX`,`3_RNA_TRZ`,`24_RNA_DOX`,`24_RNA_EPI`,`24_RNA_DNR`,`24_RNA_MTX`,`24_RNA_TRZ`) %&gt;% 
+  column_to_rownames(&quot;name&quot;) %&gt;% 
+  as.matrix()
+
+annot_map_df &lt;- Cardiotox_gwas_collaped_df %&gt;% 
+  dplyr::select(name,snp_dist) %&gt;% 
+  column_to_rownames(&quot;name&quot;) 
+annot_map &lt;-
+  rowAnnotation(
+    snp_dist=Cardiotox_gwas_collaped_df$snp_dist,
+    TAD_id=Cardiotox_gwas_collaped_df$TAD_id,
+    col= list(snp_dist=c(&quot;2kb&quot;=&quot;goldenrod4&quot;,
+                               &quot;20kb&quot;=&quot;pink&quot;,
+                               &quot;&gt;20kb&quot;=&quot;tan2&quot;),
+    TAD_id=tad_colors))
+
+
+
+
+simply_map_lfc &lt;- ComplexHeatmap::Heatmap(Cardotox_mat,
+                        #                   col = col_fun,
+                        left_annotation = annot_map,
+                        show_row_names = TRUE,
+                       row_names_max_width= ComplexHeatmap::max_text_width(rownames(Cardotox_mat),                                                        gp=gpar(fontsize=14)),
+                        heatmap_legend_param = list(direction = &quot;horizontal&quot;),
+                        show_column_names = TRUE,
+                        cluster_rows = FALSE,
+                        cluster_columns = FALSE)
+
+
+
+
+ComplexHeatmap::draw(simply_map_lfc, 
+     merge_legend = TRUE, 
+     heatmap_legend_side = &quot;left&quot;, 
+    annotation_legend_side = &quot;left&quot;)</code></pre>
+<p>Alternative of final graph that we may use.</p>
+<pre class="r"><code>AR_Cardiotox_gwas_collaped_df &lt;-
+peak_snp_pairs_dist %&gt;% 
+  # dplyr::filter(sig_24==&quot;sig&quot;) %&gt;% 
+  group_by(TAD_id,RSID) %&gt;% 
+  slice_min(order_by = distance, with_ties = FALSE) %&gt;%
+  ungroup() %&gt;% 
+  arrange(snp_chr,snp_start) %&gt;% 
+  group_by(Peakid, peak_chr, peak_start, TAD_id, sig_24) %&gt;%
+  summarise(
+    min_distance = min(distance),
+    mean_distance = mean(distance),
+    snp_list = paste(unique(RSID), collapse = &quot;,&quot;),
+    .groups = &quot;drop&quot;
+  ) %&gt;% 
+  left_join(., all_results_pivot, by=c(&quot;Peakid&quot;=&quot;genes&quot;)) %&gt;% 
+  # left_join(., Peak_gene_RNA_LFC, by=c(&quot;Peakid&quot;=&quot;Peakid&quot;)) %&gt;%
+  # left_join(.,gene_info_collapsed, by=c(&quot;geneId&quot;=&quot;ENTREZID&quot;)) %&gt;% 
+  # mutate(SYMBOL=if_else(is.na(SYMBOL.x),SYMBOL.y,if_else(SYMBOL.x==SYMBOL.y, SYMBOL.x,paste0(SYMBOL.x,&quot;_&quot;,SYMBOL.y)))) %&gt;% 
+  tidyr::unite(., name,Peakid,snp_list) %&gt;%
+  mutate(snp_dist=case_when(min_distance &lt;2000 ~&quot;2kb&quot;,
+                            min_distance &gt; 2000 &amp; min_distance&lt;20000 ~ &quot;20kb&quot;,
+                            min_distance &gt;20000 ~&quot;&gt;20kb&quot;))
+
+
+Cardotox_mat_2 &lt;-   AR_Cardiotox_gwas_collaped_df %&gt;%
+  dplyr::select(name,DOX_3:TRZ_24) %&gt;% 
+  column_to_rownames(&quot;name&quot;) %&gt;% 
+  as.matrix()
+
+annot_map_df_2 &lt;- AR_Cardiotox_gwas_collaped_df %&gt;% 
+  dplyr::select(name,snp_dist,sig_24) %&gt;% 
+  column_to_rownames(&quot;name&quot;) 
+annot_map_2 &lt;-
+  ComplexHeatmap::rowAnnotation(
+    snp_dist=AR_Cardiotox_gwas_collaped_df$snp_dist,
+    TAD_id=AR_Cardiotox_gwas_collaped_df$TAD_id,
+    DOX_24hr_DAR=AR_Cardiotox_gwas_collaped_df$sig_24,
+    col= list(snp_dist=c(&quot;2kb&quot;=&quot;goldenrod4&quot;,
+                               &quot;20kb&quot;=&quot;pink&quot;,
+                               &quot;&gt;20kb&quot;=&quot;tan2&quot;),
+              TAD_id=tad_colors))
+
+
+simply_map_lfc_2 &lt;- ComplexHeatmap::Heatmap(Cardotox_mat_2,
+                        #                   col = col_fun,
+                        left_annotation = annot_map_2,
+                        show_row_names = TRUE,
+                       row_names_max_width= ComplexHeatmap::max_text_width(rownames(Cardotox_mat_2),                                                        gp=gpar(fontsize=14)),
+                        heatmap_legend_param = list(direction = &quot;horizontal&quot;),
+                        show_column_names = TRUE,
+                        cluster_rows = FALSE,
+                        cluster_columns = FALSE)
+
+
+
+
+ComplexHeatmap::draw(simply_map_lfc_2, 
+     merge_legend = TRUE, 
+     heatmap_legend_side = &quot;left&quot;, 
+    annotation_legend_side = &quot;left&quot;)</code></pre>
+<p><img src="figure/SNP_TAD_peaks.Rmd/non-sig%20plus%20sig-1.png" width="960" style="display: block; margin: auto;" />
+### adding in Park data:</p>
+<pre class="r"><code>ParkSNPs &lt;- readRDS(&quot;data/other_papers/ParkSNPs_pull_VEF.RDS&quot;)
+
+ParkSNP_table &lt;-
+  ParkSNPs %&gt;% 
+  dplyr::select(1:2) %&gt;% 
+    distinct() %&gt;% 
+    separate_wider_delim(.,Location,delim=&quot;:&quot;,names=c(&quot;chr&quot;,&quot;position&quot;), cols_remove=FALSE) %&gt;% 
+    separate_wider_delim(.,position,delim=&quot;-&quot;,names=c(&quot;begin&quot;,&quot;term&quot;)) %&gt;%
+    mutate(chr=paste0(&quot;chr&quot;,chr)) 
+
+ParkSNP_gr &lt;- ParkSNP_table %&gt;% 
+  mutate(&quot;start&quot; = begin, &quot;end&quot;=term) %&gt;% 
+    GRanges()
+
+Park_snp_tad_df &lt;-  join_overlap_inner(ParkSNP_gr, Left_ventricle_TAD) %&gt;%
+  as_tibble() %&gt;%
+    dplyr::rename(&quot;RSID&quot;=X.Uploaded_variation) %&gt;% 
+  dplyr::select(RSID, snp_start = start, snp_chr = seqnames, TAD_id)
+
+Park_snp_pairs &lt;- peak_tad_df %&gt;%
+  inner_join(Park_snp_tad_df, by = &quot;TAD_id&quot;)
+
+Park_snp_pairs %&gt;% 
+  distinct(RSID)</code></pre>
+<pre><code># A tibble: 7 × 1
+  RSID       
+  &lt;chr&gt;      
+1 rs147631684
+2 rs2113374  
+3 rs11894115 
+4 rs6804462  
+5 rs17530621 
+6 rs58328254 
+7 rs117299725</code></pre>
+<pre class="r"><code>Park_snp_pairs_dist &lt;- Park_snp_pairs %&gt;%
+  mutate(distance = abs(peak_start - snp_start)) %&gt;% 
+  mutate(sig_24= if_else(Peakid %in% DOX_DAR_sig$Peakid, &quot;sig&quot;,&quot;not_sig&quot;))
+
+Park_snp_pairs_dist %&gt;% 
+  mutate(sig_24=factor(sig_24, levels= c(&quot;sig&quot;,&quot;not_sig&quot;))) %&gt;% 
+  ggplot(., aes(x= sig_24, y=distance))+
+  geom_boxplot()+
+  theme_bw()+
+  geom_signif(comparisons = list(c(&quot;sig&quot;, &quot;not_sig&quot;)), 
+              map_signif_level = FALSE, test = &quot;wilcox.test&quot;)</code></pre>
+<p><img src="figure/SNP_TAD_peaks.Rmd/Boram%20Park%20etal-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>wilcox.test(distance ~ sig_24, data = Park_snp_pairs_dist)</code></pre>
+<pre><code>
+    Wilcoxon rank sum test with continuity correction
+
+data:  distance by sig_24
+W = 71794, p-value = 0.6862
+alternative hypothesis: true location shift is not equal to 0</code></pre>
+<pre class="r"><code>Park_Cardiotox_gwas_df &lt;- Park_snp_pairs_dist %&gt;% 
+  dplyr::filter(sig_24==&quot;sig&quot;) %&gt;% 
+  group_by(TAD_id,RSID) %&gt;% 
+  slice_min(order_by = distance, with_ties = FALSE) %&gt;%
+  ungroup() %&gt;% 
+  arrange(snp_chr,snp_start) %&gt;% 
+  left_join(., all_results_pivot, by=c(&quot;Peakid&quot;=&quot;genes&quot;)) %&gt;% 
+  tidyr::unite(., name,Peakid,RSID)</code></pre>
+<pre class="r"><code>Park_Cardiotox_gwas_collaped_df &lt;-
+Park_snp_pairs_dist %&gt;% 
+  # dplyr::filter(sig_24==&quot;sig&quot;) %&gt;% 
+  group_by(TAD_id,RSID) %&gt;% 
+  slice_min(order_by = distance, with_ties = FALSE) %&gt;%
+  ungroup() %&gt;% 
+  arrange(snp_chr,snp_start) %&gt;% 
+  group_by(Peakid, peak_chr, peak_start, TAD_id, sig_24) %&gt;%
+  summarise(
+    min_distance = min(distance),
+    mean_distance = mean(distance),
+    snp_list = paste(unique(RSID), collapse = &quot;,&quot;),
+    .groups = &quot;drop&quot;
+  ) %&gt;% 
+  left_join(., all_results_pivot, by=c(&quot;Peakid&quot;=&quot;genes&quot;)) %&gt;% 
+  # left_join(., Peak_gene_RNA_LFC, by=c(&quot;Peakid&quot;=&quot;Peakid&quot;)) %&gt;%
+  # left_join(.,gene_info_collapsed, by=c(&quot;geneId&quot;=&quot;ENTREZID&quot;)) %&gt;% 
+  # mutate(SYMBOL=if_else(is.na(SYMBOL.x),SYMBOL.y,if_else(SYMBOL.x==SYMBOL.y, SYMBOL.x,paste0(SYMBOL.x,&quot;_&quot;,SYMBOL.y)))) %&gt;% 
+  tidyr::unite(., name,Peakid,snp_list) %&gt;%
+  mutate(snp_dist=case_when(min_distance &lt;2000 ~&quot;2kb&quot;,
+                            min_distance &gt; 2000 &amp; min_distance&lt;20000 ~ &quot;20kb&quot;,
+                            min_distance &gt;20000 ~&quot;&gt;20kb&quot;))
+
+
+Cardotox_mat_park &lt;-   Park_Cardiotox_gwas_collaped_df %&gt;%
+  dplyr::select(name,DOX_3:TRZ_24) %&gt;% 
+  column_to_rownames(&quot;name&quot;) %&gt;% 
+  as.matrix()
+
+annot_map_df_park &lt;- Park_Cardiotox_gwas_collaped_df %&gt;% 
+  dplyr::select(name,snp_dist,sig_24) %&gt;% 
+  column_to_rownames(&quot;name&quot;) 
+annot_map_park &lt;-
+  ComplexHeatmap::rowAnnotation(
+    snp_dist=Park_Cardiotox_gwas_collaped_df$snp_dist,
+    TAD_id=Park_Cardiotox_gwas_collaped_df$TAD_id,
+    DOX_24hr_DAR=Park_Cardiotox_gwas_collaped_df$sig_24,
+    col= list(snp_dist=c(&quot;2kb&quot;=&quot;goldenrod4&quot;,
+                               &quot;20kb&quot;=&quot;pink&quot;,
+                               &quot;&gt;20kb&quot;=&quot;tan2&quot;)))
+
+simply_map_lfc_park &lt;- ComplexHeatmap::Heatmap(Cardotox_mat_park,
+                        #                   col = col_fun,
+                        left_annotation = annot_map_park,
+                        show_row_names = TRUE,
+                       row_names_max_width= ComplexHeatmap::max_text_width(rownames(Cardotox_mat_park),                                                        gp=gpar(fontsize=14)),
+                        heatmap_legend_param = list(direction = &quot;horizontal&quot;),
+                        show_column_names = TRUE,
+                        cluster_rows = FALSE,
+                        cluster_columns = FALSE)
+
+
+
+
+ComplexHeatmap::draw(simply_map_lfc_park, 
+     merge_legend = TRUE, 
+     heatmap_legend_side = &quot;left&quot;, 
+    annotation_legend_side = &quot;left&quot;)</code></pre>
+<p><img src="figure/SNP_TAD_peaks.Rmd/unnamed-chunk-11-1.png" width="672" style="display: block; margin: auto;" /></p>
+<br>
+<p>
+<button type="button" class="btn btn-default btn-workflowr btn-workflowr-sessioninfo" data-toggle="collapse" data-target="#workflowr-sessioninfo" style="display: block;">
+<span class="glyphicon glyphicon-wrench" aria-hidden="true"></span>
+Session information
+</button>
+</p>
+<div id="workflowr-sessioninfo" class="collapse">
+<pre class="r"><code>sessionInfo()</code></pre>
+<pre><code>R version 4.4.2 (2024-10-31 ucrt)
+Platform: x86_64-w64-mingw32/x64
+Running under: Windows 11 x64 (build 26100)
+
+Matrix products: default
+
+
+locale:
+[1] LC_COLLATE=English_United States.utf8 
+[2] LC_CTYPE=English_United States.utf8   
+[3] LC_MONETARY=English_United States.utf8
+[4] LC_NUMERIC=C                          
+[5] LC_TIME=English_United States.utf8    
+
+time zone: America/Chicago
+tzcode source: internal
+
+attached base packages:
+[1] grid      stats4    stats     graphics  grDevices utils     datasets 
+[8] methods   base     
+
+other attached packages:
+ [1] BSgenome.Hsapiens.UCSC.hg38_1.4.5       
+ [2] BSgenome_1.74.0                         
+ [3] BiocIO_1.16.0                           
+ [4] Biostrings_2.74.1                       
+ [5] XVector_0.46.0                          
+ [6] liftOver_1.30.0                         
+ [7] Homo.sapiens_1.3.1                      
+ [8] TxDb.Hsapiens.UCSC.hg19.knownGene_3.2.2 
+ [9] GO.db_3.20.0                            
+[10] OrganismDbi_1.48.0                      
+[11] gwascat_2.38.0                          
+[12] ComplexHeatmap_2.22.0                   
+[13] readxl_1.4.5                            
+[14] circlize_0.4.16                         
+[15] epitools_0.5-10.1                       
+[16] ggrepel_0.9.6                           
+[17] plyranges_1.26.0                        
+[18] ggsignif_0.6.4                          
+[19] genomation_1.38.0                       
+[20] smplot2_0.2.5                           
+[21] eulerr_7.0.2                            
+[22] biomaRt_2.62.1                          
+[23] devtools_2.4.5                          
+[24] usethis_3.1.0                           
+[25] ggpubr_0.6.1                            
+[26] BiocParallel_1.40.2                     
+[27] scales_1.4.0                            
+[28] VennDiagram_1.7.3                       
+[29] futile.logger_1.4.3                     
+[30] gridExtra_2.3                           
+[31] ggfortify_0.4.18                        
+[32] edgeR_4.4.2                             
+[33] limma_3.62.2                            
+[34] rtracklayer_1.66.0                      
+[35] org.Hs.eg.db_3.20.0                     
+[36] TxDb.Hsapiens.UCSC.hg38.knownGene_3.20.0
+[37] GenomicFeatures_1.58.0                  
+[38] AnnotationDbi_1.68.0                    
+[39] Biobase_2.66.0                          
+[40] ChIPpeakAnno_3.40.0                     
+[41] GenomicRanges_1.58.0                    
+[42] GenomeInfoDb_1.42.3                     
+[43] IRanges_2.40.1                          
+[44] S4Vectors_0.44.0                        
+[45] BiocGenerics_0.52.0                     
+[46] ChIPseeker_1.42.1                       
+[47] RColorBrewer_1.1-3                      
+[48] broom_1.0.8                             
+[49] kableExtra_1.4.0                        
+[50] lubridate_1.9.4                         
+[51] forcats_1.0.0                           
+[52] stringr_1.5.1                           
+[53] dplyr_1.1.4                             
+[54] purrr_1.0.4                             
+[55] readr_2.1.5                             
+[56] tidyr_1.3.1                             
+[57] tibble_3.3.0                            
+[58] ggplot2_3.5.2                           
+[59] tidyverse_2.0.0                         
+[60] workflowr_1.7.1                         
+
+loaded via a namespace (and not attached):
+  [1] R.methodsS3_1.8.2           dichromat_2.0-0.1          
+  [3] vroom_1.6.5                 progress_1.2.3             
+  [5] urlchecker_1.0.1            nnet_7.3-20                
+  [7] vctrs_0.6.5                 ggtangle_0.0.7             
+  [9] digest_0.6.37               png_0.1-8                  
+ [11] shape_1.4.6.1               git2r_0.36.2               
+ [13] magick_2.8.7                MASS_7.3-65                
+ [15] reshape2_1.4.4              foreach_1.5.2              
+ [17] httpuv_1.6.16               qvalue_2.38.0              
+ [19] withr_3.0.2                 xfun_0.52                  
+ [21] ggfun_0.1.9                 ellipsis_0.3.2             
+ [23] survival_3.8-3              memoise_2.0.1              
+ [25] profvis_0.4.0               systemfonts_1.2.3          
+ [27] tidytree_0.4.6              zoo_1.8-14                 
+ [29] GlobalOptions_0.1.2         gtools_3.9.5               
+ [31] R.oo_1.27.1                 Formula_1.2-5              
+ [33] prettyunits_1.2.0           KEGGREST_1.46.0            
+ [35] promises_1.3.3              httr_1.4.7                 
+ [37] rstatix_0.7.2               restfulr_0.0.16            
+ [39] ps_1.9.1                    rstudioapi_0.17.1          
+ [41] UCSC.utils_1.2.0            miniUI_0.1.2               
+ [43] generics_0.1.4              DOSE_4.0.1                 
+ [45] base64enc_0.1-3             processx_3.8.6             
+ [47] curl_6.4.0                  zlibbioc_1.52.0            
+ [49] GenomeInfoDbData_1.2.13     SparseArray_1.6.2          
+ [51] RBGL_1.82.0                 xtable_1.8-4               
+ [53] doParallel_1.0.17           evaluate_1.0.4             
+ [55] S4Arrays_1.6.0              BiocFileCache_2.14.0       
+ [57] hms_1.1.3                   colorspace_2.1-1           
+ [59] filelock_1.0.3              magrittr_2.0.3             
+ [61] later_1.4.2                 ggtree_3.14.0              
+ [63] lattice_0.22-7              getPass_0.2-4              
+ [65] XML_3.99-0.18               cowplot_1.1.3              
+ [67] matrixStats_1.5.0           Hmisc_5.2-3                
+ [69] pillar_1.11.0               nlme_3.1-168               
+ [71] iterators_1.0.14            pwalign_1.2.0              
+ [73] gridBase_0.4-7              caTools_1.18.3             
+ [75] compiler_4.4.2              stringi_1.8.7              
+ [77] SummarizedExperiment_1.36.0 GenomicAlignments_1.42.0   
+ [79] plyr_1.8.9                  crayon_1.5.3               
+ [81] abind_1.4-8                 gridGraphics_0.5-1         
+ [83] locfit_1.5-9.12             bit_4.6.0                  
+ [85] fastmatch_1.1-6             whisker_0.4.1              
+ [87] codetools_0.2-20            textshaping_1.0.1          
+ [89] bslib_0.9.0                 GetoptLong_1.0.5           
+ [91] multtest_2.62.0             mime_0.13                  
+ [93] splines_4.4.2               Rcpp_1.1.0                 
+ [95] dbplyr_2.5.0                cellranger_1.1.0           
+ [97] utf8_1.2.6                  knitr_1.50                 
+ [99] blob_1.2.4                  clue_0.3-66                
+[101] AnnotationFilter_1.30.0     fs_1.6.6                   
+[103] checkmate_2.3.2             pkgbuild_1.4.8             
+[105] ggplotify_0.1.2             Matrix_1.7-3               
+[107] callr_3.7.6                 statmod_1.5.0              
+[109] tzdb_0.5.0                  svglite_2.2.1              
+[111] pkgconfig_2.0.3             tools_4.4.2                
+[113] cachem_1.1.0                RSQLite_2.4.1              
+[115] viridisLite_0.4.2           DBI_1.2.3                  
+[117] impute_1.80.0               fastmap_1.2.0              
+[119] rmarkdown_2.29              Rsamtools_2.22.0           
+[121] sass_0.4.10                 patchwork_1.3.1            
+[123] BiocManager_1.30.26         VariantAnnotation_1.52.0   
+[125] graph_1.84.1                carData_3.0-5              
+[127] rpart_4.1.24                farver_2.1.2               
+[129] yaml_2.3.10                 MatrixGenerics_1.18.1      
+[131] foreign_0.8-90              cli_3.6.5                  
+[133] txdbmaker_1.2.1             lifecycle_1.0.4            
+[135] lambda.r_1.2.4              sessioninfo_1.2.3          
+[137] backports_1.5.0             timechange_0.3.0           
+[139] gtable_0.3.6                rjson_0.2.23               
+[141] parallel_4.4.2              ape_5.8-1                  
+[143] jsonlite_2.0.0              bitops_1.0-9               
+[145] bit64_4.6.0-1               pwr_1.3-0                  
+[147] yulab.utils_0.2.0           futile.options_1.0.1       
+[149] jquerylib_0.1.4             GOSemSim_2.32.0            
+[151] R.utils_2.13.0              snpStats_1.56.0            
+[153] lazyeval_0.2.2              shiny_1.11.1               
+[155] htmltools_0.5.8.1           enrichplot_1.26.6          
+[157] rappdirs_0.3.3              formatR_1.14               
+[159] ensembldb_2.30.0            glue_1.8.0                 
+[161] httr2_1.1.2                 RCurl_1.98-1.17            
+[163] InteractionSet_1.34.0       rprojroot_2.0.4            
+[165] treeio_1.30.0               boot_1.3-31                
+[167] universalmotif_1.24.2       igraph_2.1.4               
+[169] R6_2.6.1                    gplots_3.2.0               
+[171] labeling_0.4.3              cluster_2.1.8.1            
+[173] pkgload_1.4.0               regioneR_1.38.0            
+[175] aplot_0.2.8                 DelayedArray_0.32.0        
+[177] tidyselect_1.2.1            plotrix_3.8-4              
+[179] ProtGenerics_1.38.0         htmlTable_2.4.3            
+[181] xml2_1.3.8                  car_3.1-3                  
+[183] seqPattern_1.38.0           KernSmooth_2.23-26         
+[185] data.table_1.17.6           htmlwidgets_1.6.4          
+[187] fgsea_1.32.4                rlang_1.1.6                
+[189] remotes_2.5.0               Cairo_1.6-2                </code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+
+<!-- Adjust MathJax settings so that all math formulae are shown using
+TeX fonts only; see
+https://docs.mathjax.org/en/latest/web/configuration.html. This will make
+the presentation more consistent at the cost of the webpage sometimes
+taking slightly longer to load. Note that this only works because the
+footer is added to webpages before the MathJax javascript. -->
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    "HTML-CSS": { availableFonts: ["TeX"] }
+  });
+</script>
+
+
+
+
+</div>
+</div>
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+function bootstrapStylePandocTables() {
+  $('tr.odd').parent('tbody').parent('table').addClass('table table-condensed');
+}
+$(document).ready(function () {
+  bootstrapStylePandocTables();
+});
+
+
+</script>
+
+<!-- tabsets -->
+
+<script>
+$(document).ready(function () {
+  window.buildTabsets("TOC");
+});
+
+$(document).ready(function () {
+  $('.tabset-dropdown > .nav-tabs > li').click(function () {
+    $(this).parent().toggleClass('nav-tabs-open');
+  });
+});
+</script>
+
+<!-- code folding -->
+
+<script>
+$(document).ready(function ()  {
+
+    // temporarily add toc-ignore selector to headers for the consistency with Pandoc
+    $('.unlisted.unnumbered').addClass('toc-ignore')
+
+    // move toc-ignore selectors from section div to header
+    $('div.section.toc-ignore')
+        .removeClass('toc-ignore')
+        .children('h1,h2,h3,h4,h5').addClass('toc-ignore');
+
+    // establish options
+    var options = {
+      selectors: "h1,h2,h3",
+      theme: "bootstrap3",
+      context: '.toc-content',
+      hashGenerator: function (text) {
+        return text.replace(/[.\\/?&!#<>]/g, '').replace(/\s/g, '_');
+      },
+      ignoreSelector: ".toc-ignore",
+      scrollTo: 0
+    };
+    options.showAndHide = true;
+    options.smoothScroll = true;
+
+    // tocify
+    var toc = $("#TOC").tocify(options).data("toc-tocify");
+});
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
