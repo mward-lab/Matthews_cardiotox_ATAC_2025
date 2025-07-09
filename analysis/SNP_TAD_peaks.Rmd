@@ -1,0 +1,961 @@
+---
+title: "SNP & TAD"
+author: "Renee Matthews"
+date: "2025-06-10"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE,
+	warning = FALSE,
+		dev = c("png","pdf")
+)
+```
+
+```{css, echo=FALSE}
+pre {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+pre[class] {
+  max-height: 200px;
+}
+```
+
+```{r package loading, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(kableExtra)
+library(broom)
+library(RColorBrewer)
+library(ChIPseeker)
+library(ChIPpeakAnno)
+library("TxDb.Hsapiens.UCSC.hg38.knownGene")
+library("org.Hs.eg.db")
+library(rtracklayer)
+library(edgeR)
+library(ggfortify)
+library(limma)
+library(readr)
+library(BiocGenerics)
+library(gridExtra)
+library(VennDiagram)
+library(scales)
+library(BiocParallel)
+library(ggpubr)
+library(devtools)
+library(biomaRt)
+library(eulerr)
+library(smplot2)
+library(genomation)
+library(ggsignif)
+library(plyranges)
+library(ggrepel)
+library(epitools)
+library(circlize)
+library(readxl)
+library(ComplexHeatmap)
+library(gwascat)
+library(liftOver)
+```
+
+
+### Loading data frames
+
+```{r loading data}
+### Pulling the all regions granges list from the motif list of lists
+Motif_list_gr <- readRDS("data/Final_four_data/re_analysis/Motif_list_granges.RDS")
+### no change motif_list_gr names so they do not overwrite the dataframes
+names(Motif_list_gr) <- paste0(names(Motif_list_gr), "_gr")
+list2env(Motif_list_gr[10],envir= .GlobalEnv)
+
+
+annotated_DARs<- readRDS("data/Final_four_data/re_analysis/DOX_DAR_annotated_peaks_chipannno.RDS")
+
+Left_ventricle_TAD <- import(con = "C://Users/renee/Downloads/hg38.TADs/hg38/VentricleLeft_STL003_Leung_2015-raw_TADs.txt", format = "bed",genome="hg38")
+mcols(Left_ventricle_TAD)$TAD_id <- paste0("TAD_", seq_along(Left_ventricle_TAD))
+
+
+
+# mcols(Left_ventricle_TAD)$name <- Left_ventricle_TAD$TAD_id
+##exporting the LEFt ventricle tad  info for IGV visualization
+# export(Left_ventricle_TAD, con = "data/Final_four_data/re_analysis/Other_bed_files/TAD_regions.bed", format="bed")
+
+Schneider_all_SNPS <- read_delim("data/other_papers/Schneider_all_SNPS.txt", 
+    delim = "\t", escape_double = FALSE, 
+    trim_ws = TRUE)
+
+Schneider_all_SNPS_df <- Schneider_all_SNPS %>%
+  dplyr::rename("RSID"="#Uploaded_variation") %>% 
+  dplyr::select(RSID,Location,SYMBOL,Gene, SOURCE) %>%
+  distinct(RSID,Location,SYMBOL,.keep_all = TRUE) %>% 
+  dplyr::rename("Close_SYMBOL"="SYMBOL") %>% 
+  dplyr::filter(!str_starts(Location, "H")) %>% 
+  separate_wider_delim(Location,delim=":",names=c("Chr","Coords")) %>% 
+  separate_wider_delim(Coords,delim= "-", names= c("Start","End")) %>% 
+  mutate(Chr=paste0("chr",Chr)) %>% 
+  group_by(RSID) %>% 
+  reframe(Chr=unique(Chr),
+            Start=unique(Start),
+            End=unique(End),
+            Close_SYMBOL=paste(unique(Close_SYMBOL),collapse=";"),
+            Gene=paste(Gene,collapse=";"),
+            SOURCE=paste(SOURCE,collapse=";")
+            ) %>% 
+  GRanges() %>% as.data.frame 
+
+schneider_gr <-Schneider_all_SNPS_df%>%
+  dplyr::select(seqnames,start,end,RSID:SOURCE) %>%
+  distinct() %>% 
+  GRanges()
+
+# export(schneider_gr, con = "data/Final_four_data/re_analysis/Other_bed_files/CardiotoxSNPs.bed", format="bed")
+
+toptable_results <- readRDS("data/Final_four_data/re_analysis/Toptable_results.RDS")
+
+all_results  <- toptable_results %>%
+  imap(~ .x %>% tibble::rownames_to_column(var = "rowname") %>%
+         mutate(source = .y)) %>%
+  bind_rows()
+all_results_pivot <- all_results %>% 
+dplyr::select(genes,logFC,source) %>% 
+  pivot_wider(., id_cols = genes, names_from = source, values_from = logFC) %>% 
+  dplyr::select(genes,DOX_3,EPI_3,DNR_3,MTX_3,TRZ_3,DOX_24,EPI_24,DNR_24,MTX_24,TRZ_24)
+
+
+toplistall_RNA <- readRDS("data/other_papers/toplistall_RNA.RDS") %>% 
+  mutate(logFC = logFC*(-1))
+
+Assigned_genes_toPeak <- annotated_DARs$DOX_24 %>% as.data.frame() %>% 
+  dplyr::select(mcols.genes,annotation, geneId, distanceToTSS) %>% 
+  dplyr::rename("Peakid"=mcols.genes)
+
+RNA_results <-
+toplistall_RNA %>% 
+  dplyr::select(time:logFC) %>% 
+  tidyr::unite("sample",time, id) %>% 
+  pivot_wider(., id_cols = c(ENTREZID,SYMBOL),names_from = sample, values_from = logFC) %>% 
+  rename_with(~ str_replace(., "hours", "RNA"))
+
+Peak_gene_RNA_LFC <- Assigned_genes_toPeak %>% 
+  left_join(., RNA_results, by =c("geneId"="ENTREZID"))
+
+
+entrez_ids <- Assigned_genes_toPeak$geneId  
+
+
+gene_info <- AnnotationDbi::select(
+  org.Hs.eg.db,
+  keys = entrez_ids,
+  columns = c("SYMBOL"),
+  keytype = "ENTREZID"
+)
+gene_info_collapsed <- gene_info %>%
+  group_by(ENTREZID) %>%
+  summarise(SYMBOL = paste(unique(SYMBOL), collapse = ","), .groups = "drop")
+DOX_DAR_24hr_table <- annotated_DARs$DOX_24 %>% 
+  as.data.frame()
+
+
+# for_export <- DOX_24_DAR%>%
+#   # as.data.frame() %>%
+#   ### mark significance with color
+#   mutate(sig_24=if_else(mcols.adj.P.Val<0.05,"TRUE","FALSE")) %>%
+#   dplyr::select(seqnames:mcols.genes,sig_24) %>%
+#   GRanges
+# 
+# ### add to the granges thingy for exporting
+# mcols(for_export)$itemRgb <-  ifelse(mcols(for_export)$sig_24,
+#                                  "255,0,0",   # red for significant
+#                                  "190,190,190")  # gray for not significant
+# mcols(for_export)$sig_24 <- as.logical(mcols(for_export)$sig_24)
+# mcols(for_export)$itemRgb <- as.character(mcols(for_export)$itemRgb)
+# 
+# bed_df <- data.frame(
+#   seqnames = seqnames(for_export),
+#   start    = start(for_export) - 1,  # BED is 0-based
+#   end      = end(for_export),
+#   strand   = "*",
+#   thickStart = start(for_export) - 1,
+#   thickEnd   = end(for_export),
+#   itemRgb  = ifelse(mcols(for_export)$sig_24, "255,0,0", "190,190,190"),
+#   stringsAsFactors = FALSE)
+# # )
+# 
+# write.table(bed_df,
+#             file = "data/Final_four_data/re_analysis/Other_bed_files/DOX_24hour_sig_notsig_regions.bed",
+#             quote = FALSE, sep = "\t", row.names = FALSE, col.names = FALSE)
+```
+
+
+
+### Enrichment test of sig DAR and non-sig DAR of DOX within SNP-containing TADS
+```{r}
+
+test_ol <- join_overlap_intersect(Left_ventricle_TAD, schneider_gr)
+df <- as.data.frame(test_ol, row.names = NULL)
+TAD_SNP_ol <- test_ol %>% as.data.frame() %>% 
+  distinct(TAD_id, RSID)
+peak_ol <- join_overlap_intersect(all_regions_gr, Left_ventricle_TAD)
+
+TAD_SNP_Peak_ol <- peak_ol %>% 
+  as.data.frame() %>% 
+  dplyr::filter(TAD_id %in% TAD_SNP_ol$TAD_id)
+snp_ol <- join_overlap_inner(schneider_gr, Left_ventricle_TAD)
+TAD_peak_ol <- peak_ol %>% 
+  as.data.frame() %>% 
+  distinct(Peakid,.keep_all = TRUE)
+
+left_ventricle_ol <- join_overlap_inner(all_regions_gr ,Left_ventricle_TAD) %>% 
+  as.data.frame() %>% 
+  distinct(Peakid,.keep_all = TRUE) %>% 
+  dplyr::filter(TAD_id %in% TAD_SNP_ol$TAD_id)
+
+peak_df <- as.data.frame(left_ventricle_ol)
+SNP_df <- as.data.frame(snp_ol)
+
+peak_snp_pairs <- inner_join(peak_df, SNP_df, by = "TAD_id", suffix = c(".peak", ".snp")) %>%
+  mutate(
+    peak_center = (start.peak + end.peak) / 2,
+    distance = abs(peak_center - start.snp)  # or any metric you prefer
+  )
+
+
+
+
+```
+
+```{r TAD colors}
+reds <- colorRampPalette(brewer.pal(9, "Reds")[3:9])(12)
+greens <- colorRampPalette(brewer.pal(9, "Greens")[3:9])(12)
+blues <- colorRampPalette(brewer.pal(9, "Blues")[3:9])(12)
+purples <- colorRampPalette(brewer.pal(9, "Purples")[3:9])(12)
+oranges <- colorRampPalette(brewer.pal(9, "Oranges")[3:9])(12)
+
+
+
+tads <- unique(peak_snp_pairs$TAD_id)
+num_tads <- length(tads)
+
+color_spectrum <- c(reds, greens, blues, purples, oranges)[1:num_tads]
+
+if (num_tads > length(color_spectrum)) {
+  stop("Not enough colors for TADs. Add more palettes.")
+}
+tad_colors <- color_spectrum[1:num_tads]
+names(tad_colors) <- tads  # Assign color names to TAD IDs
+
+
+#ha <- HeatmapAnnotation(TAD = df$TAD_id, col = list(TAD = tad_colors))
+
+```
+
+```{r}
+
+DOX_24_DAR <- as.data.frame(annotated_DARs$DOX_24)
+EPI_24_DAR <- as.data.frame(annotated_DARs$EPI_24)
+DNR_24_DAR <- as.data.frame(annotated_DARs$DNR_24)
+MTX_24_DAR <- as.data.frame(annotated_DARs$MTX_24)
+
+TAD_count_df <- DOX_24_DAR %>% 
+  dplyr::select(mcols.genes, mcols.adj.P.Val,annotation:distanceToTSS) %>% 
+  mutate(sig_24=if_else(mcols.adj.P.Val<0.05,"sig","not_sig")) %>% 
+  mutate(sig_24=factor(sig_24, levels = c("sig","not_sig"))) %>% 
+  mutate(TAD_all_status=if_else(mcols.genes %in% peak_ol$Peakid,"TAD_peak","not_TAD_peak")) %>% 
+  mutate(SNP_TAD_status= if_else(mcols.genes %in% TAD_SNP_Peak_ol$Peakid,"SNP_TAD","not_SNP_TAD")) 
+  
+TAD_count_df %>% #dplyr::filter(TAD_all_status=="TAD_peak") %>% 
+  group_by(sig_24,SNP_TAD_status,TAD_all_status) %>% 
+  tally #%>% 
+  # pivot_wider(., id_cols = sig_24, names_from = SNP_TAD_status, values_from = n)
+# print("Odds ratio of SNP_TADs across DOXall regions, regardless of TAD_status")
+# TAD_count_df %>% #dplyr::filter(TAD_all_status=="TAD_peak") %>% 
+#   group_by(sig_24,SNP_TAD_status) %>% 
+#   tally %>% 
+#   pivot_wider(., id_cols = sig_24, names_from = SNP_TAD_status, values_from = n) %>% 
+#   column_to_rownames( "sig_24") %>% as.matrix() %>% 
+#   # chisq.test()
+#   epitools::oddsratio()
+print("Odds ratio  testing proportion SNP-containing TADs of sig-DOX DARs vs non-sig DARs at 24 hours")
+TAD_count_df %>% dplyr::filter(TAD_all_status=="TAD_peak") %>% 
+  group_by(sig_24,SNP_TAD_status) %>% 
+  tally %>% 
+  pivot_wider(., id_cols = sig_24, names_from = SNP_TAD_status, values_from = n) %>% 
+  column_to_rownames( "sig_24") %>% as.matrix() %>% 
+  # chisq.test()
+  epitools::oddsratio()
+
+
+
+TAD_count_df %>% 
+  dplyr::filter(TAD_all_status=="TAD_peak") %>% 
+   group_by(sig_24,SNP_TAD_status) %>% 
+  tally ()%>% 
+   mutate(sig_24=factor(sig_24, levels = c("sig","not_sig"))) %>% 
+  ggplot(.,aes(x=sig_24, y= n,fill=SNP_TAD_status))+
+  geom_col(position="fill")+
+  theme_bw()+
+  ggtitle("Proportion of significant regions by 24 hours")+
+  ylab("proportion")
+
+# TAD_count_df %>% 
+#   dplyr::filter(TAD_all_status=="TAD_peak") %>% 
+#  
+#   group_by(sig_24,SNP_TAD_status) %>% 
+#   tally ()%>% 
+#    mutate(sig_24=factor(sig_24, levels = c("sig","not_sig"))) %>% 
+#   ggplot(.,aes(x=SNP_TAD_status, y= n,fill=sig_24))+
+#   geom_col(position="fill")+
+#   theme_bw()+
+#   ggtitle("Proportion of significant regions by 24 hours")+
+#   ylab("proportion")
+
+
+```
+
+### Calculating Distance to TAD-SNP from peak  
+#### DOX 24 hours
+```{r}
+DOX_DAR_sig <- DOX_24_DAR %>%
+  dplyr::filter(mcols.adj.P.Val<0.05) %>% 
+  distinct (mcols.genes) %>% 
+  dplyr::rename("Peakid"="mcols.genes")
+
+EPI_DAR_sig <- EPI_24_DAR %>%
+  dplyr::filter(mcols.adj.P.Val<0.05) %>% 
+  distinct (mcols.genes) %>% 
+  dplyr::rename("Peakid"="mcols.genes")
+
+DNR_DAR_sig <- DNR_24_DAR %>%
+  dplyr::filter(mcols.adj.P.Val<0.05) %>% 
+  distinct (mcols.genes) %>% 
+  dplyr::rename("Peakid"="mcols.genes")
+
+MTX_DAR_sig <- MTX_24_DAR %>%
+  dplyr::filter(mcols.adj.P.Val<0.05) %>% 
+  distinct (mcols.genes) %>% 
+  dplyr::rename("Peakid"="mcols.genes")
+
+MCF7_DAR_snp_pairs_dist <- readRDS("data/Final_four_data/re_analysis/MCF7_DAR_snp_pairs_dist.RDS") %>% 
+  dplyr::rename("Peakid"=names) %>% 
+  mutate(sig_24="MCF7_DAR")
+
+snp_tad_df <-
+  join_overlap_inner(schneider_gr, Left_ventricle_TAD) %>%
+  as_tibble() %>%
+  dplyr::select(RSID, snp_start = start, snp_chr = seqnames, TAD_id)
+
+
+peak_tad_df <-
+join_overlap_inner(all_regions_gr, Left_ventricle_TAD) %>%
+  as_tibble() %>%
+  dplyr::select(Peakid, peak_start = start, peak_chr = seqnames, TAD_id)
+
+peak_snp_pairs <- peak_tad_df %>%
+  inner_join(snp_tad_df, by = "TAD_id")
+
+
+peak_snp_pairs_dist <- peak_snp_pairs %>%
+  mutate(distance = abs(peak_start - snp_start)) %>% 
+  mutate(sig_24= if_else(Peakid %in% DOX_DAR_sig$Peakid, "sig","not_sig"))
+
+
+
+peak_snp_pairs_dist %>% 
+  mutate(sig_24=factor(sig_24, levels= c("sig","not_sig"))) %>% 
+  ggplot(., aes(x= sig_24, y=distance))+
+  geom_boxplot()+
+  theme_bw()+
+  geom_signif(comparisons = list(c("sig", "not_sig")), 
+              map_signif_level = FALSE, test = "wilcox.test")+
+  ggtitle("DOX 24 hour distances of DAR-SNP pairs and non-DAR-SNP pairs")
+
+wilcox.test(distance ~ sig_24, data = peak_snp_pairs_dist)
+
+Cardiotox_gwas_df <- peak_snp_pairs_dist %>% 
+  dplyr::filter(sig_24=="sig") %>% 
+  group_by(TAD_id,RSID) %>% 
+  slice_min(order_by = distance, with_ties = FALSE) %>%
+  ungroup() %>% 
+  arrange(snp_chr,snp_start) %>% 
+  left_join(., all_results_pivot, by=c("Peakid"="genes")) %>% 
+  tidyr::unite(., name,Peakid,RSID)
+
+
+Cardiotox_gwas_collaped_df <-
+peak_snp_pairs_dist %>% 
+  dplyr::filter(sig_24=="sig") %>% 
+  group_by(TAD_id,RSID) %>% 
+  slice_min(order_by = distance, with_ties = FALSE) %>%
+  ungroup() %>% 
+  arrange(snp_chr,snp_start) %>% 
+  group_by(Peakid, peak_chr, peak_start, TAD_id, sig_24) %>%
+  summarise(
+    min_distance = min(distance),
+    mean_distance = mean(distance),
+    snp_list = paste(unique(RSID), collapse = ","),
+    .groups = "drop"
+  ) %>% 
+  left_join(., all_results_pivot, by=c("Peakid"="genes")) %>% 
+  left_join(., Peak_gene_RNA_LFC, by=c("Peakid"="Peakid")) %>% 
+  left_join(.,gene_info_collapsed, by=c("geneId"="ENTREZID")) %>% 
+  mutate(SYMBOL=if_else(is.na(SYMBOL.x),SYMBOL.y,if_else(SYMBOL.x==SYMBOL.y, SYMBOL.x,paste0(SYMBOL.x,"_",SYMBOL.y)))) %>% 
+  tidyr::unite(., name,Peakid,SYMBOL,snp_list) %>% 
+  mutate(snp_dist=case_when(min_distance <2000 ~"2kb",
+                            min_distance > 2000 & min_distance<20000 ~ "20kb",
+                            min_distance >20000 ~">20kb"))
+  
+
+```
+#### DOX_MCF7 added
+```{r}
+bind_rows(MCF7_DAR_snp_pairs_dist,peak_snp_pairs_dist) %>% 
+  mutate(sig_24=factor(sig_24, levels= c("sig","not_sig", "MCF7_DAR"))) %>% ggplot(., aes(x= sig_24, y=distance))+
+  geom_boxplot()+
+  theme_bw()+
+  geom_signif(comparisons = list(c("sig", "not_sig"),
+                                 c("sig","MCF7_DAR"),
+                               c("not_sig","MCF7_DAR")),
+              step_increase = 0.1, 
+              map_signif_level = FALSE, 
+              test = "wilcox.test")+
+  ggtitle("DOX 24 hour distances of DAR-SNP pairs\n and non-DAR-SNP pairs with MCF7 DARs")
+```
+
+
+#### EPI 24 hours  
+
+```{r EPI SNPpairs}
+peak_snp_pairs_dist_EPI <- peak_snp_pairs %>%
+  mutate(distance = abs(peak_start - snp_start)) %>% 
+  mutate(sig_24= if_else(Peakid %in% EPI_DAR_sig$Peakid, "sig","not_sig"))
+
+peak_snp_pairs_dist_EPI %>% 
+  mutate(sig_24=factor(sig_24, levels= c("sig","not_sig"))) %>% 
+  ggplot(., aes(x= sig_24, y=distance))+
+  geom_boxplot()+
+  theme_bw()+
+  geom_signif(comparisons = list(c("sig", "not_sig")), 
+              map_signif_level = FALSE, test = "wilcox.test")
+
+wilcox.test(distance ~ sig_24, data = peak_snp_pairs_dist)
+
+Cardiotox_gwas_EPI <- peak_snp_pairs_dist_EPI %>% 
+  dplyr::filter(sig_24=="sig") %>% 
+  group_by(TAD_id,RSID) %>% 
+  slice_min(order_by = distance, with_ties = FALSE) %>%
+  ungroup() %>% 
+  arrange(snp_chr,snp_start) %>% 
+  left_join(., all_results_pivot, by=c("Peakid"="genes")) %>% 
+  tidyr::unite(., name,Peakid,RSID)
+
+
+
+```
+#### EPI_MCF7 added
+```{r}
+bind_rows(MCF7_DAR_snp_pairs_dist,peak_snp_pairs_dist_EPI) %>% 
+  mutate(sig_24=factor(sig_24, levels= c("sig","not_sig", "MCF7_DAR"))) %>% ggplot(., aes(x= sig_24, y=distance))+
+  geom_boxplot()+
+  theme_bw()+
+  geom_signif(comparisons = list(c("sig", "not_sig"),
+                                 c("sig","MCF7_DAR"),
+                               c("not_sig","MCF7_DAR")),
+              step_increase = 0.1, 
+              map_signif_level = FALSE, 
+              test = "wilcox.test")+
+  ggtitle("EPI 24 hour distances of DAR-SNP pairs\n and non-DAR-SNP pairs with MCF7 DARs")
+```
+
+
+#### DNR 24 hours 
+
+```{r DNR SNPpairs}
+peak_snp_pairs_dist_DNR <- peak_snp_pairs %>%
+  mutate(distance = abs(peak_start - snp_start)) %>% 
+  mutate(sig_24= if_else(Peakid %in% DNR_DAR_sig$Peakid, "sig","not_sig"))
+
+peak_snp_pairs_dist_DNR %>% 
+  mutate(sig_24=factor(sig_24, levels= c("sig","not_sig"))) %>% 
+  ggplot(., aes(x= sig_24, y=distance))+
+  geom_boxplot()+
+  theme_bw()+
+  geom_signif(comparisons = list(c("sig", "not_sig")), 
+              map_signif_level = FALSE, test = "wilcox.test")+
+  ggtitle("DNR 24 hour distances of DAR-SNP pairs and non-DAR-SNP pairs")
+
+wilcox.test(distance ~ sig_24, data = peak_snp_pairs_dist)
+
+Cardiotox_gwas_DNR <- peak_snp_pairs_dist_DNR %>% 
+  dplyr::filter(sig_24=="sig") %>% 
+  group_by(TAD_id,RSID) %>% 
+  slice_min(order_by = distance, with_ties = FALSE) %>%
+  ungroup() %>% 
+  arrange(snp_chr,snp_start) %>% 
+  left_join(., all_results_pivot, by=c("Peakid"="genes")) %>% 
+  tidyr::unite(., name,Peakid,RSID)
+
+
+
+```
+#### DNR_MCF7 added
+```{r}
+bind_rows(MCF7_DAR_snp_pairs_dist,peak_snp_pairs_dist_DNR) %>% 
+  mutate(sig_24=factor(sig_24, levels= c("sig","not_sig", "MCF7_DAR"))) %>% ggplot(., aes(x= sig_24, y=distance))+
+  geom_boxplot()+
+  theme_bw()+
+  geom_signif(comparisons = list(c("sig", "not_sig"),
+                                 c("sig","MCF7_DAR"),
+                               c("not_sig","MCF7_DAR")),
+              step_increase = 0.1, 
+              map_signif_level = FALSE, 
+              test = "wilcox.test")+
+  ggtitle("DNR 24 hour distances of DAR-SNP pairs\n and non-DAR-SNP pairs with MCF7 DARs")
+```
+
+
+
+#### MTX 24 hours 
+
+```{r MTX SNPpairs}
+peak_snp_pairs_dist_MTX <- peak_snp_pairs %>%
+  mutate(distance = abs(peak_start - snp_start)) %>% 
+  mutate(sig_24= if_else(Peakid %in% MTX_DAR_sig$Peakid, "sig","not_sig"))
+
+peak_snp_pairs_dist_MTX %>% 
+  mutate(sig_24=factor(sig_24, levels= c("sig","not_sig"))) %>% 
+  ggplot(., aes(x= sig_24, y=distance))+
+  geom_boxplot()+
+  theme_bw()+
+  geom_signif(comparisons = list(c("sig", "not_sig")), 
+              map_signif_level = FALSE, test = "wilcox.test")+
+  ggtitle("MTX 24 hour distances of DAR-SNP pairs and non-DAR-SNP pairs")
+
+wilcox.test(distance ~ sig_24, data = peak_snp_pairs_dist)
+
+Cardiotox_gwas_MTX <- peak_snp_pairs_dist_MTX %>% 
+  dplyr::filter(sig_24=="sig") %>% 
+  group_by(TAD_id,RSID) %>% 
+  slice_min(order_by = distance, with_ties = FALSE) %>%
+  ungroup() %>% 
+  arrange(snp_chr,snp_start) %>% 
+  left_join(., all_results_pivot, by=c("Peakid"="genes")) %>% 
+  tidyr::unite(., name,Peakid,RSID)
+
+
+
+```
+
+#### MTX_MCF7 added
+```{r}
+bind_rows(MCF7_DAR_snp_pairs_dist,peak_snp_pairs_dist_MTX) %>% 
+  mutate(sig_24=factor(sig_24, levels= c("sig","not_sig", "MCF7_DAR"))) %>% ggplot(., aes(x= sig_24, y=distance))+
+  geom_boxplot()+
+  theme_bw()+
+  geom_signif(comparisons = list(c("sig", "not_sig"),
+                                 c("sig","MCF7_DAR"),
+                               c("not_sig","MCF7_DAR")),
+              step_increase = 0.1, 
+              map_signif_level = FALSE, 
+              test = "wilcox.test")+
+  ggtitle("MTX 24 hour distances of DAR-SNP pairs\n and non-DAR-SNP pairs with MCF7 DARs")
+```
+### Creating SNP_TAD distance DF
+
+For combining the above 24 hour trt-distance to SNP data frames for box-plots
+
+```{r Boxplot combo, fig.width=7}
+SNP_TAD_dist_DF <- bind_rows((peak_snp_pairs_dist_MTX %>% 
+             mutate(trt="MTX")),
+          (peak_snp_pairs_dist %>%
+               mutate(trt="DOX"))) %>% 
+  bind_rows(.,(peak_snp_pairs_dist_EPI %>% 
+                 mutate(trt="EPI"))) %>% 
+  bind_rows(.,(peak_snp_pairs_dist_DNR %>% 
+                 mutate(trt="DNR"))) %>% 
+  mutate(trt=factor(trt,levels=c("DOX","EPI","DNR","MTX"))) %>% 
+   mutate(sig_24=factor(sig_24, levels= c("sig","not_sig"))) 
+
+SNP_TAD_dist_DF%>% 
+  ggplot(., aes(x= interaction(sig_24,trt), y=distance))+
+  geom_boxplot(aes(fill=trt))+
+  theme_bw()+
+  geom_signif(comparisons = list(c("sig.DOX", "not_sig.DOX"),
+                                 c("sig.EPI","not_sig.EPI"),
+                                 c("sig.DNR", "not_sig.DNR"),
+                                 c("sig.MTX", "not_sig.MTX")),
+                              step_increase = 0.1, 
+              map_signif_level = FALSE, 
+              test = "wilcox.test")+
+  ggtitle("ALL dist")
+```
+### MCF7 tissue specific, non-tissue specific.
+
+Here I am overlapping my data with the MCF7 DAR data.  This will create DARS for each treatment that overlap MCF7 DARS (tissue-shared regions) and DARS that do not overlap MCF7 DARS (tissue-specific regions).  I will then calculate the distance between the SNPs in the shared vs specific for each treatment.
+
+```{r MCF7 df creation and liftOver}
+MCF7_DARs_hyper <- read_excel("C:/Users/renee/Downloads/MCF7-doxATAC/Table 4.XLSX", 
+    sheet = "hyper") %>% GRanges()
+MCF7_DARs_hypo <- read_excel("C:/Users/renee/Downloads/MCF7-doxATAC/Table 4.XLSX", 
+    sheet = "hypo") %>% GRanges()
+
+# MCF7_ARsmcf7_1 <- read_excel("C:/Users/renee/Downloads/MCF7-doxATAC/Table 3.XLSX") %>% 
+#   GRanges()
+  MCF7_DARs_hyper$names <- paste0("hyper_", seq_along(seqnames(MCF7_DARs_hyper)))
+ MCF7_DARs_hypo$names <- paste0("hypo_", seq_along(seqnames(MCF7_DARs_hypo)))
+ 
+ MCF7_DAR_all <- c(MCF7_DARs_hyper,MCF7_DARs_hypo)
+ 
+ ch = import.chain("C:/Users/renee/ATAC_folder/liftOver_genome/hg19ToHg38.over.chain")
+# MCF7_ARsmcf7_1_LO <- as.data.frame(liftOver(MCF7_ARsmcf7_1,ch)) %>% 
+#   GRanges()
+
+MCF7_DARs_hyper_LO <- as.data.frame(liftOver(MCF7_DARs_hyper,ch)) %>% 
+  GRanges()
+
+MCF7_DARs_hypo_LO <- as.data.frame(liftOver(MCF7_DARs_hypo,ch)) %>% 
+  GRanges()
+
+MCF7_DAR_all_LO <- c(MCF7_DARs_hyper_LO,MCF7_DARs_hypo_LO)
+
+MCF7DAR_AR_ol <- join_overlap_intersect(all_regions_gr, MCF7_DAR_all_LO)
+
+DAR_AR_overlap_df <-MCF7DAR_AR_ol %>% 
+  as.data.frame() %>% 
+  distinct(Peakid)
+
+```
+
+Attempting with DOX
+```{r}
+peak_snp_pairs_dist %>% 
+  dplyr::filter(sig_24 =="sig") %>% 
+  mutate(specific=if_else(Peakid %in%DAR_AR_overlap_df$Peakid,"specific","not_specific")) %>% 
+  mutate(specific=factor(specific,levels= c("specific","not_specific"))) %>% 
+  ggplot(.,aes(x=specific, y=distance))+
+  geom_boxplot()+
+  theme_bw()+
+  geom_signif(comparisons = list(c("specific", "not_specific")),
+              step_increase = 0.1,
+              map_signif_level = FALSE,
+              test = "wilcox.test")+
+  ggtitle("DOX 24 hour distances of DAR-SNP pairs\n that are specific for iPSC-CMs or not-specific")
+
+peak_snp_pairs_dist_EPI %>% 
+  dplyr::filter(sig_24 =="sig") %>% 
+  mutate(specific=if_else(Peakid %in%DAR_AR_overlap_df$Peakid,"specific","not_specific")) %>% 
+  mutate(specific=factor(specific,levels= c("specific","not_specific"))) %>% 
+  ggplot(.,aes(x=specific, y=distance))+
+  geom_boxplot()+
+  theme_bw()+
+  geom_signif(comparisons = list(c("specific", "not_specific")),
+              step_increase = 0.1,
+              map_signif_level = FALSE,
+              test = "wilcox.test")+
+  ggtitle("EPI 24 hour distances of DAR-SNP pairs\n that are specific for iPSC-CMs or not-specific")
+
+peak_snp_pairs_dist_DNR %>% 
+  dplyr::filter(sig_24 =="sig") %>% 
+  mutate(specific=if_else(Peakid %in%DAR_AR_overlap_df$Peakid,"specific","not_specific")) %>% 
+  mutate(specific=factor(specific,levels= c("specific","not_specific"))) %>% 
+  ggplot(.,aes(x=specific, y=distance))+
+  geom_boxplot()+
+  theme_bw()+
+  geom_signif(comparisons = list(c("specific", "not_specific")),
+              step_increase = 0.1,
+              map_signif_level = FALSE,
+              test = "wilcox.test")+
+  ggtitle("DNR 24 hour distances of DAR-SNP pairs\n that are specific for iPSC-CMs or not-specific")
+
+peak_snp_pairs_dist_MTX %>% 
+  dplyr::filter(sig_24 =="sig") %>% 
+  mutate(specific=if_else(Peakid %in%DAR_AR_overlap_df$Peakid,"specific","not_specific")) %>% 
+  mutate(specific=factor(specific,levels= c("specific","not_specific"))) %>% 
+  ggplot(.,aes(x=specific, y=distance))+
+  geom_boxplot()+
+  theme_bw()+
+  geom_signif(comparisons = list(c("specific", "not_specific")),
+              step_increase = 0.1,
+              map_signif_level = FALSE,
+              test = "wilcox.test")+
+  ggtitle("MTX 24 hour distances of DAR-SNP pairs\n that are specific for iPSC-CMs or not-specific")
+
+```
+```{r}
+peak_snp_pairs_dist %>% 
+  dplyr::filter(!Peakid %in% DAR_AR_overlap_df$Peakid) %>% 
+  mutate(sig_24=factor(sig_24,levels = c ("sig","not_sig"))) %>%
+  ggplot(.,aes(x=sig_24, y=distance))+
+  geom_boxplot()+
+  theme_bw()+
+  geom_signif(comparisons = list(c("sig", "not_sig")),
+              step_increase = 0.1,
+              map_signif_level = FALSE,
+              test = "wilcox.test")+
+  ggtitle("DOX 24 hour distances of DAR-SNP pairs\n that are specific for iPSC-CMs")
+
+peak_snp_pairs_dist_EPI %>% 
+  dplyr::filter(!Peakid %in% DAR_AR_overlap_df$Peakid) %>% 
+  mutate(sig_24=factor(sig_24,levels = c ("sig","not_sig"))) %>%
+  ggplot(.,aes(x=sig_24, y=distance))+
+  geom_boxplot()+
+  theme_bw()+
+  geom_signif(comparisons = list(c("sig", "not_sig")),
+              step_increase = 0.1,
+              map_signif_level = FALSE,
+              test = "wilcox.test")+
+  ggtitle("EPI 24 hour distances of DAR-SNP pairs\n that are specific for iPSC-CMs")
+
+peak_snp_pairs_dist_DNR %>% 
+  dplyr::filter(!Peakid %in% DAR_AR_overlap_df$Peakid) %>% 
+  mutate(sig_24=factor(sig_24,levels = c ("sig","not_sig"))) %>%
+  ggplot(.,aes(x=sig_24, y=distance))+
+  geom_boxplot()+
+  theme_bw()+
+  geom_signif(comparisons = list(c("sig", "not_sig")),
+              step_increase = 0.1,
+              map_signif_level = FALSE,
+              test = "wilcox.test")+
+  ggtitle("DNR 24 hour distances of DAR-SNP pairs\n that are specific for iPSC-CMs")
+
+peak_snp_pairs_dist_MTX %>% 
+  dplyr::filter(!Peakid %in% DAR_AR_overlap_df$Peakid) %>% 
+  mutate(sig_24=factor(sig_24,levels = c ("sig","not_sig"))) %>%
+  ggplot(.,aes(x=sig_24, y=distance))+
+  geom_boxplot()+
+  theme_bw()+
+  geom_signif(comparisons = list(c("sig", "not_sig")),
+              step_increase = 0.1,
+              map_signif_level = FALSE,
+              test = "wilcox.test")+
+  ggtitle("MTX 24 hour distances of DAR-SNP pairs\n that are specific for iPSC-CMs")
+```
+
+
+
+Attempt at heatmap with RNA expression, decided not to use or plot here.
+
+```{r heatmap, fig.height=14, fig.width=10, eval=FALSE}
+Cardotox_mat <-   Cardiotox_gwas_collaped_df %>%
+  dplyr::select(name,DOX_3:TRZ_24,`3_RNA_DOX`,`3_RNA_EPI`,`3_RNA_DNR`,`3_RNA_MTX`,`3_RNA_TRZ`,`24_RNA_DOX`,`24_RNA_EPI`,`24_RNA_DNR`,`24_RNA_MTX`,`24_RNA_TRZ`) %>% 
+  column_to_rownames("name") %>% 
+  as.matrix()
+
+annot_map_df <- Cardiotox_gwas_collaped_df %>% 
+  dplyr::select(name,snp_dist) %>% 
+  column_to_rownames("name") 
+annot_map <-
+  rowAnnotation(
+    snp_dist=Cardiotox_gwas_collaped_df$snp_dist,
+    TAD_id=Cardiotox_gwas_collaped_df$TAD_id,
+    col= list(snp_dist=c("2kb"="goldenrod4",
+                               "20kb"="pink",
+                               ">20kb"="tan2"),
+    TAD_id=tad_colors))
+
+
+
+
+simply_map_lfc <- ComplexHeatmap::Heatmap(Cardotox_mat,
+                        #                   col = col_fun,
+                        left_annotation = annot_map,
+                        show_row_names = TRUE,
+                       row_names_max_width= ComplexHeatmap::max_text_width(rownames(Cardotox_mat),                                                        gp=gpar(fontsize=14)),
+                        heatmap_legend_param = list(direction = "horizontal"),
+                        show_column_names = TRUE,
+                        cluster_rows = FALSE,
+                        cluster_columns = FALSE)
+
+
+
+
+ComplexHeatmap::draw(simply_map_lfc, 
+     merge_legend = TRUE, 
+     heatmap_legend_side = "left", 
+    annotation_legend_side = "left")
+```
+Alternative of final graph that we may use.
+```{r, non-sig plus sig, fig.height=14, fig.width=10}
+AR_Cardiotox_gwas_collaped_df <-
+peak_snp_pairs_dist %>% 
+  # dplyr::filter(sig_24=="sig") %>% 
+  group_by(TAD_id,RSID) %>% 
+  slice_min(order_by = distance, with_ties = FALSE) %>%
+  ungroup() %>% 
+  arrange(snp_chr,snp_start) %>% 
+  group_by(Peakid, peak_chr, peak_start, TAD_id, sig_24) %>%
+  summarise(
+    min_distance = min(distance),
+    mean_distance = mean(distance),
+    snp_list = paste(unique(RSID), collapse = ","),
+    .groups = "drop"
+  ) %>% 
+  left_join(., all_results_pivot, by=c("Peakid"="genes")) %>% 
+  # left_join(., Peak_gene_RNA_LFC, by=c("Peakid"="Peakid")) %>%
+  # left_join(.,gene_info_collapsed, by=c("geneId"="ENTREZID")) %>% 
+  # mutate(SYMBOL=if_else(is.na(SYMBOL.x),SYMBOL.y,if_else(SYMBOL.x==SYMBOL.y, SYMBOL.x,paste0(SYMBOL.x,"_",SYMBOL.y)))) %>% 
+  tidyr::unite(., name,Peakid,snp_list) %>%
+  mutate(snp_dist=case_when(min_distance <2000 ~"2kb",
+                            min_distance > 2000 & min_distance<20000 ~ "20kb",
+                            min_distance >20000 ~">20kb"))
+
+
+Cardotox_mat_2 <-   AR_Cardiotox_gwas_collaped_df %>%
+  dplyr::select(name,DOX_3:TRZ_24) %>% 
+  column_to_rownames("name") %>% 
+  as.matrix()
+
+annot_map_df_2 <- AR_Cardiotox_gwas_collaped_df %>% 
+  dplyr::select(name,snp_dist,sig_24) %>% 
+  column_to_rownames("name") 
+annot_map_2 <-
+  ComplexHeatmap::rowAnnotation(
+    snp_dist=AR_Cardiotox_gwas_collaped_df$snp_dist,
+    TAD_id=AR_Cardiotox_gwas_collaped_df$TAD_id,
+    DOX_24hr_DAR=AR_Cardiotox_gwas_collaped_df$sig_24,
+    col= list(snp_dist=c("2kb"="goldenrod4",
+                               "20kb"="pink",
+                               ">20kb"="tan2"),
+              TAD_id=tad_colors))
+
+
+simply_map_lfc_2 <- ComplexHeatmap::Heatmap(Cardotox_mat_2,
+                        #                   col = col_fun,
+                        left_annotation = annot_map_2,
+                        show_row_names = TRUE,
+                       row_names_max_width= ComplexHeatmap::max_text_width(rownames(Cardotox_mat_2),                                                        gp=gpar(fontsize=14)),
+                        heatmap_legend_param = list(direction = "horizontal"),
+                        show_column_names = TRUE,
+                        cluster_rows = FALSE,
+                        cluster_columns = FALSE)
+
+
+
+
+ComplexHeatmap::draw(simply_map_lfc_2, 
+     merge_legend = TRUE, 
+     heatmap_legend_side = "left", 
+    annotation_legend_side = "left")
+
+
+
+```
+### adding in Park data:
+
+
+
+```{r Boram Park etal}
+ParkSNPs <- readRDS("data/other_papers/ParkSNPs_pull_VEF.RDS")
+
+ParkSNP_table <-
+  ParkSNPs %>% 
+  dplyr::select(1:2) %>% 
+    distinct() %>% 
+    separate_wider_delim(.,Location,delim=":",names=c("chr","position"), cols_remove=FALSE) %>% 
+    separate_wider_delim(.,position,delim="-",names=c("begin","term")) %>%
+    mutate(chr=paste0("chr",chr)) 
+
+ParkSNP_gr <- ParkSNP_table %>% 
+  mutate("start" = begin, "end"=term) %>% 
+    GRanges()
+
+Park_snp_tad_df <-  join_overlap_inner(ParkSNP_gr, Left_ventricle_TAD) %>%
+  as_tibble() %>%
+    dplyr::rename("RSID"=X.Uploaded_variation) %>% 
+  dplyr::select(RSID, snp_start = start, snp_chr = seqnames, TAD_id)
+
+Park_snp_pairs <- peak_tad_df %>%
+  inner_join(Park_snp_tad_df, by = "TAD_id")
+
+Park_snp_pairs %>% 
+  distinct(RSID)
+
+Park_snp_pairs_dist <- Park_snp_pairs %>%
+  mutate(distance = abs(peak_start - snp_start)) %>% 
+  mutate(sig_24= if_else(Peakid %in% DOX_DAR_sig$Peakid, "sig","not_sig"))
+
+Park_snp_pairs_dist %>% 
+  mutate(sig_24=factor(sig_24, levels= c("sig","not_sig"))) %>% 
+  ggplot(., aes(x= sig_24, y=distance))+
+  geom_boxplot()+
+  theme_bw()+
+  geom_signif(comparisons = list(c("sig", "not_sig")), 
+              map_signif_level = FALSE, test = "wilcox.test")
+
+wilcox.test(distance ~ sig_24, data = Park_snp_pairs_dist)
+
+Park_Cardiotox_gwas_df <- Park_snp_pairs_dist %>% 
+  dplyr::filter(sig_24=="sig") %>% 
+  group_by(TAD_id,RSID) %>% 
+  slice_min(order_by = distance, with_ties = FALSE) %>%
+  ungroup() %>% 
+  arrange(snp_chr,snp_start) %>% 
+  left_join(., all_results_pivot, by=c("Peakid"="genes")) %>% 
+  tidyr::unite(., name,Peakid,RSID)
+
+```
+
+
+```{r}
+Park_Cardiotox_gwas_collaped_df <-
+Park_snp_pairs_dist %>% 
+  # dplyr::filter(sig_24=="sig") %>% 
+  group_by(TAD_id,RSID) %>% 
+  slice_min(order_by = distance, with_ties = FALSE) %>%
+  ungroup() %>% 
+  arrange(snp_chr,snp_start) %>% 
+  group_by(Peakid, peak_chr, peak_start, TAD_id, sig_24) %>%
+  summarise(
+    min_distance = min(distance),
+    mean_distance = mean(distance),
+    snp_list = paste(unique(RSID), collapse = ","),
+    .groups = "drop"
+  ) %>% 
+  left_join(., all_results_pivot, by=c("Peakid"="genes")) %>% 
+  # left_join(., Peak_gene_RNA_LFC, by=c("Peakid"="Peakid")) %>%
+  # left_join(.,gene_info_collapsed, by=c("geneId"="ENTREZID")) %>% 
+  # mutate(SYMBOL=if_else(is.na(SYMBOL.x),SYMBOL.y,if_else(SYMBOL.x==SYMBOL.y, SYMBOL.x,paste0(SYMBOL.x,"_",SYMBOL.y)))) %>% 
+  tidyr::unite(., name,Peakid,snp_list) %>%
+  mutate(snp_dist=case_when(min_distance <2000 ~"2kb",
+                            min_distance > 2000 & min_distance<20000 ~ "20kb",
+                            min_distance >20000 ~">20kb"))
+
+
+Cardotox_mat_park <-   Park_Cardiotox_gwas_collaped_df %>%
+  dplyr::select(name,DOX_3:TRZ_24) %>% 
+  column_to_rownames("name") %>% 
+  as.matrix()
+
+annot_map_df_park <- Park_Cardiotox_gwas_collaped_df %>% 
+  dplyr::select(name,snp_dist,sig_24) %>% 
+  column_to_rownames("name") 
+annot_map_park <-
+  ComplexHeatmap::rowAnnotation(
+    snp_dist=Park_Cardiotox_gwas_collaped_df$snp_dist,
+    TAD_id=Park_Cardiotox_gwas_collaped_df$TAD_id,
+    DOX_24hr_DAR=Park_Cardiotox_gwas_collaped_df$sig_24,
+    col= list(snp_dist=c("2kb"="goldenrod4",
+                               "20kb"="pink",
+                               ">20kb"="tan2")))
+
+simply_map_lfc_park <- ComplexHeatmap::Heatmap(Cardotox_mat_park,
+                        #                   col = col_fun,
+                        left_annotation = annot_map_park,
+                        show_row_names = TRUE,
+                       row_names_max_width= ComplexHeatmap::max_text_width(rownames(Cardotox_mat_park),                                                        gp=gpar(fontsize=14)),
+                        heatmap_legend_param = list(direction = "horizontal"),
+                        show_column_names = TRUE,
+                        cluster_rows = FALSE,
+                        cluster_columns = FALSE)
+
+
+
+
+ComplexHeatmap::draw(simply_map_lfc_park, 
+     merge_legend = TRUE, 
+     heatmap_legend_side = "left", 
+    annotation_legend_side = "left")
+```
+
