@@ -414,7 +414,7 @@ DOX_DD_24_nomtable %>%
 ### parsing similar terms:  
 ```
 
-### DOX DAR 24 KEGG  
+### DOX DAR 24 2kb KEGG  
 
 ```{r DOX 24 KEGG GO}
 DOX_DD_24_nomtable %>%
@@ -443,7 +443,7 @@ DOX_DD_24_nomtable %>%
   xlab(paste0("-log10 p-value"))+
   guides(fill="none")+
   theme(axis.text.y = element_text(color="black"))+
-  ggtitle("24 hour DOX_DAR_DEG pairs (within 2kb of TSS) KEGG enriched terms top 60")
+  ggtitle("24 hour DOX_DAR_DEG pairs (within 2kb of TSS) KEGG enriched terms")
 ```
 
 ### DOX 20kb
@@ -1951,20 +1951,20 @@ EPI_DDall_24_up_nomtable %>%
   ggtitle("24 hour up EPI_DAR pairs GO:BP enriched terms top 45")
 
 
-EPI_DDall_24_up_nomtable %>%
-  dplyr::filter(source=="GO:MF") %>% 
-  dplyr::filter(p_value < 0.05) %>% 
-  mutate(log10_p=(-log(p_value, base=10))) %>% 
-  slice_max(log10_p, n=60) %>% 
-  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
-    geom_col()+
-  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
-  theme_bw()+
-  ylab("")+
-  xlab(paste0("-log10 p-value"))+
-  guides(fill="none")+
-  theme(axis.text.y = element_text(color="black"))+
-  ggtitle("24 hour up EPI_DAR pairs GO:MF enriched terms top 60")
+# EPI_DDall_24_up_nomtable %>%
+#   dplyr::filter(source=="GO:MF") %>% 
+#   dplyr::filter(p_value < 0.05) %>% 
+#   mutate(log10_p=(-log(p_value, base=10))) %>% 
+#   slice_max(log10_p, n=60) %>% 
+#   ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
+#     geom_col()+
+#   geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
+#   theme_bw()+
+#   ylab("")+
+#   xlab(paste0("-log10 p-value"))+
+#   guides(fill="none")+
+#   theme(axis.text.y = element_text(color="black"))+
+#   ggtitle("24 hour up EPI_DAR pairs GO:MF enriched terms top 60")
 ```
 EPI DAR DEG up all 24 hours kegg
 ```{r}
@@ -2025,20 +2025,20 @@ EPI_DDall_24_down_nomtable %>%
   ggtitle("24 hour down EPI_DAR_DEG pairs GO:BP enriched terms top 45")
 
 
-EPI_DDall_24_down_nomtable %>%
-  dplyr::filter(source=="GO:MF") %>% 
-  dplyr::filter(p_value < 0.05) %>% 
-  mutate(log10_p=(-log(p_value, base=10))) %>% 
-  slice_max(log10_p, n=60) %>% 
-  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
-    geom_col()+
-  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
-  theme_bw()+
-  ylab("")+
-  xlab(paste0("-log10 p-value"))+
-  guides(fill="none")+
-  theme(axis.text.y = element_text(color="black"))+
-  ggtitle("24 hour down EPI_DAR_DEG pairs GO:MF enriched terms top 60")
+# EPI_DDall_24_down_nomtable %>%
+#   dplyr::filter(source=="GO:MF") %>% 
+#   dplyr::filter(p_value < 0.05) %>% 
+#   mutate(log10_p=(-log(p_value, base=10))) %>% 
+#   slice_max(log10_p, n=60) %>% 
+#   ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
+#     geom_col()+
+#   geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
+#   theme_bw()+
+#   ylab("")+
+#   xlab(paste0("-log10 p-value"))+
+#   guides(fill="none")+
+#   theme(axis.text.y = element_text(color="black"))+
+#   ggtitle("24 hour down EPI_DAR_DEG pairs GO:MF enriched terms top 60")
 ```
 EPI DAR DEG down all 24 hours kegg
 ```{r}
@@ -5653,30 +5653,55 @@ MTX_DD_24_down_nomtable %>%
 ### KEGG heatmap of terms
 
 ```{r , fig.height=6}
+filt_term_id <- bind_rows(DOX_DD_2420kb_nomtable %>%
+  mutate(group="DOX_24") %>% 
+  dplyr::filter(source =="KEGG",
+                p_value < 0.05) %>% 
+  dplyr::filter(term_id !="KEGG:00000") %>% 
+  slice_head(n=5),(EPI_DD_2420kb_nomtable %>%
+  mutate(group="EPI_24") %>% 
+  dplyr::filter(source =="KEGG",
+                p_value < 0.05) %>% 
+  dplyr::filter(term_id !="KEGG:00000") %>% 
+  slice_head(n=5))) %>% 
+    bind_rows((DNR_DD_2420kb_nomtable %>%
+  mutate(group="DNR_24") %>% 
+  dplyr::filter(source =="KEGG",
+                p_value < 0.05) %>% 
+  dplyr::filter(term_id !="KEGG:00000") %>% 
+  slice_head(n=5))) %>% 
+    bind_rows((MTX_DD_2420kb_nomtable %>%
+  mutate(group="MTX_24") %>% 
+  dplyr::filter(source =="KEGG",
+                p_value < 0.05) %>% 
+  dplyr::filter(term_id !="KEGG:00000") %>% 
+  slice_head(n=5))) %>% 
+  distinct(term_id)
+
 KEGGtable <-   bind_rows((DOX_DD_2420kb_nomtable %>% mutate(group="DOX_24")),(EPI_DD_2420kb_nomtable %>% mutate(group="EPI_24"))) %>%
   bind_rows(.,(DNR_DD_2420kb_nomtable %>% mutate(group="DNR_24"))) %>% 
-  bind_rows(.,(MTX_DD_2420kb_nomtable %>% mutate(group="MTXX_24"))) %>% 
-  dplyr::filter(source =="KEGG")
+  bind_rows(.,(MTX_DD_2420kb_nomtable %>% mutate(group="MTX_24"))) %>% 
+  dplyr::filter(source =="KEGG") %>% 
+  dplyr::filter(term_id %in% filt_term_id$term_id)
 
-mat <- KEGGtable %>% 
+mat <- KEGGtable %>%
   unite(KEGG,term_id, term_name, sep="_") %>% 
   dplyr::select(group,KEGG,p_value) %>% 
+  mutate(p_value=(log10(p_value)*-1)) %>% 
   pivot_wider(., id_cols = group, names_from = KEGG, values_from = p_value) %>% 
   column_to_rownames("group") %>% 
-  dplyr::select(where(~any(. < 0.05, na.rm = TRUE))) %>% 
-  select(!starts_with("KEGG:00000")) %>% 
   as.matrix() 
   ComplexHeatmap::Heatmap(mat, 
                           name = "p-value", 
-                          col = colorRamp2(c(0, 0.05, 1), c("red", "white", "blue")),
+                          col = colorRamp2(c(0, 1, 4), c("blue", "white", "red")),
                           cluster_rows = FALSE, 
-                          cluster_columns = TRUE,
+                          cluster_columns = FALSE,
                           column_names_rot = -45,  # Rotate to 45 degrees
                           column_names_gp = gpar(fontsize = 8),  # Smaller font size
                           show_row_names = TRUE, 
                           show_column_names = TRUE,
                            cell_fun = function(j, i, x, y, width, height, fill) {
-    if (!is.na(mat[i, j]) && mat[i, j] < 0.05) {
+    if (!is.na(mat[i, j]) && mat[i, j] > 1.30103) {
       grid.text("*", x = x, y = y, gp = gpar(fontsize = 20, col = "black"))
     }
   }
