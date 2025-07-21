@@ -881,6 +881,54 @@ twentyfour_hour_df %>%
   ylab("proportion")
 ```
 
+```{r}
+# Ensure consistent trt ordering across both dataframes
+ordered_trt <- c("DOX", "EPI", "DNR", "MTX", "TRZ")  # adjust to match your treatment order
+
+# 3-hour plot
+plot_3h <- three_hour_df %>%
+  mutate(
+    sig_val = factor(sig_val, levels = c("not_sig", "sig")),
+    trt = factor(trt, levels = ordered_trt)
+  ) %>%
+  ggplot(aes(x = trt, fill = sig_val)) +
+  geom_bar(position = "fill") +
+  theme_bw() +
+  ggtitle("3 hours") +
+  ylab("Proportion") +
+  scale_y_continuous(labels = scales::percent)
+
+# 24-hour plot (flipped)
+plot_24h <- twentyfour_hour_df %>%
+  mutate(
+    sig_val = factor(sig_val, levels = c("not_sig", "sig")),
+    trt = factor(trt, levels = ordered_trt)
+  ) %>%
+  ggplot(aes(x = trt, fill = sig_val)) +
+  geom_bar(position = "fill") +
+  scale_y_reverse(labels = scales::percent) +  # flip it
+  theme_bw() +
+  ggtitle("24 hours (flipped)") +
+  ylab("Proportion")
+
+# Remove x-axis labels from the top plot and y-axis label from the bottom if needed
+plot_3h <- plot_3h + theme(axis.title.x = element_blank())
+plot_24h <- plot_24h + theme(axis.title.x = element_blank())
+
+# Combine the two using cowplot
+combined <- plot_grid(
+  plot_3h,
+  plot_24h,
+  ncol = 1,
+  align = "v",
+  axis = "lr",  # align left/right axis
+  rel_heights = c(1, 1)
+)
+
+# Show it
+print(combined)
+```
+
 
 
 ```{r doxbed, eval=FALSE}
@@ -976,18 +1024,26 @@ DOX_not_list_gr <- list("DOX24_notup"=filt_DOX24_notup_gr,"DOX24_notdown"=filt_D
 
 ```{r Genomic Features}
 txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
+Top2b_peaks <- import(con="data/other_papers/ChIP3_TOP2B_CM_87-1.bed",format = "bed",genome="hg38")
+
+# sig_meta_and_loc_split_gr$TOP2B <- Top2b_peaks
 ### maybe use annotatePeakInBatch from ChIPpeakAnno
-# peakAnnoList_DOX_DAR <- lapply(all_DAR_regions_gr, annotatePeak, tssRegion =c(-2000,2000), TxDb=txdb)
+# peakAnnoList_Top2b_DAR <- lapply(all_DAR_regions_gr, annotatePeak, tssRegion =c(-2000,2000), TxDb=txdb)
+filt_peakAnnoList_Top2b_DAR <- readRDS("data/Final_four_data/re_analysis/filt_Top2B_DAR_annotated_peaks_chipannno.RDS")
 peakAnnoList_DOX_DAR <- readRDS("data/Final_four_data/re_analysis/DOX_DAR_annotated_peaks_chipannno.RDS")
- # saveRDS, "data/Final_four_data/re_analysis/DOX_DAR_annotated_peaks_chipannno.RDS")
-# filt_peakAnnoList_DOX_DAR <- lapply(sig_meta_and_loc_split_gr,annotatePeak, tssRegion =c(-2000,2000), TxDb=txdb)
+ # saveRDS(peakAnnoList_Top2b_DAR, "data/Final_four_data/re_analysis/Top2B_DAR_annotated_peaks_chipannno.RDS")
+# filt_peakAnnoList_Top2b_DAR <- lapply(sig_meta_and_loc_split_gr,annotatePeak, tssRegion =c(-2000,2000), TxDb=txdb)
 # saveRDS(filt_peakAnnoList_DOX_DAR, "data/Final_four_data/re_analysis/filt_DOX_DAR_annotated_peaks_chipannno.RDS")
+# saveRDS(filt_peakAnnoList_Top2b_DAR, "data/Final_four_data/re_analysis/filt_Top2B_DAR_annotated_peaks_chipannno.RDS")
 filt_peakAnnoList_DOX_DAR <- readRDS( "data/Final_four_data/re_analysis/filt_DOX_DAR_annotated_peaks_chipannno.RDS")
 
 plotAnnoBar(peakAnnoList_DOX_DAR)+
   ggtitle ("Genomic Feature Distribution, all DAR no filtering\n should look identical")
 plotAnnoBar(filt_peakAnnoList_DOX_DAR)+
   ggtitle ("Genomic Feature Distribution, Significant regions \n using adj.P.Val <0.05")
+
+plotAnnoBar(filt_peakAnnoList_Top2b_DAR[c(10,2,4,6,8,1,3,5,7)])+
+  ggtitle ("Genomic Feature Distribution, Significant regions with Top2B \n using adj.P.Val <0.05")
 
 # annotated_peak_TSS_chipanno <-  peakAnnoList_DOX_DAR %>%
 #   imap(~ .x %>% tibble::rownames_to_column(var = "rowname") %>%
@@ -1241,7 +1297,7 @@ fisher.test(contingency_table_24hr_exp20kb)
 Looking at DARs within 2kb of TSS
 
 Question answered below:  Are significant DARS within 2kb/20kb of a TSS enriched in DEGs at 3 hours?
-```{r  2kb 3hr DEGnDAR}
+```{r  DOX 2kb 3hr DEGnDAR}
 three_hour_df %>% 
   dplyr::filter(trt=="DOX") %>% 
   left_join(., Assigned_genes_toPeak, by=c("genes"="Peakid")) %>% 
@@ -1271,7 +1327,7 @@ fisher.test(contingency_table_3hr_DOX)
 
 ```
 Looking at DARs within 20kb of TSS
-```{r  20kb 3hr DEGnDAR}
+```{r  DOX 20kb 3hr DEGnDAR}
 three_hour_df %>% 
   dplyr::filter(trt=="DOX") %>% 
   left_join(., Assigned_genes_toPeak, by=c("genes"="Peakid")) %>% 
@@ -1302,7 +1358,7 @@ fisher.test(contingency_table_3hr20k_DOX)
 
 Looking at DARs with all distances to TSS
 
-```{r  nodist 3hr DEGnDAR}
+```{r  DOX nodist 3hr DEGnDAR}
 three_hour_df %>% 
   dplyr::filter(trt=="DOX") %>% 
   left_join(., Assigned_genes_toPeak, by=c("genes"="Peakid")) %>% 
@@ -1336,7 +1392,7 @@ fisher.test(contingency_table_3hrnodist_DOX)
 Looking at DARs within 2kb of TSS
 
 Question answered below:  Are significant DARS within 2kb/20kb of a TSS enriched in DEGs at 24 hours?
-```{r  2kb 24hr DEGnDAR}
+```{r DOX 2kb 24hr DEGnDAR}
 twentyfour_hour_df %>% 
   dplyr::filter(trt=="DOX") %>% 
   left_join(., Assigned_genes_toPeak, by=c("genes"="Peakid")) %>% 
@@ -1365,7 +1421,7 @@ contingency_table_24hr_DOX
 fisher.test(contingency_table_24hr_DOX)
 ```
 Looking at DARs within 20kb of TSS
-```{r  20kb 24hr DEGnDAR}
+```{r  DOX 20kb 24hr DEGnDAR}
 twentyfour_hour_df %>% 
   dplyr::filter(trt=="DOX") %>% 
   left_join(., Assigned_genes_toPeak, by=c("genes"="Peakid")) %>% 
@@ -1396,7 +1452,7 @@ fisher.test(contingency_table_24hr20k_DOX)
 
 Looking at DARs with all distances to TSS
 
-```{r  nodist 24hr DEGnDAR}
+```{r  DOX nodist 24hr DEGnDAR}
 twentyfour_hour_df %>% 
   dplyr::filter(trt=="DOX") %>% 
   left_join(., Assigned_genes_toPeak, by=c("genes"="Peakid")) %>% 
@@ -1427,7 +1483,7 @@ fisher.test(contingency_table_24hrnodist_DOX)
 
 #### EPI 3 hour DAR and DEGs
 Looking at DARs within 2kb of TSS
-```{r  2kb 3hr DEGnDAR}
+```{r  EPI 2kb 3hr DEGnDAR}
 three_hour_df %>% 
   dplyr::filter(trt=="EPI") %>% 
   left_join(., Assigned_genes_toPeak, by=c("genes"="Peakid")) %>% 
@@ -1457,7 +1513,7 @@ fisher.test(contingency_table_3hr_EPI)
 
 ```
 Looking at DARs within 20kb of TSS
-```{r  20kb 3hr DEGnDAR}
+```{r  EPI 20kb 3hr DEGnDAR}
 three_hour_df %>% 
   dplyr::filter(trt=="EPI") %>% 
   left_join(., Assigned_genes_toPeak, by=c("genes"="Peakid")) %>% 
@@ -1488,7 +1544,7 @@ fisher.test(contingency_table_3hr20k_EPI)
 
 Looking at DARs with all distances to TSS
 
-```{r  nodist 3hr DEGnDAR}
+```{r  EPI nodist 3hr DEGnDAR}
 three_hour_df %>% 
   dplyr::filter(trt=="EPI") %>% 
   left_join(., Assigned_genes_toPeak, by=c("genes"="Peakid")) %>% 
@@ -1520,7 +1576,7 @@ fisher.test(contingency_table_3hrnodist_EPI)
 
 #### EPI 24 hour DAR and DEGs
 Looking at DARs within 2kb of TSS
-```{r  2kb 24hr DEGnDAR}
+```{r EPI 2kb 24hr DEGnDAR}
 twentyfour_hour_df %>% 
   dplyr::filter(trt=="EPI") %>% 
   left_join(., Assigned_genes_toPeak, by=c("genes"="Peakid")) %>% 
@@ -1549,7 +1605,7 @@ contingency_table_24hr_EPI
 fisher.test(contingency_table_24hr_EPI)
 ```
 Looking at DARs within 20kb of TSS
-```{r  20kb 24hr DEGnDAR}
+```{r EPI 20kb 24hr DEGnDAR}
 twentyfour_hour_df %>% 
   dplyr::filter(trt=="EPI") %>% 
   left_join(., Assigned_genes_toPeak, by=c("genes"="Peakid")) %>% 
@@ -1580,7 +1636,7 @@ fisher.test(contingency_table_24hr20k_EPI)
 
 Looking at DARs with all distances to TSS
 
-```{r  nodist 24hr DEGnDAR}
+```{r EPI nodist 24hr DEGnDAR}
 twentyfour_hour_df %>% 
   dplyr::filter(trt=="EPI") %>% 
   left_join(., Assigned_genes_toPeak, by=c("genes"="Peakid")) %>% 
@@ -1610,7 +1666,7 @@ fisher.test(contingency_table_24hrnodist_EPI)
 
 #### DNR 3 hour DAR and DEGs
 Looking at DARs within 2kb of TSS
-```{r  2kb 3hr DEGnDAR}
+```{r  DNR 2kb 3hr DEGnDAR}
 three_hour_df %>% 
   dplyr::filter(trt=="DNR") %>% 
   left_join(., Assigned_genes_toPeak, by=c("genes"="Peakid")) %>% 
@@ -1640,7 +1696,7 @@ fisher.test(contingency_table_3hr_DNR)
 
 ```
 Looking at DARs within 20kb of TSS
-```{r  20kb 3hr DEGnDAR}
+```{r DNR 20kb 3hr DEGnDAR}
 three_hour_df %>% 
   dplyr::filter(trt=="DNR") %>% 
   left_join(., Assigned_genes_toPeak, by=c("genes"="Peakid")) %>% 
@@ -1671,7 +1727,7 @@ fisher.test(contingency_table_3hr20k_DNR)
 
 Looking at DARs with all distances to TSS
 
-```{r  nodist 3hr DEGnDAR}
+```{r DNR nodist 3hr DEGnDAR}
 three_hour_df %>% 
   dplyr::filter(trt=="DNR") %>% 
   left_join(., Assigned_genes_toPeak, by=c("genes"="Peakid")) %>% 
@@ -1703,7 +1759,7 @@ fisher.test(contingency_table_3hrnodist_DNR)
 
 #### DNR 24 hour DAR and DEGs
 Looking at DARs within 2kb of TSS
-```{r  2kb 24hr DEGnDAR}
+```{r DNR 2kb 24hr DEGnDAR}
 twentyfour_hour_df %>% 
   dplyr::filter(trt=="DNR") %>% 
   left_join(., Assigned_genes_toPeak, by=c("genes"="Peakid")) %>% 
@@ -1732,7 +1788,7 @@ contingency_table_24hr_DNR
 fisher.test(contingency_table_24hr_DNR)
 ```
 Looking at DARs within 20kb of TSS
-```{r  20kb 24hr DEGnDAR}
+```{r DNR 20kb 24hr DEGnDAR}
 twentyfour_hour_df %>% 
   dplyr::filter(trt=="DNR") %>% 
   left_join(., Assigned_genes_toPeak, by=c("genes"="Peakid")) %>% 
@@ -1763,7 +1819,7 @@ fisher.test(contingency_table_24hr20k_DNR)
 
 Looking at DARs with all distances to TSS
 
-```{r  nodist 24hr DEGnDAR}
+```{r  DNR nodist 24hr DEGnDAR}
 twentyfour_hour_df %>% 
   dplyr::filter(trt=="DNR") %>% 
   left_join(., Assigned_genes_toPeak, by=c("genes"="Peakid")) %>% 
@@ -1793,7 +1849,7 @@ fisher.test(contingency_table_24hrnodist_DNR)
 
 #### MTX 3 hour DAR and DEGs
 Looking at DARs within 2kb of TSS
-```{r  2kb 3hr DEGnDAR}
+```{r  MTX 2kb 3hr DEGnDAR}
 three_hour_df %>% 
   dplyr::filter(trt=="MTX") %>% 
   left_join(., Assigned_genes_toPeak, by=c("genes"="Peakid")) %>% 
@@ -1823,7 +1879,7 @@ fisher.test(contingency_table_3hr_MTX)
 
 ```
 Looking at DARs within 20kb of TSS
-```{r  20kb 3hr DEGnDAR}
+```{r MTX 20kb 3hr DEGnDAR}
 three_hour_df %>% 
   dplyr::filter(trt=="MTX") %>% 
   left_join(., Assigned_genes_toPeak, by=c("genes"="Peakid")) %>% 
@@ -1854,7 +1910,7 @@ fisher.test(contingency_table_3hr20k_MTX)
 
 Looking at DARs with all distances to TSS
 
-```{r  nodist 3hr DEGnDAR}
+```{r  MTX nodist 3hr DEGnDAR}
 three_hour_df %>% 
   dplyr::filter(trt=="MTX") %>% 
   left_join(., Assigned_genes_toPeak, by=c("genes"="Peakid")) %>% 
@@ -1886,7 +1942,7 @@ fisher.test(contingency_table_3hrnodist_MTX)
 
 #### MTX 24 hour DAR and DEGs
 Looking at DARs within 2kb of TSS
-```{r  2kb 24hr DEGnDAR}
+```{r MTX 2kb 24hr DEGnDAR}
 twentyfour_hour_df %>% 
   dplyr::filter(trt=="MTX") %>% 
   left_join(., Assigned_genes_toPeak, by=c("genes"="Peakid")) %>% 
@@ -1915,7 +1971,7 @@ contingency_table_24hr_MTX
 fisher.test(contingency_table_24hr_MTX)
 ```
 Looking at DARs within 20kb of TSS
-```{r  20kb 24hr DEGnDAR}
+```{r MTX 20kb 24hr DEGnDAR}
 twentyfour_hour_df %>% 
   dplyr::filter(trt=="MTX") %>% 
   left_join(., Assigned_genes_toPeak, by=c("genes"="Peakid")) %>% 
@@ -1946,7 +2002,7 @@ fisher.test(contingency_table_24hr20k_MTX)
 
 Looking at DARs with all distances to TSS
 
-```{r  nodist 24hr DEGnDAR}
+```{r MTX nodist 24hr DEGnDAR}
 twentyfour_hour_df %>% 
   dplyr::filter(trt=="MTX") %>% 
   left_join(., Assigned_genes_toPeak, by=c("genes"="Peakid")) %>% 
@@ -2070,7 +2126,7 @@ plot_results_rowDEG %>%
 )+
     geom_hline(yintercept=1, linetype="dashed")+
     theme_classic()+
-  facet_wrap(~time)+
+  facet_wrap(~time, scales = "free_x")+
   coord_flip()+
   ggtitle("Are significant DARs enriched in DEGs?")
                     
@@ -2161,7 +2217,7 @@ plot_results_rowDAR %>%
 )+
     geom_hline(yintercept=1, linetype="dashed")+
     theme_classic()+
-  facet_wrap(~time)+
+  facet_wrap(~time, scales="free_x")+
   coord_flip()+
   ggtitle("Are DEGs enriched near DARs?")
                     
@@ -2197,38 +2253,3 @@ mat_flipped <- matrix(c(3, 260, 174, 36157), nrow = 2, byrow = TRUE,
 fisher.test(mat)$estimate        # ~2.4
 fisher.test(mat_flipped)$estimate  # ~0.417
 ```
-
-```{r}
-# Original matrix: DEGs (rows) × significance (columns)
-mat <- matrix(c(3, 174, 260, 36157), nrow = 2, byrow = TRUE,
-              dimnames = list(DEG_status = c("DEG", "not_DEG"),
-                              Significance = c("sig", "not_sig")))
-
-# Check original test: Are DEGs enriched in sig peaks?
-ft1 <- fisher.test(mat)
-print("Original orientation (DEGs in rows):")
-print(ft1$estimate)  # ~2.397738
-
-# Rebuild flipped matrix: sig (rows) × DEG status (columns)
-flipped_mat <- matrix(c(3, 260, 174, 36157), nrow = 2, byrow = TRUE,
-                      dimnames = list(Sig_status = c("sig", "not_sig"),
-                                      DEG = c("DEG", "not_DEG")))
-
-ft2 <- fisher.test(flipped_mat)
-print("Flipped interpretation (sig in rows):")
-print(ft2$estimate)  # ~0.41727 — the inverse!
-
-
-
-flipped <- matrix(c(
-  3,    260,     # sig
-  174,  36157    # not_sig
-), nrow = 2, byrow = TRUE,
-dimnames = list(
-  Sig_status = c("sig", "not_sig"),
-  DEG_status = c("DEG", "not_DEG")
-))
-fisher.test(flipped)$estimate
-# Output: ~0.417 (1 / 2.397)
-```
-
