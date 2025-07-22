@@ -1,0 +1,99 @@
+---
+title: "IF_H2A.X staining count"
+author: "Renee Matthews"
+date: "2025-07-16"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE,
+	warning = FALSE,
+		dev = c("png","pdf")
+)
+```
+
+```{css, echo=FALSE}
+pre {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+pre[class] {
+  max-height: 200px;
+}
+```
+
+
+```{r}
+library(tidyverse)
+```
+
+```{r data loading, eval=FALSE, include=FALSE}
+### data loading from my files:
+IndA_master_Summary <- read_csv("C:/Users/renee/ATAC_folder/Images_EVOS/If_cardiotox/87-1 images/DAPI_counts/Master_summary_run2_select.csv") %>% na.omit()
+IndA_master_Summary %>% 
+  mutate(percentage= round(Positive_ROIs/Total_ROIs *100, digits =  2)) %>% 
+    write_delim(., "data/Final_four_data/re_analysis/IF_data/Nuclei_gamma_count_87.txt",delim="\t")
+IndB_master_Summary <- read_csv("C:/Users/renee/ATAC_folder/Images_EVOS/If_cardiotox/77-1 images/DAPI_counts/Master_summary_run2_filt.csv") %>% na.omit()
+IndB_master_Summary %>% 
+  mutate(percentage= round(Positive_ROIs/Total_ROIs *100, digits =  2)) %>% 
+    write_delim(., "data/Final_four_data/re_analysis/IF_data/Nuclei_gamma_count_77.txt",delim="\t")
+```
+
+
+
+
+```{r import data files}
+
+drug_pal <- c("#8B006D","#DF707E","#F1B72B", "#3386DD","#707031","#41B333")
+Nuclei_gamma_count_87<- read_delim("data/Final_four_data/re_analysis/IF_data/Nuclei_gamma_count_87.txt",delim="\t")
+Nuclei_gamma_count_77<- read_delim("data/Final_four_data/re_analysis/IF_data/Nuclei_gamma_count_77.txt",delim="\t")
+```
+
+```{r}
+
+Ind_A_table <- Nuclei_gamma_count_87 %>% 
+  dplyr::select(Sample,percentage) %>% 
+  separate_wider_delim(Sample,delim = "_",names = c("time","ind","trt","focus"),too_many = "merge") %>% 
+  group_by(trt,time) %>%
+  mutate(group_number = rep(c("A","B"), length.out = n())) %>%
+  mutate(trt=if_else(trt=="MTZ","MTX",trt)) %>% 
+  ungroup() %>% 
+  pivot_wider(., id_cols=c(time, ind,trt), names_from = group_number, values_from = percentage) %>% 
+  rowwise() %>% 
+  mutate(total = round(mean(c_across(c(A, B)), na.rm = TRUE), digits = 1)) %>% 
+  ungroup() %>% 
+  mutate(ind="A")
+
+Ind_B_table <- Nuclei_gamma_count_77 %>% 
+  dplyr::select(Sample,percentage) %>% 
+  separate_wider_delim(Sample,delim = "_",names = c("time","ind","trt","focus"),too_many = "merge") %>% 
+  group_by(trt,time) %>%
+  mutate(group_number = rep(c("A","B"), length.out = n())) %>%
+   mutate(trt=if_else(trt=="MTZ","MTX",trt)) %>% 
+  ungroup() %>% 
+  pivot_wider(., id_cols=c(time, ind,trt), names_from = group_number, values_from = percentage) %>% 
+  rowwise() %>% 
+  mutate(total = round(mean(c_across(c(A, B)), na.rm = TRUE), digits = 1)) %>% 
+  ungroup() %>% 
+  mutate(ind="B")
+
+
+```
+
+```{r}
+
+bind_rows(Ind_A_table,Ind_B_table) %>% 
+  mutate(time=factor(time, levels =c("3h","24h")),
+         trt=factor(trt, levels = c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
+  ggplot(.,aes(x=trt, y=total))+
+  geom_boxplot(aes(fill=trt))+
+  geom_point()+
+  facet_wrap(~time)+
+  theme_bw()+
+  scale_fill_manual(values=drug_pal)
+
+```
+
