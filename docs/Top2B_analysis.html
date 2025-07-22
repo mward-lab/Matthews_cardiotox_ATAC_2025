@@ -1,0 +1,2111 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+
+<meta name="author" content="Renee Matthews" />
+
+<meta name="date" content="2025-06-09" />
+
+<title>Overlapping other data</title>
+
+<script src="site_libs/header-attrs-2.29/header-attrs.js"></script>
+<script src="site_libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="site_libs/bootstrap-3.3.5/css/cosmo.min.css" rel="stylesheet" />
+<script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
+<style>h1 {font-size: 34px;}
+       h1.title {font-size: 38px;}
+       h2 {font-size: 30px;}
+       h3 {font-size: 24px;}
+       h4 {font-size: 18px;}
+       h5 {font-size: 16px;}
+       h6 {font-size: 12px;}
+       code {color: inherit; background-color: rgba(0, 0, 0, 0.04);}
+       pre:not([class]) { background-color: white }</style>
+<script src="site_libs/jqueryui-1.13.2/jquery-ui.min.js"></script>
+<link href="site_libs/tocify-1.9.1/jquery.tocify.css" rel="stylesheet" />
+<script src="site_libs/tocify-1.9.1/jquery.tocify.js"></script>
+<script src="site_libs/navigation-1.1/tabsets.js"></script>
+<link href="site_libs/highlightjs-9.12.0/textmate.css" rel="stylesheet" />
+<script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+<link href="site_libs/font-awesome-6.5.2/css/all.min.css" rel="stylesheet" />
+<link href="site_libs/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet" />
+
+<link rel="icon" href="https://github.com/workflowr/workflowr-assets/raw/main/img/reproducible.png">
+<!-- Add a small amount of space between sections. -->
+<style type="text/css">
+div.section {
+  padding-top: 12px;
+}
+</style>
+
+
+
+<style type="text/css">
+  code{white-space: pre-wrap;}
+  span.smallcaps{font-variant: small-caps;}
+  span.underline{text-decoration: underline;}
+  div.column{display: inline-block; vertical-align: top; width: 50%;}
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+  ul.task-list{list-style: none;}
+    </style>
+
+<style type="text/css">code{white-space: pre;}</style>
+<script type="text/javascript">
+if (window.hljs) {
+  hljs.configure({languages: []});
+  hljs.initHighlightingOnLoad();
+  if (document.readyState && document.readyState === "complete") {
+    window.setTimeout(function() { hljs.initHighlighting(); }, 0);
+  }
+}
+</script>
+
+
+
+
+
+
+
+
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+img {
+  max-width:100%;
+}
+.tabbed-pane {
+  padding-top: 12px;
+}
+.html-widget {
+  margin-bottom: 20px;
+}
+button.code-folding-btn:focus {
+  outline: none;
+}
+summary {
+  display: list-item;
+}
+details > summary > p:only-child {
+  display: inline;
+}
+pre code {
+  padding: 0;
+}
+</style>
+
+
+<style type="text/css">
+.dropdown-submenu {
+  position: relative;
+}
+.dropdown-submenu>.dropdown-menu {
+  top: 0;
+  left: 100%;
+  margin-top: -6px;
+  margin-left: -1px;
+  border-radius: 0 6px 6px 6px;
+}
+.dropdown-submenu:hover>.dropdown-menu {
+  display: block;
+}
+.dropdown-submenu>a:after {
+  display: block;
+  content: " ";
+  float: right;
+  width: 0;
+  height: 0;
+  border-color: transparent;
+  border-style: solid;
+  border-width: 5px 0 5px 5px;
+  border-left-color: #cccccc;
+  margin-top: 5px;
+  margin-right: -10px;
+}
+.dropdown-submenu:hover>a:after {
+  border-left-color: #adb5bd;
+}
+.dropdown-submenu.pull-left {
+  float: none;
+}
+.dropdown-submenu.pull-left>.dropdown-menu {
+  left: -100%;
+  margin-left: 10px;
+  border-radius: 6px 0 6px 6px;
+}
+</style>
+
+<script type="text/javascript">
+// manage active state of menu based on current page
+$(document).ready(function () {
+  // active menu anchor
+  href = window.location.pathname
+  href = href.substr(href.lastIndexOf('/') + 1)
+  if (href === "")
+    href = "index.html";
+  var menuAnchor = $('a[href="' + href + '"]');
+
+  // mark the anchor link active (and if it's in a dropdown, also mark that active)
+  var dropdown = menuAnchor.closest('li.dropdown');
+  if (window.bootstrap) { // Bootstrap 4+
+    menuAnchor.addClass('active');
+    dropdown.find('> .dropdown-toggle').addClass('active');
+  } else { // Bootstrap 3
+    menuAnchor.parent().addClass('active');
+    dropdown.addClass('active');
+  }
+
+  // Navbar adjustments
+  var navHeight = $(".navbar").first().height() + 15;
+  var style = document.createElement('style');
+  var pt = "padding-top: " + navHeight + "px; ";
+  var mt = "margin-top: -" + navHeight + "px; ";
+  var css = "";
+  // offset scroll position for anchor links (for fixed navbar)
+  for (var i = 1; i <= 6; i++) {
+    css += ".section h" + i + "{ " + pt + mt + "}\n";
+  }
+  style.innerHTML = "body {" + pt + "padding-bottom: 40px; }\n" + css;
+  document.head.appendChild(style);
+});
+</script>
+
+<!-- tabsets -->
+
+<style type="text/css">
+.tabset-dropdown > .nav-tabs {
+  display: inline-table;
+  max-height: 500px;
+  min-height: 44px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.tabset-dropdown > .nav-tabs > li.active:before, .tabset-dropdown > .nav-tabs.nav-tabs-open:before {
+  content: "\e259";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li.active:before {
+  content: "\e258";
+  font-family: 'Glyphicons Halflings';
+  border: none;
+}
+
+.tabset-dropdown > .nav-tabs > li.active {
+  display: block;
+}
+
+.tabset-dropdown > .nav-tabs > li > a,
+.tabset-dropdown > .nav-tabs > li > a:focus,
+.tabset-dropdown > .nav-tabs > li > a:hover {
+  border: none;
+  display: inline-block;
+  border-radius: 4px;
+  background-color: transparent;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li {
+  display: block;
+  float: none;
+}
+
+.tabset-dropdown > .nav-tabs > li {
+  display: none;
+}
+</style>
+
+<!-- code folding -->
+
+
+
+<style type="text/css">
+
+#TOC {
+  margin: 25px 0px 20px 0px;
+}
+@media (max-width: 768px) {
+#TOC {
+  position: relative;
+  width: 100%;
+}
+}
+
+@media print {
+.toc-content {
+  /* see https://github.com/w3c/csswg-drafts/issues/4434 */
+  float: right;
+}
+}
+
+.toc-content {
+  padding-left: 30px;
+  padding-right: 40px;
+}
+
+div.main-container {
+  max-width: 1200px;
+}
+
+div.tocify {
+  width: 20%;
+  max-width: 260px;
+  max-height: 85%;
+}
+
+@media (min-width: 768px) and (max-width: 991px) {
+  div.tocify {
+    width: 25%;
+  }
+}
+
+@media (max-width: 767px) {
+  div.tocify {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+.tocify ul, .tocify li {
+  line-height: 20px;
+}
+
+.tocify-subheader .tocify-item {
+  font-size: 0.90em;
+}
+
+.tocify .list-group-item {
+  border-radius: 0px;
+}
+
+
+</style>
+
+
+
+</head>
+
+<body>
+
+
+<div class="container-fluid main-container">
+
+
+<!-- setup 3col/9col grid for toc_float and main content  -->
+<div class="row">
+<div class="col-xs-12 col-sm-4 col-md-3">
+<div id="TOC" class="tocify">
+</div>
+</div>
+
+<div class="toc-content col-xs-12 col-sm-8 col-md-9">
+
+
+
+
+<div class="navbar navbar-default  navbar-fixed-top" role="navigation">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-bs-toggle="collapse" data-target="#navbar" data-bs-target="#navbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="index.html">Matthews_cardiotox_ATAC_2025</a>
+    </div>
+    <div id="navbar" class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+        <li>
+  <a href="index.html">Home</a>
+</li>
+<li>
+  <a href="about.html">About</a>
+</li>
+<li>
+  <a href="license.html">License</a>
+</li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        <li>
+  <a href="https://github.com/mward-lab/Matthews_cardiotox_ATAC_2025">
+    <span class="fab fa-github"></span>
+     
+    Source code
+  </a>
+</li>
+      </ul>
+    </div><!--/.nav-collapse -->
+  </div><!--/.container -->
+</div><!--/.navbar -->
+
+<div id="header">
+
+
+
+<h1 class="title toc-ignore">Overlapping other data</h1>
+<h4 class="author">Renee Matthews</h4>
+<h4 class="date">2025-06-09</h4>
+
+</div>
+
+
+<p>
+<button type="button" class="btn btn-default btn-workflowr btn-workflowr-report" data-toggle="collapse" data-target="#workflowr-report">
+<span class="glyphicon glyphicon-list" aria-hidden="true"></span>
+workflowr <span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span>
+</button>
+</p>
+<div id="workflowr-report" class="collapse">
+<ul class="nav nav-tabs">
+<li class="active">
+<a data-toggle="tab" href="#summary">Summary</a>
+</li>
+<li>
+<a data-toggle="tab" href="#checks"> Checks <span
+class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span>
+</a>
+</li>
+<li>
+<a data-toggle="tab" href="#versions">Past versions</a>
+</li>
+</ul>
+<div class="tab-content">
+<div id="summary" class="tab-pane fade in active">
+<p>
+<strong>Last updated:</strong> 2025-07-22
+</p>
+<p>
+<strong>Checks:</strong> <span
+class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> 7
+<span class="glyphicon glyphicon-exclamation-sign text-danger"
+aria-hidden="true"></span> 0
+</p>
+<p>
+<strong>Knit directory:</strong> <code>ATAC_learning/</code> <span
+class="glyphicon glyphicon-question-sign" aria-hidden="true"
+title="This is the local directory in which the code in this file was executed.">
+</span>
+</p>
+<p>
+This reproducible <a href="https://rmarkdown.rstudio.com">R Markdown</a>
+analysis was created with <a
+  href="https://github.com/workflowr/workflowr">workflowr</a> (version
+1.7.1). The <em>Checks</em> tab describes the reproducibility checks
+that were applied when the results were created. The <em>Past
+versions</em> tab lists the development history.
+</p>
+<hr>
+</div>
+<div id="checks" class="tab-pane fade">
+<div id="workflowr-checks" class="panel-group">
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRMarkdownfilestronguptodate">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>R Markdown file:</strong> up-to-date
+</a>
+</p>
+</div>
+<div id="strongRMarkdownfilestronguptodate"
+class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great! Since the R Markdown file has been committed to the Git
+repository, you know the exact version of the code that produced these
+results.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongEnvironmentstrongempty">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Environment:</strong> empty </a>
+</p>
+</div>
+<div id="strongEnvironmentstrongempty" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great job! The global environment was empty. Objects defined in the
+global environment can affect the analysis in your R Markdown file in
+unknown ways. For reproduciblity it’s best to always run the code in an
+empty environment.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongSeedstrongcodesetseed20231016code">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Seed:</strong>
+<code>set.seed(20231016)</code> </a>
+</p>
+</div>
+<div id="strongSeedstrongcodesetseed20231016code"
+class="panel-collapse collapse">
+<div class="panel-body">
+<p>The command <code>set.seed(20231016)</code> was run prior to running
+the code in the R Markdown file. Setting a seed ensures that any results
+that rely on randomness, e.g. subsampling or permutations, are
+reproducible.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongSessioninformationstrongrecorded">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Session information:</strong>
+recorded </a>
+</p>
+</div>
+<div id="strongSessioninformationstrongrecorded"
+class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great job! Recording the operating system, R version, and package
+versions is critical for reproducibility.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongCachestrongnone">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Cache:</strong> none </a>
+</p>
+</div>
+<div id="strongCachestrongnone" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Nice! There were no cached chunks for this analysis, so you can be
+confident that you successfully produced the results during this
+run.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongFilepathsstrongrelative">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>File paths:</strong> relative </a>
+</p>
+</div>
+<div id="strongFilepathsstrongrelative" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great job! Using relative paths to the files within your workflowr
+project makes it easier to run your code on other machines.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcommwardlabMatthewscardiotoxATAC2025tree2c7543ce19b4ddfe2cc616807b64cb94578cd595targetblank2c7543ca">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Repository version:</strong>
+<a href="https://github.com/mward-lab/Matthews_cardiotox_ATAC_2025/tree/2c7543ce19b4ddfe2cc616807b64cb94578cd595" target="_blank">2c7543c</a>
+</a>
+</p>
+</div>
+<div
+id="strongRepositoryversionstrongahrefhttpsgithubcommwardlabMatthewscardiotoxATAC2025tree2c7543ce19b4ddfe2cc616807b64cb94578cd595targetblank2c7543ca"
+class="panel-collapse collapse">
+<div class="panel-body">
+<p>
+Great! You are using Git for version control. Tracking code development
+and connecting the code version to the results is critical for
+reproducibility.
+</p>
+<p>
+The results in this page were generated with repository version
+<a href="https://github.com/mward-lab/Matthews_cardiotox_ATAC_2025/tree/2c7543ce19b4ddfe2cc616807b64cb94578cd595" target="_blank">2c7543c</a>.
+See the <em>Past versions</em> tab to see a history of the changes made
+to the R Markdown and HTML files.
+</p>
+<p>
+Note that you need to be careful to ensure that all relevant files for
+the analysis have been committed to Git prior to generating the results
+(you can use <code>wflow_publish</code> or
+<code>wflow_git_commit</code>). workflowr only checks the R Markdown
+file, but you know if there are other scripts or data files that it
+depends on. Below is the status of the Git repository when the results
+were generated:
+</p>
+<pre><code>
+Ignored files:
+    Ignored:    .RData
+    Ignored:    .Rhistory
+    Ignored:    .Rproj.user/
+    Ignored:    analysis/H3K27ac_integration_noM.Rmd
+    Ignored:    data/ACresp_SNP_table.csv
+    Ignored:    data/ARR_SNP_table.csv
+    Ignored:    data/All_merged_peaks.tsv
+    Ignored:    data/CAD_gwas_dataframe.RDS
+    Ignored:    data/CTX_SNP_table.csv
+    Ignored:    data/Collapsed_expressed_NG_peak_table.csv
+    Ignored:    data/DEG_toplist_sep_n45.RDS
+    Ignored:    data/FRiP_first_run.txt
+    Ignored:    data/Final_four_data/
+    Ignored:    data/Frip_1_reads.csv
+    Ignored:    data/Frip_2_reads.csv
+    Ignored:    data/Frip_3_reads.csv
+    Ignored:    data/Frip_4_reads.csv
+    Ignored:    data/Frip_5_reads.csv
+    Ignored:    data/Frip_6_reads.csv
+    Ignored:    data/GO_KEGG_analysis/
+    Ignored:    data/HF_SNP_table.csv
+    Ignored:    data/Ind1_75DA24h_dedup_peaks.csv
+    Ignored:    data/Ind1_TSS_peaks.RDS
+    Ignored:    data/Ind1_firstfragment_files.txt
+    Ignored:    data/Ind1_fragment_files.txt
+    Ignored:    data/Ind1_peaks_list.RDS
+    Ignored:    data/Ind1_summary.txt
+    Ignored:    data/Ind2_TSS_peaks.RDS
+    Ignored:    data/Ind2_fragment_files.txt
+    Ignored:    data/Ind2_peaks_list.RDS
+    Ignored:    data/Ind2_summary.txt
+    Ignored:    data/Ind3_TSS_peaks.RDS
+    Ignored:    data/Ind3_fragment_files.txt
+    Ignored:    data/Ind3_peaks_list.RDS
+    Ignored:    data/Ind3_summary.txt
+    Ignored:    data/Ind4_79B24h_dedup_peaks.csv
+    Ignored:    data/Ind4_TSS_peaks.RDS
+    Ignored:    data/Ind4_V24h_fraglength.txt
+    Ignored:    data/Ind4_fragment_files.txt
+    Ignored:    data/Ind4_fragment_filesN.txt
+    Ignored:    data/Ind4_peaks_list.RDS
+    Ignored:    data/Ind4_summary.txt
+    Ignored:    data/Ind5_TSS_peaks.RDS
+    Ignored:    data/Ind5_fragment_files.txt
+    Ignored:    data/Ind5_fragment_filesN.txt
+    Ignored:    data/Ind5_peaks_list.RDS
+    Ignored:    data/Ind5_summary.txt
+    Ignored:    data/Ind6_TSS_peaks.RDS
+    Ignored:    data/Ind6_fragment_files.txt
+    Ignored:    data/Ind6_peaks_list.RDS
+    Ignored:    data/Ind6_summary.txt
+    Ignored:    data/Knowles_4.RDS
+    Ignored:    data/Knowles_5.RDS
+    Ignored:    data/Knowles_6.RDS
+    Ignored:    data/LiSiLTDNRe_TE_df.RDS
+    Ignored:    data/MI_gwas.RDS
+    Ignored:    data/SNP_GWAS_PEAK_MRC_id
+    Ignored:    data/SNP_GWAS_PEAK_MRC_id.csv
+    Ignored:    data/SNP_gene_cat_list.tsv
+    Ignored:    data/SNP_supp_schneider.RDS
+    Ignored:    data/TE_info/
+    Ignored:    data/TFmapnames.RDS
+    Ignored:    data/all_TSSE_scores.RDS
+    Ignored:    data/all_four_filtered_counts.txt
+    Ignored:    data/aln_run1_results.txt
+    Ignored:    data/anno_ind1_DA24h.RDS
+    Ignored:    data/anno_ind4_V24h.RDS
+    Ignored:    data/annotated_gwas_SNPS.csv
+    Ignored:    data/background_n45_he_peaks.RDS
+    Ignored:    data/cardiac_muscle_FRIP.csv
+    Ignored:    data/cardiomyocyte_FRIP.csv
+    Ignored:    data/col_ng_peak.csv
+    Ignored:    data/cormotif_full_4_run.RDS
+    Ignored:    data/cormotif_full_4_run_he.RDS
+    Ignored:    data/cormotif_full_6_run.RDS
+    Ignored:    data/cormotif_full_6_run_he.RDS
+    Ignored:    data/cormotif_probability_45_list.csv
+    Ignored:    data/cormotif_probability_45_list_he.csv
+    Ignored:    data/cormotif_probability_all_6_list.csv
+    Ignored:    data/cormotif_probability_all_6_list_he.csv
+    Ignored:    data/datasave.RDS
+    Ignored:    data/embryo_heart_FRIP.csv
+    Ignored:    data/enhancer_list_ENCFF126UHK.bed
+    Ignored:    data/enhancerdata/
+    Ignored:    data/filt_Peaks_efit2.RDS
+    Ignored:    data/filt_Peaks_efit2_bl.RDS
+    Ignored:    data/filt_Peaks_efit2_n45.RDS
+    Ignored:    data/first_Peaksummarycounts.csv
+    Ignored:    data/first_run_frag_counts.txt
+    Ignored:    data/full_bedfiles/
+    Ignored:    data/gene_ref.csv
+    Ignored:    data/gwas_1_dataframe.RDS
+    Ignored:    data/gwas_2_dataframe.RDS
+    Ignored:    data/gwas_3_dataframe.RDS
+    Ignored:    data/gwas_4_dataframe.RDS
+    Ignored:    data/gwas_5_dataframe.RDS
+    Ignored:    data/high_conf_peak_counts.csv
+    Ignored:    data/high_conf_peak_counts.txt
+    Ignored:    data/high_conf_peaks_bl_counts.txt
+    Ignored:    data/high_conf_peaks_counts.txt
+    Ignored:    data/hits_files/
+    Ignored:    data/hyper_files/
+    Ignored:    data/hypo_files/
+    Ignored:    data/ind1_DA24hpeaks.RDS
+    Ignored:    data/ind1_TSSE.RDS
+    Ignored:    data/ind2_TSSE.RDS
+    Ignored:    data/ind3_TSSE.RDS
+    Ignored:    data/ind4_TSSE.RDS
+    Ignored:    data/ind4_V24hpeaks.RDS
+    Ignored:    data/ind5_TSSE.RDS
+    Ignored:    data/ind6_TSSE.RDS
+    Ignored:    data/initial_complete_stats_run1.txt
+    Ignored:    data/left_ventricle_FRIP.csv
+    Ignored:    data/median_24_lfc.RDS
+    Ignored:    data/median_3_lfc.RDS
+    Ignored:    data/mergedPeads.gff
+    Ignored:    data/mergedPeaks.gff
+    Ignored:    data/motif_list_full
+    Ignored:    data/motif_list_n45
+    Ignored:    data/motif_list_n45.RDS
+    Ignored:    data/multiqc_fastqc_run1.txt
+    Ignored:    data/multiqc_fastqc_run2.txt
+    Ignored:    data/multiqc_genestat_run1.txt
+    Ignored:    data/multiqc_genestat_run2.txt
+    Ignored:    data/my_hc_filt_counts.RDS
+    Ignored:    data/my_hc_filt_counts_n45.RDS
+    Ignored:    data/n45_bedfiles/
+    Ignored:    data/n45_files
+    Ignored:    data/other_papers/
+    Ignored:    data/peakAnnoList_1.RDS
+    Ignored:    data/peakAnnoList_2.RDS
+    Ignored:    data/peakAnnoList_24_full.RDS
+    Ignored:    data/peakAnnoList_24_n45.RDS
+    Ignored:    data/peakAnnoList_3.RDS
+    Ignored:    data/peakAnnoList_3_full.RDS
+    Ignored:    data/peakAnnoList_3_n45.RDS
+    Ignored:    data/peakAnnoList_4.RDS
+    Ignored:    data/peakAnnoList_5.RDS
+    Ignored:    data/peakAnnoList_6.RDS
+    Ignored:    data/peakAnnoList_Eight.RDS
+    Ignored:    data/peakAnnoList_full_motif.RDS
+    Ignored:    data/peakAnnoList_n45_motif.RDS
+    Ignored:    data/siglist_full.RDS
+    Ignored:    data/siglist_n45.RDS
+    Ignored:    data/summarized_peaks_dataframe.txt
+    Ignored:    data/summary_peakIDandReHeat.csv
+    Ignored:    data/test.list.RDS
+    Ignored:    data/testnames.txt
+    Ignored:    data/toplist_6.RDS
+    Ignored:    data/toplist_full.RDS
+    Ignored:    data/toplist_full_DAR_6.RDS
+    Ignored:    data/toplist_n45.RDS
+    Ignored:    data/trimmed_seq_length.csv
+    Ignored:    data/unclassified_full_set_peaks.RDS
+    Ignored:    data/unclassified_n45_set_peaks.RDS
+    Ignored:    data/xstreme/
+
+Untracked files:
+    Untracked:  RNA_seq_integration.Rmd
+    Untracked:  Rplot.pdf
+    Untracked:  Sig_meta
+    Untracked:  analysis/.gitignore
+    Untracked:  analysis/AF_HF_SNP_DAR.Rmd
+    Untracked:  analysis/AF_HF_SNP_DAR_logFC.Rmd
+    Untracked:  analysis/Cormotif_analysis_testing diff.Rmd
+    Untracked:  analysis/Diagnosis-tmm.Rmd
+    Untracked:  analysis/Expressed_RNA_associations.Rmd
+    Untracked:  analysis/LFC_corr.Rmd
+    Untracked:  analysis/SVA.Rmd
+    Untracked:  analysis/Tan2020.Rmd
+    Untracked:  analysis/making_master_peaks_list.Rmd
+    Untracked:  analysis/my_hc_filt_counts.csv
+    Untracked:  code/Concatenations_for_export.R
+    Untracked:  code/IGV_snapshot_code.R
+    Untracked:  code/LongDARlist.R
+    Untracked:  code/just_for_Fun.R
+    Untracked:  my_plot.pdf
+    Untracked:  my_plot.png
+    Untracked:  output/cormotif_probability_45_list.csv
+    Untracked:  output/cormotif_probability_all_6_list.csv
+    Untracked:  setup.RData
+
+Unstaged changes:
+    Modified:   ATAC_learning.Rproj
+    Modified:   analysis/AC_shared_analysis.Rmd
+    Modified:   analysis/AF_HF_SNPs.Rmd
+    Modified:   analysis/Cardiotox_SNPs.Rmd
+    Modified:   analysis/Cormotif_analysis.Rmd
+    Modified:   analysis/DOX_DAR_heatmap.Rmd
+    Modified:   analysis/H3K27ac_initial_QC.Rmd
+    Modified:   analysis/H3K27ac_integration.Rmd
+    Modified:   analysis/Jaspar_motif.Rmd
+    Modified:   analysis/Jaspar_motif_DAR.Rmd
+    Modified:   analysis/Jaspar_motif_ff.Rmd
+    Modified:   analysis/TE_analysis_ALL_DAR.Rmd
+    Modified:   analysis/TE_analysis_norm.Rmd
+    Modified:   analysis/final_four_analysis.Rmd
+
+</code></pre>
+<p>
+Note that any generated files, e.g. HTML, png, CSS, etc., are not
+included in this status report because it is ok for generated content to
+have uncommitted changes.
+</p>
+</div>
+</div>
+</div>
+</div>
+<hr>
+</div>
+<div id="versions" class="tab-pane fade">
+<p>
+These are the previous versions of the repository in which changes were
+made to the R Markdown (<code>analysis/Top2B_analysis.Rmd</code>) and
+HTML (<code>docs/Top2B_analysis.html</code>) files. If you’ve configured
+a remote Git repository (see <code>?wflow_git_remote</code>), click on
+the hyperlinks in the table below to view the files as they were in that
+past version.
+</p>
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+File
+</th>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+<th>
+Message
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+Rmd
+</td>
+<td>
+<a href="https://github.com/mward-lab/Matthews_cardiotox_ATAC_2025/blob/2c7543ce19b4ddfe2cc616807b64cb94578cd595/analysis/Top2B_analysis.Rmd" target="_blank">2c7543c</a>
+</td>
+<td>
+reneeisnowhere
+</td>
+<td>
+2025-07-22
+</td>
+<td>
+first commit
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<hr>
+</div>
+</div>
+</div>
+<style type="text/css">
+pre {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+pre[class] {
+  max-height: 200px;
+}
+</style>
+<pre class="r"><code>library(tidyverse)
+library(kableExtra)
+library(broom)
+library(RColorBrewer)
+library(ChIPseeker)
+library(&quot;TxDb.Hsapiens.UCSC.hg38.knownGene&quot;)
+library(&quot;org.Hs.eg.db&quot;)
+library(rtracklayer)
+library(edgeR)
+library(ggfortify)
+library(limma)
+library(readr)
+library(BiocGenerics)
+library(gridExtra)
+library(VennDiagram)
+library(scales)
+library(BiocParallel)
+library(ggpubr)
+library(devtools)
+library(biomaRt)
+library(eulerr)
+library(smplot2)
+library(genomation)
+library(ggsignif)
+library(plyranges)
+library(ggrepel)
+library(epitools)
+library(circlize)
+library(readxl)
+library(regioneR)
+library(GenomicRanges)
+library(gwascat)
+library(liftOver)</code></pre>
+<div id="loading-in-dataframes" class="section level4">
+<h4>Loading in dataframes</h4>
+<pre class="r"><code>toptable_results &lt;- readRDS(&quot;data/Final_four_data/re_analysis/Toptable_results.RDS&quot;)
+
+all_results  &lt;- toptable_results %&gt;%
+  imap(~ .x %&gt;% tibble::rownames_to_column(var = &quot;rowname&quot;) %&gt;%
+         mutate(source = .y)) %&gt;%
+  bind_rows()
+
+
+Top2b_peaks &lt;- import(con=&quot;data/other_papers/ChIP3_TOP2B_CM_87-1.bed&quot;,format = &quot;bed&quot;,genome=&quot;hg38&quot;)
+
+Motif_list_gr &lt;- readRDS( &quot;data/Final_four_data/re_analysis/Motif_list_granges.RDS&quot;)
+list2env(Motif_list_gr,envir = .GlobalEnv)</code></pre>
+<pre><code>&lt;environment: R_GlobalEnv&gt;</code></pre>
+<pre class="r"><code>df_list &lt;- plyr::llply(Motif_list_gr[c(1:9)], as.data.frame)
+list2env(df_list,envir=.GlobalEnv)</code></pre>
+<pre><code>&lt;environment: R_GlobalEnv&gt;</code></pre>
+<pre class="r"><code>Left_ventricle &lt;- import(con = &quot;C://Users/renee/Downloads/hg38.TADs/hg38/VentricleLeft_STL003_Leung_2015-raw_TADs.txt&quot;, format = &quot;bed&quot;,genome=&quot;hg38&quot;)
+
+DOX_3_sig_gr &lt;-
+all_results %&gt;% 
+  dplyr::select(source,genes, logFC,adj.P.Val) %&gt;% 
+  mutate(&quot;Peakid&quot;=genes) %&gt;% 
+  dplyr::filter(source==&quot;DOX_3&quot;) %&gt;% 
+   dplyr::filter(adj.P.Val&lt;0.05) %&gt;% 
+  separate_wider_delim(., cols=&quot;genes&quot;,names = c(&quot;seqnames&quot;,&quot;start&quot;,&quot;end&quot;), delim= &quot;.&quot;) %&gt;% 
+  GRanges()
+
+DOX_24_sig_gr &lt;-
+all_results %&gt;% 
+  dplyr::select(source,genes, logFC,adj.P.Val) %&gt;%
+   mutate(&quot;Peakid&quot;=genes) %&gt;% 
+  dplyr::filter(source==&quot;DOX_24&quot;) %&gt;% 
+   dplyr::filter(adj.P.Val&lt;0.05) %&gt;% 
+  separate_wider_delim(., cols=&quot;genes&quot;,names = c(&quot;seqnames&quot;,&quot;start&quot;,&quot;end&quot;), delim= &quot;.&quot;) %&gt;% 
+  GRanges()  
+   
+# mrc_lookup &lt;- bind_rows(
+#   (EAR_open  %&gt;% dplyr::select(Peakid) %&gt;% mutate(mrc = &quot;EAR_open&quot;)),  
+#   (EAR_close %&gt;%  dplyr::select(Peakid) %&gt;%mutate(mrc = &quot;EAR_close&quot;)),
+#   (ESR_open  %&gt;%  dplyr::select(Peakid) %&gt;%mutate(mrc = &quot;ESR_open&quot;)),
+#   (ESR_close %&gt;%  dplyr::select(Peakid) %&gt;%mutate(mrc = &quot;ESR_close&quot;)),
+#   (ESR_opcl   %&gt;%  dplyr::select(Peakid) %&gt;%mutate(mrc = &quot;ESR_opcl&quot;)),
+#   (ESR_clop   %&gt;%  dplyr::select(Peakid) %&gt;%mutate(mrc = &quot;ESR_clop&quot;)),
+#   (LR_open   %&gt;%  dplyr::select(Peakid) %&gt;%mutate(mrc = &quot;LR_open&quot;)),
+#   (LR_close  %&gt;%  dplyr::select(Peakid) %&gt;%mutate(mrc = &quot;LR_close&quot;)),
+#   (NR        %&gt;%  dplyr::select(Peakid) %&gt;%mutate(mrc = &quot;NR&quot;))
+# ) %&gt;%
+#   distinct(Peakid, mrc) 
+
+
+MCF7_DARs_hyper &lt;- read_excel(&quot;C:/Users/renee/Downloads/MCF7-doxATAC/Table 4.XLSX&quot;, 
+    sheet = &quot;hyper&quot;) %&gt;% GRanges()
+MCF7_DARs_hypo &lt;- read_excel(&quot;C:/Users/renee/Downloads/MCF7-doxATAC/Table 4.XLSX&quot;, 
+    sheet = &quot;hypo&quot;) %&gt;% GRanges()
+
+MCF7_ARsmcf7_1 &lt;- read_excel(&quot;C:/Users/renee/Downloads/MCF7-doxATAC/Table 3.XLSX&quot;) %&gt;% 
+  GRanges()
+  MCF7_DARs_hyper$names &lt;- paste0(&quot;hyper_&quot;, seq_along(seqnames(MCF7_DARs_hyper)))
+ MCF7_DARs_hypo$names &lt;- paste0(&quot;hypo_&quot;, seq_along(seqnames(MCF7_DARs_hypo)))
+ 
+ MCF7_DAR_all &lt;- c(MCF7_DARs_hyper,MCF7_DARs_hypo)</code></pre>
+<pre class="r"><code>ch = import.chain(&quot;C:/Users/renee/ATAC_folder/liftOver_genome/hg19ToHg38.over.chain&quot;)
+MCF7_ARsmcf7_1_LO &lt;- as.data.frame(liftOver(MCF7_ARsmcf7_1,ch)) %&gt;% 
+  GRanges()
+
+MCF7_DARs_hyper_LO &lt;- as.data.frame(liftOver(MCF7_DARs_hyper,ch)) %&gt;% 
+  GRanges()
+
+MCF7_DARs_hypo_LO &lt;- as.data.frame(liftOver(MCF7_DARs_hypo,ch)) %&gt;% 
+  GRanges()
+
+MCF7_DAR_all &lt;- c(MCF7_DARs_hyper_LO,MCF7_DARs_hypo_LO)</code></pre>
+</div>
+<div id="overlapping-top2b-and-all-atac-regions" class="section level3">
+<h3>Overlapping Top2b and all ATAC regions</h3>
+<pre class="r"><code>Allregion_ol &lt;- join_overlap_intersect(all_regions,Top2b_peaks)%&gt;% 
+  as.data.frame() %&gt;% 
+  distinct(Peakid,.keep_all = TRUE)
+
+left_ventricle_ol &lt;- join_overlap_intersect(all_regions ,Left_ventricle) %&gt;% 
+  as.data.frame() %&gt;% 
+  distinct(Peakid,.keep_all = TRUE)
+
+MCF7_AR_ol &lt;- join_overlap_intersect(all_regions, MCF7_ARsmcf7_1_LO)
+
+MCF7_hyper_ol &lt;- join_overlap_intersect(all_regions, MCF7_DARs_hyper_LO)
+MCF7_hypo_ol &lt;- join_overlap_intersect(all_regions, MCF7_DARs_hypo_LO)
+
+MCF7_DAR_all_ol &lt;- join_overlap_intersect(all_regions, MCF7_DAR_all)
+
+
+DOX_MCF7_DARS_ol &lt;- join_overlap_intersect(DOX_24_sig_gr, MCF7_DAR_all)</code></pre>
+<p>Proportion of Tob2b peaks found in ATAC peak by treatment:</p>
+<pre class="r"><code>annotated_regions &lt;- all_results %&gt;% 
+  dplyr::filter(source==&quot;DOX_3&quot;|source==&quot;DOX_24&quot;) %&gt;% 
+  dplyr::select(source,genes,logFC,adj.P.Val) %&gt;% 
+  pivot_wider(.,id_cols=genes,names_from = source, values_from = c(logFC, adj.P.Val)) %&gt;% 
+  mutate(top_2b_ol=case_when(genes %in% Allregion_ol$Peakid~&quot;TOP2b_peak&quot;,
+         TRUE ~&quot;not_TOP2b_peak&quot;)) %&gt;% 
+  mutate(sig_3=if_else(adj.P.Val_DOX_3&lt;0.05,&quot;sig&quot;,&quot;not_sig&quot;),
+         sig_24=if_else(adj.P.Val_DOX_24&lt;0.05,&quot;sig&quot;,&quot;not_sig&quot;)) %&gt;% 
+  mutate(sig_3=factor(sig_3,levels=c(&quot;sig&quot;,&quot;not_sig&quot;)),
+         sig_24=factor(sig_24,levels=c(&quot;sig&quot;,&quot;not_sig&quot;))) %&gt;% 
+  # left_join(., mrc_lookup, by =c(&quot;genes&quot;=&quot;Peakid&quot;)) %&gt;% 
+  # mutate(mrc=tidyr::replace_na(mrc, &quot;not_mrc&quot;)) %&gt;% 
+  mutate(TAD_ol=case_when(genes%in% left_ventricle_ol$Peakid~&quot;TAD_peak&quot;,
+                          TRUE ~&quot;not_TAD_peak&quot;)) %&gt;% 
+  mutate(MCF7_AR=case_when(genes %in% MCF7_AR_ol$Peakid~&quot;MCF7AR_peak&quot;,
+         TRUE ~&quot;not_MCF7AR_peak&quot;)) %&gt;% 
+   mutate(MCF7_hyper=case_when(genes %in% MCF7_hyper_ol$Peakid~&quot;MCF7hyper_peak&quot;,
+         TRUE ~&quot;not_MCF7hyper_peak&quot;)) %&gt;% 
+   mutate(MCF7_hypo=case_when(genes %in% MCF7_hypo_ol$Peakid~&quot;MCF7hypo_peak&quot;,
+         TRUE ~&quot;not_MCF7hypo_peak&quot;)) 
+annotated_regions %&gt;% 
+  group_by(sig_3,top_2b_ol) %&gt;% tally%&gt;% 
+ pivot_wider(., id_cols = sig_3, names_from = top_2b_ol, values_from = n)</code></pre>
+<pre><code># A tibble: 2 × 3
+# Groups:   sig_3 [2]
+  sig_3   TOP2b_peak not_TOP2b_peak
+  &lt;fct&gt;        &lt;int&gt;          &lt;int&gt;
+1 sig            185           3288
+2 not_sig       5036         147048</code></pre>
+<pre class="r"><code>annotated_regions %&gt;% 
+  group_by(sig_24,top_2b_ol) %&gt;% tally %&gt;% 
+ pivot_wider(., id_cols = sig_24, names_from = top_2b_ol, values_from = n)</code></pre>
+<pre><code># A tibble: 2 × 3
+# Groups:   sig_24 [2]
+  sig_24  TOP2b_peak not_TOP2b_peak
+  &lt;fct&gt;        &lt;int&gt;          &lt;int&gt;
+1 sig           1772          63048
+2 not_sig       3449          87288</code></pre>
+<pre class="r"><code># annotated_regions %&gt;% 
+#   group_by(mrc,top_2b_ol) %&gt;% tally %&gt;% 
+#   pivot_wider(., id_cols = mrc, names_from = top_2b_ol, values_from = n)
+
+annotated_regions %&gt;% 
+  group_by(sig_3,top_2b_ol) %&gt;% tally%&gt;% 
+ pivot_wider(., id_cols = sig_3, names_from = top_2b_ol, values_from = n) %&gt;%
+  column_to_rownames(&quot;sig_3&quot;) %&gt;% 
+  as.matrix() %&gt;% 
+  chisq.test(.)</code></pre>
+<pre><code>
+    Pearson&#39;s Chi-squared test with Yates&#39; continuity correction
+
+data:  .
+X-squared = 41.903, df = 1, p-value = 9.59e-11</code></pre>
+<pre class="r"><code>annotated_regions %&gt;% 
+   group_by(sig_24,top_2b_ol) %&gt;% tally%&gt;% 
+ pivot_wider(., id_cols = sig_24, names_from = top_2b_ol, values_from = n) %&gt;%
+  column_to_rownames(&quot;sig_24&quot;) %&gt;% 
+  as.matrix() %&gt;% 
+  chisq.test(.)</code></pre>
+<pre><code>
+    Pearson&#39;s Chi-squared test with Yates&#39; continuity correction
+
+data:  .
+X-squared = 132.47, df = 1, p-value &lt; 2.2e-16</code></pre>
+<pre class="r"><code># annotated_regions %&gt;% 
+#   group_by(mrc,TAD_ol) %&gt;% tally%&gt;% 
+#  pivot_wider(., id_cols = mrc, names_from = TAD_ol, values_from = n) 
+
+annotated_regions %&gt;% 
+  group_by(TAD_ol, top_2b_ol) %&gt;% tally%&gt;% 
+ pivot_wider(., id_cols = c( top_2b_ol), names_from = TAD_ol, values_from = n)</code></pre>
+<pre><code># A tibble: 2 × 3
+  top_2b_ol      TAD_peak not_TAD_peak
+  &lt;chr&gt;             &lt;int&gt;        &lt;int&gt;
+1 TOP2b_peak         4491          730
+2 not_TOP2b_peak   136159        14177</code></pre>
+<pre class="r"><code>annotated_regions %&gt;% 
+  group_by(sig_3,top_2b_ol) %&gt;% 
+  ggplot(., aes(x=sig_3, fill=top_2b_ol))+
+  geom_bar(position=&quot;fill&quot;)+
+  theme_bw()+
+  ggtitle(&quot; 3 hour DARs and TOP2b&quot;)+
+  ylab(&quot;proportion&quot;)</code></pre>
+<p><img src="figure/Top2B_analysis.Rmd/unnamed-chunk-4-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>annotated_regions %&gt;% 
+  group_by(sig_24,top_2b_ol) %&gt;% 
+  ggplot(., aes(x=sig_24, fill=top_2b_ol))+
+  geom_bar(position=&quot;fill&quot;)+
+  theme_bw()+
+  ggtitle(&quot; 24 hour DARs and TOP2b&quot;)+
+  ylab(&quot;proportion&quot;)</code></pre>
+<p><img src="figure/Top2B_analysis.Rmd/unnamed-chunk-4-2.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>top2b_3hr_or &lt;- annotated_regions %&gt;% 
+  group_by(sig_3,top_2b_ol) %&gt;% 
+  tally %&gt;% 
+  pivot_wider(., id_cols=sig_3, names_from = top_2b_ol, values_from = n) %&gt;% 
+  column_to_rownames(&quot;sig_3&quot;) %&gt;% 
+  as.matrix() %&gt;% 
+  epitools::oddsratio(., method=&quot;wald&quot;)
+
+top2b_24hr_or &lt;- annotated_regions %&gt;% 
+  group_by(sig_24,top_2b_ol) %&gt;% 
+  tally %&gt;% 
+  pivot_wider(., id_cols=sig_24, names_from = top_2b_ol, values_from = n) %&gt;% 
+  column_to_rownames(&quot;sig_24&quot;) %&gt;% 
+  as.matrix() %&gt;% 
+  epitools::oddsratio(., method=&quot;wald&quot;)
+
+ggplot_format_odds &lt;- data.frame(&quot;or_value&quot; = c(top2b_3hr_or$measure[2, &quot;estimate&quot;],top2b_24hr_or$measure[2, &quot;estimate&quot;]),
+&quot;lower_ci&quot; = c(top2b_3hr_or$measure[2, &quot;lower&quot;],top2b_24hr_or$measure[2, &quot;lower&quot;]),
+&quot;upper_ci&quot; = c(top2b_3hr_or$measure[2, &quot;upper&quot;],top2b_24hr_or$measure[2, &quot;upper&quot;]),
+&quot;p_value&quot; = c(top2b_3hr_or$p.value[2,&quot;chi.square&quot;],top2b_24hr_or$p.value[2,&quot;chi.square&quot;]),
+group=c(&quot;3hour&quot;,&quot;24hour&quot;))
+ ggplot_format_odds %&gt;% 
+   mutate(group=factor(group, levels= c(&quot;3hour&quot;,&quot;24hour&quot;))) %&gt;% 
+ggplot(., aes(x = group, y = or_value)) +
+  geom_point(size = 3) +
+  geom_errorbar(aes(ymin = lower_ci, ymax = upper_ci), width = 0.2) +
+  geom_hline(yintercept = 1, linetype = &quot;dashed&quot;, color = &quot;gray40&quot;) +
+  labs(
+    title = &quot;Odds Ratio of TOP2b Peak Overlap&quot;,
+    y = &quot;Odds Ratio (95% confidence interval)&quot;,
+    x = &quot;time&quot;
+  ) +
+  theme_bw() +
+  theme(
+    text = element_text(size = 12),
+    plot.title = element_text(hjust = 0.5)
+  )</code></pre>
+<p><img src="figure/Top2B_analysis.Rmd/unnamed-chunk-4-3.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>annotated_DARs&lt;- readRDS(&quot;data/Final_four_data/re_analysis/DOX_DAR_annotated_peaks_chipannno.RDS&quot;)
+gene_N_peak &lt;-
+annotated_DARs$DOX_3 %&gt;% 
+  as.data.frame() %&gt;%
+  dplyr::select(mcols.genes,annotation, geneId:distanceToTSS)
+
+toplistall_RNA &lt;- readRDS(&quot;data/other_papers/toplistall_RNA.RDS&quot;) %&gt;% 
+  mutate(logFC = logFC*(-1))
+
+
+
+RNA_results &lt;-
+toplistall_RNA %&gt;% 
+  dplyr::select(time:logFC) %&gt;% 
+  tidyr::unite(&quot;sample&quot;,time, id) %&gt;% 
+  pivot_wider(., id_cols = c(ENTREZID,SYMBOL),names_from = sample, values_from = logFC) %&gt;% 
+  rename_with(~ str_replace(., &quot;hours&quot;, &quot;RNA&quot;))
+
+
+RNA_adj.pvals &lt;-
+toplistall_RNA %&gt;% 
+dplyr::select(time:SYMBOL,adj.P.Val) %&gt;% 
+  tidyr::unite(&quot;sample&quot;,id, time) %&gt;% 
+  pivot_wider(., id_cols = c(ENTREZID,SYMBOL),names_from = sample, values_from = adj.P.Val) %&gt;% 
+  rename_with(~ str_replace(., &quot;hours&quot;, &quot;pval&quot;))</code></pre>
+<pre class="r"><code>my_DOX_data &lt;- all_results %&gt;% 
+  dplyr::filter(source==&quot;DOX_3&quot;|source==&quot;DOX_24&quot;) %&gt;% 
+  dplyr::select(source,genes,logFC,adj.P.Val) %&gt;% 
+  pivot_wider(.,id_cols=genes,names_from = source, values_from = c(logFC, adj.P.Val))
+
+my_EPI_data &lt;- all_results %&gt;% 
+  dplyr::filter(source==&quot;EPI_3&quot;|source==&quot;EPI_24&quot;) %&gt;% 
+  dplyr::select(source,genes,logFC,adj.P.Val) %&gt;% 
+  pivot_wider(.,id_cols=genes,names_from = source, values_from = c(logFC, adj.P.Val))
+
+my_DNR_data &lt;- all_results %&gt;% 
+  dplyr::filter(source==&quot;DNR_3&quot;|source==&quot;DNR_24&quot;) %&gt;% 
+  dplyr::select(source,genes,logFC,adj.P.Val) %&gt;% 
+  pivot_wider(.,id_cols=genes,names_from = source, values_from = c(logFC, adj.P.Val))
+
+my_MTX_data &lt;- all_results %&gt;% 
+  dplyr::filter(source==&quot;MTX_3&quot;|source==&quot;MTX_24&quot;) %&gt;% 
+  dplyr::select(source,genes,logFC,adj.P.Val) %&gt;% 
+  pivot_wider(.,id_cols=genes,names_from = source, values_from = c(logFC, adj.P.Val))</code></pre>
+<p>adding DOX_sig and other trts for enrichment with top2b</p>
+<pre class="r"><code>TSS_listed_df &lt;- annotated_regions %&gt;% 
+  # mutate(DOX_sig_3=if_else(adj.P.Val_DOX_3&lt;0.05,&quot;sig&quot;,&quot;not_sig&quot;),
+  #        DOX_sig_24=if_else(adj.P.Val_DOX_24&lt;0.05,&quot;sig&quot;,&quot;not_sig&quot;)) %&gt;% 
+  # mutate(DOX_sig_3=factor(DOX_sig_3,levels=c(&quot;sig&quot;,&quot;not_sig&quot;)),
+  #        DOX_sig_24=factor(DOX_sig_24,levels=c(&quot;sig&quot;,&quot;not_sig&quot;))) %&gt;%
+  left_join(.,my_EPI_data,by=c(&quot;genes&quot;=&quot;genes&quot;)) %&gt;% 
+  mutate(EPI_sig_3=if_else(adj.P.Val_EPI_3&lt;0.05,&quot;sig&quot;,&quot;not_sig&quot;),
+         EPI_sig_24=if_else(adj.P.Val_EPI_24&lt;0.05,&quot;sig&quot;,&quot;not_sig&quot;)) %&gt;% 
+  mutate(EPI_sig_3=factor(EPI_sig_3,levels=c(&quot;sig&quot;,&quot;not_sig&quot;)),
+         EPI_sig_24=factor(EPI_sig_24,levels=c(&quot;sig&quot;,&quot;not_sig&quot;))) %&gt;% 
+  left_join(.,my_DNR_data,by=c(&quot;genes&quot;=&quot;genes&quot;)) %&gt;% 
+  mutate(DNR_sig_3=if_else(adj.P.Val_DNR_3&lt;0.05,&quot;sig&quot;,&quot;not_sig&quot;),
+         DNR_sig_24=if_else(adj.P.Val_DNR_24&lt;0.05,&quot;sig&quot;,&quot;not_sig&quot;)) %&gt;% 
+  mutate(DNR_sig_3=factor(DNR_sig_3,levels=c(&quot;sig&quot;,&quot;not_sig&quot;)),
+         DNR_sig_24=factor(DNR_sig_24,levels=c(&quot;sig&quot;,&quot;not_sig&quot;))) %&gt;% 
+  left_join(.,my_MTX_data,by=c(&quot;genes&quot;=&quot;genes&quot;)) %&gt;% 
+  mutate(MTX_sig_3=if_else(adj.P.Val_MTX_3&lt;0.05,&quot;sig&quot;,&quot;not_sig&quot;),
+         MTX_sig_24=if_else(adj.P.Val_MTX_24&lt;0.05,&quot;sig&quot;,&quot;not_sig&quot;)) %&gt;% 
+  mutate(MTX_sig_3=factor(MTX_sig_3,levels=c(&quot;sig&quot;,&quot;not_sig&quot;)),
+         MTX_sig_24=factor(MTX_sig_24,levels=c(&quot;sig&quot;,&quot;not_sig&quot;))) %&gt;% 
+  dplyr::rename(&quot;DOX_sig_3&quot;=sig_3, &quot;DOX_sig_24&quot;= sig_24) %&gt;% 
+  left_join(., gene_N_peak, by= c(&quot;genes&quot;=&quot;mcols.genes&quot;))</code></pre>
+<p>make the odds ratio dataframe</p>
+<pre class="r"><code>DOX_top2b_3hr_or &lt;-
+  TSS_listed_df %&gt;% 
+  group_by(DOX_sig_3,top_2b_ol) %&gt;% 
+  tally %&gt;% 
+  pivot_wider(., id_cols=DOX_sig_3, names_from = top_2b_ol, values_from = n) %&gt;%   column_to_rownames(&quot;DOX_sig_3&quot;) %&gt;% 
+  as.matrix() %&gt;% 
+  fisher.test(.)
+
+DOX_top2b_24hr_or &lt;- TSS_listed_df %&gt;% 
+  group_by(DOX_sig_24,top_2b_ol) %&gt;% 
+  tally %&gt;% 
+  pivot_wider(., id_cols=DOX_sig_24, names_from = top_2b_ol, values_from = n) %&gt;% 
+  column_to_rownames(&quot;DOX_sig_24&quot;) %&gt;% 
+  as.matrix() %&gt;% 
+  fisher.test(.)
+
+EPI_top2b_3hr_or &lt;-
+  TSS_listed_df %&gt;% 
+  group_by(EPI_sig_3,top_2b_ol) %&gt;% 
+  tally %&gt;% 
+  pivot_wider(., id_cols=EPI_sig_3, names_from = top_2b_ol, values_from = n) %&gt;%   column_to_rownames(&quot;EPI_sig_3&quot;) %&gt;% 
+  as.matrix() %&gt;% 
+  fisher.test(.)
+EPI_top2b_24hr_or &lt;- TSS_listed_df %&gt;% 
+  group_by(EPI_sig_24,top_2b_ol) %&gt;% 
+  tally %&gt;% 
+  pivot_wider(., id_cols=EPI_sig_24, names_from = top_2b_ol, values_from = n) %&gt;% 
+  column_to_rownames(&quot;EPI_sig_24&quot;) %&gt;% 
+  as.matrix() %&gt;% 
+  fisher.test(.)
+DNR_top2b_3hr_or &lt;-
+  TSS_listed_df %&gt;% 
+  group_by(DNR_sig_3,top_2b_ol) %&gt;% 
+  tally %&gt;% 
+  pivot_wider(., id_cols=DNR_sig_3, names_from = top_2b_ol, values_from = n) %&gt;%   column_to_rownames(&quot;DNR_sig_3&quot;) %&gt;% 
+  as.matrix() %&gt;% 
+  fisher.test(.)
+
+DNR_top2b_24hr_or &lt;- TSS_listed_df %&gt;% 
+  group_by(DNR_sig_24,top_2b_ol) %&gt;% 
+  tally %&gt;% 
+  pivot_wider(., id_cols=DNR_sig_24, names_from = top_2b_ol, values_from = n) %&gt;% 
+  column_to_rownames(&quot;DNR_sig_24&quot;) %&gt;% 
+  as.matrix() %&gt;% 
+ fisher.test(.)
+MTX_top2b_3hr_or &lt;-
+  TSS_listed_df %&gt;% 
+  group_by(MTX_sig_3,top_2b_ol) %&gt;% 
+  tally %&gt;% 
+  pivot_wider(., id_cols=MTX_sig_3, names_from = top_2b_ol, values_from = n) %&gt;%   column_to_rownames(&quot;MTX_sig_3&quot;) %&gt;% 
+  as.matrix() %&gt;% 
+  fisher.test(.)
+
+MTX_top2b_24hr_or &lt;- TSS_listed_df %&gt;% 
+  group_by(MTX_sig_24,top_2b_ol) %&gt;% 
+  tally %&gt;% 
+  pivot_wider(., id_cols=MTX_sig_24, names_from = top_2b_ol, values_from = n) %&gt;% 
+  column_to_rownames(&quot;MTX_sig_24&quot;) %&gt;% 
+  as.matrix() %&gt;% 
+  fisher.test(.)
+
+
+# ggplot_format_odds &lt;- data.frame(&quot;or_value&quot; = c(top2b_3hr_or$measure[2, &quot;estimate&quot;],top2b_24hr_or$measure[2, &quot;estimate&quot;]),
+# &quot;lower_ci&quot; = c(top2b_3hr_or$measure[2, &quot;lower&quot;],top2b_24hr_or$measure[2, &quot;lower&quot;]),
+# &quot;upper_ci&quot; = c(top2b_3hr_or$measure[2, &quot;upper&quot;],top2b_24hr_or$measure[2, &quot;upper&quot;]),
+# &quot;p_value&quot; = c(top2b_3hr_or$p.value[2,&quot;chi.square&quot;],top2b_24hr_or$p.value[2,&quot;chi.square&quot;]),
+# group=c(&quot;3hour&quot;,&quot;24hour&quot;))</code></pre>
+<pre class="r"><code># Define the variable names
+var_names &lt;- c(&quot;DOX_top2b_3hr_or&quot;, &quot;DOX_top2b_24hr_or&quot;, 
+               &quot;EPI_top2b_3hr_or&quot;, &quot;EPI_top2b_24hr_or&quot;,
+               &quot;DNR_top2b_3hr_or&quot;, &quot;DNR_top2b_24hr_or&quot;,
+                &quot;MTX_top2b_3hr_or&quot;, &quot;MTX_top2b_24hr_or&quot;)
+
+# Optional: label for grouping
+group_labels &lt;- c(&quot;DOX_3hr&quot;, &quot;DOX_24hr&quot;, &quot;EPI_3hr&quot;, &quot;EPI_24hr&quot;, &quot;DNR_3hr&quot;, &quot;DNR_24hr&quot;, &quot;MTX_3hr&quot;, &quot;MTX_24hr&quot;)
+
+# Build the data frame
+OR_all_trt_result_df &lt;- do.call(rbind, lapply(seq_along(var_names), function(i) {
+  var &lt;- get(var_names[i])
+  
+  data.frame(
+    or_value  = unname(var$estimate),  # remove the name &quot;odds ratio&quot;
+    lower_ci  = var$conf.int[1],
+    upper_ci  = var$conf.int[2],
+    p_value   = var$p.value,
+    group     = group_labels[i]
+  )
+}))</code></pre>
+<pre class="r"><code>OR_all_trt_result_df %&gt;% 
+  separate_wider_delim(.,cols=&quot;group&quot;, names = c(&quot;trt&quot;,&quot;time&quot;), delim = &quot;_&quot;,cols_remove = FALSE) %&gt;% 
+    mutate(time= factor(time, levels =c(&quot;3hr&quot;,&quot;24hr&quot;)),
+         trt=factor(trt, levels= c(&quot;DOX&quot;, &quot;EPI&quot;, &quot;DNR&quot;, &quot;MTX&quot;))) %&gt;% 
+  # mutate(significant=if_else(p_value &lt;0.05,&quot;TRUE&quot;,&quot;FALSE&quot;)) %&gt;% 
+  mutate(
+    significant = case_when(
+      p_value &lt; 0.001 ~ &quot;***&quot;,
+      p_value &lt; 0.01 ~ &quot;**&quot;,
+      p_value &lt; 0.05 ~ &quot;*&quot;,
+      TRUE ~ &quot;&quot;
+    )
+  ) %&gt;% 
+ggplot(., aes(x = trt, y = or_value)) +
+   geom_point(aes(color = trt), size=4)+
+   geom_errorbar(aes(ymin = lower_ci, ymax = upper_ci), width = 0.2) +
+  geom_hline(yintercept = 1, linetype = &quot;dashed&quot;, color = &quot;gray40&quot;) +
+  geom_text(
+  aes(y = upper_ci + 0.1 * or_value, label = significant),
+  hjust = 0,  # aligns text to the left of the y point
+  size = 4,
+  color = &quot;black&quot;
+)+
+  labs(
+    title = &quot;Odds Ratio of TOP2b Peak Overlap&quot;,
+    y = &quot;Odds Ratio (95% confidence interval)&quot;,
+    x = &quot;treatment&quot;
+  ) +
+  # coord_flip()+
+  theme_classic() +
+  facet_wrap(~time)+
+  theme(
+    text = element_text(size = 12),
+    plot.title = element_text(hjust = 0.5)
+  )</code></pre>
+<p><img src="figure/Top2B_analysis.Rmd/unnamed-chunk-9-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>top2b_overlap &lt;- join_overlap_inner(all_regions,Top2b_peaks)
+ AR_total     &lt;- length(unique(all_regions$Peakid))
+
+ 
+ Top2B_total  &lt;- length(unique(Top2b_peaks$name))
+overlap_n    &lt;- length(unique(top2b_overlap$Peakid)) 
+fit_top2b &lt;- euler(c(
+  &quot;ARs&quot; = AR_total-overlap_n,
+  &quot;Top2B&quot; = Top2B_total-length(unique(top2b_overlap$name)),
+  &quot;ARs&amp;Top2B&quot; = overlap_n
+))
+
+plot(fit_top2b, fills = list(fill = c(&quot;skyblue&quot;, &quot;lightcoral&quot;), alpha = 0.6),
+     labels = FALSE, edges = TRUE, quantities = TRUE,
+     main = &quot;Overlap between AR and TOP2B peaks&quot;)</code></pre>
+<p><img src="figure/Top2B_analysis.Rmd/unnamed-chunk-10-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>length(intersect(unique(top2b_overlap$Peakid), unique(all_regions$Peakid)))  # should match overlap_n</code></pre>
+<pre><code>[1] 5221</code></pre>
+</div>
+<div id="mcf7-data" class="section level3">
+<h3>MCF7 data</h3>
+<pre class="r"><code>annotated_regions %&gt;% 
+  group_by(sig_3,MCF7_AR) %&gt;% tally %&gt;% 
+ pivot_wider(., id_cols = sig_3, names_from = MCF7_AR, values_from = n) %&gt;% 
+  column_to_rownames(&quot;sig_3&quot;) %&gt;%
+  print() %&gt;% 
+  fisher.test()</code></pre>
+<pre><code>        MCF7AR_peak not_MCF7AR_peak
+sig             637            2836
+not_sig       27701          124383</code></pre>
+<pre><code>
+    Fisher&#39;s Exact Test for Count Data
+
+data:  .
+p-value = 0.8414
+alternative hypothesis: true odds ratio is not equal to 1
+95 percent confidence interval:
+ 0.9231248 1.1005593
+sample estimates:
+odds ratio 
+  1.008553 </code></pre>
+<pre class="r"><code>annotated_regions %&gt;% 
+  group_by(sig_24,MCF7_AR) %&gt;% tally %&gt;% 
+ pivot_wider(., id_cols = sig_24, names_from = MCF7_AR, values_from = n) %&gt;% 
+  column_to_rownames(&quot;sig_24&quot;) %&gt;%
+  print() %&gt;% 
+  fisher.test()</code></pre>
+<pre><code>        MCF7AR_peak not_MCF7AR_peak
+sig           10412           54408
+not_sig       17926           72811</code></pre>
+<pre><code>
+    Fisher&#39;s Exact Test for Count Data
+
+data:  .
+p-value &lt; 2.2e-16
+alternative hypothesis: true odds ratio is not equal to 1
+95 percent confidence interval:
+ 0.7568333 0.7983223
+sample estimates:
+odds ratio 
+ 0.7772963 </code></pre>
+<pre class="r"><code>##### MCF7 hyper
+
+annotated_regions %&gt;% 
+  group_by(sig_3,MCF7_hyper) %&gt;% tally %&gt;% 
+ pivot_wider(., id_cols = sig_3, names_from = MCF7_hyper, values_from = n) %&gt;% 
+  column_to_rownames(&quot;sig_3&quot;) %&gt;%
+  print() %&gt;% 
+  fisher.test()</code></pre>
+<pre><code>        MCF7hyper_peak not_MCF7hyper_peak
+sig                279               3194
+not_sig           8770             143314</code></pre>
+<pre><code>
+    Fisher&#39;s Exact Test for Count Data
+
+data:  .
+p-value = 8.031e-08
+alternative hypothesis: true odds ratio is not equal to 1
+95 percent confidence interval:
+ 1.256096 1.616982
+sample estimates:
+odds ratio 
+  1.427425 </code></pre>
+<pre class="r"><code>annotated_regions %&gt;% 
+  group_by(sig_24,MCF7_hyper) %&gt;% tally %&gt;% 
+ pivot_wider(., id_cols = sig_24, names_from = MCF7_hyper, values_from = n) %&gt;% 
+  column_to_rownames(&quot;sig_24&quot;) %&gt;%
+  print() %&gt;% 
+  fisher.test()</code></pre>
+<pre><code>        MCF7hyper_peak not_MCF7hyper_peak
+sig               4611              60209
+not_sig           4438              86299</code></pre>
+<pre><code>
+    Fisher&#39;s Exact Test for Count Data
+
+data:  .
+p-value &lt; 2.2e-16
+alternative hypothesis: true odds ratio is not equal to 1
+95 percent confidence interval:
+ 1.426887 1.554163
+sample estimates:
+odds ratio 
+  1.489159 </code></pre>
+<pre class="r"><code>##### MCF7 hypo
+annotated_regions %&gt;% 
+  group_by(sig_3,MCF7_hypo) %&gt;% tally %&gt;% 
+ pivot_wider(., id_cols = sig_3, names_from = MCF7_hypo, values_from = n) %&gt;% 
+  column_to_rownames(&quot;sig_3&quot;) %&gt;%
+  print() %&gt;% 
+  fisher.test()</code></pre>
+<pre><code>        MCF7hypo_peak not_MCF7hypo_peak
+sig                62              3411
+not_sig          2589            149495</code></pre>
+<pre><code>
+    Fisher&#39;s Exact Test for Count Data
+
+data:  .
+p-value = 0.6906
+alternative hypothesis: true odds ratio is not equal to 1
+95 percent confidence interval:
+ 0.8004609 1.3535069
+sample estimates:
+odds ratio 
+  1.049577 </code></pre>
+<pre class="r"><code>annotated_regions %&gt;% 
+  group_by(sig_24,MCF7_hypo) %&gt;% tally %&gt;% 
+ pivot_wider(., id_cols = sig_24, names_from = MCF7_hypo, values_from = n) %&gt;% 
+  column_to_rownames(&quot;sig_24&quot;) %&gt;%
+  print() %&gt;% 
+  fisher.test()</code></pre>
+<pre><code>        MCF7hypo_peak not_MCF7hypo_peak
+sig              1087             63733
+not_sig          1564             89173</code></pre>
+<pre><code>
+    Fisher&#39;s Exact Test for Count Data
+
+data:  .
+p-value = 0.4869
+alternative hypothesis: true odds ratio is not equal to 1
+95 percent confidence interval:
+ 0.8985919 1.0520668
+sample estimates:
+odds ratio 
+ 0.9724356 </code></pre>
+<div id="venns-of-mcf7-data" class="section level4">
+<h4>Venns of MCF7 data</h4>
+<pre class="r"><code> #  names(MCF7_DARs_hyper) &lt;- paste0(&quot;hyper_&quot;, seq_along(seqnames(MCF7_DARs_hyper)))
+ # names(MCF7_DARs_hypo) &lt;- paste0(&quot;hypo_&quot;, seq_along(seqnames(MCF7_DARs_hypo)))
+#### MCF7 and AR
+
+AR_total     &lt;- length(unique(all_regions$Peakid))
+MCF_AR_total  &lt;- length(unique(MCF7_ARsmcf7_1_LO$Peak_ID))-length(unique(MCF7_AR_ol$Peak_ID))
+overlap_n    &lt;- length(unique(MCF7_AR_ol$Peakid)) 
+fit_mcf7_ar &lt;- euler(c(
+  &quot;ARs&quot; = AR_total-overlap_n,
+  &quot;MCF7_AR_1&quot; = MCF_AR_total,
+  &quot;ARs&amp;MCF7_AR_1&quot; = overlap_n
+))
+
+plot(fit_mcf7_ar, fills = list(fill = c(&quot;skyblue&quot;, &quot;lightcoral&quot;), alpha = 0.6),
+     labels = FALSE, edges = TRUE, quantities = TRUE,
+     main = &quot;Overlap between AR and MCF7 AR (sample 1) peaks&quot;)</code></pre>
+<p><img src="figure/Top2B_analysis.Rmd/unnamed-chunk-12-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>#### MCF7 hyper
+AR_total     &lt;- length(unique(all_regions$Peakid))
+ MCF7_hyper_total  &lt;- length(MCF7_DARs_hyper$names)-length(unique(MCF7_hyper_ol$names))
+overlap_n    &lt;- length(unique(MCF7_hyper_ol$Peakid)) 
+fit_mcf7_hyper &lt;- euler(c(
+  &quot;ARs&quot; = AR_total-overlap_n,
+  &quot;MCF7_hyper_total&quot; = MCF7_hyper_total,
+  &quot;ARs&amp;MCF7_hyper_total&quot; = overlap_n
+))
+
+plot(fit_mcf7_hyper, fills = list(fill = c(&quot;skyblue&quot;, &quot;lightcoral&quot;), alpha = 0.6),
+     labels = FALSE, edges = TRUE, quantities = TRUE,
+     main = &quot;Overlap between AR and MCF7 hyper-DARs &quot;)</code></pre>
+<p><img src="figure/Top2B_analysis.Rmd/unnamed-chunk-12-2.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>####MCF7 hypo only
+AR_total     &lt;- length(unique(all_regions$Peakid))
+ MCF7_hypo_total  &lt;- length(unique(MCF7_DARs_hypo$names))-length(unique(MCF7_hypo_ol$names))
+overlap_n    &lt;- length(unique(MCF7_hypo_ol$Peakid)) 
+fit_mcf7_hypo &lt;- euler(c(
+  &quot;ARs&quot; = AR_total-overlap_n,
+  &quot;MCF7_hypo_total&quot; = MCF7_hypo_total,
+  &quot;ARs&amp;MCF7_hypo_total&quot; = overlap_n
+))
+
+plot(fit_mcf7_hypo, fills = list(fill = c(&quot;skyblue&quot;, &quot;lightcoral&quot;), alpha = 0.6),
+     labels = FALSE, edges = TRUE, quantities = TRUE,
+     main = &quot;Overlap between AR and MCF7 hypo-DARs &quot;)</code></pre>
+<p><img src="figure/Top2B_analysis.Rmd/unnamed-chunk-12-3.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>#### MCF&amp; all dars
+AR_total     &lt;- length(unique(all_regions$Peakid))
+   MCF_DAR_total  &lt;- MCF7_hypo_total+MCF7_hyper_total
+overlap_n_MCF_dar    &lt;- length(unique(MCF7_hyper_ol$Peakid))+length(unique(MCF7_hypo_ol$Peakid))
+fit_mcf7_all_dar &lt;- euler(c(
+  &quot;ARs&quot; = AR_total-length(unique(MCF7_hyper_ol$Peakid))+length(unique(MCF7_hypo_ol$Peakid)),
+  &quot;MCF7_DAR&quot; = MCF_DAR_total,
+  &quot;ARs&amp;MCF7_DAR&quot; = overlap_n_MCF_dar
+))
+
+plot(fit_mcf7_all_dar, fills = list(fill = c(&quot;skyblue&quot;, &quot;lightcoral&quot;), alpha = 0.6),
+     labels = FALSE, edges = TRUE, quantities = TRUE,
+     main = &quot;Overlap between AR and MCF7  DARs&quot;)</code></pre>
+<p><img src="figure/Top2B_analysis.Rmd/unnamed-chunk-12-4.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>DOX_DAR_total     &lt;- length(unique(DOX_24_sig_gr$Peakid))
+   MCF7_DAR_total  &lt;- length(unique(MCF7_DAR_all$names))-length(unique(DOX_MCF7_DARS_ol$names))
+overlap_n_MCF7_dar    &lt;- length(unique(DOX_MCF7_DARS_ol$Peakid))
+fit_mcf7_all_doxdar &lt;- euler(c(
+  &quot;DOX_DARs&quot; = DOX_DAR_total-length(unique(DOX_MCF7_DARS_ol$Peakid)),
+  &quot;MCF7_DAR&quot; = MCF7_DAR_total,
+  &quot;DOX_DARs&amp;MCF7_DAR&quot; = overlap_n_MCF7_dar
+))
+
+plot(fit_mcf7_all_doxdar, fills = list(fill = c(&quot;skyblue&quot;, &quot;lightcoral&quot;), alpha = 0.6),
+     labels = FALSE, edges = TRUE, quantities = TRUE,
+     main = &quot;Overlap between DOX-DARs(24 hours) and MCF7 DARs&quot;)</code></pre>
+<p><img src="figure/Top2B_analysis.Rmd/unnamed-chunk-13-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>DOX_MCF7_DARS_ol %&gt;% as.data.frame %&gt;% distinct(Peakid) %&gt;% tally</code></pre>
+<pre><code>     n
+1 5698</code></pre>
+</div>
+<div id="significance-of-mcf7-data" class="section level4">
+<h4>significance of MCF7 data</h4>
+<p>Are AR overlapping MCF7-ARs greater than expected by chance? (using
+sample 1,non-resistant MCF7)</p>
+<pre class="r"><code># genome &lt;- BSgenome.Hsapiens.UCSC.hg38
+# BiocManager::install(&quot;BSgenome.Hsapiens.UCSC.hg38.masked&quot;)
+# combined_gr &lt;- GRangesList(all_regions, MCF7_ARsmcf7_1_LO)
+# universe &lt;- GenomicRanges::reduce(combined_gr)
+# # Get common chromosomes
+# common_chrs &lt;- intersect(seqlevels(MCF7_ARsmcf7_1_LO), seqlevels(all_regions))
+# 
+# Apply pruning to both datasets
+# MCF7_ARsmcf7_1_LO &lt;- keepSeqlevels(MCF7_ARsmcf7_1_LO, common_chrs, pruning.mode = &quot;coarse&quot;)
+# all_regions    &lt;- keepSeqlevels(all_regions, common_chrs, pruning.mode = &quot;coarse&quot;)
+### number of cores used by test. documentation says to use mc.cores=8 (8 is my preference)
+# param &lt;- SnowParam(workers = 8)
+# perm_test_AR_MCF7AR_combogr &lt;- permTest(A= all_regions,
+#                           B= MCF7_ARsmcf7_1_LO,
+#                           ntimes=1000,
+#                           randomize.function=randomizeRegions,
+#                           evaluate.function = numOverlaps,
+#                           genome=&quot;hg38&quot;,
+#                           count.once= TRUE,
+#                           universe=universe,
+# # universe = union_accessible_regions,
+#                           verbose = TRUE,
+# BPPARAM = param)
+#
+##permtest #2 using universe=&quot;union_accessible_regions)
+# saveRDS(perm_test_AR_MCF7AR_uni,&quot;data/Final_four_data/re_analysis/perm_test_AR_MCF7AR_uni.RDS&quot;)
+
+perm_test_AR_MCF7AR_uni &lt;- readRDS(&quot;data/Final_four_data/re_analysis/perm_test_AR_MCF7AR_uni.RDS&quot;)
+#original permutation test with whole genome
+# saveRDS(perm_test_AR_MCF7AR,&quot;data/Final_four_data/re_analysis/perm_test_AR_MCF7AR.RDS&quot;)
+
+
+#using combined_gr &lt;- GRangesList(all_regions, MCF7_ARsmcf7_1)
+# universe &lt;- GenomicRanges::reduce(combined_gr) to create a merged universe of ranges from both sets
+# saveRDS(perm_test_AR_MCF7AR_combogr,&quot;data/Final_four_data/re_analysis/perm_test_AR_MCF7AR_combogr_100.RDS&quot;)
+# saveRDS(perm_test_AR_MCF7AR_combogr,&quot;data/Final_four_data/re_analysis/perm_test_AR_MCF7AR_combogr_1000.RDS&quot;)
+perm_test_AR_MCF7AR_combogr_1000 &lt;- readRDS(&quot;data/Final_four_data/re_analysis/perm_test_AR_MCF7AR_combogr_1000.RDS&quot;)
+perm_test_AR_MCF7AR &lt;- readRDS(&quot;data/Final_four_data/re_analysis/perm_test_AR_MCF7AR.RDS&quot;)
+
+# perm_test_AR_MCF7AR_combogr
+plot(perm_test_AR_MCF7AR_uni)</code></pre>
+<p><img src="figure/Top2B_analysis.Rmd/unnamed-chunk-14-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>plot(perm_test_AR_MCF7AR_combogr_1000)</code></pre>
+<p><img src="figure/Top2B_analysis.Rmd/unnamed-chunk-14-2.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>plot(perm_test_AR_MCF7AR)</code></pre>
+<p><img src="figure/Top2B_analysis.Rmd/unnamed-chunk-14-3.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>plot(perm_test_AR_MCF7AR, xlim = range(perm_test_AR_MCF7AR$numOverlaps$permuted))</code></pre>
+<p><img src="figure/Top2B_analysis.Rmd/unnamed-chunk-14-4.png" width="672" style="display: block; margin: auto;" />
+Are DOX_DARS significantly more likely to overlap MCF7_DARs than
+chance?</p>
+<pre class="r"><code># MCF7_DAR_all &lt;- keepSeqlevels(MCF7_DAR_all, common_chrs, pruning.mode = &quot;coarse&quot;)
+# all_regions    &lt;- keepSeqlevels(all_regions, common_chrs, pruning.mode = &quot;coarse&quot;)
+# 
+# perm_test_DAR_MCF7_DAR &lt;- permTest(A= DOX_24_sig_gr,
+#                           B= MCF7_DAR_all,
+#                           ntimes=1000,
+#                           randomize.function=randomizeRegions,
+#                           evaluate.function = numOverlaps,
+#                           genome=&quot;hg38&quot;,
+#                           count.once= TRUE,
+#                           verbose = TRUE)
+# saveRDS(perm_test_DAR_MCF7_DAR,&quot;data/Final_four_data/re_analysis/perm_test_DAR_MCF7_DAR.RDS&quot;)
+
+perm_test_DAR_MCF7_DAR &lt;- readRDS(&quot;data/Final_four_data/re_analysis/perm_test_DAR_MCF7_DAR.RDS&quot;)
+
+perm_test_DAR_MCF7_DAR</code></pre>
+<pre><code>$numOverlaps
+P-value: 0.000999000999000999
+Z-score: 201.0915
+Number of iterations: 1000
+Alternative: greater
+Evaluation of the original region set: 5698
+Evaluation function: numOverlaps
+Randomization function: randomizeRegions
+
+attr(,&quot;class&quot;)
+[1] &quot;permTestResultsList&quot;</code></pre>
+<pre class="r"><code>plot(perm_test_DAR_MCF7_DAR)</code></pre>
+<p><img src="figure/Top2B_analysis.Rmd/unnamed-chunk-15-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>plot(perm_test_DAR_MCF7_DAR, xlim = range(perm_test_DAR_MCF7_DAR$numOverlaps$permuted))</code></pre>
+<p><img src="figure/Top2B_analysis.Rmd/unnamed-chunk-15-2.png" width="672" style="display: block; margin: auto;" />
+### Calculating Distance to TAD-SNP from peak of MCF7 DAR data</p>
+<pre class="r"><code>Left_ventricle_TAD &lt;- import(con = &quot;C://Users/renee/Downloads/hg38.TADs/hg38/VentricleLeft_STL003_Leung_2015-raw_TADs.txt&quot;, format = &quot;bed&quot;,genome=&quot;hg38&quot;)
+mcols(Left_ventricle_TAD)$TAD_id &lt;- paste0(&quot;TAD_&quot;, seq_along(Left_ventricle_TAD))
+
+Schneider_all_SNPS &lt;- read_delim(&quot;data/other_papers/Schneider_all_SNPS.txt&quot;, 
+    delim = &quot;\t&quot;, escape_double = FALSE, 
+    trim_ws = TRUE)
+
+Schneider_all_SNPS_df &lt;- Schneider_all_SNPS %&gt;%
+  dplyr::rename(&quot;RSID&quot;=&quot;#Uploaded_variation&quot;) %&gt;% 
+  dplyr::select(RSID,Location,SYMBOL,Gene, SOURCE) %&gt;%
+  distinct(RSID,Location,SYMBOL,.keep_all = TRUE) %&gt;% 
+  dplyr::rename(&quot;Close_SYMBOL&quot;=&quot;SYMBOL&quot;) %&gt;% 
+  dplyr::filter(!str_starts(Location, &quot;H&quot;)) %&gt;% 
+  separate_wider_delim(Location,delim=&quot;:&quot;,names=c(&quot;Chr&quot;,&quot;Coords&quot;)) %&gt;% 
+  separate_wider_delim(Coords,delim= &quot;-&quot;, names= c(&quot;Start&quot;,&quot;End&quot;)) %&gt;% 
+  mutate(Chr=paste0(&quot;chr&quot;,Chr)) %&gt;% 
+  group_by(RSID) %&gt;% 
+  reframe(Chr=unique(Chr),
+            Start=unique(Start),
+            End=unique(End),
+            Close_SYMBOL=paste(unique(Close_SYMBOL),collapse=&quot;;&quot;),
+            Gene=paste(Gene,collapse=&quot;;&quot;),
+            SOURCE=paste(SOURCE,collapse=&quot;;&quot;)
+            ) %&gt;% 
+  GRanges() %&gt;% as.data.frame 
+
+schneider_gr &lt;-Schneider_all_SNPS_df%&gt;%
+  dplyr::select(seqnames,start,end,RSID:SOURCE) %&gt;%
+  distinct() %&gt;% 
+  GRanges()</code></pre>
+<pre class="r"><code>snp_tad_df &lt;-
+  join_overlap_inner(schneider_gr, Left_ventricle_TAD) %&gt;%
+  as_tibble() %&gt;%
+  dplyr::select(RSID, snp_start = start, snp_chr = seqnames, TAD_id)
+
+
+MCF7_DAR_tad_df &lt;-
+join_overlap_inner(MCF7_DAR_all, Left_ventricle_TAD) %&gt;%
+  as_tibble() %&gt;%
+  dplyr::select(names, peak_start = start, peak_chr = seqnames, TAD_id)
+
+MCF7_DAR_snp_pairs &lt;- MCF7_DAR_tad_df %&gt;%
+  inner_join(snp_tad_df, by = &quot;TAD_id&quot;)
+
+MCF7_DAR_snp_pairs_dist &lt;-MCF7_DAR_snp_pairs %&gt;%
+  mutate(distance = abs(peak_start - snp_start)) 
+
+saveRDS(MCF7_DAR_snp_pairs_dist,&quot;data/Final_four_data/re_analysis/MCF7_DAR_snp_pairs_dist.RDS&quot;)</code></pre>
+</div>
+</div>
+<div id="significance-of-snyder-data-heart-left-ventricle"
+class="section level3">
+<h3>significance of Snyder data (Heart left-ventricle)</h3>
+<pre class="r"><code>Snyder_41peaks &lt;- read.delim(&quot;data/other_papers/ENCFF966JZT_bed_Snyder_41peaks.bed&quot;,header=TRUE) %&gt;% 
+  GRanges()
+
+genome &lt;- BSgenome.Hsapiens.UCSC.hg38
+# perm_test_hlv &lt;- permTest(A= all_regions,
+#                           B= Snyder_41peaks,
+#                           ntimes=1000,
+#                           randomize.function=randomizeRegions,
+#                           evaluate.function = numOverlaps,
+#                           genome=genome,
+#                           count.once= TRUE,
+#                           verbose = TRUE)
+# saveRDS(perm_test_hlv,&quot;data/Final_four_data/re_analysis/perm_test_results_HLV.RDS&quot;)
+
+perm_test_hlv &lt;- readRDS(&quot;data/Final_four_data/re_analysis/perm_test_results_HLV.RDS&quot;)
+
+perm_test_hlv</code></pre>
+<pre><code>$numOverlaps
+P-value: 0.000999000999000999
+Z-score: 760.9593
+Number of iterations: 1000
+Alternative: greater
+Evaluation of the original region set: 66927
+Evaluation function: numOverlaps
+Randomization function: randomizeRegions
+
+attr(,&quot;class&quot;)
+[1] &quot;permTestResultsList&quot;</code></pre>
+<pre class="r"><code>plot(perm_test_hlv)</code></pre>
+<p><img src="figure/Top2B_analysis.Rmd/permtest-1.png" width="960" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>plot(perm_test_hlv, xlim = range(perm_test_hlv$numOverlaps$permuted))</code></pre>
+<p><img src="figure/Top2B_analysis.Rmd/permtest-2.png" width="960" style="display: block; margin: auto;" /></p>
+<div id="top2b-and-top2a-expression-log2cpm-from-rna-data"
+class="section level4">
+<h4>TOP2B and TOP2A expression (log2cpm from RNA data)</h4>
+<pre class="r"><code>drug_pal &lt;- c(&quot;#8B006D&quot;,&quot;#DF707E&quot;,&quot;#F1B72B&quot;, &quot;#3386DD&quot;,&quot;#707031&quot;,&quot;#41B333&quot;)
+RNA_counts &lt;- readRDS(&quot;data/other_papers/cpmcount.RDS&quot;) %&gt;%
+  dplyr::rename_with(.,~gsub(pattern=&quot;Da&quot;,replacement=&quot;DNR&quot;,.)) %&gt;% 
+ dplyr::rename_with(.,~gsub(pattern=&quot;Do&quot;,replacement=&quot;DOX&quot;,.)) %&gt;% 
+  dplyr::rename_with(.,~gsub(pattern=&quot;Ep&quot;,replacement=&quot;EPI&quot;,.)) %&gt;% 
+   dplyr::rename_with(.,~gsub(pattern=&quot;Mi&quot;,replacement=&quot;MTX&quot;,.)) %&gt;% 
+    dplyr::rename_with(.,~gsub(pattern=&quot;Tr&quot;,replacement=&quot;TRZ&quot;,.)) %&gt;% 
+       dplyr::rename_with(.,~gsub(pattern=&quot;Ve&quot;,replacement=&quot;VEH&quot;,.)) %&gt;% 
+  rownames_to_column(&quot;ENTREZID&quot;)
+
+
+RNA_results %&gt;% 
+  dplyr::filter(SYMBOL==&quot;TOP2B&quot;)</code></pre>
+<pre><code># A tibble: 1 × 12
+  ENTREZID SYMBOL `24_RNA_DNR` `24_RNA_DOX` `24_RNA_EPI` `24_RNA_MTX`
+  &lt;chr&gt;    &lt;chr&gt;         &lt;dbl&gt;        &lt;dbl&gt;        &lt;dbl&gt;        &lt;dbl&gt;
+1 7155     TOP2B        -0.940       -0.793       -0.936       -0.394
+# ℹ 6 more variables: `24_RNA_TRZ` &lt;dbl&gt;, `3_RNA_DNR` &lt;dbl&gt;, `3_RNA_DOX` &lt;dbl&gt;,
+#   `3_RNA_EPI` &lt;dbl&gt;, `3_RNA_MTX` &lt;dbl&gt;, `3_RNA_TRZ` &lt;dbl&gt;</code></pre>
+<pre class="r"><code>RNA_counts %&gt;% 
+  dplyr::filter(ENTREZID ==&quot;7153&quot;) %&gt;% 
+  pivot_longer(cols = !ENTREZID, names_to = &quot;sample&quot;, values_to = &quot;counts&quot;) %&gt;% 
+  separate(&quot;sample&quot;, into = c(&quot;trt&quot;,&quot;ind&quot;,&quot;time&quot;)) %&gt;% 
+  mutate(time=factor(time, levels = c(&quot;3h&quot;,&quot;24h&quot;))) %&gt;% 
+  mutate(trt=factor(trt, levels= c(&quot;DOX&quot;,&quot;EPI&quot;,&quot;DNR&quot;,&quot;MTX&quot;,&quot;TRZ&quot;,&quot;VEH&quot;))) %&gt;% 
+  ggplot(., aes (x = time, y=counts))+
+  geom_boxplot(aes(fill=trt))+
+  # facet_wrap(~SYMBOL, scales=&quot;free_y&quot;)+
+    scale_fill_manual(values = drug_pal)+
+  ggtitle(&quot;RNA Log2cpm of TOP2a&quot;)+
+  theme_bw()+
+  ylab(&quot;log2 cpm RNA&quot;)</code></pre>
+<p><img src="figure/Top2B_analysis.Rmd/expression-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>RNA_counts %&gt;% 
+  dplyr::filter(ENTREZID ==&quot;7155&quot;) %&gt;% 
+  pivot_longer(cols = !ENTREZID, names_to = &quot;sample&quot;, values_to = &quot;counts&quot;) %&gt;% 
+  separate(&quot;sample&quot;, into = c(&quot;trt&quot;,&quot;ind&quot;,&quot;time&quot;)) %&gt;% 
+  mutate(time=factor(time, levels = c(&quot;3h&quot;,&quot;24h&quot;))) %&gt;% 
+  mutate(trt=factor(trt, levels= c(&quot;DOX&quot;,&quot;EPI&quot;,&quot;DNR&quot;,&quot;MTX&quot;,&quot;TRZ&quot;,&quot;VEH&quot;))) %&gt;% 
+  ggplot(., aes (x = time, y=counts))+
+  geom_boxplot(aes(fill=trt))+
+  # facet_wrap(~SYMBOL, scales=&quot;free_y&quot;)+
+    scale_fill_manual(values = drug_pal)+
+  ggtitle(&quot;RNA Log2cpm of TOP2b&quot;)+
+  theme_bw()+
+  ylab(&quot;log2 cpm RNA&quot;)</code></pre>
+<p><img src="figure/Top2B_analysis.Rmd/expression-2.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>TAD_102_genes &lt;- c(&quot;TNFSF18&quot;,&quot;PRDX6&quot;, &quot;TEX50&quot;, &quot;KLHL20&quot;, &quot;DARS2&quot;, &quot;TNFSF4&quot;, &quot;SLC9C2&quot;, &quot;ANKRD45&quot;, &quot;CENPL&quot;, &quot;GAS5&quot;)
+
+TAD_plot_genes &lt;- RNA_results %&gt;% 
+  dplyr::filter(SYMBOL%in% TAD_102_genes) %&gt;% 
+  dplyr::select(ENTREZID,SYMBOL)
+
+ ### Filter pvalues
+ clean_RNA_adj.pvals &lt;-  RNA_adj.pvals %&gt;% 
+    # dplyr::filter(ENTREZID==&quot;55157&quot;) %&gt;% 
+    pivot_longer(cols = contains(&quot;pval&quot;), names_to = &quot;sample&quot;, values_to = &quot;adj.p.val&quot;) %&gt;% 
+    separate(sample, into = c(&quot;trt&quot;, &quot;time&quot;,&quot;pval&quot;)) %&gt;% 
+    mutate(
+    time = paste0(time, &quot;h&quot;),  # convert &quot;3&quot; → &quot;3h&quot;
+    trt = factor(trt, levels = c(&quot;DOX&quot;, &quot;EPI&quot;, &quot;DNR&quot;, &quot;MTX&quot;, &quot;TRZ&quot;, &quot;VEH&quot;))
+  )
+
+
+for (gene in TAD_plot_genes$ENTREZID) {
+  SYMBOL &lt;- TAD_plot_genes$SYMBOL[TAD_plot_genes$ENTREZID == gene]
+ 
+
+  # Filter and plot
+  gene_plot &lt;- RNA_counts %&gt;%
+    filter(ENTREZID == gene) %&gt;%
+    pivot_longer(cols = !ENTREZID, names_to = &quot;sample&quot;, values_to = &quot;counts&quot;) %&gt;%
+    separate(sample, into = c(&quot;trt&quot;, &quot;ind&quot;, &quot;time&quot;)) %&gt;%
+    mutate(
+      time = factor(time, levels = c(&quot;3h&quot;, &quot;24h&quot;)),
+      trt = factor(trt, levels = c(&quot;DOX&quot;, &quot;EPI&quot;, &quot;DNR&quot;, &quot;MTX&quot;, &quot;TRZ&quot;, &quot;VEH&quot;))
+    ) %&gt;%
+    ggplot(aes(x = time, y = counts)) +
+    geom_boxplot(aes(fill = trt)) +
+    scale_fill_manual(values = drug_pal) +
+    theme_bw() +
+    ylab(&quot;log2 cpm RNA&quot;) +
+    ggtitle(paste0(&quot;RNA Log2cpm of &quot;, SYMBOL))
+  
+  plot(gene_plot)
+}</code></pre>
+<p><img src="figure/Top2B_analysis.Rmd/Viewing%20%20TAD102%20genes-1.png" width="672" style="display: block; margin: auto;" /><img src="figure/Top2B_analysis.Rmd/Viewing%20%20TAD102%20genes-2.png" width="672" style="display: block; margin: auto;" /><img src="figure/Top2B_analysis.Rmd/Viewing%20%20TAD102%20genes-3.png" width="672" style="display: block; margin: auto;" /><img src="figure/Top2B_analysis.Rmd/Viewing%20%20TAD102%20genes-4.png" width="672" style="display: block; margin: auto;" /><img src="figure/Top2B_analysis.Rmd/Viewing%20%20TAD102%20genes-5.png" width="672" style="display: block; margin: auto;" /><img src="figure/Top2B_analysis.Rmd/Viewing%20%20TAD102%20genes-6.png" width="672" style="display: block; margin: auto;" /><img src="figure/Top2B_analysis.Rmd/Viewing%20%20TAD102%20genes-7.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>RNA_pval_clean &lt;- RNA_adj.pvals %&gt;%
+  pivot_longer(cols = contains(&quot;pval&quot;), names_to = &quot;sample&quot;, values_to = &quot;adj.p.val&quot;) %&gt;% 
+    separate(sample, into = c(&quot;trt&quot;, &quot;time&quot;,&quot;pval&quot;)) %&gt;% 
+    mutate(
+    time = paste0(time, &quot;h&quot;),  # convert &quot;3&quot; → &quot;3h&quot;
+    trt = factor(trt, levels = c(&quot;DOX&quot;, &quot;EPI&quot;, &quot;DNR&quot;, &quot;MTX&quot;, &quot;TRZ&quot;, &quot;VEH&quot;)),
+    group = paste0(trt, &quot;_&quot;, time),
+    group = factor(group, levels = c(
+        &quot;DOX_3h&quot;, &quot;EPI_3h&quot;, &quot;DNR_3h&quot;, &quot;MTX_3h&quot;, &quot;TRZ_3h&quot;, &quot;VEH_3h&quot;,
+        &quot;DOX_24h&quot;, &quot;EPI_24h&quot;, &quot;DNR_24h&quot;, &quot;MTX_24h&quot;, &quot;TRZ_24h&quot;, &quot;VEH_24h&quot;
+      ))
+    )
+
+for (gene in TAD_plot_genes$ENTREZID) {
+  SYMBOL &lt;- TAD_plot_genes$SYMBOL[TAD_plot_genes$ENTREZID == gene]
+
+  # Prep expression data
+  gene_expr &lt;- RNA_counts %&gt;%
+    filter(ENTREZID == gene) %&gt;%
+    pivot_longer(cols = !ENTREZID, names_to = &quot;sample&quot;, values_to = &quot;counts&quot;) %&gt;%
+    separate(sample, into = c(&quot;trt&quot;, &quot;ind&quot;, &quot;time&quot;)) %&gt;%
+    mutate(
+      time = paste0(time),  # if already &quot;3h&quot;/&quot;24h&quot;
+      group = paste0(trt, &quot;_&quot;, time),
+      group = factor(group, levels = c(
+        &quot;DOX_3h&quot;, &quot;EPI_3h&quot;, &quot;DNR_3h&quot;, &quot;MTX_3h&quot;, &quot;TRZ_3h&quot;, &quot;VEH_3h&quot;,
+        &quot;DOX_24h&quot;, &quot;EPI_24h&quot;, &quot;DNR_24h&quot;, &quot;MTX_24h&quot;, &quot;TRZ_24h&quot;, &quot;VEH_24h&quot;
+      ))
+    )
+
+  # Get gene-specific p-values
+  gene_pvals &lt;- RNA_pval_clean %&gt;%
+    filter(ENTREZID == gene)
+
+  # Merge in p-values by group
+  gene_plot_data &lt;- left_join(gene_expr, gene_pvals, by = c(&quot;ENTREZID&quot;, &quot;group&quot;))
+
+  # Create label position below box
+  label_positions &lt;- gene_plot_data %&gt;%
+    group_by(group) %&gt;%
+    summarise(y = min(counts, na.rm = TRUE) - 0.5, .groups = &quot;drop&quot;)
+
+  gene_plot_data &lt;- left_join(gene_plot_data, label_positions, by = &quot;group&quot;)
+  gene_plot_data &lt;- gene_plot_data %&gt;%
+  separate(group, into = c(&quot;trt&quot;, &quot;time&quot;), sep = &quot;_&quot;, remove = FALSE)
+
+  # Plot
+  gene_plot &lt;- ggplot(gene_plot_data, aes(x = group, y = counts)) +
+    geom_boxplot(aes(fill = trt)) +
+    geom_text(
+      aes(y = y,
+          label = ifelse(trt != &quot;VEH&quot; &amp; !is.na(adj.p.val),
+                         paste0(&quot;&quot;, signif(adj.p.val, 2)),
+                         &quot;&quot;)),
+      size = 3,
+      vjust = 1.2
+    ) +
+    scale_fill_manual(values = drug_pal) +
+    theme_bw() +
+    ggtitle(paste0(&quot;RNA Log2cpm of &quot;, SYMBOL)) +
+    ylab(&quot;log2 cpm RNA&quot;) +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+plot(gene_plot)
+}</code></pre>
+<p><img src="figure/Top2B_analysis.Rmd/unnamed-chunk-16-1.png" width="672" style="display: block; margin: auto;" /><img src="figure/Top2B_analysis.Rmd/unnamed-chunk-16-2.png" width="672" style="display: block; margin: auto;" /><img src="figure/Top2B_analysis.Rmd/unnamed-chunk-16-3.png" width="672" style="display: block; margin: auto;" /><img src="figure/Top2B_analysis.Rmd/unnamed-chunk-16-4.png" width="672" style="display: block; margin: auto;" /><img src="figure/Top2B_analysis.Rmd/unnamed-chunk-16-5.png" width="672" style="display: block; margin: auto;" /><img src="figure/Top2B_analysis.Rmd/unnamed-chunk-16-6.png" width="672" style="display: block; margin: auto;" /><img src="figure/Top2B_analysis.Rmd/unnamed-chunk-16-7.png" width="672" style="display: block; margin: auto;" /></p>
+<br>
+<p>
+<button type="button" class="btn btn-default btn-workflowr btn-workflowr-sessioninfo" data-toggle="collapse" data-target="#workflowr-sessioninfo" style="display: block;">
+<span class="glyphicon glyphicon-wrench" aria-hidden="true"></span>
+Session information
+</button>
+</p>
+<div id="workflowr-sessioninfo" class="collapse">
+<pre class="r"><code>sessionInfo()</code></pre>
+<pre><code>R version 4.4.2 (2024-10-31 ucrt)
+Platform: x86_64-w64-mingw32/x64
+Running under: Windows 11 x64 (build 26100)
+
+Matrix products: default
+
+
+locale:
+[1] LC_COLLATE=English_United States.utf8 
+[2] LC_CTYPE=English_United States.utf8   
+[3] LC_MONETARY=English_United States.utf8
+[4] LC_NUMERIC=C                          
+[5] LC_TIME=English_United States.utf8    
+
+time zone: America/Chicago
+tzcode source: internal
+
+attached base packages:
+[1] grid      stats4    stats     graphics  grDevices utils     datasets 
+[8] methods   base     
+
+other attached packages:
+ [1] BSgenome.Hsapiens.UCSC.hg38_1.4.5       
+ [2] BSgenome_1.74.0                         
+ [3] BiocIO_1.16.0                           
+ [4] Biostrings_2.74.1                       
+ [5] XVector_0.46.0                          
+ [6] liftOver_1.30.0                         
+ [7] Homo.sapiens_1.3.1                      
+ [8] TxDb.Hsapiens.UCSC.hg19.knownGene_3.2.2 
+ [9] GO.db_3.20.0                            
+[10] OrganismDbi_1.48.0                      
+[11] gwascat_2.38.0                          
+[12] regioneR_1.38.0                         
+[13] readxl_1.4.5                            
+[14] circlize_0.4.16                         
+[15] epitools_0.5-10.1                       
+[16] ggrepel_0.9.6                           
+[17] plyranges_1.26.0                        
+[18] ggsignif_0.6.4                          
+[19] genomation_1.38.0                       
+[20] smplot2_0.2.5                           
+[21] eulerr_7.0.2                            
+[22] biomaRt_2.62.1                          
+[23] devtools_2.4.5                          
+[24] usethis_3.1.0                           
+[25] ggpubr_0.6.1                            
+[26] BiocParallel_1.40.2                     
+[27] scales_1.4.0                            
+[28] VennDiagram_1.7.3                       
+[29] futile.logger_1.4.3                     
+[30] gridExtra_2.3                           
+[31] ggfortify_0.4.18                        
+[32] edgeR_4.4.2                             
+[33] limma_3.62.2                            
+[34] rtracklayer_1.66.0                      
+[35] org.Hs.eg.db_3.20.0                     
+[36] TxDb.Hsapiens.UCSC.hg38.knownGene_3.20.0
+[37] GenomicFeatures_1.58.0                  
+[38] AnnotationDbi_1.68.0                    
+[39] Biobase_2.66.0                          
+[40] GenomicRanges_1.58.0                    
+[41] GenomeInfoDb_1.42.3                     
+[42] IRanges_2.40.1                          
+[43] S4Vectors_0.44.0                        
+[44] BiocGenerics_0.52.0                     
+[45] ChIPseeker_1.42.1                       
+[46] RColorBrewer_1.1-3                      
+[47] broom_1.0.8                             
+[48] kableExtra_1.4.0                        
+[49] lubridate_1.9.4                         
+[50] forcats_1.0.0                           
+[51] stringr_1.5.1                           
+[52] dplyr_1.1.4                             
+[53] purrr_1.0.4                             
+[54] readr_2.1.5                             
+[55] tidyr_1.3.1                             
+[56] tibble_3.3.0                            
+[57] ggplot2_3.5.2                           
+[58] tidyverse_2.0.0                         
+[59] workflowr_1.7.1                         
+
+loaded via a namespace (and not attached):
+  [1] R.methodsS3_1.8.2           dichromat_2.0-0.1          
+  [3] vroom_1.6.5                 progress_1.2.3             
+  [5] urlchecker_1.0.1            nnet_7.3-20                
+  [7] vctrs_0.6.5                 ggtangle_0.0.7             
+  [9] digest_0.6.37               png_0.1-8                  
+ [11] shape_1.4.6.1               git2r_0.36.2               
+ [13] reshape2_1.4.4              httpuv_1.6.16              
+ [15] qvalue_2.38.0               withr_3.0.2                
+ [17] xfun_0.52                   ggfun_0.1.9                
+ [19] ellipsis_0.3.2              survival_3.8-3             
+ [21] memoise_2.0.1               profvis_0.4.0              
+ [23] systemfonts_1.2.3           tidytree_0.4.6             
+ [25] zoo_1.8-14                  GlobalOptions_0.1.2        
+ [27] gtools_3.9.5                R.oo_1.27.1                
+ [29] Formula_1.2-5               prettyunits_1.2.0          
+ [31] KEGGREST_1.46.0             promises_1.3.3             
+ [33] httr_1.4.7                  rstatix_0.7.2              
+ [35] restfulr_0.0.16             ps_1.9.1                   
+ [37] rstudioapi_0.17.1           UCSC.utils_1.2.0           
+ [39] miniUI_0.1.2                generics_0.1.4             
+ [41] DOSE_4.0.1                  base64enc_0.1-3            
+ [43] processx_3.8.6              curl_6.4.0                 
+ [45] zlibbioc_1.52.0             polylabelr_0.3.0           
+ [47] polyclip_1.10-7             GenomeInfoDbData_1.2.13    
+ [49] SparseArray_1.6.2           RBGL_1.82.0                
+ [51] xtable_1.8-4                evaluate_1.0.4             
+ [53] S4Arrays_1.6.0              BiocFileCache_2.14.0       
+ [55] hms_1.1.3                   colorspace_2.1-1           
+ [57] filelock_1.0.3              magrittr_2.0.3             
+ [59] later_1.4.2                 ggtree_3.14.0              
+ [61] lattice_0.22-7              getPass_0.2-4              
+ [63] XML_3.99-0.18               cowplot_1.1.3              
+ [65] matrixStats_1.5.0           Hmisc_5.2-3                
+ [67] pillar_1.11.0               nlme_3.1-168               
+ [69] gridBase_0.4-7              caTools_1.18.3             
+ [71] compiler_4.4.2              stringi_1.8.7              
+ [73] SummarizedExperiment_1.36.0 GenomicAlignments_1.42.0   
+ [75] plyr_1.8.9                  crayon_1.5.3               
+ [77] abind_1.4-8                 gridGraphics_0.5-1         
+ [79] locfit_1.5-9.12             bit_4.6.0                  
+ [81] fastmatch_1.1-6             whisker_0.4.1              
+ [83] codetools_0.2-20            textshaping_1.0.1          
+ [85] bslib_0.9.0                 mime_0.13                  
+ [87] splines_4.4.2               Rcpp_1.1.0                 
+ [89] dbplyr_2.5.0                cellranger_1.1.0           
+ [91] knitr_1.50                  blob_1.2.4                 
+ [93] utf8_1.2.6                  fs_1.6.6                   
+ [95] checkmate_2.3.2             pkgbuild_1.4.8             
+ [97] ggplotify_0.1.2             Matrix_1.7-3               
+ [99] callr_3.7.6                 statmod_1.5.0              
+[101] tzdb_0.5.0                  svglite_2.2.1              
+[103] pkgconfig_2.0.3             tools_4.4.2                
+[105] cachem_1.1.0                RSQLite_2.4.1              
+[107] viridisLite_0.4.2           DBI_1.2.3                  
+[109] impute_1.80.0               fastmap_1.2.0              
+[111] rmarkdown_2.29              Rsamtools_2.22.0           
+[113] sass_0.4.10                 patchwork_1.3.1            
+[115] BiocManager_1.30.26         VariantAnnotation_1.52.0   
+[117] graph_1.84.1                carData_3.0-5              
+[119] rpart_4.1.24                farver_2.1.2               
+[121] yaml_2.3.10                 MatrixGenerics_1.18.1      
+[123] foreign_0.8-90              cli_3.6.5                  
+[125] txdbmaker_1.2.1             lifecycle_1.0.4            
+[127] lambda.r_1.2.4              sessioninfo_1.2.3          
+[129] backports_1.5.0             timechange_0.3.0           
+[131] gtable_0.3.6                rjson_0.2.23               
+[133] parallel_4.4.2              ape_5.8-1                  
+[135] jsonlite_2.0.0              bitops_1.0-9               
+[137] bit64_4.6.0-1               pwr_1.3-0                  
+[139] yulab.utils_0.2.0           futile.options_1.0.1       
+[141] jquerylib_0.1.4             GOSemSim_2.32.0            
+[143] R.utils_2.13.0              snpStats_1.56.0            
+[145] lazyeval_0.2.2              shiny_1.11.1               
+[147] htmltools_0.5.8.1           enrichplot_1.26.6          
+[149] rappdirs_0.3.3              formatR_1.14               
+[151] glue_1.8.0                  httr2_1.1.2                
+[153] RCurl_1.98-1.17             rprojroot_2.0.4            
+[155] treeio_1.30.0               boot_1.3-31                
+[157] igraph_2.1.4                R6_2.6.1                   
+[159] gplots_3.2.0                labeling_0.4.3             
+[161] cluster_2.1.8.1             pkgload_1.4.0              
+[163] aplot_0.2.8                 DelayedArray_0.32.0        
+[165] tidyselect_1.2.1            plotrix_3.8-4              
+[167] htmlTable_2.4.3             xml2_1.3.8                 
+[169] car_3.1-3                   seqPattern_1.38.0          
+[171] KernSmooth_2.23-26          data.table_1.17.6          
+[173] htmlwidgets_1.6.4           fgsea_1.32.4               
+[175] rlang_1.1.6                 remotes_2.5.0              </code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+
+<!-- Adjust MathJax settings so that all math formulae are shown using
+TeX fonts only; see
+https://docs.mathjax.org/en/latest/web/configuration.html. This will make
+the presentation more consistent at the cost of the webpage sometimes
+taking slightly longer to load. Note that this only works because the
+footer is added to webpages before the MathJax javascript. -->
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    "HTML-CSS": { availableFonts: ["TeX"] }
+  });
+</script>
+
+
+
+
+</div>
+</div>
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+function bootstrapStylePandocTables() {
+  $('tr.odd').parent('tbody').parent('table').addClass('table table-condensed');
+}
+$(document).ready(function () {
+  bootstrapStylePandocTables();
+});
+
+
+</script>
+
+<!-- tabsets -->
+
+<script>
+$(document).ready(function () {
+  window.buildTabsets("TOC");
+});
+
+$(document).ready(function () {
+  $('.tabset-dropdown > .nav-tabs > li').click(function () {
+    $(this).parent().toggleClass('nav-tabs-open');
+  });
+});
+</script>
+
+<!-- code folding -->
+
+<script>
+$(document).ready(function ()  {
+
+    // temporarily add toc-ignore selector to headers for the consistency with Pandoc
+    $('.unlisted.unnumbered').addClass('toc-ignore')
+
+    // move toc-ignore selectors from section div to header
+    $('div.section.toc-ignore')
+        .removeClass('toc-ignore')
+        .children('h1,h2,h3,h4,h5').addClass('toc-ignore');
+
+    // establish options
+    var options = {
+      selectors: "h1,h2,h3",
+      theme: "bootstrap3",
+      context: '.toc-content',
+      hashGenerator: function (text) {
+        return text.replace(/[.\\/?&!#<>]/g, '').replace(/\s/g, '_');
+      },
+      ignoreSelector: ".toc-ignore",
+      scrollTo: 0
+    };
+    options.showAndHide = true;
+    options.smoothScroll = true;
+
+    // tocify
+    var toc = $("#TOC").tocify(options).data("toc-tocify");
+});
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
