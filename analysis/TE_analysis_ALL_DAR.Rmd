@@ -815,4 +815,390 @@ combined_df %>%
             grid.text("*", x, y, gp = gpar(fontsize = 20))}})
 
 ```
+### Looking at LTR class breakdown
 
+```{r}
+TE_catagories <- overlap_TE_gr %>% as.data.frame() %>% 
+  dplyr::select(Peakid,repName:id) %>% 
+  distinct() %>% 
+  mutate(repClass_org = repClass) %>% #copy repClass for storage
+  mutate(repClass=if_else(##relable repClass with other
+    repClass_org=="LINE", repClass_org,if_else(repClass_org=="SINE",repClass_org,if_else(repClass_org=="LTR", repClass_org, if_else(repClass_org=="DNA", repClass_org, if_else(repClass_org=="Retroposon",repClass_org,"Other")))))) 
+
+
+
+LTR_df <- LTR_repeats %>% 
+  as.data.frame() %>% 
+  mutate(repName=factor(repName))
+
+scale_fill_LTRs <-  function(...){
+  ggplot2:::manual_scale(
+    'fill', 
+    values = setNames(c( "#8DD3C7",
+                         "#FFFFB3",
+                         "#BEBADA" ,
+                         "#FB8072",
+                         "#80B1D3",
+                         "#FDB462",
+                         "#B3DE69",
+                         "#FCCDE5",
+                         "#D9D9D9",
+                         "#BC80BD",
+                         "#CCEBC5",
+                         "pink4",
+                         "cornflowerblue",
+                         "chocolate",
+                         "brown",
+                         "green",
+                         "yellow4",
+                         "purple",
+                         "darkorchid4",
+                         "coral4",
+                         "darkolivegreen4",
+                         "darkorange"), unique(LTR_df$repFamily)), 
+    ...
+  )
+}
+
+# TE_catagories
+```
+
+
+```{r}
+h.genome_df <- repeatmasker %>% 
+  mutate(repClass_org = repClass) %>% #copy repClass for storage
+  mutate(repClass=if_else(##relable repClass with other
+    repClass_org=="LINE", repClass_org,if_else(repClass_org=="SINE",repClass_org,if_else(repClass_org=="LTR", repClass_org, if_else(repClass_org=="DNA", repClass_org, if_else(repClass_org=="Retroposon",repClass_org,"Other")))))) %>% 
+  mutate(Peakid=paste0(rownames(.),"_TE")) %>% 
+  dplyr::select(Peakid,repName,repClass, repFamily,repClass_org) %>%
+   mutate(TE_status ="TE_peak", trt="h.genome")
+
+ggLTR_df <-annotated_peaks %>%
+  dplyr::left_join(TE_catagories,by=c("genes" = "Peakid")) %>% 
+  dplyr::filter(LTR_status=="LTR_peak") %>%
+  dplyr::filter(repClass_org=="LTR") %>% 
+  dplyr::rename("Peakid"=genes) %>% 
+  dplyr::select(Peakid, repName, repClass,repFamily,repClass_org,TE_status) %>% 
+  distinct(Peakid, TE_status,repClass,.keep_all = TRUE) %>% 
+  mutate(trt="all_peaks")
+
+```
+
+
+```{r}
+DNR_3_df <- annotated_peaks %>%
+  left_join(TE_catagories,by=c("genes" = "Peakid")) %>% 
+  dplyr::filter(repClass_org=="LTR") %>% 
+  dplyr::filter(DNR_sig_3=="sig") %>% 
+  dplyr::rename("Peakid"=genes) %>% 
+   dplyr::select(Peakid, repName, repClass,repFamily,repClass_org,TE_status) %>% 
+  distinct(Peakid, TE_status,repClass,.keep_all = TRUE) %>% 
+  mutate(trt="DNR_3")
+
+DNR_24_df <- annotated_peaks %>%
+  left_join(TE_catagories,by=c("genes" = "Peakid")) %>% 
+ dplyr::filter(repClass_org=="LTR") %>% 
+  dplyr::filter(DNR_sig_24=="sig") %>% 
+  dplyr::rename("Peakid"=genes) %>% 
+   dplyr::select(Peakid, repName, repClass,repFamily,repClass_org,TE_status) %>% 
+  distinct(Peakid, TE_status,repClass,.keep_all = TRUE) %>% 
+  mutate(trt="DNR_24")
+
+DOX_3_df <- annotated_peaks %>%
+  left_join(TE_catagories,by=c("genes" = "Peakid")) %>% 
+  dplyr::filter(repClass_org=="LTR") %>% 
+  dplyr::filter(DOX_sig_3=="sig") %>% 
+  dplyr::rename("Peakid"=genes) %>% 
+   dplyr::select(Peakid, repName, repClass,repFamily,repClass_org,TE_status) %>% 
+  distinct(Peakid, TE_status,repClass,.keep_all = TRUE) %>% 
+  mutate(trt="DOX_3")
+
+DOX_24_df <- annotated_peaks %>%
+  left_join(TE_catagories,by=c("genes" = "Peakid")) %>% 
+  dplyr::filter(repClass_org=="LTR") %>% 
+  dplyr::filter(DOX_sig_24=="sig") %>% 
+  dplyr::rename("Peakid"=genes) %>% 
+   dplyr::select(Peakid, repName, repClass,repFamily,repClass_org,TE_status) %>% 
+  distinct(Peakid, TE_status,repClass,.keep_all = TRUE) %>% 
+  mutate(trt="DOX_24")
+
+EPI_3_df <- annotated_peaks %>%
+  left_join(TE_catagories,by=c("genes" = "Peakid")) %>% 
+  dplyr::filter(repClass_org=="LTR") %>% 
+  dplyr::filter(EPI_sig_3=="sig") %>% 
+  dplyr::rename("Peakid"=genes) %>% 
+   dplyr::select(Peakid, repName, repClass,repFamily,repClass_org,TE_status) %>% 
+  distinct(Peakid, TE_status,repClass,.keep_all = TRUE) %>% 
+  mutate(trt="EPI_3")
+
+EPI_24_df <- annotated_peaks %>%
+  left_join(TE_catagories,by=c("genes" = "Peakid")) %>% 
+  dplyr::filter(repClass_org=="LTR") %>% 
+  dplyr::filter(DNR_sig_24=="sig") %>% 
+  dplyr::rename("Peakid"=genes) %>% 
+   dplyr::select(Peakid, repName, repClass,repFamily,repClass_org,TE_status) %>% 
+  distinct(Peakid, TE_status,repClass,.keep_all = TRUE) %>% 
+  mutate(trt="EPI_24")
+
+MTX_3_df <- annotated_peaks %>%
+  left_join(TE_catagories,by=c("genes" = "Peakid")) %>% 
+  dplyr::filter(repClass_org=="LTR") %>% 
+  dplyr::filter(MTX_sig_3=="sig") %>% 
+  dplyr::rename("Peakid"=genes) %>% 
+   dplyr::select(Peakid, repName, repClass,repFamily,repClass_org,TE_status) %>% 
+  distinct(Peakid, TE_status,repClass,.keep_all = TRUE) %>% 
+  mutate(trt="MTX_3")
+
+MTX_24_df <- annotated_peaks %>%
+  left_join(TE_catagories,by=c("genes" = "Peakid")) %>% 
+  dplyr::filter(repClass_org=="LTR") %>% 
+  dplyr::filter(MTX_sig_24=="sig") %>% 
+  dplyr::rename("Peakid"=genes) %>% 
+   dplyr::select(Peakid, repName, repClass,repFamily,repClass_org,TE_status) %>% 
+  distinct(Peakid, TE_status,repClass,.keep_all = TRUE) %>% 
+  mutate(trt="MTX_24")
+
+```
+
+```{r}
+h.genome_LTR_combo<-h.genome_df %>% 
+  dplyr::filter(repClass_org=="LTR") %>% 
+  rbind(ggLTR_df) %>% 
+  rbind(DOX_3_df) %>% 
+  rbind(DOX_24_df) %>% 
+  rbind(EPI_3_df) %>% 
+  rbind(EPI_24_df) %>% 
+  rbind(DNR_3_df) %>% 
+  rbind(DNR_24_df) %>% 
+  rbind(MTX_3_df) %>% 
+  rbind(MTX_24_df)
+
+h.genome_LTR_combo %>% 
+  dplyr::filter(TE_status=="TE_peak") %>% 
+  mutate(trt=factor(trt, levels=c("h.genome","all_peaks","DOX_3","EPI_3","DNR_3","MTX_3","DOX_24","EPI_24","DNR_24","MTX_24"))) %>% 
+  ggplot(., aes(x=trt, fill= repFamily))+
+  geom_bar(position="fill", col="black")+
+  theme_bw()+
+  ggtitle("LTR breakdown across response classes")+
+  scale_fill_LTRs()
+```
+
+
+```{r}
+ggLINE_df <-annotated_peaks %>%
+  dplyr::left_join(TE_catagories,by=c("genes" = "Peakid")) %>% 
+  # dplyr::filter(LTR_status=="LINE_peak") %>%
+  dplyr::filter(repClass_org=="LINE") %>% 
+  dplyr::rename("Peakid"=genes) %>% 
+  dplyr::select(Peakid, repName, repClass,repFamily,repClass_org,TE_status) %>% 
+  distinct(Peakid, TE_status,repClass,.keep_all = TRUE) %>% 
+  mutate(trt="all_peaks")
+
+
+DNR_3_df_LINE <- annotated_peaks %>%
+  left_join(TE_catagories,by=c("genes" = "Peakid")) %>% 
+  dplyr::filter(repClass_org=="LINE") %>% 
+  dplyr::filter(DNR_sig_3=="sig") %>% 
+  dplyr::rename("Peakid"=genes) %>% 
+   dplyr::select(Peakid, repName, repClass,repFamily,repClass_org,TE_status) %>% 
+  distinct(Peakid, TE_status,repClass,.keep_all = TRUE) %>% 
+  mutate(trt="DNR_3")
+
+DNR_24_df_LINE <- annotated_peaks %>%
+  left_join(TE_catagories,by=c("genes" = "Peakid")) %>% 
+ dplyr::filter(repClass_org=="LINE") %>% 
+  dplyr::filter(DNR_sig_24=="sig") %>% 
+  dplyr::rename("Peakid"=genes) %>% 
+   dplyr::select(Peakid, repName, repClass,repFamily,repClass_org,TE_status) %>% 
+  distinct(Peakid, TE_status,repClass,.keep_all = TRUE) %>% 
+  mutate(trt="DNR_24")
+
+DOX_3_df_LINE <- annotated_peaks %>%
+  left_join(TE_catagories,by=c("genes" = "Peakid")) %>% 
+  dplyr::filter(repClass_org=="LINE") %>% 
+  dplyr::filter(DOX_sig_3=="sig") %>% 
+  dplyr::rename("Peakid"=genes) %>% 
+   dplyr::select(Peakid, repName, repClass,repFamily,repClass_org,TE_status) %>% 
+  distinct(Peakid, TE_status,repClass,.keep_all = TRUE) %>% 
+  mutate(trt="DOX_3")
+
+DOX_24_df_LINE <- annotated_peaks %>%
+  left_join(TE_catagories,by=c("genes" = "Peakid")) %>% 
+  dplyr::filter(repClass_org=="LINE") %>% 
+  dplyr::filter(DOX_sig_24=="sig") %>% 
+  dplyr::rename("Peakid"=genes) %>% 
+   dplyr::select(Peakid, repName, repClass,repFamily,repClass_org,TE_status) %>% 
+  distinct(Peakid, TE_status,repClass,.keep_all = TRUE) %>% 
+  mutate(trt="DOX_24")
+
+EPI_3_df_LINE <- annotated_peaks %>%
+  left_join(TE_catagories,by=c("genes" = "Peakid")) %>% 
+  dplyr::filter(repClass_org=="LINE") %>% 
+  dplyr::filter(EPI_sig_3=="sig") %>% 
+  dplyr::rename("Peakid"=genes) %>% 
+   dplyr::select(Peakid, repName, repClass,repFamily,repClass_org,TE_status) %>% 
+  distinct(Peakid, TE_status,repClass,.keep_all = TRUE) %>% 
+  mutate(trt="EPI_3")
+
+EPI_24_df_LINE <- annotated_peaks %>%
+  left_join(TE_catagories,by=c("genes" = "Peakid")) %>% 
+  dplyr::filter(repClass_org=="LINE") %>% 
+  dplyr::filter(DNR_sig_24=="sig") %>% 
+  dplyr::rename("Peakid"=genes) %>% 
+   dplyr::select(Peakid, repName, repClass,repFamily,repClass_org,TE_status) %>% 
+  distinct(Peakid, TE_status,repClass,.keep_all = TRUE) %>% 
+  mutate(trt="EPI_24")
+
+MTX_3_df_LINE <- annotated_peaks %>%
+  left_join(TE_catagories,by=c("genes" = "Peakid")) %>% 
+  dplyr::filter(repClass_org=="LINE") %>% 
+  dplyr::filter(MTX_sig_3=="sig") %>% 
+  dplyr::rename("Peakid"=genes) %>% 
+   dplyr::select(Peakid, repName, repClass,repFamily,repClass_org,TE_status) %>% 
+  distinct(Peakid, TE_status,repClass,.keep_all = TRUE) %>% 
+  mutate(trt="MTX_3")
+
+MTX_24_df_LINE <- annotated_peaks %>%
+  left_join(TE_catagories,by=c("genes" = "Peakid")) %>% 
+  dplyr::filter(repClass_org=="LINE") %>% 
+  dplyr::filter(MTX_sig_24=="sig") %>% 
+  dplyr::rename("Peakid"=genes) %>% 
+   dplyr::select(Peakid, repName, repClass,repFamily,repClass_org,TE_status) %>% 
+  distinct(Peakid, TE_status,repClass,.keep_all = TRUE) %>% 
+  mutate(trt="MTX_24")
+
+```
+
+```{r}
+h.genome_LINE_combo<-h.genome_df %>% 
+  dplyr::filter(repClass_org=="LINE") %>% 
+  rbind(ggLINE_df) %>% 
+  rbind(DOX_3_df_LINE) %>% 
+  rbind(DOX_24_df_LINE) %>% 
+  rbind(EPI_3_df_LINE) %>% 
+  rbind(EPI_24_df_LINE) %>% 
+  rbind(DNR_3_df_LINE) %>% 
+  rbind(DNR_24_df_LINE) %>% 
+  rbind(MTX_3_df_LINE) %>% 
+  rbind(MTX_24_df_LINE)
+
+h.genome_LINE_combo %>% 
+  dplyr::filter(TE_status=="TE_peak") %>% 
+  mutate(trt=factor(trt, levels=c("h.genome","all_peaks","DOX_3","EPI_3","DNR_3","MTX_3","DOX_24","EPI_24","DNR_24","MTX_24"))) %>% 
+  ggplot(., aes(x=trt, fill= repFamily))+
+  geom_bar(position="fill", col="black")+
+  theme_bw()+
+  ggtitle("LINE breakdown across response classes")#+
+  # scale_fill_LINEs()
+```
+
+
+
+
+```{r for SINE}
+ggSINE_df <-annotated_peaks %>%
+  dplyr::left_join(TE_catagories,by=c("genes" = "Peakid")) %>% 
+  # dplyr::filter(LTR_status=="SINE_peak") %>%
+  dplyr::filter(repClass_org=="SINE") %>% 
+  dplyr::rename("Peakid"=genes) %>% 
+  dplyr::select(Peakid, repName, repClass,repFamily,repClass_org,TE_status) %>% 
+  distinct(Peakid, TE_status,repClass,.keep_all = TRUE) %>% 
+  mutate(trt="all_peaks")
+
+
+DNR_3_df_SINE <- annotated_peaks %>%
+  left_join(TE_catagories,by=c("genes" = "Peakid")) %>% 
+  dplyr::filter(repClass_org=="SINE") %>% 
+  dplyr::filter(DNR_sig_3=="sig") %>% 
+  dplyr::rename("Peakid"=genes) %>% 
+   dplyr::select(Peakid, repName, repClass,repFamily,repClass_org,TE_status) %>% 
+  distinct(Peakid, TE_status,repClass,.keep_all = TRUE) %>% 
+  mutate(trt="DNR_3")
+
+DNR_24_df_SINE <- annotated_peaks %>%
+  left_join(TE_catagories,by=c("genes" = "Peakid")) %>% 
+ dplyr::filter(repClass_org=="SINE") %>% 
+  dplyr::filter(DNR_sig_24=="sig") %>% 
+  dplyr::rename("Peakid"=genes) %>% 
+   dplyr::select(Peakid, repName, repClass,repFamily,repClass_org,TE_status) %>% 
+  distinct(Peakid, TE_status,repClass,.keep_all = TRUE) %>% 
+  mutate(trt="DNR_24")
+
+DOX_3_df_SINE <- annotated_peaks %>%
+  left_join(TE_catagories,by=c("genes" = "Peakid")) %>% 
+  dplyr::filter(repClass_org=="SINE") %>% 
+  dplyr::filter(DOX_sig_3=="sig") %>% 
+  dplyr::rename("Peakid"=genes) %>% 
+   dplyr::select(Peakid, repName, repClass,repFamily,repClass_org,TE_status) %>% 
+  distinct(Peakid, TE_status,repClass,.keep_all = TRUE) %>% 
+  mutate(trt="DOX_3")
+
+DOX_24_df_SINE <- annotated_peaks %>%
+  left_join(TE_catagories,by=c("genes" = "Peakid")) %>% 
+  dplyr::filter(repClass_org=="SINE") %>% 
+  dplyr::filter(DOX_sig_24=="sig") %>% 
+  dplyr::rename("Peakid"=genes) %>% 
+   dplyr::select(Peakid, repName, repClass,repFamily,repClass_org,TE_status) %>% 
+  distinct(Peakid, TE_status,repClass,.keep_all = TRUE) %>% 
+  mutate(trt="DOX_24")
+
+EPI_3_df_SINE <- annotated_peaks %>%
+  left_join(TE_catagories,by=c("genes" = "Peakid")) %>% 
+  dplyr::filter(repClass_org=="SINE") %>% 
+  dplyr::filter(EPI_sig_3=="sig") %>% 
+  dplyr::rename("Peakid"=genes) %>% 
+   dplyr::select(Peakid, repName, repClass,repFamily,repClass_org,TE_status) %>% 
+  distinct(Peakid, TE_status,repClass,.keep_all = TRUE) %>% 
+  mutate(trt="EPI_3")
+
+EPI_24_df_SINE <- annotated_peaks %>%
+  left_join(TE_catagories,by=c("genes" = "Peakid")) %>% 
+  dplyr::filter(repClass_org=="SINE") %>% 
+  dplyr::filter(DNR_sig_24=="sig") %>% 
+  dplyr::rename("Peakid"=genes) %>% 
+   dplyr::select(Peakid, repName, repClass,repFamily,repClass_org,TE_status) %>% 
+  distinct(Peakid, TE_status,repClass,.keep_all = TRUE) %>% 
+  mutate(trt="EPI_24")
+
+MTX_3_df_SINE <- annotated_peaks %>%
+  left_join(TE_catagories,by=c("genes" = "Peakid")) %>% 
+  dplyr::filter(repClass_org=="SINE") %>% 
+  dplyr::filter(MTX_sig_3=="sig") %>% 
+  dplyr::rename("Peakid"=genes) %>% 
+   dplyr::select(Peakid, repName, repClass,repFamily,repClass_org,TE_status) %>% 
+  distinct(Peakid, TE_status,repClass,.keep_all = TRUE) %>% 
+  mutate(trt="MTX_3")
+
+MTX_24_df_SINE <- annotated_peaks %>%
+  left_join(TE_catagories,by=c("genes" = "Peakid")) %>% 
+  dplyr::filter(repClass_org=="SINE") %>% 
+  dplyr::filter(MTX_sig_24=="sig") %>% 
+  dplyr::rename("Peakid"=genes) %>% 
+   dplyr::select(Peakid, repName, repClass,repFamily,repClass_org,TE_status) %>% 
+  distinct(Peakid, TE_status,repClass,.keep_all = TRUE) %>% 
+  mutate(trt="MTX_24")
+
+```
+
+```{r sine breakdown}
+h.genome_SINE_combo<-h.genome_df %>% 
+  dplyr::filter(repClass_org=="SINE") %>% 
+  rbind(ggSINE_df) %>% 
+  rbind(DOX_3_df_SINE) %>% 
+  rbind(DOX_24_df_SINE) %>% 
+  rbind(EPI_3_df_SINE) %>% 
+  rbind(EPI_24_df_SINE) %>% 
+  rbind(DNR_3_df_SINE) %>% 
+  rbind(DNR_24_df_SINE) %>% 
+  rbind(MTX_3_df_SINE) %>% 
+  rbind(MTX_24_df_SINE)
+
+h.genome_SINE_combo %>% 
+  dplyr::filter(TE_status=="TE_peak") %>% 
+  mutate(trt=factor(trt, levels=c("h.genome","all_peaks","DOX_3","EPI_3","DNR_3","MTX_3","DOX_24","EPI_24","DNR_24","MTX_24"))) %>% 
+  ggplot(., aes(x=trt, fill= repFamily))+
+  geom_bar(position="fill", col="black")+
+  theme_bw()+
+  ggtitle("SINE breakdown across response classes")#+
+  # scale_fill_LINEs()
+```
