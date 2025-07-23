@@ -219,12 +219,23 @@ TRZ_24_sig <-all_results %>%
   mutate("Peakid"=genes) %>% 
   dplyr::filter(source=="TRZ_24") 
 
+# Compute log2 CPM for the full dataset
+all_log2cpm <- cpm(filt_raw_counts_noY, log = TRUE)
+# Full range, (use quantiles to clip extremes)
+log2cpm_q <- quantile(all_log2cpm, probs = c(0.01, 0.5, 0.99), na.rm = TRUE)
+# Compute the global min and max
+col_fun_log2cpm <- colorRamp2(
+  c(log2cpm_q[1], log2cpm_q[2], log2cpm_q[3]),
+  c("blue", "white", "red")
+)
+
+
 ```
 
 ### DOX 3 hour filtering matrix  
 
 
-```{r DOX 3hr heatmap, fig.height=8, fig.width=5}
+```{r DOX 3hr heatmap}
 DOX_VEH_3hr_mat <-  DOX_VEH_3hr %>% 
   as.data.frame() %>% 
   dplyr::filter(rownames(.) %in%DOX_3_sig$Peakid) %>% 
@@ -251,20 +262,22 @@ wss <- sapply(1:15, function(k) {
 plot(1:15, wss, type = "b", pch = 19,
      xlab = "Number of Clusters (K)",
      ylab = "Total Within-Cluster Sum of Squares",
-     main = "Elbow Method for Choosing K") 
+     main = "Elbow Method for Choosing K")
+```
 
-                              
 
+```{r DOX 3hr final heatmap, fig.height=8, fig.width=5}
 Heatmap(DOX_VEH_3hr_mat, 
         top_annotation = col_ha_3hr,
         show_column_names = TRUE,
         show_row_names = FALSE,
         cluster_columns = TRUE,
         cluster_rows = FALSE,
+        col=col_fun_log2cpm,
         use_raster=TRUE,
         raster_device="png",
         raster_quality = 2,
-        row_km = 5,
+        row_km = 4,
         column_title = "3 Hour Log2cpm of 3 hr DOX DARs")
   
 ```
@@ -272,7 +285,7 @@ Heatmap(DOX_VEH_3hr_mat,
 
 ### DOX 24 hour filtering matrix
 
-```{r DOX 24hr heatmap, fig.height=8, fig.width=5}
+```{r DOX 24hr heatmap}
 DOX_VEH_24hr_mat <-  DOX_VEH_24hr %>% 
   as.data.frame() %>% 
   dplyr::filter(rownames(.) %in%DOX_24_sig$Peakid) %>% 
@@ -300,20 +313,22 @@ wss <- sapply(1:15, function(k) {
 plot(1:15, wss, type = "b", pch = 19,
      xlab = "Number of Clusters (K)",
      ylab = "Total Within-Cluster Sum of Squares",
-     main = "Elbow Method for Choosing K") 
+     main = "Elbow Method for Choosing K")
+```
 
 
-
+```{r DOX 24hr final heatmap, fig.height=8, fig.width=5}
 Heatmap(DOX_VEH_24hr_mat, 
         top_annotation = col_ha_24hr,
         show_column_names = TRUE,
         show_row_names = FALSE,
         cluster_columns = TRUE,
         cluster_rows = FALSE,
+        col=col_fun_log2cpm,
         use_raster=TRUE,
         raster_device="png",
         raster_quality = 2,
-        row_km = 3,
+        row_km = 4,
         column_title = "24 Hour Log2cpm of 24 hr DARs")
   
 ```
@@ -321,9 +336,7 @@ Heatmap(DOX_VEH_24hr_mat,
 ### EPI 3 hour filtering matrix  
 
 
-```{r EPI 3hr heatmap, fig.height=8, fig.width=5}
-
-
+```{r EPI 3hr heatmap}
 EPI_VEH_3hr_mat <-  EPI_VEH_3hr %>% 
   as.data.frame() %>% 
   dplyr::filter(rownames(.) %in%EPI_3_sig$Peakid) %>% 
@@ -350,20 +363,22 @@ wss <- sapply(1:15, function(k) {
 plot(1:15, wss, type = "b", pch = 19,
      xlab = "Number of Clusters (K)",
      ylab = "Total Within-Cluster Sum of Squares",
-     main = "Elbow Method for Choosing K") 
+     main = "Elbow Method for Choosing K")
+```
 
-                              
 
+```{r EPI 3hr final heatmap, fig.height=8, fig.width=5}
 Heatmap(EPI_VEH_3hr_mat, 
         top_annotation = col_ha_3hr,
         show_column_names = TRUE,
         show_row_names = FALSE,
         cluster_columns = TRUE,
         cluster_rows = FALSE,
+        col=col_fun_log2cpm,
         use_raster=TRUE,
         raster_device="png",
         raster_quality = 2,
-        row_km = 5,
+        row_km = 4,
         column_title = "3 Hour Log2cpm of 3 hr DARs")
   
 ```
@@ -371,7 +386,7 @@ Heatmap(EPI_VEH_3hr_mat,
 
 ### EPI 24 hour filtering matrix
 
-```{r EPI 24hr heatmap, fig.height=8, fig.width=5}
+```{r EPI 24hr heatmap}
 EPI_VEH_24hr_mat <-  EPI_VEH_24hr %>% 
   as.data.frame() %>% 
   dplyr::filter(rownames(.) %in%EPI_24_sig$Peakid) %>% 
@@ -398,18 +413,22 @@ col_ha_24hr <- HeatmapAnnotation(df=EPI24_annot_mat,
 plot(1:15, wss, type = "b", pch = 19,
      xlab = "Number of Clusters (K)",
      ylab = "Total Within-Cluster Sum of Squares",
-     main = "Elbow Method for Choosing K")                              
+     main = "Elbow Method for Choosing K")
+```
 
+
+```{r EPI 24hr final heatmap, fig.height=8, fig.width=5}
 Heatmap(EPI_VEH_24hr_mat, 
         top_annotation = col_ha_24hr,
         show_column_names = TRUE,
         show_row_names = FALSE,
         cluster_columns = TRUE,
         cluster_rows = FALSE,
+        col=col_fun_log2cpm,
         use_raster=TRUE,
         raster_device="png",
         raster_quality = 2,
-        row_km = 5,
+        row_km = 4,
         column_title = "24 Hour Log2cpm of 24 hr DARs")
   
 ```
@@ -417,7 +436,7 @@ Heatmap(EPI_VEH_24hr_mat,
 ### DNR 3 hour filtering matrix  
 
 
-```{r DNR 3hr heatmap, fig.height=8, fig.width=5}
+```{r DNR 3hr heatmap}
 DNR_VEH_3hr_mat <-  DNR_VEH_3hr %>% 
   as.data.frame() %>% 
   dplyr::filter(rownames(.) %in%DNR_3_sig$Peakid) %>% 
@@ -444,18 +463,22 @@ wss <- sapply(1:15, function(k) {
 plot(1:15, wss, type = "b", pch = 19,
      xlab = "Number of Clusters (K)",
      ylab = "Total Within-Cluster Sum of Squares",
-     main = "Elbow Method for Choosing K")                               
+     main = "Elbow Method for Choosing K")
+```
 
+
+```{r DNR 3hr final heatmap, fig.height=8, fig.width=5}
 Heatmap(DNR_VEH_3hr_mat, 
         top_annotation = col_ha_3hr,
         show_column_names = TRUE,
         show_row_names = FALSE,
         cluster_columns = TRUE,
         cluster_rows = FALSE,
+        col=col_fun_log2cpm,
         use_raster=TRUE,
         raster_device="png",
         raster_quality = 2,
-        row_km = 5,
+        row_km = 3,
         column_title = "3 Hour Log2cpm of 3 hr DARs")
   
 ```
@@ -463,7 +486,7 @@ Heatmap(DNR_VEH_3hr_mat,
 
 ### DNR 24 hour filtering matrix
 
-```{r DNR 24hr heatmap, fig.height=8, fig.width=5}
+```{r DNR 24hr heatmap}
 DNR_VEH_24hr_mat <-  DNR_VEH_24hr %>% 
   as.data.frame() %>% 
   dplyr::filter(rownames(.) %in%DNR_24_sig$Peakid) %>% 
@@ -490,18 +513,22 @@ wss <- sapply(1:15, function(k) {
 plot(1:15, wss, type = "b", pch = 19,
      xlab = "Number of Clusters (K)",
      ylab = "Total Within-Cluster Sum of Squares",
-     main = "Elbow Method for Choosing K")                               
+     main = "Elbow Method for Choosing K")
+```
 
+
+```{r DNR 24hr heatmap map, fig.height=8, fig.width=5}
 Heatmap(DNR_VEH_24hr_mat, 
         top_annotation = col_ha_24hr,
         show_column_names = TRUE,
         show_row_names = FALSE,
         cluster_columns = TRUE,
         cluster_rows = FALSE,
+        col=col_fun_log2cpm,
         use_raster=TRUE,
         raster_device="png",
         raster_quality = 2,
-        row_km = 5,
+        row_km = 4,
         column_title = "24 Hour Log2cpm of 24 hr DARs")
   
 ```
@@ -510,7 +537,7 @@ Heatmap(DNR_VEH_24hr_mat,
 ### MTX 3 hour filtering matrix  
 
 
-```{r MTX 3hr heatmap, fig.height=8, fig.width=5}
+```{r MTX 3hr heatmap}
 MTX_VEH_3hr_mat <-  MTX_VEH_3hr %>% 
   as.data.frame() %>% 
   dplyr::filter(rownames(.) %in%MTX_3_sig$Peakid) %>% 
@@ -537,18 +564,22 @@ wss <- sapply(1:15, function(k) {
 plot(1:15, wss, type = "b", pch = 19,
      xlab = "Number of Clusters (K)",
      ylab = "Total Within-Cluster Sum of Squares",
-     main = "Elbow Method for Choosing K")                               
+     main = "Elbow Method for Choosing K")
+```
 
+
+```{r MTX 3hr heatmap map, fig.height=8, fig.width=5}
 Heatmap(MTX_VEH_3hr_mat, 
         top_annotation = col_ha_3hr,
         show_column_names = TRUE,
         show_row_names = FALSE,
         cluster_columns = TRUE,
         cluster_rows = FALSE,
+        col=col_fun_log2cpm,
         use_raster=TRUE,
         raster_device="png",
         raster_quality = 2,
-        row_km = 7,
+        row_km = 4,
         column_title = "3 Hour Log2cpm of 3 hr DARs")
   
 ```
@@ -556,7 +587,7 @@ Heatmap(MTX_VEH_3hr_mat,
 
 ### MTX 24 hour filtering matrix
 
-```{r MTX 24hr heatmap, fig.height=8, fig.width=5}
+```{r MTX 24hr heatmap}
 MTX_VEH_24hr_mat <-  MTX_VEH_24hr %>% 
   as.data.frame() %>% 
   dplyr::filter(rownames(.) %in%MTX_24_sig$Peakid) %>% 
@@ -583,18 +614,22 @@ wss <- sapply(1:15, function(k) {
 plot(1:15, wss, type = "b", pch = 19,
      xlab = "Number of Clusters (K)",
      ylab = "Total Within-Cluster Sum of Squares",
-     main = "Elbow Method for Choosing K")                               
+     main = "Elbow Method for Choosing K")
+```
 
+
+```{r MTX 24hr heatmap map, fig.height=8, fig.width=5}
 Heatmap(MTX_VEH_24hr_mat, 
         top_annotation = col_ha_24hr,
         show_column_names = TRUE,
         show_row_names = FALSE,
         cluster_columns = TRUE,
         cluster_rows = FALSE,
+        col=col_fun_log2cpm,
         use_raster=TRUE,
         raster_device="png",
         raster_quality = 2,
-        row_km = 5,
+        row_km = 3,
         column_title = "24 Hour Log2cpm of 24 hr DARs")
   
 ```
@@ -602,7 +637,7 @@ Heatmap(MTX_VEH_24hr_mat,
 ### TRZ 3 hour filtering matrix  
 
 
-```{r TRZ 3hr heatmap, fig.height=8, fig.width=5}
+```{r TRZ 3hr heatmap}
 TRZ_VEH_3hr_mat <-  TRZ_VEH_3hr %>% 
   as.data.frame() %>% 
   dplyr::filter(rownames(.) %in%TRZ_3_sig$Peakid) %>% 
@@ -640,6 +675,7 @@ Heatmap(TRZ_VEH_3hr_mat,
         show_row_names = FALSE,
         cluster_columns = TRUE,
         cluster_rows = FALSE,
+        col=col_fun_log2cpm,
         use_raster=TRUE,
         raster_device="png",
         raster_quality = 2,
@@ -651,7 +687,7 @@ Heatmap(TRZ_VEH_3hr_mat,
 
 ### TRZ 24 hour filtering matrix
 
-```{r TRZ 24hr heatmap, fig.height=8, fig.width=5}
+```{r TRZ 24hr heatmap}
 TRZ_VEH_24hr_mat <-  TRZ_VEH_24hr %>% 
   as.data.frame() %>% 
   dplyr::filter(rownames(.) %in%TRZ_24_sig$Peakid) %>% 
@@ -689,10 +725,11 @@ Heatmap(TRZ_VEH_24hr_mat,
         show_row_names = FALSE,
         cluster_columns = TRUE,
         cluster_rows = FALSE,
+        col=col_fun_log2cpm,
         use_raster=TRUE,
         raster_device="png",
         raster_quality = 2,
-        row_km = 5,
+        row_km = 4,
         column_title = "24 Hour Log2cpm of 24 hr DARs")
   
 ```
