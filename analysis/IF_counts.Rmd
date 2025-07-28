@@ -40,6 +40,16 @@ IndB_master_Summary <- read_csv("C:/Users/renee/ATAC_folder/Images_EVOS/If_cardi
 IndB_master_Summary %>% 
   mutate(percentage= round(Positive_ROIs/Total_ROIs *100, digits =  2)) %>% 
     write_delim(., "data/Final_four_data/re_analysis/IF_data/Nuclei_gamma_count_77.txt",delim="\t")
+
+IndC_master_Summary <- read_csv("C:/Users/renee/ATAC_folder/Images_EVOS/If_cardiotox/71-1 images/DAPI_counts/Master_summary_filt.csv") %>% na.omit()
+IndC_master_Summary %>% 
+  mutate(percentage= round(Positive_ROIs/Total_ROIs *100, digits =  2)) %>% 
+    write_delim(., "data/Final_four_data/re_analysis/IF_data/Nuclei_gamma_count_71.txt",delim="\t")
+
+IndD_master_Summary <- read_csv("C:/Users/renee/ATAC_folder/Images_EVOS/If_cardiotox/75-1 images/DAPI_counts/Master_summary_select.csv") %>% na.omit()
+IndD_master_Summary %>% 
+  mutate(percentage= round(Positive_ROIs/Total_ROIs *100, digits =  2)) %>% 
+    write_delim(., "data/Final_four_data/re_analysis/IF_data/Nuclei_gamma_count_75.txt",delim="\t")
 ```
 
 
@@ -50,6 +60,9 @@ IndB_master_Summary %>%
 drug_pal <- c("#8B006D","#DF707E","#F1B72B", "#3386DD","#707031","#41B333")
 Nuclei_gamma_count_87<- read_delim("data/Final_four_data/re_analysis/IF_data/Nuclei_gamma_count_87.txt",delim="\t")
 Nuclei_gamma_count_77<- read_delim("data/Final_four_data/re_analysis/IF_data/Nuclei_gamma_count_77.txt",delim="\t")
+Nuclei_gamma_count_71<- read_delim("data/Final_four_data/re_analysis/IF_data/Nuclei_gamma_count_71.txt",delim="\t")
+
+Nuclei_gamma_count_75<- read_delim("data/Final_four_data/re_analysis/IF_data/Nuclei_gamma_count_75.txt",delim="\t")
 ```
 
 ```{r}
@@ -80,18 +93,56 @@ Ind_B_table <- Nuclei_gamma_count_77 %>%
   ungroup() %>% 
   mutate(ind="B")
 
+Ind_C_table <- Nuclei_gamma_count_71 %>% 
+  dplyr::select(Sample,percentage) %>% 
+  separate_wider_delim(Sample,delim = "_",names = c("time","ind","trt","focus"),too_many = "merge") %>% 
+  group_by(trt,time) %>%
+  mutate(group_number = rep(c("A","B"), length.out = n())) %>%
+   mutate(trt=if_else(trt=="MTZ","MTX",trt)) %>% 
+  ungroup() %>% 
+  pivot_wider(., id_cols=c(time, ind,trt), names_from = group_number, values_from = percentage) %>% 
+  rowwise() %>% 
+  mutate(total = round(mean(c_across(c(A, B)), na.rm = TRUE), digits = 1)) %>% 
+  ungroup() %>% 
+  mutate(ind="C")
+
+
+
+Ind_D_table <- Nuclei_gamma_count_75 %>% 
+  dplyr::select(Sample,percentage) %>% 
+  separate_wider_delim(Sample,delim = "_",names = c("time","ind","trt","focus"),too_many = "merge") %>% 
+  group_by(trt,time) %>%
+  mutate(group_number = rep(c("A","B"), length.out = n())) %>%
+   mutate(trt=if_else(trt=="MTZ","MTX",trt)) %>% 
+  ungroup() %>% 
+  pivot_wider(., id_cols=c(time, ind,trt), names_from = group_number, values_from = percentage) %>% 
+  rowwise() %>% 
+  mutate(total = round(mean(c_across(c(A, B)), na.rm = TRUE), digits = 1)) %>% 
+  ungroup() %>% 
+  mutate(ind="D")
 
 ```
 
 ```{r}
 
-bind_rows(Ind_A_table,Ind_B_table) %>% 
+bind_rows(Ind_A_table,Ind_B_table) %>%
+  bind_rows(., Ind_C_table) %>% 
+  bind_rows(., Ind_D_table) %>% 
   mutate(time=factor(time, levels =c("3h","24h")),
          trt=factor(trt, levels = c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
   ggplot(.,aes(x=trt, y=total))+
   geom_boxplot(aes(fill=trt))+
-  geom_point()+
-  facet_wrap(~time)+
+  geom_point(aes(colour = ind))+
+  ggsignif:: geom_signif(comparisons = list(
+      c("VEH", "DOX"),
+      c("VEH", "EPI"),
+      c("VEH", "DNR"),
+      c("VEH", "MTX"),
+      c("VEH", "TRZ")),
+      step_increase = 0.1,
+      map_signif_level = FALSE, 
+      test = "t.test")+
+      facet_wrap(~time)+
   theme_bw()+
   scale_fill_manual(values=drug_pal)
 
