@@ -1,0 +1,1713 @@
+---
+title: "AF_HF_SNPs"
+author: "Renee Matthews"
+date: "2025-05-09"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE,
+	warning = FALSE,
+	dev = c("png","pdf")
+)
+```
+
+```{css, echo=FALSE}
+pre {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+pre[class] {
+  max-height: 200px;
+}
+```
+
+```{r  package loading}
+library(tidyverse)
+library(kableExtra)
+library(broom)
+library(RColorBrewer)
+library("TxDb.Hsapiens.UCSC.hg38.knownGene")
+library("org.Hs.eg.db")
+library(rtracklayer)
+library(ggfortify)
+library(readr)
+library(BiocGenerics)
+library(gridExtra)
+library(VennDiagram)
+library(scales)
+library(ggVennDiagram)
+library(BiocParallel)
+library(ggpubr)
+library(edgeR)
+library(genomation)
+library(ggsignif)
+library(plyranges)
+library(ggrepel)
+library(ComplexHeatmap)
+library(cowplot)
+library(smplot2)
+library(readxl)
+library(devtools)
+library(vargen)
+library(liftOver)
+
+```
+
+
+Loading Atrial Fibrillation and Heart Failure SNPs and I
+```{r data loading}
+gwas_HF <- readRDS("data/other_papers/HF_gwas_association_downloaded_2025_01_23_EFO_0003144_withChildTraits.RDS")
+
+gwas_ARR <- readRDS("data/other_papers/AF_gwas_association_downloaded_2025_01_23_EFO_0000275.RDS")
+
+gwas_IHD   <- readRDS("data/other_papers/IHD_IHD_gwas_association_downloaded_2025_06_26_EFO_1001375_withChildTraits")
+gwas_CAD <- readRDS( "data/CAD_gwas_dataframe.RDS")
+gwas_ACresp <- readRDS("data/gwas_3_dataframe.RDS")
+Short_gwas_gr <-
+  gwas_ARR %>% 
+          distinct(SNPS,.keep_all = TRUE) %>%
+          dplyr::select(CHR_ID, CHR_POS,SNPS) %>% 
+          mutate(gwas="AF") %>% 
+   rbind(gwas_HF %>% 
+          distinct(SNPS,.keep_all = TRUE) %>%
+          dplyr::select(CHR_ID, CHR_POS,SNPS) %>% 
+          mutate(gwas="HF")) %>% 
+  rbind(gwas_IHD %>% 
+          distinct(SNPS,.keep_all = TRUE) %>%
+          dplyr::select(CHR_ID, CHR_POS,SNPS) %>% 
+          mutate(gwas="IHD")) %>% 
+  rbind(gwas_CAD %>% 
+          distinct(SNPS,.keep_all = TRUE) %>%
+          dplyr::select(CHR_ID, CHR_POS,SNPS) %>% 
+          mutate(gwas="CAD")) %>% 
+  
+  na.omit() %>% 
+ mutate(seqnames=paste0("chr",CHR_ID), CHR_POS=as.numeric(CHR_POS)) %>% 
+  na.omit() %>%
+   mutate(start=CHR_POS, end=CHR_POS, width=1) %>% 
+  GRanges()
+
+
+```
+
+Loading ATAC-seq regions
+
+```{r}
+toptable_results <- readRDS("data/Final_four_data/re_analysis/Toptable_results.RDS")
+
+all_results  <- toptable_results %>%
+  imap(~ .x %>% tibble::rownames_to_column(var = "rowname") %>%
+         mutate(source = .y)) %>%
+  bind_rows()
+
+DOX_3_sig <-all_results %>% 
+  dplyr::select(source,genes, logFC,adj.P.Val) %>% 
+  mutate("Peakid"=genes) %>% 
+  dplyr::filter(source=="DOX_3") %>% 
+   dplyr::filter(adj.P.Val<0.05) 
+
+DOX_24_sig <-all_results %>% 
+  dplyr::select(source,genes, logFC,adj.P.Val) %>% 
+  mutate("Peakid"=genes) %>% 
+  dplyr::filter(source=="DOX_24") %>% 
+   dplyr::filter(adj.P.Val<0.05) 
+
+EPI_3_sig <-all_results %>% 
+  dplyr::select(source,genes, logFC,adj.P.Val) %>% 
+  mutate("Peakid"=genes) %>% 
+  dplyr::filter(source=="EPI_3") %>% 
+   dplyr::filter(adj.P.Val<0.05) 
+
+EPI_24_sig <-all_results %>% 
+  dplyr::select(source,genes, logFC,adj.P.Val) %>% 
+  mutate("Peakid"=genes) %>% 
+  dplyr::filter(source=="EPI_24") %>% 
+   dplyr::filter(adj.P.Val<0.05) 
+
+DNR_3_sig <-all_results %>% 
+  dplyr::select(source,genes, logFC,adj.P.Val) %>% 
+  mutate("Peakid"=genes) %>% 
+  dplyr::filter(source=="DNR_3") %>% 
+   dplyr::filter(adj.P.Val<0.05) 
+
+DNR_24_sig <-all_results %>% 
+  dplyr::select(source,genes, logFC,adj.P.Val) %>% 
+  mutate("Peakid"=genes) %>% 
+  dplyr::filter(source=="DNR_24") %>% 
+   dplyr::filter(adj.P.Val<0.05) 
+
+MTX_3_sig <-all_results %>% 
+  dplyr::select(source,genes, logFC,adj.P.Val) %>% 
+  mutate("Peakid"=genes) %>% 
+  dplyr::filter(source=="MTX_3") %>% 
+   dplyr::filter(adj.P.Val<0.05) 
+
+MTX_24_sig <-all_results %>% 
+  dplyr::select(source,genes, logFC,adj.P.Val) %>% 
+  mutate("Peakid"=genes) %>% 
+  dplyr::filter(source=="MTX_24") %>% 
+   dplyr::filter(adj.P.Val<0.05) 
+
+all_regions_gr <- all_results %>%
+  dplyr::select(source,genes, logFC,adj.P.Val) %>% 
+  mutate("Peakid"=genes) %>% 
+  dplyr::filter(source=="DOX_3") %>% 
+  distinct(Peakid) %>% 
+  separate_wider_delim(., cols="Peakid",names = c("seqnames","start","end"), delim= ".", cols_remove = FALSE) %>% 
+  makeGRangesFromDataFrame(.,keep.extra.columns=TRUE) 
+
+all_regions_peak <- all_results %>%
+  dplyr::select(source,genes, logFC,adj.P.Val) %>% 
+  mutate("Peakid"=genes) %>% 
+  dplyr::filter(source=="DOX_3") %>% 
+  distinct(Peakid) 
+
+
+```
+
+```{r loading MCF7DAR for enrichment test}
+MCF7_DARs_hyper <- read_excel("C:/Users/renee/Downloads/MCF7-doxATAC/Table 4.XLSX", 
+    sheet = "hyper") %>% GRanges()
+MCF7_DARs_hypo <- read_excel("C:/Users/renee/Downloads/MCF7-doxATAC/Table 4.XLSX", 
+    sheet = "hypo") %>% GRanges()
+
+
+  MCF7_DARs_hyper$names <- paste0("hyper_", seq_along(seqnames(MCF7_DARs_hyper)))
+ MCF7_DARs_hypo$names <- paste0("hypo_", seq_along(seqnames(MCF7_DARs_hypo)))
+ 
+ MCF7_ARsmcf7_1 <- read_excel("C:/Users/renee/Downloads/MCF7-doxATAC/Table 3.XLSX") %>%
+  GRanges()
+
+
+```
+
+```{r liftover for MCF7}
+ch = import.chain("C:/Users/renee/ATAC_folder/liftOver_genome/hg19ToHg38.over.chain")
+
+MCF7_DARs_hyper_LO <- as.data.frame(liftOver(MCF7_DARs_hyper,ch)) %>% 
+  GRanges()
+
+MCF7_DARs_hypo_LO <- as.data.frame(liftOver(MCF7_DARs_hypo,ch)) %>% 
+  GRanges()
+
+MCF7_DAR_all <- c(MCF7_DARs_hyper_LO,MCF7_DARs_hypo_LO)
+MCF7_ARsmcf7_1_LO <- as.data.frame(liftOver(MCF7_ARsmcf7_1,ch)) %>%
+  GRanges()
+```
+
+
+Overlapping ATAC regions and SNPs
+
+```{r overlapping regions and SNPs af}
+
+AF_ol_peaks <-   join_overlap_inner(all_regions_gr, Short_gwas_gr) %>%
+  as.data.frame() %>% 
+  dplyr::filter(gwas =="AF") %>% 
+  distinct(Peakid)
+
+HF_ol_peaks <-   join_overlap_inner(all_regions_gr, Short_gwas_gr) %>%
+  as.data.frame() %>% 
+  dplyr::filter(gwas =="HF") %>% 
+  distinct(Peakid)
+
+IHD_ol_peaks <-   join_overlap_inner(all_regions_gr, Short_gwas_gr) %>%
+  as.data.frame() %>% 
+  dplyr::filter(gwas =="IHD") %>% 
+  distinct(Peakid)
+
+CAD_ol_peaks <-   join_overlap_inner(all_regions_gr, Short_gwas_gr) %>%
+  as.data.frame() %>% 
+  dplyr::filter(gwas =="CAD") %>% 
+  distinct(Peakid)
+HF_AF_ol <- join_overlap_inner(all_regions_gr, Short_gwas_gr) %>%
+  as.data.frame() %>% 
+  dplyr::filter(gwas =="AF"|gwas=="HF")
+
+SNP_overlaps <- join_overlap_inner(all_regions_gr, Short_gwas_gr) %>%
+  as.data.frame() #%>% saveRDS(., 
+                  # "data/Final_four_data/re_analysis/GWAS_overlaps_dataframe.RDS")
+```
+
+
+```{r overlapping regions and SNPs}
+
+gwas_annote_df <-all_regions_peak %>%
+  mutate(AF_status=case_when(Peakid %in% AF_ol_peaks$Peakid ~"AF_peak",
+                              TRUE~ "not_AF_peak"),
+         HF_status=case_when(Peakid %in% HF_ol_peaks$Peakid ~"HF_peak",
+                              TRUE~ "not_HF_peak"),
+          CAD_status=case_when(Peakid %in% CAD_ol_peaks$Peakid ~"CAD_peak",
+                              TRUE~ "not_CAD_peak"),
+         IHD_status=case_when(Peakid %in% IHD_ol_peaks$Peakid ~"IHD_peak",
+                              TRUE~ "not_IHD_peak")) %>% 
+  mutate(DOX_3=case_when(Peakid %in% DOX_3_sig$Peakid ~"sig_peak",
+                              TRUE~ "not_sig_peak")) %>% 
+  mutate(DOX_24=case_when(Peakid %in% DOX_24_sig$Peakid ~"sig_peak",
+                              TRUE~ "not_sig_peak")) %>% 
+  mutate(EPI_3=case_when(Peakid %in% EPI_3_sig$Peakid ~"sig_peak",
+                              TRUE~ "not_sig_peak")) %>% 
+  mutate(EPI_24=case_when(Peakid %in% EPI_24_sig$Peakid ~"sig_peak",
+                              TRUE~ "not_sig_peak")) %>% 
+  mutate(DNR_3=case_when(Peakid %in% DNR_3_sig$Peakid ~"sig_peak",
+                              TRUE~ "not_sig_peak")) %>% 
+  mutate(DNR_24=case_when(Peakid %in% DNR_24_sig$Peakid ~"sig_peak",
+                              TRUE~ "not_sig_peak")) %>% 
+  mutate(MTX_3=case_when(Peakid %in% MTX_3_sig$Peakid ~"sig_peak",
+                              TRUE~ "not_sig_peak")) %>% 
+  mutate(MTX_24=case_when(Peakid %in% MTX_24_sig$Peakid ~"sig_peak",
+                              TRUE~ "not_sig_peak")) 
+ 
+# saveRDS(gwas_annote_df,"data/Final_four_data/re_analysis/GWAS_SNP_annotations.RDS")
+ 
+```
+Testing for enrichment:
+### DOX enrichment tests
+
+```{r AF DOX_DAR 3 enrichment}
+ gwas_annote_df %>% 
+  group_by(DOX_3,AF_status) %>% 
+  tally() %>% 
+  pivot_wider(., DOX_3, names_from = AF_status, values_from = n) %>% 
+  arrange(desc(DOX_3)) %>% 
+  print() %>% 
+  column_to_rownames("DOX_3") %>% 
+  fisher.test(.)
+DOX_darsnp_3_AF <- gwas_annote_df %>%
+  group_by(DOX_3,AF_status) %>% 
+  tally() %>% 
+  pivot_wider(., DOX_3, names_from = AF_status, values_from = n) %>% 
+  arrange(desc(DOX_3)) %>% 
+  column_to_rownames("DOX_3") %>% 
+  fisher.test(.)
+```
+
+```{r AF DOX_DAR 24 enrichment}
+gwas_annote_df %>% 
+  group_by(DOX_24,AF_status) %>% 
+  tally() %>% 
+  pivot_wider(., DOX_24, names_from = AF_status, values_from = n) %>% 
+  arrange(desc(DOX_24)) %>% 
+  print() %>% 
+  column_to_rownames("DOX_24") %>% 
+  fisher.test(.)
+
+DOX_darsnp_24_AF <-  gwas_annote_df %>% 
+  group_by(DOX_24,AF_status) %>% 
+  tally() %>% 
+  pivot_wider(., DOX_24, names_from = AF_status, values_from = n) %>% 
+  arrange(desc(DOX_24)) %>% 
+  column_to_rownames("DOX_24") %>% 
+  fisher.test(.)
+```
+
+
+```{r HF DOX_DAR 3enrichment}
+gwas_annote_df %>% 
+  group_by(DOX_3,HF_status) %>% 
+  tally() %>% 
+  pivot_wider(., DOX_3, names_from = HF_status, values_from = n) %>% 
+  arrange(desc(DOX_3)) %>% 
+  print() %>% 
+  column_to_rownames("DOX_3") %>% 
+  fisher.test(.)
+
+DOX_darsnp_3_HF <- gwas_annote_df %>% 
+  group_by(DOX_3,HF_status) %>% 
+  tally() %>% 
+  pivot_wider(., DOX_3, names_from = HF_status, values_from = n) %>% 
+  arrange(desc(DOX_3)) %>% 
+  column_to_rownames("DOX_3") %>% 
+  fisher.test(.)
+
+```
+
+
+```{r HF DOX_DAR 24 enrichment}
+gwas_annote_df %>%
+  group_by(DOX_24,HF_status) %>%
+  tally() %>%
+  pivot_wider(., DOX_24, names_from = HF_status, values_from = n) %>%
+  arrange(desc(DOX_24)) %>%
+  print() %>%
+  column_to_rownames("DOX_24") %>%
+  fisher.test(.)
+
+DOX_darsnp_24_HF <- gwas_annote_df %>%
+  group_by(DOX_24,HF_status) %>%
+  tally() %>%
+  pivot_wider(., DOX_24, names_from = HF_status, values_from = n) %>%
+  arrange(desc(DOX_24)) %>%
+  column_to_rownames("DOX_24") %>%
+  fisher.test(.)
+
+
+```
+
+
+```{r IHD DOX_DAR 3 enrichment}
+gwas_annote_df %>% 
+  group_by(DOX_3,IHD_status) %>% 
+  tally() %>% 
+  pivot_wider(., DOX_3, names_from = IHD_status, values_from = n, values_fill = 0) %>% 
+  arrange(desc(DOX_3))%>% 
+  print() %>% 
+  column_to_rownames("DOX_3") %>% 
+  fisher.test(.)
+
+DOX_darsnp_3_IHD <- gwas_annote_df %>% 
+  group_by(DOX_3,IHD_status) %>% 
+  tally() %>% 
+  pivot_wider(., DOX_3, names_from = IHD_status, values_from = n, values_fill = 0) %>% 
+  arrange(desc(DOX_3))%>% 
+  column_to_rownames("DOX_3") %>% 
+  fisher.test(.)
+```
+
+
+```{r IHD DOX_DAR 24 enrichment}
+gwas_annote_df %>% 
+  group_by(DOX_24,IHD_status) %>% 
+  tally() %>% 
+  pivot_wider(., DOX_24, names_from = IHD_status, values_from = n, values_fill = 0) %>% 
+  arrange(desc(DOX_24)) %>% 
+  print() %>% 
+  column_to_rownames("DOX_24") %>% 
+  fisher.test(.)
+
+DOX_darsnp_24_IHD <- gwas_annote_df %>% 
+  group_by(DOX_24,IHD_status) %>% 
+  tally() %>% 
+  pivot_wider(., DOX_24, names_from = IHD_status, values_from = n, values_fill = 0) %>% 
+  arrange(desc(DOX_24)) %>% 
+  column_to_rownames("DOX_24") %>% 
+  fisher.test(.)
+```
+
+```{r CAD DOX_DAR 3enrichment}
+gwas_annote_df %>% 
+  group_by(DOX_3,CAD_status) %>% 
+  tally() %>% 
+  pivot_wider(., DOX_3, names_from = CAD_status, values_from = n) %>% 
+  arrange(desc(DOX_3)) %>% 
+  print() %>% 
+  column_to_rownames("DOX_3") %>% 
+  fisher.test(.)
+
+DOX_darsnp_3_CAD <- gwas_annote_df %>% 
+  group_by(DOX_3,CAD_status) %>% 
+  tally() %>% 
+  pivot_wider(., DOX_3, names_from = CAD_status, values_from = n) %>% 
+  arrange(desc(DOX_3)) %>% 
+  column_to_rownames("DOX_3") %>% 
+  fisher.test(.)
+
+```
+
+```{r CAD DOX_DAR 24enrichment}
+gwas_annote_df %>% 
+  group_by(DOX_24,CAD_status) %>% 
+  tally() %>% 
+  pivot_wider(., DOX_24, names_from = CAD_status, values_from = n) %>% 
+  arrange(desc(DOX_24)) %>% 
+  print() %>% 
+  column_to_rownames("DOX_24") %>% 
+  fisher.test(.)
+
+DOX_darsnp_24_CAD <- gwas_annote_df %>% 
+  group_by(DOX_24,CAD_status) %>% 
+  tally() %>% 
+  pivot_wider(., DOX_24, names_from = CAD_status, values_from = n) %>% 
+  arrange(desc(DOX_24)) %>% 
+  column_to_rownames("DOX_24") %>% 
+  fisher.test(.)
+
+```
+
+
+### EPI enrichment tests
+
+```{r AF EPI_DAR 3 enrichment}
+ gwas_annote_df %>% 
+  group_by(EPI_3,AF_status) %>% 
+  tally() %>% 
+  pivot_wider(., EPI_3, names_from = AF_status, values_from = n) %>% 
+  arrange(desc(EPI_3)) %>% 
+  print() %>% 
+  column_to_rownames("EPI_3") %>% 
+  fisher.test(.)
+EPI_darsnp_3_AF <- gwas_annote_df %>%
+  group_by(EPI_3,AF_status) %>% 
+  tally() %>% 
+  pivot_wider(., EPI_3, names_from = AF_status, values_from = n) %>% 
+  arrange(desc(EPI_3)) %>% 
+  column_to_rownames("EPI_3") %>% 
+  fisher.test(.)
+```
+
+```{r AF EPI_DAR 24 enrichment}
+gwas_annote_df %>% 
+  group_by(EPI_24,AF_status) %>% 
+  tally() %>% 
+  pivot_wider(., EPI_24, names_from = AF_status, values_from = n) %>% 
+  arrange(desc(EPI_24)) %>% 
+  print() %>% 
+  column_to_rownames("EPI_24") %>% 
+  fisher.test(.)
+
+EPI_darsnp_24_AF <-  gwas_annote_df %>% 
+  group_by(EPI_24,AF_status) %>% 
+  tally() %>% 
+  pivot_wider(., EPI_24, names_from = AF_status, values_from = n) %>% 
+  arrange(desc(EPI_24)) %>% 
+  column_to_rownames("EPI_24") %>% 
+  fisher.test(.)
+```
+
+
+```{r HF EPI_DAR 3enrichment}
+gwas_annote_df %>% 
+  group_by(EPI_3,HF_status) %>% 
+  tally() %>% 
+  pivot_wider(., EPI_3, names_from = HF_status, values_from = n) %>% 
+  arrange(desc(EPI_3)) %>% 
+  print() %>% 
+  column_to_rownames("EPI_3") %>% 
+  fisher.test(.)
+
+EPI_darsnp_3_HF <- gwas_annote_df %>% 
+  group_by(EPI_3,HF_status) %>% 
+  tally() %>% 
+  pivot_wider(., EPI_3, names_from = HF_status, values_from = n) %>% 
+  arrange(desc(EPI_3)) %>% 
+  column_to_rownames("EPI_3") %>% 
+  fisher.test(.)
+
+```
+
+
+```{r HF EPI_DAR 24 enrichment}
+gwas_annote_df %>%
+  group_by(EPI_24,HF_status) %>%
+  tally() %>%
+  pivot_wider(., EPI_24, names_from = HF_status, values_from = n) %>%
+  arrange(desc(EPI_24)) %>%
+  print() %>%
+  column_to_rownames("EPI_24") %>%
+  fisher.test(.)
+
+EPI_darsnp_24_HF <- gwas_annote_df %>%
+  group_by(EPI_24,HF_status) %>%
+  tally() %>%
+  pivot_wider(., EPI_24, names_from = HF_status, values_from = n) %>%
+  arrange(desc(EPI_24)) %>%
+  column_to_rownames("EPI_24") %>%
+  fisher.test(.)
+
+
+```
+
+
+```{r IHD EPI_DAR 3 enrichment}
+gwas_annote_df %>% 
+  group_by(EPI_3,IHD_status) %>% 
+  tally() %>% 
+  pivot_wider(., EPI_3, names_from = IHD_status, values_from = n, values_fill = 0) %>% 
+  arrange(desc(EPI_3))%>% 
+  print() %>% 
+  column_to_rownames("EPI_3") %>% 
+  fisher.test(.)
+
+EPI_darsnp_3_IHD <- gwas_annote_df %>% 
+  group_by(EPI_3,IHD_status) %>% 
+  tally() %>% 
+  pivot_wider(., EPI_3, names_from = IHD_status, values_from = n, values_fill = 0) %>% 
+  arrange(desc(EPI_3))%>% 
+  column_to_rownames("EPI_3") %>% 
+  fisher.test(.)
+```
+
+
+```{r IHD EPI_DAR 24 enrichment}
+gwas_annote_df %>% 
+  group_by(EPI_24,IHD_status) %>% 
+  tally() %>% 
+  pivot_wider(., EPI_24, names_from = IHD_status, values_from = n, values_fill = 0) %>% 
+  arrange(desc(EPI_24)) %>% 
+  print() %>% 
+  column_to_rownames("EPI_24") %>% 
+  fisher.test(.)
+
+EPI_darsnp_24_IHD <- gwas_annote_df %>% 
+  group_by(EPI_24,IHD_status) %>% 
+  tally() %>% 
+  pivot_wider(., EPI_24, names_from = IHD_status, values_from = n, values_fill = 0) %>% 
+  arrange(desc(EPI_24)) %>% 
+  column_to_rownames("EPI_24") %>% 
+  fisher.test(.)
+```
+
+```{r CAD EPI_DAR 3enrichment}
+gwas_annote_df %>% 
+  group_by(EPI_3,CAD_status) %>% 
+  tally() %>% 
+  pivot_wider(., EPI_3, names_from = CAD_status, values_from = n) %>% 
+  arrange(desc(EPI_3)) %>% 
+  print() %>% 
+  column_to_rownames("EPI_3") %>% 
+  fisher.test(.)
+
+EPI_darsnp_3_CAD <- gwas_annote_df %>% 
+  group_by(EPI_3,CAD_status) %>% 
+  tally() %>% 
+  pivot_wider(., EPI_3, names_from = CAD_status, values_from = n) %>% 
+  arrange(desc(EPI_3)) %>% 
+  column_to_rownames("EPI_3") %>% 
+  fisher.test(.)
+
+```
+
+```{r CAD EPI_DAR 24enrichment}
+gwas_annote_df %>% 
+  group_by(EPI_24,CAD_status) %>% 
+  tally() %>% 
+  pivot_wider(., EPI_24, names_from = CAD_status, values_from = n) %>% 
+  arrange(desc(EPI_24)) %>% 
+  print() %>% 
+  column_to_rownames("EPI_24") %>% 
+  fisher.test(.)
+
+EPI_darsnp_24_CAD <- gwas_annote_df %>% 
+  group_by(EPI_24,CAD_status) %>% 
+  tally() %>% 
+  pivot_wider(., EPI_24, names_from = CAD_status, values_from = n) %>% 
+  arrange(desc(EPI_24)) %>% 
+  column_to_rownames("EPI_24") %>% 
+  fisher.test(.)
+
+```
+
+
+
+### DNR enrichment tests
+
+```{r AF DNR_DAR 3 enrichment}
+ gwas_annote_df %>% 
+  group_by(DNR_3,AF_status) %>% 
+  tally() %>% 
+  pivot_wider(., DNR_3, names_from = AF_status, values_from = n) %>% 
+  arrange(desc(DNR_3)) %>% 
+  print() %>% 
+  column_to_rownames("DNR_3") %>% 
+  fisher.test(.)
+DNR_darsnp_3_AF <- gwas_annote_df %>%
+  group_by(DNR_3,AF_status) %>% 
+  tally() %>% 
+  pivot_wider(., DNR_3, names_from = AF_status, values_from = n) %>% 
+  arrange(desc(DNR_3)) %>% 
+  column_to_rownames("DNR_3") %>% 
+  fisher.test(.)
+```
+
+```{r AF DNR_DAR 24 enrichment}
+gwas_annote_df %>% 
+  group_by(DNR_24,AF_status) %>% 
+  tally() %>% 
+  pivot_wider(., DNR_24, names_from = AF_status, values_from = n) %>% 
+  arrange(desc(DNR_24)) %>% 
+  print() %>% 
+  column_to_rownames("DNR_24") %>% 
+  fisher.test(.)
+
+DNR_darsnp_24_AF <-  gwas_annote_df %>% 
+  group_by(DNR_24,AF_status) %>% 
+  tally() %>% 
+  pivot_wider(., DNR_24, names_from = AF_status, values_from = n) %>% 
+  arrange(desc(DNR_24)) %>% 
+  column_to_rownames("DNR_24") %>% 
+  fisher.test(.)
+```
+
+
+```{r HF DNR_DAR 3enrichment}
+gwas_annote_df %>% 
+  group_by(DNR_3,HF_status) %>% 
+  tally() %>% 
+  pivot_wider(., DNR_3, names_from = HF_status, values_from = n) %>% 
+  arrange(desc(DNR_3)) %>% 
+  print() %>% 
+  column_to_rownames("DNR_3") %>% 
+  fisher.test(.)
+
+DNR_darsnp_3_HF <- gwas_annote_df %>% 
+  group_by(DNR_3,HF_status) %>% 
+  tally() %>% 
+  pivot_wider(., DNR_3, names_from = HF_status, values_from = n) %>% 
+  arrange(desc(DNR_3)) %>% 
+  column_to_rownames("DNR_3") %>% 
+  fisher.test(.)
+
+```
+
+
+```{r HF DNR_DAR 24 enrichment}
+gwas_annote_df %>%
+  group_by(DNR_24,HF_status) %>%
+  tally() %>%
+  pivot_wider(., DNR_24, names_from = HF_status, values_from = n) %>%
+  arrange(desc(DNR_24)) %>%
+  print() %>%
+  column_to_rownames("DNR_24") %>%
+  fisher.test(.)
+
+DNR_darsnp_24_HF <- gwas_annote_df %>%
+  group_by(DNR_24,HF_status) %>%
+  tally() %>%
+  pivot_wider(., DNR_24, names_from = HF_status, values_from = n) %>%
+  arrange(desc(DNR_24)) %>%
+  column_to_rownames("DNR_24") %>%
+  fisher.test(.)
+
+
+```
+
+
+```{r IHD DNR_DAR 3 enrichment}
+gwas_annote_df %>% 
+  group_by(DNR_3,IHD_status) %>% 
+  tally() %>% 
+  pivot_wider(., DNR_3, names_from = IHD_status, values_from = n, values_fill = 0) %>% 
+  arrange(desc(DNR_3))%>% 
+  print() %>% 
+  column_to_rownames("DNR_3") %>% 
+  fisher.test(.)
+
+DNR_darsnp_3_IHD <- gwas_annote_df %>% 
+  group_by(DNR_3,IHD_status) %>% 
+  tally() %>% 
+  pivot_wider(., DNR_3, names_from = IHD_status, values_from = n, values_fill = 0) %>% 
+  arrange(desc(DNR_3))%>% 
+  column_to_rownames("DNR_3") %>% 
+  fisher.test(.)
+```
+
+
+```{r IHD DNR_DAR 24 enrichment}
+gwas_annote_df %>% 
+  group_by(DNR_24,IHD_status) %>% 
+  tally() %>% 
+  pivot_wider(., DNR_24, names_from = IHD_status, values_from = n, values_fill = 0) %>% 
+  arrange(desc(DNR_24)) %>% 
+  print() %>% 
+  column_to_rownames("DNR_24") %>% 
+  fisher.test(.)
+
+DNR_darsnp_24_IHD <- gwas_annote_df %>% 
+  group_by(DNR_24,IHD_status) %>% 
+  tally() %>% 
+  pivot_wider(., DNR_24, names_from = IHD_status, values_from = n, values_fill = 0) %>% 
+  arrange(desc(DNR_24)) %>% 
+  column_to_rownames("DNR_24") %>% 
+  fisher.test(.)
+```
+```{r CAD DNR_DAR 3enrichment}
+gwas_annote_df %>% 
+  group_by(DNR_3,CAD_status) %>% 
+  tally() %>% 
+  pivot_wider(., DNR_3, names_from = CAD_status, values_from = n) %>% 
+  arrange(desc(DNR_3)) %>% 
+  print() %>% 
+  column_to_rownames("DNR_3") %>% 
+  fisher.test(.)
+
+DNR_darsnp_3_CAD <- gwas_annote_df %>% 
+  group_by(DNR_3,CAD_status) %>% 
+  tally() %>% 
+  pivot_wider(., DNR_3, names_from = CAD_status, values_from = n) %>% 
+  arrange(desc(DNR_3)) %>% 
+  column_to_rownames("DNR_3") %>% 
+  fisher.test(.)
+
+```
+
+```{r CAD DNR_DAR 24enrichment}
+gwas_annote_df %>% 
+  group_by(DNR_24,CAD_status) %>% 
+  tally() %>% 
+  pivot_wider(., DNR_24, names_from = CAD_status, values_from = n) %>% 
+  arrange(desc(DNR_24)) %>% 
+  print() %>% 
+  column_to_rownames("DNR_24") %>% 
+  fisher.test(.)
+
+DNR_darsnp_24_CAD <- gwas_annote_df %>% 
+  group_by(DNR_24,CAD_status) %>% 
+  tally() %>% 
+  pivot_wider(., DNR_24, names_from = CAD_status, values_from = n) %>% 
+  arrange(desc(DNR_24)) %>% 
+  column_to_rownames("DNR_24") %>% 
+  fisher.test(.)
+
+```
+
+
+### MTX enrichment tests
+
+```{r AF MTX_DAR 3 enrichment}
+ gwas_annote_df %>% 
+  group_by(MTX_3,AF_status) %>% 
+  tally() %>% 
+  pivot_wider(., MTX_3, names_from = AF_status, values_from = n,values_fill = 0) %>% 
+  arrange(desc(MTX_3)) %>% 
+  print() %>% 
+  column_to_rownames("MTX_3") %>% 
+  fisher.test(.)
+MTX_darsnp_3_AF <- gwas_annote_df %>%
+  group_by(MTX_3,AF_status) %>% 
+  tally() %>% 
+  pivot_wider(., MTX_3, names_from = AF_status, values_from = n,values_fill = 0) %>% 
+  arrange(desc(MTX_3)) %>% 
+  column_to_rownames("MTX_3") %>% 
+  fisher.test(.)
+```
+
+```{r AF MTX_DAR 24 enrichment}
+gwas_annote_df %>% 
+  group_by(MTX_24,AF_status) %>% 
+  tally() %>% 
+  pivot_wider(., MTX_24, names_from = AF_status, values_from = n) %>% 
+  arrange(desc(MTX_24)) %>% 
+  print() %>% 
+  column_to_rownames("MTX_24") %>% 
+  fisher.test(.)
+
+MTX_darsnp_24_AF <-  gwas_annote_df %>% 
+  group_by(MTX_24,AF_status) %>% 
+  tally() %>% 
+  pivot_wider(., MTX_24, names_from = AF_status, values_from = n) %>% 
+  arrange(desc(MTX_24)) %>% 
+  column_to_rownames("MTX_24") %>% 
+  fisher.test(.)
+```
+
+
+```{r HF MTX_DAR 3enrichment}
+gwas_annote_df %>% 
+  group_by(MTX_3,HF_status) %>% 
+  tally() %>% 
+  pivot_wider(., MTX_3, names_from = HF_status, values_from = n) %>% 
+  arrange(desc(MTX_3)) %>% 
+  print() %>% 
+  column_to_rownames("MTX_3") %>% 
+  fisher.test(.)
+
+MTX_darsnp_3_HF <- gwas_annote_df %>% 
+  group_by(MTX_3,HF_status) %>% 
+  tally() %>% 
+  pivot_wider(., MTX_3, names_from = HF_status, values_from = n) %>% 
+  arrange(desc(MTX_3)) %>% 
+  column_to_rownames("MTX_3") %>% 
+  fisher.test(.)
+
+```
+
+
+```{r HF MTX_DAR 24 enrichment}
+gwas_annote_df %>%
+  group_by(MTX_24,HF_status) %>%
+  tally() %>%
+  pivot_wider(., MTX_24, names_from = HF_status, values_from = n) %>%
+  arrange(desc(MTX_24)) %>%
+  print() %>%
+  column_to_rownames("MTX_24") %>%
+  fisher.test(.)
+
+MTX_darsnp_24_HF <- gwas_annote_df %>%
+  group_by(MTX_24,HF_status) %>%
+  tally() %>%
+  pivot_wider(., MTX_24, names_from = HF_status, values_from = n) %>%
+  arrange(desc(MTX_24)) %>%
+  column_to_rownames("MTX_24") %>%
+  fisher.test(.)
+
+
+```
+
+
+```{r IHD MTX_DAR 3 enrichment}
+gwas_annote_df %>% 
+  group_by(MTX_3,IHD_status) %>% 
+  tally() %>% 
+  pivot_wider(., MTX_3, names_from = IHD_status, values_from = n, values_fill = 0) %>% 
+  arrange(desc(MTX_3))%>% 
+  print() %>% 
+  column_to_rownames("MTX_3") %>% 
+  fisher.test(.)
+
+MTX_darsnp_3_IHD <- gwas_annote_df %>% 
+  group_by(MTX_3,IHD_status) %>% 
+  tally() %>% 
+  pivot_wider(., MTX_3, names_from = IHD_status, values_from = n, values_fill = 0) %>% 
+  arrange(desc(MTX_3))%>% 
+  column_to_rownames("MTX_3") %>% 
+  fisher.test(.)
+```
+
+
+```{r IHD MTX_DAR 24 enrichment}
+gwas_annote_df %>% 
+  group_by(MTX_24,IHD_status) %>% 
+  tally() %>% 
+  pivot_wider(., MTX_24, names_from = IHD_status, values_from = n, values_fill = 0) %>% 
+  arrange(desc(MTX_24)) %>% 
+  print() %>% 
+  column_to_rownames("MTX_24") %>% 
+  fisher.test(.)
+
+MTX_darsnp_24_IHD <- gwas_annote_df %>% 
+  group_by(MTX_24,IHD_status) %>% 
+  tally() %>% 
+  pivot_wider(., MTX_24, names_from = IHD_status, values_from = n, values_fill = 0) %>% 
+  arrange(desc(MTX_24)) %>% 
+  column_to_rownames("MTX_24") %>% 
+  fisher.test(.)
+```
+
+```{r CAD MTX_DAR 3enrichment}
+gwas_annote_df %>% 
+  group_by(MTX_3,CAD_status) %>% 
+  tally() %>% 
+  pivot_wider(., MTX_3, names_from = CAD_status, values_from = n, values_fill = 0) %>% 
+  arrange(desc(MTX_3)) %>% 
+  print() %>% 
+  column_to_rownames("MTX_3") %>% 
+  fisher.test(.)
+
+MTX_darsnp_3_CAD <- gwas_annote_df %>% 
+  group_by(MTX_3,CAD_status) %>% 
+  tally() %>% 
+  pivot_wider(., MTX_3, names_from = CAD_status, values_from = n, values_fill = 0) %>% 
+  arrange(desc(MTX_3)) %>% 
+  column_to_rownames("MTX_3") %>% 
+  fisher.test(.)
+
+```
+
+```{r CAD MTX_DAR 24enrichment}
+gwas_annote_df %>% 
+  group_by(MTX_24,CAD_status) %>% 
+  tally() %>% 
+  pivot_wider(., MTX_24, names_from = CAD_status, values_from = n) %>% 
+  arrange(desc(MTX_24)) %>% 
+  print() %>% 
+  column_to_rownames("MTX_24") %>% 
+  fisher.test(.)
+
+MTX_darsnp_24_CAD <- gwas_annote_df %>% 
+  group_by(MTX_24,CAD_status) %>% 
+  tally() %>% 
+  pivot_wider(., MTX_24, names_from = CAD_status, values_from = n) %>% 
+  arrange(desc(MTX_24)) %>% 
+  column_to_rownames("MTX_24") %>% 
+  fisher.test(.)
+
+```
+
+Collecting all data to display:
+
+```{r}
+All_24_results <- mget(ls(pattern = "*_darsnp_24*"))
+All_3_results <- mget(ls(pattern = "*_darsnp_3*"))
+# All_dar_results <- mget(ls(pattern = "*_darsnp_*"))
+
+
+# convert to data frames with metadata
+combined_df_24 <- bind_rows(
+  lapply(names(All_24_results), function(name) {
+    res <- All_24_results[[name]]
+    parts <- strsplit(name, "_")[[1]]
+    
+    # convert htest to data.frame
+    data.frame(
+      p.value = res$p.value,
+      estimate = if (!is.null(res$estimate)) unname(res$estimate) else NA,
+      conf.low = if (!is.null(res$conf.int)) res$conf.int[1] else NA,
+      conf.high = if (!is.null(res$conf.int)) res$conf.int[2] else NA,
+      drug = parts[1],
+      time = parts[3],
+      population = parts[4],
+      stringsAsFactors = FALSE
+    )
+  })
+)
+
+combined_df_3 <- bind_rows(
+  lapply(names(All_3_results), function(name) {
+    res <- All_3_results[[name]]
+    parts <- strsplit(name, "_")[[1]]
+    
+    # convert htest to data.frame
+    data.frame(
+      p.value = res$p.value,
+      estimate = if (!is.null(res$estimate)) unname(res$estimate) else NA,
+      conf.low = if (!is.null(res$conf.int)) res$conf.int[1] else NA,
+      conf.high = if (!is.null(res$conf.int)) res$conf.int[2] else NA,
+      drug = parts[1],
+      time = parts[3],
+      population = parts[4],
+      stringsAsFactors = FALSE
+    )
+  })
+)
+```
+
+
+```{r}
+
+drug_pal <- c("#8B006D","#DF707E","#F1B72B", "#3386DD","#707031","#41B333")
+combined_df_3 %>% 
+  mutate(drug=factor(drug, levels = c("DOX","EPI","DNR","MTX")),
+         time=factor(time, levels = c("3","24")),
+         population=factor(population,levels = c("AF","HF","IHD","CAD"))) %>% 
+  mutate(log10_pvalue=-log10(p.value)) %>% 
+  ggplot(., aes(x=drug, y=log10_pvalue))+
+  geom_col(aes(fill=drug))+
+  geom_hline(yintercept= -log10(0.05), linetype = "dashed",color="black")+
+  theme_classic()+
+  facet_wrap(~time+population,nrow=2)+
+  xlab("treatment")+
+  ylab("log10 pvalue of fisher exact test")+
+  scale_fill_manual(values = drug_pal)
+
+
+  
+  
+```
+```{r corrected for multiple testing}
+
+combined_df_3 %>% 
+  dplyr::filter(population!= "IHD" & population != "CAD") %>%
+  mutate(drug=factor(drug, levels = c("DOX","EPI","DNR","MTX")),
+         time=factor(time, levels = c("3","24")),
+         population=factor(population,levels = c("AF","HF","IHD", "CAD"))) %>%
+    group_by(time,drug) %>% 
+  mutate(rank_val=rank(p.value, ties.method = "first")) %>%
+  mutate(BH_correction= p.adjust(p.value,method= "BH")) %>% 
+  mutate(log10_pvalue=-log10(BH_correction)) %>% 
+  ggplot(., aes(x=drug, y=log10_pvalue))+
+  geom_col(aes(fill=drug))+
+  geom_hline(yintercept= -log10(0.05), linetype = "dashed",color="black")+
+  theme_classic()+
+  facet_wrap(~time+population,nrow=2)+
+  xlab("treatment")+
+  ylab("log10 pvalue of fisher exact test")+
+  scale_fill_manual(values = drug_pal)
+
+  
+```
+
+### MCF7 enrichment tests
+```{r}
+library(regioneR)
+AF_gr <- Short_gwas_gr %>% 
+  dplyr::filter(gwas == "AF")
+HF_gr <- Short_gwas_gr %>% 
+  dplyr::filter(gwas == "HF")
+IHD_gr <- Short_gwas_gr %>% 
+  dplyr::filter(gwas == "IHD")
+CAD_gr <- Short_gwas_gr %>% 
+  dplyr::filter(gwas == "CAD")
+
+
+# AF_MCF7_ol_peaks <-   join_overlap_inner(MCF7_DAR_all, Short_gwas_gr) %>%
+#   dplyr::filter(mcols(gwas =="AF")) %>% 
+#   as.data.frame() %>% 
+#   dplyr::filter(gwas =="AF") %>% 
+#   distinct(names)
+# 
+# HF_MCF7_ol_peaks <-   join_overlap_inner(MCF7_DAR_all, Short_gwas_gr) %>%
+#   as.data.frame() %>% 
+#   dplyr::filter(gwas =="HF") %>% 
+#   distinct(names)
+# 
+# IHD_MCF7_ol_peaks <-   join_overlap_inner(MCF7_DAR_all, Short_gwas_gr) %>%
+#   as.data.frame() %>% 
+#   dplyr::filter(gwas =="IHD") %>% 
+#   distinct(names)
+
+# saveRDS(AF,"data/Final_four_data/re_analysis/MCF7_DAR_AF_permtest.RDS")
+
+IHD <-readRDS("data/Final_four_data/re_analysis/MCF7_DAR_IHD_permtest.RDS")
+
+HF <- readRDS("data/Final_four_data/re_analysis/MCF7_DAR_HF_permtest.RDS")
+AF <- readRDS("data/Final_four_data/re_analysis/MCF7_DAR_AF_permtest.RDS")
+CAD <- readRDS("data/Final_four_data/re_analysis/MCF7_DAR_CAD_permtest.RDS")
+# param <- SnowParam(workers = 8)
+# AF<- permTest(A= MCF7_DAR_all,
+#                           B= AF_gr,
+#                           ntimes=1000,
+#                           randomize.function=randomizeRegions,
+#                           evaluate.function = numOverlaps,
+#                           genome="hg38",
+#                           count.once= TRUE,
+#                           universe=universe,
+#                         # universe = union_accessible_regions,
+#                           verbose = TRUE,
+#                           BPPARAM = param)
+AF
+plot(AF)
+HF
+plot(HF)
+IHD
+plot(IHD)
+CAD
+plot(CAD)
+
+```
+
+### PT DOX 24hr check
+
+```{r DOX perm}
+DOX_24_gr <- DOX_24_sig %>% separate_wider_delim(., cols="genes",names = c("seqnames","start","end"), delim= ".") %>% 
+  GRanges() 
+
+DOX_3_gr <- DOX_3_sig %>% separate_wider_delim(., cols="genes",names = c("seqnames","start","end"), delim= ".") %>% 
+  GRanges() 
+param <- SnowParam(workers = 1)
+
+DOX_AF <- readRDS("data/Final_four_data/re_analysis/perm_test_1000/DOX_AF_24h.RDS")
+DOX_HF <- readRDS("data/Final_four_data/re_analysis/perm_test_1000/DOX_HF_24h.RDS")
+DOX_IHD <- readRDS("data/Final_four_data/re_analysis/perm_test_1000/DOX_IHD_24h.RDS")
+DOX_CAD <- readRDS("data/Final_four_data/re_analysis/perm_test_1000/DOX_CAD_24h.RDS")
+
+DOX_AF_3 <- readRDS("data/Final_four_data/re_analysis/perm_test_1000/DOX_AF_3h.RDS")
+DOX_HF_3 <- readRDS("data/Final_four_data/re_analysis/perm_test_1000/DOX_HF_3h.RDS")
+DOX_IHD_3 <- readRDS("data/Final_four_data/re_analysis/perm_test_1000/DOX_IHD_3h.RDS")
+DOX_CAD_3 <-  readRDS("data/Final_four_data/re_analysis/perm_test_1000/DOX_CAD_3h.RDS")
+# DOX_CAD<- permTest(A= DOX_24_gr,
+#                           B= CAD_gr,
+#                           ntimes=1000,
+#                           randomize.function=randomizeRegions,
+#                           evaluate.function = numOverlaps,
+#                           genome="hg38",
+#                           count.once= TRUE,
+#                           universe=universe,
+#                         # universe = union_accessible_regions,
+#                           verbose = TRUE,
+#                           BPPARAM = param)
+
+# DOX_AF<- permTest(A= DOX_24_gr,
+#                           B= AF_gr,
+#                           ntimes=1000,
+#                           randomize.function=randomizeRegions,
+#                           evaluate.function = numOverlaps,
+#                           genome="hg38",
+#                           count.once= TRUE,
+#                           universe=universe,
+#                         # universe = union_accessible_regions,
+#                           verbose = TRUE,
+#                           BPPARAM = param)
+# 
+# DOX_HF<- permTest(A= DOX_24_gr,
+#                           B= HF_gr,
+#                           ntimes=1000,
+#                           randomize.function=randomizeRegions,
+#                           evaluate.function = numOverlaps,
+#                           genome="hg38",
+#                           count.once= TRUE,
+#                           universe=universe,
+#                         # universe = union_accessible_regions,
+#                           verbose = TRUE,
+#                           BPPARAM = param)
+
+# DOX_IHD<- permTest(A= DOX_24_gr,
+#                           B= IHD_gr,
+#                           ntimes=1000,
+#                           randomize.function=randomizeRegions,
+#                           evaluate.function = numOverlaps,
+#                           genome="hg38",
+#                           count.once= TRUE,
+#                           universe=universe,
+#                         # universe = union_accessible_regions,
+#                           verbose = TRUE,
+#                           BPPARAM = param)
+DOX_AF
+plot(DOX_AF)
+DOX_HF
+plot(DOX_HF)
+DOX_IHD
+plot(DOX_IHD)
+DOX_CAD
+plot(DOX_CAD)
+
+# DOX_CAD_3<- permTest(A= DOX_3_gr,
+#                           B= CAD_gr,
+#                           ntimes=1000,
+#                           randomize.function=randomizeRegions,
+#                           evaluate.function = numOverlaps,
+#                           genome="hg38",
+#                           count.once= TRUE,
+#                           universe=universe,
+#                         # universe = union_accessible_regions,
+#                           verbose = TRUE,
+#                           BPPARAM = param)
+
+# DOX_AF_3<- permTest(A= DOX_3_gr,
+#                           B= AF_gr,
+#                           ntimes=1000,
+#                           randomize.function=randomizeRegions,
+#                           evaluate.function = numOverlaps,
+#                           genome="hg38",
+#                           count.once= TRUE,
+#                           universe=universe,
+#                         # universe = union_accessible_regions,
+#                           verbose = TRUE,
+#                           BPPARAM = param)
+
+# DOX_HF_3<- permTest(A= DOX_3_gr,
+#                           B= HF_gr,
+#                           ntimes=1000,
+#                           randomize.function=randomizeRegions,
+#                           evaluate.function = numOverlaps,
+#                           genome="hg38",
+#                           count.once= TRUE,
+#                           universe=universe,
+#                         # universe = union_accessible_regions,
+#                           verbose = TRUE,
+#                           BPPARAM = param)
+
+# DOX_IHD_3<- permTest(A= DOX_3_gr,
+#                           B= IHD_gr,
+#                           ntimes=1000,
+#                           randomize.function=randomizeRegions,
+#                           evaluate.function = numOverlaps,
+#                           genome="hg38",
+#                           count.once= TRUE,
+#                           universe=universe,
+#                         # universe = union_accessible_regions,
+#                           verbose = TRUE,
+#                           BPPARAM = param)
+DOX_AF_3
+plot(DOX_AF_3)
+DOX_HF_3
+plot(DOX_HF_3)
+DOX_IHD_3
+plot(DOX_IHD_3)
+DOX_CAD_3
+plot(DOX_CAD_3)
+
+# saveRDS(DOX_AF,"data/Final_four_data/re_analysis/perm_test_100/DOX_AF_24h.RDS")
+# saveRDS(DOX_HF,"data/Final_four_data/re_analysis/perm_test_100/DOX_HF_24h.RDS")
+# saveRDS(DOX_IHD,"data/Final_four_data/re_analysis/perm_test_100/DOX_IHD_24h.RDS")
+# saveRDS(DOX_CAD,"data/Final_four_data/re_analysis/perm_test_100/DOX_CAD_24h.RDS")
+
+# saveRDS(DOX_AF_3,"data/Final_four_data/re_analysis/perm_test_100/DOX_AF_3h.RDS")
+# saveRDS(DOX_HF_3,"data/Final_four_data/re_analysis/perm_test_100/DOX_HF_3h.RDS")
+# saveRDS(DOX_IHD_3,"data/Final_four_data/re_analysis/perm_test_100/DOX_IHD_3h.RDS")
+# saveRDS(DOX_CAD_3,"data/Final_four_data/re_analysis/perm_test_100/DOX_CAD_3h.RDS")
+
+# saveRDS(DOX_AF,"data/Final_four_data/re_analysis/perm_test_1000/DOX_AF_24h.RDS")
+# saveRDS(DOX_HF,"data/Final_four_data/re_analysis/perm_test_1000/DOX_HF_24h.RDS")
+# saveRDS(DOX_IHD,"data/Final_four_data/re_analysis/perm_test_1000/DOX_IHD_24h.RDS")
+# saveRDS(DOX_CAD,"data/Final_four_data/re_analysis/perm_test_1000/DOX_CAD_24h.RDS")
+
+# saveRDS(DOX_AF_3,"data/Final_four_data/re_analysis/perm_test_1000/DOX_AF_3h.RDS")
+# saveRDS(DOX_HF_3,"data/Final_four_data/re_analysis/perm_test_1000/DOX_HF_3h.RDS")
+# saveRDS(DOX_IHD_3,"data/Final_four_data/re_analysis/perm_test_1000/DOX_IHD_3h.RDS")
+# saveRDS(DOX_CAD_3,"data/Final_four_data/re_analysis/perm_test_1000/DOX_CAD_3h.RDS")
+```
+
+```{r}
+for (w in c(1, 2, 4, 6, 8)) {
+  cat("\nTesting", w, "workers\n")
+  param <- SnowParam(workers = w)
+  t <- system.time({
+    permTest(DOX_3_gr,B= AF_gr, ntimes = 100,randomize.function=randomizeRegions,
+                          evaluate.function = numOverlaps,
+                          genome="hg38",
+                          count.once= TRUE,
+                          universe=universe, verbose = TRUE,BPPARAM = param)
+  })
+  print(t)
+}
+
+```
+
+```{r EPI perm}
+EPI_24_gr <- EPI_24_sig %>% separate_wider_delim(., cols="genes",names = c("seqnames","start","end"), delim= ".") %>% 
+  GRanges() 
+
+EPI_3_gr <- EPI_3_sig %>% separate_wider_delim(., cols="genes",names = c("seqnames","start","end"), delim= ".") %>% 
+  GRanges() 
+
+EPI_AF <- readRDS("data/Final_four_data/re_analysis/perm_test_1000/EPI_AF_24h.RDS")
+EPI_HF <- readRDS("data/Final_four_data/re_analysis/perm_test_1000/EPI_HF_24h.RDS")
+EPI_IHD <- readRDS("data/Final_four_data/re_analysis/perm_test_1000/EPI_IHD_24h.RDS")
+EPI_CAD <- readRDS("data/Final_four_data/re_analysis/perm_test_1000/EPI_CAD_24h.RDS")
+
+EPI_AF_3 <- readRDS("data/Final_four_data/re_analysis/perm_test_1000/EPI_AF_3h.RDS")
+EPI_HF_3 <- readRDS("data/Final_four_data/re_analysis/perm_test_1000/EPI_HF_3h.RDS")
+EPI_IHD_3 <- readRDS("data/Final_four_data/re_analysis/perm_test_1000/EPI_IHD_3h.RDS")
+EPI_CAD_3 <- readRDS("data/Final_four_data/re_analysis/perm_test_1000/EPI_CAD_3h.RDS")
+
+
+
+# EPI_AF_3<- permTest(A= EPI_3_gr,
+#                           B= AF_gr,
+#                           ntimes=1000,
+#                           randomize.function=randomizeRegions,
+#                           evaluate.function = numOverlaps,
+#                           genome="hg38",
+#                           count.once= TRUE,
+#                           universe=universe,
+#                         #
+#                           verbose = TRUE,
+#                           BPPARAM = param)
+# EPI_HF_3<- permTest(A= EPI_3_gr,
+#                           B= HF_gr,
+#                           ntimes=1000,
+#                           randomize.function=randomizeRegions,
+#                           evaluate.function = numOverlaps,
+#                           genome="hg38",
+#                           count.once= TRUE,
+#                           universe=universe,
+# 
+#                           verbose = TRUE,
+#                           BPPARAM = param)
+# 
+# 
+# EPI_IHD_3<- permTest(A= EPI_3_gr,
+#                           B= IHD_gr,
+#                           ntimes=1000,
+#                           randomize.function=randomizeRegions,
+#                           evaluate.function = numOverlaps,
+#                           genome="hg38",
+#                           count.once= TRUE,
+#                           universe=universe,
+# 
+#                           verbose = TRUE,
+#                           BPPARAM = param)
+# 
+# EPI_CAD_3<- permTest(A= EPI_3_gr,
+#                           B= CAD_gr,
+#                           ntimes=1000,
+#                           randomize.function=randomizeRegions,
+#                           evaluate.function = numOverlaps,
+#                           genome="hg38",
+#                           count.once= TRUE,
+#                           universe=universe,
+# 
+#                           verbose = TRUE,
+#                           BPPARAM = param)
+
+
+
+
+
+
+EPI_AF_3
+plot(EPI_AF_3)
+EPI_HF_3
+plot(EPI_HF_3)
+EPI_IHD_3
+plot(EPI_IHD_3)
+EPI_CAD_3
+plot(EPI_CAD_3)
+
+# EPI_AF<- permTest(A= EPI_24_gr,
+#                           B= AF_gr,
+#                           ntimes=1000,
+#                           randomize.function=randomizeRegions,
+#                           evaluate.function = numOverlaps,
+#                           genome="hg38",
+#                           count.once= TRUE,
+#                           universe=universe,
+#                           verbose = TRUE,
+#                           BPPARAM = param)
+# 
+# 
+# EPI_HF<- permTest(A= EPI_24_gr,
+#                           B= HF_gr,
+#                           ntimes=1000,
+#                           randomize.function=randomizeRegions,
+#                           evaluate.function = numOverlaps,
+#                           genome="hg38",
+#                           count.once= TRUE,
+#                           universe=universe,
+#                           verbose = TRUE,
+#                           BPPARAM = param)
+# 
+# 
+# EPI_IHD<- permTest(A= EPI_24_gr,
+#                           B= IHD_gr,
+#                           ntimes=1000,
+#                           randomize.function=randomizeRegions,
+#                           evaluate.function = numOverlaps,
+#                           genome="hg38",
+#                           count.once= TRUE,
+#                           universe=universe,
+#                           verbose = TRUE,
+#                           BPPARAM = param)
+# 
+# EPI_CAD <- permTest(A= EPI_24_gr,
+#                           B= CAD_gr,
+#                           ntimes=1000,
+#                           randomize.function=randomizeRegions,
+#                           evaluate.function = numOverlaps,
+#                           genome="hg38",
+#                           count.once= TRUE,
+#                           universe=universe,
+#                           verbose = TRUE,
+#                           BPPARAM = param)
+
+
+EPI_AF
+plot(EPI_AF)
+EPI_HF
+plot(EPI_HF)
+EPI_IHD
+plot(EPI_IHD)
+EPI_CAD
+plot(EPI_CAD)
+
+# saveRDS(EPI_AF,"data/Final_four_data/re_analysis/perm_test_100/EPI_AF_24h.RDS")
+# saveRDS(EPI_HF,"data/Final_four_data/re_analysis/perm_test_100/EPI_HF_24h.RDS")
+# saveRDS(EPI_IHD,"data/Final_four_data/re_analysis/perm_test_100/EPI_IHD_24h.RDS")
+# saveRDS(EPI_CAD,"data/Final_four_data/re_analysis/perm_test_100/EPI_CAD_24h.RDS")
+# 
+# saveRDS(EPI_AF_3,"data/Final_four_data/re_analysis/perm_test_100/EPI_AF_3h.RDS")
+# saveRDS(EPI_HF_3,"data/Final_four_data/re_analysis/perm_test_100/EPI_HF_3h.RDS")
+# saveRDS(EPI_IHD_3,"data/Final_four_data/re_analysis/perm_test_100/EPI_IHD_3h.RDS")
+# saveRDS(EPI_CAD_3,"data/Final_four_data/re_analysis/perm_test_100/EPI_CAD_3h.RDS")
+
+# saveRDS(EPI_AF,"data/Final_four_data/re_analysis/perm_test_1000/EPI_AF_24h.RDS")
+# saveRDS(EPI_HF,"data/Final_four_data/re_analysis/perm_test_1000/EPI_HF_24h.RDS")
+# saveRDS(EPI_IHD,"data/Final_four_data/re_analysis/perm_test_1000/EPI_IHD_24h.RDS")
+# saveRDS(EPI_CAD,"data/Final_four_data/re_analysis/perm_test_1000/EPI_CAD_24h.RDS")
+# 
+# saveRDS(EPI_AF_3,"data/Final_four_data/re_analysis/perm_test_1000/EPI_AF_3h.RDS")
+# saveRDS(EPI_HF_3,"data/Final_four_data/re_analysis/perm_test_1000/EPI_HF_3h.RDS")
+# saveRDS(EPI_IHD_3,"data/Final_four_data/re_analysis/perm_test_1000/EPI_IHD_3h.RDS")
+# saveRDS(EPI_CAD_3,"data/Final_four_data/re_analysis/perm_test_1000/EPI_CAD_3h.RDS")
+
+
+```
+
+```{r DNR perm}
+DNR_24_gr <- DNR_24_sig %>% separate_wider_delim(., cols="genes",names = c("seqnames","start","end"), delim= ".") %>% 
+  GRanges() 
+
+DNR_3_gr <- DNR_3_sig %>% separate_wider_delim(., cols="genes",names = c("seqnames","start","end"), delim= ".") %>% 
+  GRanges() 
+
+DNR_AF <- readRDS("data/Final_four_data/re_analysis/perm_test_1000/DNR_AF_24h.RDS")
+DNR_HF <- readRDS("data/Final_four_data/re_analysis/perm_test_1000/DNR_HF_24h.RDS")
+DNR_IHD <- readRDS("data/Final_four_data/re_analysis/perm_test_1000/DNR_IHD_24h.RDS")
+DNR_CAD <- readRDS("data/Final_four_data/re_analysis/perm_test_1000/DNR_CAD_24h.RDS")
+
+DNR_AF_3 <- readRDS("data/Final_four_data/re_analysis/perm_test_1000/DNR_AF_3h.RDS")
+DNR_HF_3 <- readRDS("data/Final_four_data/re_analysis/perm_test_1000/DNR_HF_3h.RDS")
+DNR_IHD_3 <- readRDS("data/Final_four_data/re_analysis/perm_test_1000/DNR_IHD_3h.RDS")
+DNR_CAD_3 <- readRDS("data/Final_four_data/re_analysis/perm_test_1000/DNR_CAD_3h.RDS")
+
+# DNR_AF_3<- permTest(A= DNR_3_gr,
+#                           B= AF_gr,
+#                           ntimes=1000,
+#                           randomize.function=randomizeRegions,
+#                           evaluate.function = numOverlaps,
+#                           genome="hg38",
+#                           count.once= TRUE,
+#                           universe=universe,
+#                         #
+#                           verbose = TRUE,
+#                           BPPARAM = param)
+# DNR_HF_3<- permTest(A= DNR_3_gr,
+#                           B= HF_gr,
+#                           ntimes=1000,
+#                           randomize.function=randomizeRegions,
+#                           evaluate.function = numOverlaps,
+#                           genome="hg38",
+#                           count.once= TRUE,
+#                           universe=universe,
+# 
+#                           verbose = TRUE,
+#                           BPPARAM = param)
+# 
+# 
+# DNR_IHD_3<- permTest(A= DNR_3_gr,
+#                           B= IHD_gr,
+#                           ntimes=1000,
+#                           randomize.function=randomizeRegions,
+#                           evaluate.function = numOverlaps,
+#                           genome="hg38",
+#                           count.once= TRUE,
+#                           universe=universe,
+# 
+#                           verbose = TRUE,
+#                           BPPARAM = param)
+# 
+# DNR_CAD_3<- permTest(A= DNR_3_gr,
+#                           B= CAD_gr,
+#                           ntimes=1000,
+#                           randomize.function=randomizeRegions,
+#                           evaluate.function = numOverlaps,
+#                           genome="hg38",
+#                           count.once= TRUE,
+#                           universe=universe,
+# 
+#                           verbose = TRUE,
+#                           BPPARAM = param)
+
+
+
+
+
+
+DNR_AF_3
+plot(DNR_AF_3)
+DNR_HF_3
+plot(DNR_HF_3)
+DNR_IHD_3
+plot(DNR_IHD_3)
+DNR_CAD_3
+plot(DNR_CAD_3)
+
+# DNR_AF<- permTest(A= DNR_24_gr,
+#                           B= AF_gr,
+#                           ntimes=1000,
+#                           randomize.function=randomizeRegions,
+#                           evaluate.function = numOverlaps,
+#                           genome="hg38",
+#                           count.once= TRUE,
+#                           universe=universe,
+#                           verbose = TRUE,
+#                           BPPARAM = param)
+# 
+# 
+# DNR_HF<- permTest(A= DNR_24_gr,
+#                           B= HF_gr,
+#                           ntimes=1000,
+#                           randomize.function=randomizeRegions,
+#                           evaluate.function = numOverlaps,
+#                           genome="hg38",
+#                           count.once= TRUE,
+#                           universe=universe,
+#                           verbose = TRUE,
+#                           BPPARAM = param)
+# 
+# 
+# DNR_IHD<- permTest(A= DNR_24_gr,
+#                           B= IHD_gr,
+#                           ntimes=1000,
+#                           randomize.function=randomizeRegions,
+#                           evaluate.function = numOverlaps,
+#                           genome="hg38",
+#                           count.once= TRUE,
+#                           universe=universe,
+#                           verbose = TRUE,
+#                           BPPARAM = param)
+# 
+# DNR_CAD <- permTest(A= DNR_24_gr,
+#                           B= CAD_gr,
+#                           ntimes=1000,
+#                           randomize.function=randomizeRegions,
+#                           evaluate.function = numOverlaps,
+#                           genome="hg38",
+#                           count.once= TRUE,
+#                           universe=universe,
+#                           verbose = TRUE,
+#                           BPPARAM = param)
+# 
+
+DNR_AF
+plot(DNR_AF)
+DNR_HF
+plot(DNR_HF)
+DNR_IHD
+plot(DNR_IHD)
+DNR_CAD
+plot(DNR_CAD)
+
+# saveRDS(DNR_AF,"data/Final_four_data/re_analysis/perm_test_100/DNR_AF_24h.RDS")
+# saveRDS(DNR_HF,"data/Final_four_data/re_analysis/perm_test_100/DNR_HF_24h.RDS")
+# saveRDS(DNR_IHD,"data/Final_four_data/re_analysis/perm_test_100/DNR_IHD_24h.RDS")
+# saveRDS(DNR_CAD,"data/Final_four_data/re_analysis/perm_test_100/DNR_CAD_24h.RDS")
+# 
+# saveRDS(DNR_AF_3,"data/Final_four_data/re_analysis/perm_test_100/DNR_AF_3h.RDS")
+# saveRDS(DNR_HF_3,"data/Final_four_data/re_analysis/perm_test_100/DNR_HF_3h.RDS")
+# saveRDS(DNR_IHD_3,"data/Final_four_data/re_analysis/perm_test_100/DNR_IHD_3h.RDS")
+# saveRDS(DNR_CAD_3,"data/Final_four_data/re_analysis/perm_test_100/DNR_CAD_3h.RDS")
+
+# saveRDS(DNR_AF,"data/Final_four_data/re_analysis/perm_test_1000/DNR_AF_24h.RDS")
+# saveRDS(DNR_HF,"data/Final_four_data/re_analysis/perm_test_1000/DNR_HF_24h.RDS")
+# saveRDS(DNR_IHD,"data/Final_four_data/re_analysis/perm_test_1000/DNR_IHD_24h.RDS")
+# saveRDS(DNR_CAD,"data/Final_four_data/re_analysis/perm_test_1000/DNR_CAD_24h.RDS")
+# 
+# saveRDS(DNR_AF_3,"data/Final_four_data/re_analysis/perm_test_1000/DNR_AF_3h.RDS")
+# saveRDS(DNR_HF_3,"data/Final_four_data/re_analysis/perm_test_1000/DNR_HF_3h.RDS")
+# saveRDS(DNR_IHD_3,"data/Final_four_data/re_analysis/perm_test_1000/DNR_IHD_3h.RDS")
+# saveRDS(DNR_CAD_3,"data/Final_four_data/re_analysis/perm_test_1000/DNR_CAD_3h.RDS")
+
+
+```
+### PT MTX
+```{r MTX perm}
+MTX_24_gr <- MTX_24_sig %>% separate_wider_delim(., cols="genes",names = c("seqnames","start","end"), delim= ".") %>% 
+  GRanges() 
+
+MTX_3_gr <- MTX_3_sig %>% separate_wider_delim(., cols="genes",names = c("seqnames","start","end"), delim= ".") %>% 
+  GRanges() 
+
+MTX_AF <- readRDS("data/Final_four_data/re_analysis/perm_test_1000/MTX_AF_24h.RDS")
+MTX_HF <- readRDS("data/Final_four_data/re_analysis/perm_test_1000/MTX_HF_24h.RDS")
+MTX_IHD <- readRDS("data/Final_four_data/re_analysis/perm_test_1000/MTX_IHD_24h.RDS")
+MTX_CAD <- readRDS("data/Final_four_data/re_analysis/perm_test_1000/MTX_CAD_24h.RDS")
+
+MTX_AF_3 <- readRDS("data/Final_four_data/re_analysis/perm_test_1000/MTX_AF_3h.RDS")
+MTX_HF_3 <- readRDS("data/Final_four_data/re_analysis/perm_test_1000/MTX_HF_3h.RDS")
+MTX_IHD_3 <- readRDS("data/Final_four_data/re_analysis/perm_test_1000/MTX_IHD_3h.RDS")
+MTX_CAD_3 <- readRDS("data/Final_four_data/re_analysis/perm_test_1000/MTX_CAD_3h.RDS")
+
+# MTX_AF_3<- permTest(A= MTX_3_gr,
+#                           B= AF_gr,
+#                           ntimes=1000,
+#                           randomize.function=randomizeRegions,
+#                           evaluate.function = numOverlaps,
+#                           genome="hg38",
+#                           count.once= TRUE,
+#                           universe=universe,
+#                         #
+#                           verbose = TRUE,
+#                           BPPARAM = param)
+# MTX_HF_3<- permTest(A= MTX_3_gr,
+#                           B= HF_gr,
+#                           ntimes=1000,
+#                           randomize.function=randomizeRegions,
+#                           evaluate.function = numOverlaps,
+#                           genome="hg38",
+#                           count.once= TRUE,
+#                           universe=universe,
+# 
+#                           verbose = TRUE,
+#                           BPPARAM = param)
+# 
+# 
+# MTX_IHD_3<- permTest(A= MTX_3_gr,
+#                           B= IHD_gr,
+#                           ntimes=1000,
+#                           randomize.function=randomizeRegions,
+#                           evaluate.function = numOverlaps,
+#                           genome="hg38",
+#                           count.once= TRUE,
+#                           universe=universe,
+# 
+#                           verbose = TRUE,
+#                           BPPARAM = param)
+# 
+# MTX_CAD_3<- permTest(A= MTX_3_gr,
+#                           B= CAD_gr,
+#                           ntimes=1000,
+#                           randomize.function=randomizeRegions,
+#                           evaluate.function = numOverlaps,
+#                           genome="hg38",
+#                           count.once= TRUE,
+#                           universe=universe,
+# 
+#                           verbose = TRUE,
+#                           BPPARAM = param)
+
+
+
+
+
+
+MTX_AF_3
+plot(MTX_AF_3)
+MTX_HF_3
+plot(MTX_HF_3)
+MTX_IHD_3
+plot(MTX_IHD_3)
+MTX_CAD_3
+plot(MTX_CAD_3)
+
+# MTX_AF<- permTest(A= MTX_24_gr,
+#                           B= AF_gr,
+#                           ntimes=1000,
+#                           randomize.function=randomizeRegions,
+#                           evaluate.function = numOverlaps,
+#                           genome="hg38",
+#                           count.once= TRUE,
+#                           universe=universe,
+#                           verbose = TRUE,
+#                           BPPARAM = param)
+# 
+# 
+# MTX_HF<- permTest(A= MTX_24_gr,
+#                           B= HF_gr,
+#                           ntimes=1000,
+#                           randomize.function=randomizeRegions,
+#                           evaluate.function = numOverlaps,
+#                           genome="hg38",
+#                           count.once= TRUE,
+#                           universe=universe,
+#                           verbose = TRUE,
+#                           BPPARAM = param)
+# 
+# 
+# MTX_IHD<- permTest(A= MTX_24_gr,
+#                           B= IHD_gr,
+#                           ntimes=1000,
+#                           randomize.function=randomizeRegions,
+#                           evaluate.function = numOverlaps,
+#                           genome="hg38",
+#                           count.once= TRUE,
+#                           universe=universe,
+#                           verbose = TRUE,
+#                           BPPARAM = param)
+# 
+# MTX_CAD <- permTest(A= MTX_24_gr,
+#                           B= CAD_gr,
+#                           ntimes=1000,
+#                           randomize.function=randomizeRegions,
+#                           evaluate.function = numOverlaps,
+#                           genome="hg38",
+#                           count.once= TRUE,
+#                           universe=universe,
+#                           verbose = TRUE,
+#                           BPPARAM = param)
+
+
+MTX_AF
+plot(MTX_AF)
+MTX_HF
+plot(MTX_HF)
+MTX_IHD
+plot(MTX_IHD)
+MTX_CAD
+plot(MTX_CAD)
+
+# saveRDS(MTX_AF,"data/Final_four_data/re_analysis/perm_test_100/MTX_AF_24h.RDS")
+# saveRDS(MTX_HF,"data/Final_four_data/re_analysis/perm_test_100/MTX_HF_24h.RDS")
+# saveRDS(MTX_IHD,"data/Final_four_data/re_analysis/perm_test_100/MTX_IHD_24h.RDS")
+# saveRDS(MTX_CAD,"data/Final_four_data/re_analysis/perm_test_100/MTX_CAD_24h.RDS")
+# 
+# saveRDS(MTX_AF_3,"data/Final_four_data/re_analysis/perm_test_100/MTX_AF_3h.RDS")
+# saveRDS(MTX_HF_3,"data/Final_four_data/re_analysis/perm_test_100/MTX_HF_3h.RDS")
+# saveRDS(MTX_IHD_3,"data/Final_four_data/re_analysis/perm_test_100/MTX_IHD_3h.RDS")
+# saveRDS(MTX_CAD_3,"data/Final_four_data/re_analysis/perm_test_100/MTX_CAD_3h.RDS")
+
+# saveRDS(MTX_AF,"data/Final_four_data/re_analysis/perm_test_1000/MTX_AF_24h.RDS")
+# saveRDS(MTX_HF,"data/Final_four_data/re_analysis/perm_test_1000/MTX_HF_24h.RDS")
+# saveRDS(MTX_IHD,"data/Final_four_data/re_analysis/perm_test_1000/MTX_IHD_24h.RDS")
+# saveRDS(MTX_CAD,"data/Final_four_data/re_analysis/perm_test_1000/MTX_CAD_24h.RDS")
+# 
+# saveRDS(MTX_AF_3,"data/Final_four_data/re_analysis/perm_test_1000/MTX_AF_3h.RDS")
+# saveRDS(MTX_HF_3,"data/Final_four_data/re_analysis/perm_test_1000/MTX_HF_3h.RDS")
+# saveRDS(MTX_IHD_3,"data/Final_four_data/re_analysis/perm_test_1000/MTX_IHD_3h.RDS")
+# saveRDS(MTX_CAD_3,"data/Final_four_data/re_analysis/perm_test_1000/MTX_CAD_3h.RDS")
+
+
+```
