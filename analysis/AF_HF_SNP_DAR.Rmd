@@ -283,6 +283,8 @@ DOX_darsnp_3_AF <- gwas_annote_df %>%
   arrange(desc(DOX_3)) %>% 
   column_to_rownames("DOX_3") %>% 
   fisher.test(.)
+
+
 ```
 
 ```{r AF DOX_DAR 24 enrichment}
@@ -932,6 +934,7 @@ combined_df_24 <- bind_rows(
     
     # convert htest to data.frame
     data.frame(
+      
       p.value = res$p.value,
       estimate = if (!is.null(res$estimate)) unname(res$estimate) else NA,
       conf.low = if (!is.null(res$conf.int)) res$conf.int[1] else NA,
@@ -1009,6 +1012,48 @@ combined_df_3 %>%
   
 ```
 
+###OR of results
+
+```{r, fig.height=7, fig.width=6}
+combined_df_3 %>% 
+  mutate(group=paste0(drug,"_",time)) %>% 
+  # separate_wider_delim(.,cols="group", names = c("trt","time"), delim = "_",cols_remove = FALSE) %>% 
+    mutate(time= factor(time, levels =c("3","24")),
+         drug=factor(drug, levels= c("DOX", "EPI", "DNR", "MTX"))) %>%
+  mutate(population=factor(population, levels= c("AF","HF","IHD","CAD"))) %>% 
+  mutate(
+    significant = case_when(
+      p.value < 0.001 ~ "***",
+      p.value < 0.01 ~ "**",
+      p.value < 0.05 ~ "*",
+      TRUE ~ ""
+    )
+  ) %>% 
+ggplot(., aes(x = drug, y = estimate)) +
+   geom_point(aes(color = drug), size=4)+
+   geom_errorbar(aes(ymin = conf.low, ymax = conf.high), width = 0.2) +
+  geom_hline(yintercept = 1, linetype = "dashed", color = "gray40") +
+  geom_text(
+  aes(y = conf.high + 0.1 * estimate, label = significant),
+  hjust = 0,  # aligns text to the left of the y point
+  size = 4,
+  color = "black"
+)+
+  labs(
+    title = "Odds Ratio of SNP enrichment by type",
+    y = "Odds Ratio (95% confidence interval)",
+    x = "treatment"
+  ) +
+  # coord_flip()+
+  theme_bw() +
+  facet_grid(rows = vars(population), cols = vars(time), scales = "free_y")+
+  theme(
+    text = element_text(size = 12),
+    plot.title = element_text(hjust = 0.5)
+  )
+```
+
+
 ### MCF7 enrichment tests
 ```{r}
 library(regioneR)
@@ -1071,12 +1116,12 @@ plot(CAD)
 ### PT DOX 24hr check
 
 ```{r DOX perm}
-DOX_24_gr <- DOX_24_sig %>% separate_wider_delim(., cols="genes",names = c("seqnames","start","end"), delim= ".") %>% 
-  GRanges() 
-
-DOX_3_gr <- DOX_3_sig %>% separate_wider_delim(., cols="genes",names = c("seqnames","start","end"), delim= ".") %>% 
-  GRanges() 
-param <- SnowParam(workers = 1)
+# DOX_24_gr <- DOX_24_sig %>% separate_wider_delim(., cols="genes",names = c("seqnames","start","end"), delim= ".") %>% 
+#   GRanges() 
+# 
+# DOX_3_gr <- DOX_3_sig %>% separate_wider_delim(., cols="genes",names = c("seqnames","start","end"), delim= ".") %>% 
+#   GRanges() 
+# param <- SnowParam(workers = 1)
 
 DOX_AF <- readRDS("data/Final_four_data/re_analysis/perm_test_1000/DOX_AF_24h.RDS")
 DOX_HF <- readRDS("data/Final_four_data/re_analysis/perm_test_1000/DOX_HF_24h.RDS")
@@ -1220,7 +1265,7 @@ plot(DOX_CAD_3)
 # saveRDS(DOX_CAD_3,"data/Final_four_data/re_analysis/perm_test_1000/DOX_CAD_3h.RDS")
 ```
 
-```{r}
+```{r,eval=FALSE}
 for (w in c(1, 2, 4, 6, 8)) {
   cat("\nTesting", w, "workers\n")
   param <- SnowParam(workers = w)
