@@ -86,7 +86,7 @@ CAD_peak_list <- gwas_annote_df %>%
   dplyr::filter(CAD_status=="CAD_peak")
 
 
-
+drug_pal <- c("#8B006D","#DF707E","#F1B72B", "#3386DD","#707031","#41B333")
 
 ```
 
@@ -110,14 +110,18 @@ all_results_pivot %>%
       step_increase = 0.125,
       map_signif_level = FALSE, 
       test = "wilcox.test")+
-      ylim(-3,4)+
+      ylim(0,4)+
   theme_classic()+
   ggtitle(paste0("logFC of IHD overlapping regions, n = ",length(IHD_peak_list$Peakid))) +
-  facet_wrap(~time)
+  facet_wrap(~time)+
+  scale_fill_manual(values= drug_pal)
+
+
 
 ```
 
 ```{r AF LFC}
+
 all_results_pivot %>% 
   dplyr::filter(genes %in% AF_peak_list$Peakid) %>% 
   pivot_longer(!genes, names_to = "sample",values_to="log_FC") %>% 
@@ -139,7 +143,32 @@ all_results_pivot %>%
       ylim(-1,6)+
   theme_classic()+
   ggtitle(paste0("logFC of AF overlapping regions, n = ",length(AF_peak_list$Peakid))) +
-  facet_wrap(~time)
+  facet_wrap(~time)+
+  scale_fill_manual(values= drug_pal)
+
+all_results_pivot %>% 
+  dplyr::filter(genes %in% AF_peak_list$Peakid) %>% 
+  pivot_longer(!genes, names_to = "sample",values_to="log_FC") %>% 
+  separate_wider_delim(sample, names= c("trt","time"), delim= "_", cols_remove =FALSE) %>% 
+  mutate(trt= factor(trt, levels= c("DOX","EPI","DNR","MTX","TRZ")),
+          log_FC=abs(log_FC),
+         time=factor(time, levels = c("3","24"))) %>% 
+  ggplot(., aes(x=trt, y = log_FC))+
+  geom_boxplot(aes(fill = trt))+
+  # geom_point()+
+  # geom_signif(comparisons = list(
+  #     c("TRZ", "DOX"),
+  #     c("TRZ", "EPI"),
+  #     c("TRZ", "DNR"),
+  #     c("TRZ", "MTX")),
+  #     step_increase = 0.1,
+  #     map_signif_level = FALSE, 
+  #     test = "wilcox.test")+
+  #     ylim(-1,6)+
+  theme_classic()+
+  ggtitle(paste0("logFC of AF overlapping regions, n = ",length(AF_peak_list$Peakid))) +
+  facet_wrap(~time)+
+  scale_fill_manual(values= drug_pal)
 ```
 
 ```{r HF LFC}
@@ -152,7 +181,7 @@ all_results_pivot %>%
          time=factor(time, levels = c("3","24"))) %>% 
   ggplot(., aes(x=trt, y = log_FC))+
   geom_boxplot(aes(fill = trt))+
-  geom_point()+
+  # geom_point()+
   geom_signif(comparisons = list(
       c("TRZ", "DOX"),
       c("TRZ", "EPI"),
@@ -161,10 +190,35 @@ all_results_pivot %>%
       step_increase = 0.125,
       map_signif_level = FALSE, 
       test = "wilcox.test")+
-      ylim(-3,4.5)+
+      ylim(0,4.5)+
   theme_classic()+
   ggtitle(paste0("logFC of HF overlapping regions, n = ",length(HF_peak_list$Peakid))) +
-  facet_wrap(~time)
+  facet_wrap(~time)+
+  scale_fill_manual(values= drug_pal)
+
+all_results_pivot %>% 
+  dplyr::filter(genes %in% HF_peak_list$Peakid) %>% 
+  pivot_longer(!genes, names_to = "sample",values_to="log_FC") %>% 
+  separate_wider_delim(sample, names= c("trt","time"), delim= "_", cols_remove =FALSE) %>% 
+  mutate(trt= factor(trt, levels= c("DOX","EPI","DNR","MTX","TRZ")),
+          log_FC=abs(log_FC),
+         time=factor(time, levels = c("3","24"))) %>% 
+  ggplot(., aes(x=trt, y = log_FC))+
+  geom_boxplot(aes(fill = trt))+
+  # geom_point()+
+  # geom_signif(comparisons = list(
+  #     c("TRZ", "DOX"),
+  #     c("TRZ", "EPI"),
+  #     c("TRZ", "DNR"),
+  #     c("TRZ", "MTX")),
+  #     step_increase = 0.125,
+  #     map_signif_level = FALSE, 
+  #     test = "wilcox.test")+
+      # ylim(0,4.5)+
+  theme_classic()+
+  ggtitle(paste0("logFC of HF overlapping regions, n = ",length(HF_peak_list$Peakid))) +
+  facet_wrap(~time)+
+  scale_fill_manual(values= drug_pal)
 ```
 
 ```{r CAD LFC}
@@ -177,7 +231,7 @@ all_results_pivot %>%
          time=factor(time, levels = c("3","24"))) %>% 
   ggplot(., aes(x=trt, y = log_FC))+
   geom_boxplot(aes(fill = trt))+
-  geom_point()+
+  # geom_point()+
    geom_signif(comparisons = list(
       c("TRZ", "DOX"),
       c("TRZ", "EPI"),
@@ -186,10 +240,11 @@ all_results_pivot %>%
       step_increase = 0.1,
       map_signif_level = FALSE, 
       test = "wilcox.test")+
-      ylim(-3,5)+
+      ylim(0,4)+
   theme_classic()+
   ggtitle(paste0("logFC of CAD overlapping regions, n = ",length(CAD_peak_list$Peakid))) +
-  facet_wrap(~time)
+  facet_wrap(~time)+
+  scale_fill_manual(values= drug_pal)
 ```
 ```{r}
 GWAS_overlap_df <- readRDS("data/Final_four_data/re_analysis/GWAS_overlaps_dataframe.RDS")
@@ -204,10 +259,10 @@ gwas_annot <- GWAS_overlap_df %>%
   dplyr::filter(gwas_class != "IHD;CAD") %>% 
   dplyr::filter(gwas_class != "CAD;IHD")
 
-gwas_annot %>% 
-  left_join(., all_results_pivot, by=c("Peakid"="genes")) %>% 
-  mutate("name"=paste0(Peakid,"_",SNP_ids,"_",gwas_class)) %>% 
-  dplyr::select(DOX_3:name)
+# gwas_annot %>% 
+#   left_join(., all_results_pivot, by=c("Peakid"="genes")) %>% 
+#   mutate("name"=paste0(Peakid,"_",SNP_ids,"_",gwas_class)) %>% 
+#   dplyr::select(DOX_3:name)
 
 
 Results_mat <- all_results_pivot %>% 
