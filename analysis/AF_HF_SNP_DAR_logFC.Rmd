@@ -1,0 +1,237 @@
+---
+title: "logFC of SNPs in ARs"
+author: "Renee Matthews"
+date: "2025-07-14"
+output: html_document
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE,
+	warning = FALSE,
+	dev = c("png","pdf")
+)
+```
+
+```{css, echo=FALSE}
+pre {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+pre[class] {
+  max-height: 200px;
+}
+```
+
+```{r  package loading}
+library(tidyverse)
+library(kableExtra)
+library(broom)
+library(RColorBrewer)
+library("TxDb.Hsapiens.UCSC.hg38.knownGene")
+library("org.Hs.eg.db")
+library(rtracklayer)
+library(ggfortify)
+library(readr)
+library(BiocGenerics)
+library(gridExtra)
+library(VennDiagram)
+library(scales)
+library(ggVennDiagram)
+library(BiocParallel)
+library(ggpubr)
+library(edgeR)
+library(genomation)
+library(ggsignif)
+library(plyranges)
+library(ggrepel)
+library(ComplexHeatmap)
+library(cowplot)
+library(smplot2)
+library(readxl)
+library(devtools)
+```
+
+
+```{r loading data}
+toptable_results <- readRDS("data/Final_four_data/re_analysis/Toptable_results.RDS")
+
+all_results  <- toptable_results %>%
+  imap(~ .x %>% tibble::rownames_to_column(var = "rowname") %>%
+         mutate(source = .y)) %>%
+  bind_rows()
+
+
+all_results_pivot <- all_results %>% 
+dplyr::select(genes,logFC,source) %>% 
+  pivot_wider(., id_cols = genes, names_from = source, values_from = logFC) %>% 
+  dplyr::select(genes,DOX_3,EPI_3,DNR_3,MTX_3,TRZ_3,DOX_24,EPI_24,DNR_24,MTX_24,TRZ_24)
+
+gwas_annote_df <- readRDS("data/Final_four_data/re_analysis/GWAS_SNP_annotations.RDS")
+
+AF_peak_list <- gwas_annote_df %>%
+  dplyr::filter(AF_status=="AF_peak")
+
+
+HF_peak_list <- gwas_annote_df %>%
+  dplyr::filter(HF_status=="HF_peak")
+
+IHD_peak_list <- gwas_annote_df %>%
+  dplyr::filter(IHD_status=="IHD_peak")
+
+CAD_peak_list <- gwas_annote_df %>%
+  dplyr::filter(CAD_status=="CAD_peak")
+
+
+
+
+```
+
+```{r  IHD LFC}
+
+all_results_pivot %>% 
+  dplyr::filter(genes %in% IHD_peak_list$Peakid) %>% 
+  pivot_longer(!genes, names_to = "sample",values_to="log_FC") %>% 
+  separate_wider_delim(sample, names= c("trt","time"), delim= "_", cols_remove =FALSE) %>% 
+  mutate(trt= factor(trt, levels= c("DOX","EPI","DNR","MTX","TRZ")),
+         log_FC=abs(log_FC),
+         time=factor(time, levels = c("3","24"))) %>% 
+  ggplot(., aes(x=trt, y = log_FC))+
+  geom_boxplot(aes(fill = trt))+
+  geom_point()+
+   geom_signif(comparisons = list(
+      c("TRZ", "DOX"),
+      c("TRZ", "EPI"),
+      c("TRZ", "DNR"),
+      c("TRZ", "MTX")),
+      step_increase = 0.125,
+      map_signif_level = FALSE, 
+      test = "wilcox.test")+
+      ylim(-3,4)+
+  theme_classic()+
+  ggtitle(paste0("logFC of IHD overlapping regions, n = ",length(IHD_peak_list$Peakid))) +
+  facet_wrap(~time)
+
+```
+
+```{r AF LFC}
+all_results_pivot %>% 
+  dplyr::filter(genes %in% AF_peak_list$Peakid) %>% 
+  pivot_longer(!genes, names_to = "sample",values_to="log_FC") %>% 
+  separate_wider_delim(sample, names= c("trt","time"), delim= "_", cols_remove =FALSE) %>% 
+  mutate(trt= factor(trt, levels= c("DOX","EPI","DNR","MTX","TRZ")),
+          log_FC=abs(log_FC),
+         time=factor(time, levels = c("3","24"))) %>% 
+  ggplot(., aes(x=trt, y = log_FC))+
+  geom_boxplot(aes(fill = trt))+
+  geom_point()+
+  geom_signif(comparisons = list(
+      c("TRZ", "DOX"),
+      c("TRZ", "EPI"),
+      c("TRZ", "DNR"),
+      c("TRZ", "MTX")),
+      step_increase = 0.1,
+      map_signif_level = FALSE, 
+      test = "wilcox.test")+
+      ylim(-1,6)+
+  theme_classic()+
+  ggtitle(paste0("logFC of AF overlapping regions, n = ",length(AF_peak_list$Peakid))) +
+  facet_wrap(~time)
+```
+
+```{r HF LFC}
+all_results_pivot %>% 
+  dplyr::filter(genes %in% HF_peak_list$Peakid) %>% 
+  pivot_longer(!genes, names_to = "sample",values_to="log_FC") %>% 
+  separate_wider_delim(sample, names= c("trt","time"), delim= "_", cols_remove =FALSE) %>% 
+  mutate(trt= factor(trt, levels= c("DOX","EPI","DNR","MTX","TRZ")),
+          log_FC=abs(log_FC),
+         time=factor(time, levels = c("3","24"))) %>% 
+  ggplot(., aes(x=trt, y = log_FC))+
+  geom_boxplot(aes(fill = trt))+
+  geom_point()+
+  geom_signif(comparisons = list(
+      c("TRZ", "DOX"),
+      c("TRZ", "EPI"),
+      c("TRZ", "DNR"),
+      c("TRZ", "MTX")),
+      step_increase = 0.125,
+      map_signif_level = FALSE, 
+      test = "wilcox.test")+
+      ylim(-3,4.5)+
+  theme_classic()+
+  ggtitle(paste0("logFC of HF overlapping regions, n = ",length(HF_peak_list$Peakid))) +
+  facet_wrap(~time)
+```
+
+```{r CAD LFC}
+all_results_pivot %>% 
+  dplyr::filter(genes %in% CAD_peak_list$Peakid) %>% 
+  pivot_longer(!genes, names_to = "sample",values_to="log_FC") %>% 
+  separate_wider_delim(sample, names= c("trt","time"), delim= "_", cols_remove =FALSE) %>% 
+  mutate(trt= factor(trt, levels= c("DOX","EPI","DNR","MTX","TRZ")),
+          log_FC=abs(log_FC),
+         time=factor(time, levels = c("3","24"))) %>% 
+  ggplot(., aes(x=trt, y = log_FC))+
+  geom_boxplot(aes(fill = trt))+
+  geom_point()+
+   geom_signif(comparisons = list(
+      c("TRZ", "DOX"),
+      c("TRZ", "EPI"),
+      c("TRZ", "DNR"),
+      c("TRZ", "MTX")),
+      step_increase = 0.1,
+      map_signif_level = FALSE, 
+      test = "wilcox.test")+
+      ylim(-3,5)+
+  theme_classic()+
+  ggtitle(paste0("logFC of CAD overlapping regions, n = ",length(CAD_peak_list$Peakid))) +
+  facet_wrap(~time)
+```
+```{r}
+GWAS_overlap_df <- readRDS("data/Final_four_data/re_analysis/GWAS_overlaps_dataframe.RDS")
+
+gwas_annot <- GWAS_overlap_df %>% 
+  dplyr::select(Peakid, SNPS, gwas) %>% 
+  group_by(Peakid) %>% 
+  reframe(SNP_ids=paste(unique(SNPS),collapse = ";"),
+          gwas_class=paste(unique(gwas), collapse = ";")) %>% 
+  dplyr::filter(gwas_class != "CAD") %>% 
+  dplyr::filter(gwas_class != "IHD") %>% 
+  dplyr::filter(gwas_class != "IHD;CAD") %>% 
+  dplyr::filter(gwas_class != "CAD;IHD")
+
+gwas_annot %>% 
+  left_join(., all_results_pivot, by=c("Peakid"="genes")) %>% 
+  mutate("name"=paste0(Peakid,"_",SNP_ids,"_",gwas_class)) %>% 
+  dplyr::select(DOX_3:name)
+
+
+Results_mat <- all_results_pivot %>% 
+  dplyr::filter(genes %in% gwas_annot$Peakid) %>% 
+  left_join(., gwas_annot, by=c("genes"="Peakid")) %>% 
+   mutate("name"=paste0(genes,"_",SNP_ids,"_",gwas_class)) %>% 
+  dplyr::select(name,DOX_3:TRZ_24)
+
+
+signif_mat <- all_results %>% 
+dplyr::select(genes,adj.P.Val,source) %>% 
+  pivot_wider(., id_cols = genes, names_from = source, values_from = adj.P.Val) %>% 
+  dplyr::filter(genes %in% gwas_annot$Peakid) %>% 
+  left_join(., gwas_annot, by=c("genes"="Peakid")) %>% 
+   mutate("name"=paste0(genes,"_",SNP_ids,"_",gwas_class)) %>% 
+  dplyr::select(name,DOX_3:TRZ_24) %>% 
+  column_to_rownames("name") %>% 
+  as.matrix()
+
+annotation_mat <- all_results_pivot %>% 
+  dplyr::filter(genes %in% gwas_annot$Peakid) %>% 
+  left_join(., gwas_annot, by=c("genes"="Peakid")) %>% 
+   mutate("name"=paste0(genes,"_",SNP_ids,"_",gwas_class)) %>% 
+  dplyr::select(name,DOX_3:TRZ_24)
+
+```
+
