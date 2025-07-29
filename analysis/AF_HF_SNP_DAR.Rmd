@@ -1012,9 +1012,9 @@ combined_df_3 %>%
   
 ```
 
-###OR of results
+### OR of results
 
-```{r, fig.height=7, fig.width=6}
+```{r OR_plot, fig.height=7, fig.width=6}
 combined_df_3 %>% 
   mutate(group=paste0(drug,"_",time)) %>% 
   # separate_wider_delim(.,cols="group", names = c("trt","time"), delim = "_",cols_remove = FALSE) %>% 
@@ -1265,22 +1265,7 @@ plot(DOX_CAD_3)
 # saveRDS(DOX_CAD_3,"data/Final_four_data/re_analysis/perm_test_1000/DOX_CAD_3h.RDS")
 ```
 
-```{r,eval=FALSE}
-for (w in c(1, 2, 4, 6, 8)) {
-  cat("\nTesting", w, "workers\n")
-  param <- SnowParam(workers = w)
-  t <- system.time({
-    permTest(DOX_3_gr,B= AF_gr, ntimes = 100,randomize.function=randomizeRegions,
-                          evaluate.function = numOverlaps,
-                          genome="hg38",
-                          count.once= TRUE,
-                          universe=universe, verbose = TRUE,BPPARAM = param)
-  })
-  print(t)
-}
-
-```
-
+### PT EPI 24hr check
 ```{r EPI perm}
 EPI_24_gr <- EPI_24_sig %>% separate_wider_delim(., cols="genes",names = c("seqnames","start","end"), delim= ".") %>% 
   GRanges() 
@@ -1440,7 +1425,7 @@ plot(EPI_CAD)
 
 
 ```
-
+### PT DNR 24hr check
 ```{r DNR perm}
 DNR_24_gr <- DNR_24_sig %>% separate_wider_delim(., cols="genes",names = c("seqnames","start","end"), delim= ".") %>% 
   GRanges() 
@@ -1598,7 +1583,7 @@ plot(DNR_CAD)
 
 
 ```
-### PT MTX
+### PT MTX 24hr check
 ```{r MTX perm}
 MTX_24_gr <- MTX_24_sig %>% separate_wider_delim(., cols="genes",names = c("seqnames","start","end"), delim= ".") %>% 
   GRanges() 
@@ -1755,4 +1740,103 @@ plot(MTX_CAD)
 # saveRDS(MTX_CAD_3,"data/Final_four_data/re_analysis/perm_test_1000/MTX_CAD_3h.RDS")
 
 
+```
+
+
+### Creating heatmaps
+
+```{r}
+
+all_results_LFC <- all_results %>%  dplyr::select(source,genes,logFC) %>%
+    pivot_wider(id_cols=genes, values_from = logFC, names_from = source) %>% 
+  dplyr::rename("Peakid"=genes)
+
+
+ATAC_all_adj.pvals <- readRDS("data/Final_four_data/re_analysis/ATAC_all_adj_pvals.RDS")
+
+AF_heatmap_df <- SNP_overlaps %>% 
+  as.data.frame() %>% 
+  dplyr::filter(gwas=="AF") %>% 
+  group_by(Peakid) %>%
+  summarise(SNPS=paste(unique(SNPS),collapse = ";"))
+
+HF_heatmap_df <- SNP_overlaps %>% 
+  as.data.frame() %>% 
+  dplyr::filter(gwas=="HF") %>% 
+  group_by(Peakid) %>%
+  summarise(SNPS=paste(unique(SNPS),collapse = ";"))
+```
+
+```{r AF heatmap, fig.height=13, fig.width=8}
+
+AF_mat <- AF_heatmap_df %>% 
+  left_join(., all_results_LFC, by=c("Peakid"="Peakid")) %>% 
+  tidyr::unite(., name,Peakid,SNPS) %>% 
+  column_to_rownames("name") %>% 
+  as.matrix()
+
+AF_sig_mat <- AF_heatmap_df %>% 
+  left_join(., ATAC_all_adj.pvals, by=c("Peakid"="genes")) %>% 
+  tidyr::unite(., name,Peakid,SNPS) %>% 
+  column_to_rownames("name") %>% 
+  as.matrix()
+
+
+simply_AF_lfc <- ComplexHeatmap::Heatmap(AF_mat,
+                                         
+                        show_row_names = TRUE,
+                       row_names_max_width=
+ComplexHeatmap::max_text_width(rownames(AF_mat),                                                        gp=gpar(fontsize=14)),
+                        heatmap_legend_param = list(direction = "horizontal"),
+column_title = "AF_SNPS",
+                       
+                        show_column_names = TRUE,
+                        cluster_rows = FALSE,
+                        cluster_columns = FALSE,
+                        cell_fun = function(j, i, x, y, width, height, fill) {
+                          if (!is.na(AF_sig_mat[i, j]) && AF_sig_mat[i, j] <0.05) {
+                              grid.text("*", x, y, gp = gpar(fontsize = 20))  # Add star if significant
+                            } })
+
+ComplexHeatmap::draw(simply_AF_lfc, 
+     merge_legend = TRUE, 
+     heatmap_legend_side = "left", 
+    annotation_legend_side = "left")
+```
+
+```{r HF heatmap, fig.height=10, fig.width=8}
+
+HF_mat <- HF_heatmap_df %>% 
+  left_join(., all_results_LFC, by=c("Peakid"="Peakid")) %>% 
+  tidyr::unite(., name,Peakid,SNPS) %>% 
+  column_to_rownames("name") %>% 
+  as.matrix()
+
+HF_sig_mat <- HF_heatmap_df %>% 
+  left_join(., ATAC_all_adj.pvals, by=c("Peakid"="genes")) %>% 
+  tidyr::unite(., name,Peakid,SNPS) %>% 
+  column_to_rownames("name") %>% 
+  as.matrix()
+
+
+simply_HF_lfc <- ComplexHeatmap::Heatmap(HF_mat,
+                                         
+                        show_row_names = TRUE,
+                       row_names_max_width=
+ComplexHeatmap::max_text_width(rownames(HF_mat),                                                        gp=gpar(fontsize=14)),
+                        heatmap_legend_param = list(direction = "horizontal"),
+column_title = "HF_SNPS",
+                       
+                        show_column_names = TRUE,
+                        cluster_rows = FALSE,
+                        cluster_columns = FALSE,
+                        cell_fun = function(j, i, x, y, width, height, fill) {
+                          if (!is.na(HF_sig_mat[i, j]) && HF_sig_mat[i, j] <0.05) {
+                              grid.text("*", x, y, gp = gpar(fontsize = 20))  # Add star if significant
+                            } })
+
+ComplexHeatmap::draw(simply_HF_lfc, 
+     merge_legend = TRUE, 
+     heatmap_legend_side = "left", 
+    annotation_legend_side = "left")
 ```
