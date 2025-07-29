@@ -743,6 +743,8 @@ Cardiotox_gwas_MTX_3 <- peak_snp_pairs_dist_MTX_3 %>%
 For combining the above 24 hour trt-distance to SNP data frames for box-plots
 
 ```{r Boxplot combo, fig.width=7}
+
+drug_pal <- c("#8B006D","#DF707E","#F1B72B", "#3386DD","#707031","#41B333")
 SNP_TAD_dist_DF <- bind_rows((peak_snp_pairs_dist_MTX %>% 
              mutate(trt="MTX")),
           (peak_snp_pairs_dist %>%
@@ -765,7 +767,8 @@ SNP_TAD_dist_DF%>%
                               # step_increase = 0.1, 
               map_signif_level = FALSE, 
               test = "wilcox.test")+
-  ggtitle("ALL dist 24 hours")
+  ggtitle("ALL dist 24 hours")+
+  scale_fill_manual(values=drug_pal)
 ```
 
 ```{r Boxplot combo 3hour, fig.width=7}
@@ -791,7 +794,8 @@ SNP_TAD_dist_DF_3%>%
                               # step_increase = 0.1, 
               map_signif_level = FALSE, 
               test = "wilcox.test")+
-  ggtitle("ALL dist 3 hours")
+  ggtitle("ALL dist 3 hours")+
+  scale_fill_manual(values=drug_pal)
 ```
 ### MCF7 tissue specific, non-tissue specific.
 
@@ -978,8 +982,33 @@ ComplexHeatmap::draw(simply_map_lfc,
      heatmap_legend_side = "left", 
     annotation_legend_side = "left")
 ```
-Alternative of final graph that we may use.
-```{r, non-sig plus sig, fig.height=14, fig.width=10}
+### Alternative of final graph 
+```{r, cardiotox heatmapnon-sig plus sig, fig.height=14, fig.width=10}
+
+ATAC_all_adj.pvals <- all_results%>%
+dplyr::select(source,genes,adj.P.Val) %>%
+    pivot_wider(id_cols=genes, values_from = adj.P.Val, names_from = source)
+# saveRDS(ATAC_all_adj.pvals,"data/Final_four_data/re_analysis/ATAC_all_adj_pvals.RDS")
+sig_mat_cardiotox <- ATAC_all_adj.pvals %>%
+  dplyr::filter(genes %in% peak_snp_pairs_dist$Peakid) %>% 
+  left_join(peak_snp_pairs_dist, by=c("genes"="Peakid")) %>% 
+  group_by(TAD_id,RSID) %>% 
+  slice_min(order_by = distance, with_ties = FALSE) %>%
+  ungroup() %>% 
+  arrange(snp_chr,snp_start) %>% 
+   group_by(genes, peak_chr, peak_start, TAD_id, sig_24) %>%
+  summarise(
+    min_distance = min(distance),
+    mean_distance = mean(distance),
+    snp_list = paste(unique(RSID), collapse = ","),
+    .groups = "drop"
+  ) %>% 
+  left_join(ATAC_all_adj.pvals) %>% 
+  tidyr::unite(., name,genes,snp_list) %>% 
+  dplyr::select(name, DNR_3:TRZ_24) %>% 
+  column_to_rownames("name") %>% 
+  as.matrix()
+
 AR_Cardiotox_gwas_collaped_df <-
 peak_snp_pairs_dist %>% 
   # dplyr::filter(sig_24=="sig") %>% 
@@ -1024,14 +1053,18 @@ annot_map_2 <-
 
 
 simply_map_lfc_2 <- ComplexHeatmap::Heatmap(Cardotox_mat_2,
-                        #                   col = col_fun,
                         left_annotation = annot_map_2,
                         show_row_names = TRUE,
                        row_names_max_width= ComplexHeatmap::max_text_width(rownames(Cardotox_mat_2),                                                        gp=gpar(fontsize=14)),
                         heatmap_legend_param = list(direction = "horizontal"),
+                       
                         show_column_names = TRUE,
                         cluster_rows = FALSE,
-                        cluster_columns = FALSE)
+                        cluster_columns = FALSE,
+                        cell_fun = function(j, i, x, y, width, height, fill) {
+                          if (!is.na(sig_mat_cardiotox[i, j]) && sig_mat_cardiotox[i, j] <0.05) {
+                              grid.text("*", x, y, gp = gpar(fontsize = 20))  # Add star if significant
+                            } })
 
 
 
@@ -1044,11 +1077,36 @@ ComplexHeatmap::draw(simply_map_lfc_2,
 
 
 ```
+
+```{r}
+ATAC_all_adj.pvals %>%
+  dplyr::filter(genes %in% peak_snp_pairs_dist$Peakid) %>% 
+  left_join(peak_snp_pairs_dist, by=c("genes"="Peakid")) %>% 
+  group_by(TAD_id,RSID) %>% 
+  slice_min(order_by = distance, with_ties = FALSE) %>%
+  ungroup() %>% 
+  arrange(snp_chr,snp_start) %>% 
+   group_by(genes, peak_chr, peak_start, TAD_id, sig_24) %>%
+  summarise(
+    min_distance = min(distance),
+    mean_distance = mean(distance),
+    snp_list = paste(unique(RSID), collapse = ","),
+    .groups = "drop"
+  ) %>% 
+  left_join(ATAC_all_adj.pvals) %>% 
+  tidyr::unite(., name,genes,snp_list) %>% 
+  dplyr::select(name, DNR_3:TRZ_24) %>% 
+  column_to_rownames("name") %>% 
+  as.matrix()
+
+AR_Cardiotox_gwas_collaped_df
+```
+
 ### adding in Park data:
 
 
 
-```{r Boram Park etal}
+```{r Boram Park etal, eval=FALSE}
 ParkSNPs <- readRDS("data/other_papers/ParkSNPs_pull_VEF.RDS")
 
 ParkSNP_table <-
@@ -1100,7 +1158,7 @@ Park_Cardiotox_gwas_df <- Park_snp_pairs_dist %>%
 ```
 
 
-```{r}
+```{r, eval=FALSE}
 Park_Cardiotox_gwas_collaped_df <-
 Park_snp_pairs_dist %>% 
   # dplyr::filter(sig_24=="sig") %>% 
@@ -1310,6 +1368,15 @@ SNP_DAR_overlap_direct %>%
  left_join(., all_results_pivot, by=c("Peakid"="genes")) %>% 
   tidyr::unite(., name,Peakid,RSID) 
 
+SNP_DAR_sig_mat <-   SNP_DAR_overlap_direct %>% 
+    dplyr::select(Peakid,RSID) %>% 
+  left_join(., snp_tad_df,by= c("RSID"="RSID")) %>% 
+  dplyr::select(Peakid, TAD_id, RSID) %>% 
+    left_join(., ATAC_all_adj.pvals, by=c("Peakid"="genes")) %>% 
+    tidyr::unite(., name,Peakid,RSID) %>% 
+    column_to_rownames("name") %>% 
+  as.matrix()
+
 
 Cardotox_mat_3 <-   SNP_DAR_overlap_mat %>%
   dplyr::select(name,DOX_3:TRZ_24) %>% 
@@ -1326,13 +1393,17 @@ annot_map_3 <-
 simply_map_lfc_3 <- ComplexHeatmap::Heatmap(Cardotox_mat_3,
                         #                   col = col_fun,
                         left_annotation = annot_map_3,
-                        column_title="AR_HF SNP direct overlaps",
+                        column_title="Cardiotox SNP direct overlaps",
                         show_row_names = TRUE,
                        row_names_max_width= ComplexHeatmap::max_text_width(rownames(Cardotox_mat_3),                                                        gp=gpar(fontsize=14)),
                         heatmap_legend_param = list(direction = "horizontal"),
                         show_column_names = TRUE,
                         cluster_rows = FALSE,
-                        cluster_columns = FALSE)
+                        cluster_columns = FALSE,
+                       cell_fun = function(j, i, x, y, width, height, fill) {
+                          if (!is.na(SNP_DAR_sig_mat[i, j]) && SNP_DAR_sig_mat[i, j] <0.05) {
+                              grid.text("*", x, y, gp = gpar(fontsize = 20))  # Add star if significant
+                            } })
 
 
 
