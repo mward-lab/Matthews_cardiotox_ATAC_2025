@@ -1177,6 +1177,9 @@ MTX_24_df_SINE <- annotated_peaks %>%
    dplyr::select(Peakid, repName, repClass,repFamily,repClass_org,TE_status) %>% 
   distinct(Peakid, TE_status,repClass,.keep_all = TRUE) %>% 
   mutate(trt="MTX_24")
+MTX_24_df_SINE %>% 
+  group_by(repFamily) %>% 
+    tally()
 
 ```
 
@@ -1201,4 +1204,1357 @@ h.genome_SINE_combo %>%
   theme_bw()+
   ggtitle("SINE breakdown across response classes")#+
   # scale_fill_LINEs()
+```
+
+#### Looking at enrichment of SINE families by treatment-time
+```{r}
+MIR_overlaps <- 
+overlap_TE_gr %>% 
+  as.data.frame() %>%
+  dplyr::filter(repClass=="SINE") %>% 
+  dplyr::select(Peakid,repName, repClass,repFamily) %>% 
+  group_by(Peakid) %>%  
+  reframe(repFamily= paste(unique(repFamily), collapse = ";"),
+                             MIR_overlap=if_else("MIR" %in% repFamily, "MIR_peak","not_MIR_peak")) %>% 
+  left_join(annotated_peaks, by=c("Peakid"="genes"))
+
+```
+
+```{r DOX3 DOX24}
+
+DOX_3_MIR <- MIR_overlaps %>% 
+  group_by(MIR_overlap, DOX_sig_3) %>% 
+  tally %>% 
+  pivot_wider(id_cols= DOX_sig_3,names_from = MIR_overlap, values_from = n) %>% 
+  column_to_rownames("DOX_sig_3")  
+DOX_3_MIR
+chisq.test(DOX_3_MIR)
+
+DOX_24_MIR <- MIR_overlaps %>% 
+  group_by(MIR_overlap, DOX_sig_24) %>% 
+  tally %>% 
+  pivot_wider(id_cols= DOX_sig_24,names_from = MIR_overlap, values_from = n) %>% 
+  column_to_rownames("DOX_sig_24") 
+DOX_24_MIR
+chisq.test(DOX_24_MIR)
+```
+
+```{r EPI3 EPI24}
+
+EPI_3_MIR <- MIR_overlaps %>% 
+  group_by(MIR_overlap, EPI_sig_3) %>% 
+  tally %>% 
+  pivot_wider(id_cols= EPI_sig_3,names_from = MIR_overlap, values_from = n) %>% 
+  column_to_rownames("EPI_sig_3")  
+EPI_3_MIR
+chisq.test(EPI_3_MIR)
+
+EPI_24_MIR <- MIR_overlaps %>% 
+  group_by(MIR_overlap, EPI_sig_24) %>% 
+  tally %>% 
+  pivot_wider(id_cols= EPI_sig_24,names_from = MIR_overlap, values_from = n) %>% 
+  column_to_rownames("EPI_sig_24") 
+EPI_24_MIR
+chisq.test(EPI_24_MIR)
+```
+
+```{r DNR3 DNR24}
+
+DNR_3_MIR <- MIR_overlaps %>% 
+  group_by(MIR_overlap, DNR_sig_3) %>% 
+  tally %>% 
+  pivot_wider(id_cols= DNR_sig_3,names_from = MIR_overlap, values_from = n) %>% 
+  column_to_rownames("DNR_sig_3")  
+DNR_3_MIR
+chisq.test(DNR_3_MIR)
+
+DNR_24_MIR <- MIR_overlaps %>% 
+  group_by(MIR_overlap, DNR_sig_24) %>% 
+  tally %>% 
+  pivot_wider(id_cols= DNR_sig_24,names_from = MIR_overlap, values_from = n) %>% 
+  column_to_rownames("DNR_sig_24") 
+DNR_24_MIR
+chisq.test(DNR_24_MIR)
+```
+
+```{r MTX3 MTX24}
+
+MTX_3_MIR <- MIR_overlaps %>% 
+  group_by(MIR_overlap, MTX_sig_3) %>% 
+  tally %>% 
+  pivot_wider(id_cols= MTX_sig_3,names_from = MIR_overlap, values_from = n) %>% 
+  column_to_rownames("MTX_sig_3")  
+MTX_3_MIR
+chisq.test(MTX_3_MIR)
+
+MTX_24_MIR <- MIR_overlaps %>% 
+  group_by(MIR_overlap, MTX_sig_24) %>% 
+  tally %>% 
+  pivot_wider(id_cols= MTX_sig_24,names_from = MIR_overlap, values_from = n) %>% 
+  column_to_rownames("MTX_sig_24") 
+MTX_24_MIR
+chisq.test(MTX_24_MIR)
+```
+
+
+```{r}
+mir_tables <- c("DOX_3_MIR","DOX_24_MIR", "EPI_3_MIR","EPI_24_MIR", "DNR_3_MIR","DNR_24_MIR","MTX_3_MIR", "MTX_24_MIR") 
+## making a dataframe of chisquare pvalues
+mir_pval_df <- data.frame(
+  Treatment_Time = mir_tables,
+  P_value = sapply(mir_tables, function(x) {
+    tbl <- get(x)
+    test_result <- chisq.test(tbl)
+    test_result$p.value
+  })
+)
+mir_pval_df <- mir_pval_df %>%
+  mutate(signif_label = case_when(
+    P_value < 0.001 ~ "***",
+    P_value < 0.01  ~ "**",
+    P_value < 0.05  ~ "*",
+    TRUE            ~ "ns"
+  ))
+
+print(mir_pval_df)
+
+n <- length(mir_tables)
+signif_df <- data.frame(
+  xmin = seq(1, by = 2, length.out = n),
+  xmax = seq(2, by = 2, length.out = n),
+  y_position = rep(1.05, n),  # tweak if needed
+  annotation = mir_pval_df$signif_label,
+  Treatment_Time = mir_pval_df$Treatment_Time) %>% 
+ mutate(Treatment_Time= factor(Treatment_Time, levels = c("DOX_3_MIR",
+                                "DOX_24_MIR",
+                                "EPI_3_MIR",
+                                "EPI_24_MIR",
+                                "DNR_3_MIR",
+                                "DNR_24_MIR",
+                                "MTX_3_MIR",
+                                "MTX_24_MIR"))) 
+signif_df$group <- 1:nrow(signif_df)
+
+signif_df
+```
+
+```{r}
+extract_mir_counts <- function(tbl_name) {
+  df <- get(tbl_name)
+  
+  # Add significance labels (assuming row 1 = sig, row 2 = not sig)
+  df$Significance <- c("Significant", "Not_Significant")
+
+  # Reshape to long format
+  df_long <- df %>%
+    pivot_longer(cols = c("MIR_peak", "not_MIR_peak"),
+                 names_to = "MIR_status",
+                 values_to = "Count") %>%
+    mutate(Treatment_Time = tbl_name)
+
+  return(df_long)
+}
+
+
+# Combine all into one dataframe
+mir_prop_df <- bind_rows(lapply(mir_tables, extract_mir_counts))
+
+
+# Convert columns to factors
+mir_prop_df$MIR_status <- factor(mir_prop_df$MIR_status, levels = c("MIR_peak", "not_MIR_peak"))
+mir_prop_df$Significance <- factor(mir_prop_df$Significance, levels = c("Significant", "Not_Significant"))
+
+# # Normalize to proportions
+mir_prop_df <- mir_prop_df %>%
+  group_by(Treatment_Time, Significance) %>%
+  mutate(Proportion = Count / sum(Count)) %>%
+  ungroup() %>% 
+  mutate(x_axis = interaction(Significance, Treatment_Time, 
+                              levels = c( # list levels in the exact plotting order
+                                "Significant.DOX_3_MIR",
+                                "Not_Significant.DOX_3_MIR",
+                                "Significant.DOX_24_MIR",
+                                "Not_Significant.DOX_24_MIR",
+                                "Significant.EPI_3_MIR",
+                                "Not_Significant.EPI_3_MIR",
+                                "Significant.EPI_24_MIR",
+                                "Not_Significant.EPI_24_MIR",
+                                "Significant.DNR_3_MIR",
+                                "Not_Significant.DNR_3_MIR",
+                                "Significant.DNR_24_MIR",
+                                "Not_Significant.DNR_24_MIR",
+                                "Significant.MTX_3_MIR",
+                                "Not_Significant.MTX_3_MIR",
+                                "Significant.MTX_24_MIR",
+                                "Not_Significant.MTX_24_MIR"
+                              )))
+
+mir_prop_df %>% 
+  mutate(Treatment_Time= factor(Treatment_Time, levels = c("DOX_3_MIR",
+                                "DOX_24_MIR",
+                                "EPI_3_MIR",
+                                "EPI_24_MIR",
+                                "DNR_3_MIR",
+                                "DNR_24_MIR",
+                                "MTX_3_MIR",
+                                "MTX_24_MIR"))) %>% 
+  mutate(MIR_status=factor(MIR_status,levels=c("MIR_peak","not_MIR_peak")),
+         Significance=factor(Significance,levels = c("Significant","Not_Significant"))) %>% 
+  ggplot(., aes(x=interaction(Significance,Treatment_Time), y=Proportion, fill=MIR_status))+
+      geom_bar(stat = "identity", position = "fill") +
+  scale_y_continuous(labels = scales::percent_format(), limits = c(0, 1.2)) +
+  scale_fill_manual(values = c("MIR_peak" = "cornflowerblue", "not_MIR_peak" = "darkblue")) +
+  labs(
+    title = "MIR vs not-MIR Peak Proportions Across Treatments",
+    x = "Treatment-Time",
+    y = "Proportion",
+    fill = "MIR Status"
+  ) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))# +
+  geom_signif(data = signif_df, 
+              aes(xmin=xmin,
+                  xmax=xmax, 
+                  annotations=annotation, 
+                  y_position=y_position, 
+                  group=group, 
+                  manual=TRUE,
+                  tip_length = 0.03,
+            inherit.aes = FALSE))
+```
+
+
+```{r All chromatin regions}
+All_chromatin_MIR_overlaps <- 
+overlap_TE_gr %>% 
+  as.data.frame() %>%
+  # dplyr::filter(repClass=="SINE") %>% 
+  dplyr::select(Peakid,repName, repClass,repFamily) %>% 
+  group_by(Peakid) %>%  
+  reframe(repFamily= paste(unique(repFamily), collapse = ";"),
+                             MIR_overlap=if_else("MIR" %in% repFamily, "MIR_peak","not_MIR_peak")) %>% 
+  left_join(annotated_peaks, by=c("Peakid"="genes"))
+
+MIR_annotated_peaks <- annotated_peaks %>% 
+  left_join(All_chromatin_MIR_overlaps) %>% 
+  mutate(MIR_overlap=if_else(is.na(MIR_overlap),"not_MIR_peak",MIR_overlap))
+```
+
+```{r}
+All_DOX_3 <- MIR_annotated_peaks %>% 
+  group_by(DOX_sig_3,MIR_overlap) %>% 
+  tally() %>% 
+  pivot_wider(id_cols=DOX_sig_3,values_from = n, names_from = MIR_overlap) %>% 
+  column_to_rownames("DOX_sig_3")
+chisq.test(All_DOX_3)
+
+All_DOX_24 <- MIR_annotated_peaks %>% 
+  group_by(DOX_sig_24,MIR_overlap) %>% 
+  tally() %>% 
+  pivot_wider(id_cols=DOX_sig_24,values_from = n, names_from = MIR_overlap) %>% 
+   column_to_rownames("DOX_sig_24")
+
+chisq.test(All_DOX_24)
+```
+
+
+```{r}
+All_EPI_3 <- MIR_annotated_peaks %>% 
+  group_by(EPI_sig_3,MIR_overlap) %>% 
+  tally() %>% 
+  pivot_wider(id_cols=EPI_sig_3,values_from = n, names_from = MIR_overlap) %>% 
+  column_to_rownames("EPI_sig_3")
+chisq.test(All_EPI_3)
+
+All_EPI_24 <- MIR_annotated_peaks %>% 
+  group_by(EPI_sig_24,MIR_overlap) %>% 
+  tally() %>% 
+  pivot_wider(id_cols=EPI_sig_24,values_from = n, names_from = MIR_overlap) %>% 
+   column_to_rownames("EPI_sig_24")
+
+chisq.test(All_EPI_24)
+```
+
+
+```{r}
+
+All_DNR_3 <- MIR_annotated_peaks %>% 
+  group_by(DNR_sig_3,MIR_overlap) %>% 
+  tally() %>% 
+  pivot_wider(id_cols=DNR_sig_3,values_from = n, names_from = MIR_overlap) %>% 
+  column_to_rownames("DNR_sig_3")
+chisq.test(All_DNR_3)
+
+All_DNR_24 <- MIR_annotated_peaks %>% 
+  group_by(DNR_sig_24,MIR_overlap) %>% 
+  tally() %>% 
+  pivot_wider(id_cols=DNR_sig_24,values_from = n, names_from = MIR_overlap) %>% 
+   column_to_rownames("DNR_sig_24")
+
+chisq.test(All_DNR_24)
+```
+
+```{r}
+All_MTX_3 <- MIR_annotated_peaks %>% 
+  group_by(MTX_sig_3,MIR_overlap) %>% 
+  tally() %>% 
+  pivot_wider(id_cols=MTX_sig_3,values_from = n, names_from = MIR_overlap) %>% 
+  column_to_rownames("MTX_sig_3")
+chisq.test(All_MTX_3)
+
+All_MTX_24 <- MIR_annotated_peaks %>% 
+  group_by(MTX_sig_24,MIR_overlap) %>% 
+  tally() %>% 
+  pivot_wider(id_cols=MTX_sig_24,values_from = n, names_from = MIR_overlap) %>% 
+   column_to_rownames("MTX_sig_24")
+
+chisq.test(All_MTX_24)
+```
+
+
+```{r}
+All_extract_mir_counts <- function(tbl_name) {
+  df <- get(tbl_name)
+  
+  # Add significance labels (assuming row 1 = sig, row 2 = not sig)
+  df$Significance <- c("Significant", "Not_Significant")
+
+  # Reshape to long format
+  df_long <- df %>%
+    pivot_longer(cols = c("MIR_peak", "not_MIR_peak"),
+                 names_to = "MIR_status",
+                 values_to = "Count") %>%
+    mutate(Treatment_Time = tbl_name)
+
+  return(df_long)
+}
+
+All_mir_tables <- c("All_DOX_3","All_DOX_24", "All_EPI_3","All_EPI_24", "All_DNR_3","All_DNR_24","All_MTX_3", "All_MTX_24") 
+## making a dataframe of chisquare pvalues
+All_mir_pval_df <- data.frame(
+  Treatment_Time = All_mir_tables,
+  P_value = sapply(All_mir_tables, function(x) {
+    tbl <- get(x)
+    test_result <- chisq.test(tbl)
+    test_result$p.value
+  })
+)
+All_mir_pval_df <- All_mir_pval_df %>%
+  mutate(signif_label = case_when(
+    P_value < 0.001 ~ "***",
+    P_value < 0.01  ~ "**",
+    P_value < 0.05  ~ "*",
+    TRUE            ~ "ns"
+  ))
+
+print(All_mir_pval_df)
+
+All_mir_prop_df <- bind_rows(lapply(All_mir_tables, All_extract_mir_counts))
+
+All_mir_prop_df %>% 
+  pivot_wider(id_cols = c(Treatment_Time,Significance), values_from = Count, names_from = MIR_status) %>% 
+  left_join(All_mir_pval_df, by =c("Treatment_Time"= "Treatment_Time")) %>% 
+  rowwise() %>% 
+  mutate(prop=round((MIR_peak/sum(MIR_peak,not_MIR_peak))*100, 4)) %>% 
+  DT::datatable()
+```
+#### Third time's the charm:
+
+```{r}
+all_chrom_regions <- MIR_annotated_peaks %>% 
+  group_by(MIR_overlap) %>% 
+  tally %>% 
+  pivot_wider(names_from = MIR_overlap, values_from = n)
+
+DOX_DAR_set_3 <- MIR_annotated_peaks %>% 
+  dplyr::filter(DOX_sig_3=="sig") %>% 
+   group_by(MIR_overlap) %>% 
+  tally %>% 
+  pivot_wider(names_from = MIR_overlap, values_from = n) %>% 
+  bind_rows(all_chrom_regions)
+DOX_DAR_set_24 <- MIR_annotated_peaks %>% 
+  dplyr::filter(DOX_sig_24=="sig") %>% 
+   group_by(MIR_overlap) %>% 
+  tally %>% 
+  pivot_wider(names_from = MIR_overlap, values_from = n) %>% 
+  bind_rows(all_chrom_regions)
+
+
+EPI_DAR_set_3 <- MIR_annotated_peaks %>% 
+  dplyr::filter(EPI_sig_3=="sig") %>% 
+   group_by(MIR_overlap) %>% 
+  tally %>% 
+  pivot_wider(names_from = MIR_overlap, values_from = n) %>% 
+  bind_rows(all_chrom_regions)
+EPI_DAR_set_24 <- MIR_annotated_peaks %>% 
+  dplyr::filter(EPI_sig_24=="sig") %>% 
+   group_by(MIR_overlap) %>% 
+  tally %>% 
+  pivot_wider(names_from = MIR_overlap, values_from = n) %>% 
+  bind_rows(all_chrom_regions)
+
+DNR_DAR_set_3 <- MIR_annotated_peaks %>% 
+  dplyr::filter(DNR_sig_3=="sig") %>% 
+   group_by(MIR_overlap) %>% 
+  tally %>% 
+  pivot_wider(names_from = MIR_overlap, values_from = n) %>% 
+  bind_rows(all_chrom_regions)
+DNR_DAR_set_24 <- MIR_annotated_peaks %>% 
+  dplyr::filter(DNR_sig_24=="sig") %>% 
+   group_by(MIR_overlap) %>% 
+  tally %>% 
+  pivot_wider(names_from = MIR_overlap, values_from = n) %>% 
+  bind_rows(all_chrom_regions)
+
+MTX_DAR_set_3 <- MIR_annotated_peaks %>% 
+  dplyr::filter(MTX_sig_3=="sig") %>% 
+   group_by(MIR_overlap) %>% 
+  tally %>% 
+  pivot_wider(names_from = MIR_overlap, values_from = n) %>% 
+  bind_rows(all_chrom_regions)
+MTX_DAR_set_24 <- MIR_annotated_peaks %>% 
+  dplyr::filter(MTX_sig_24=="sig") %>% 
+   group_by(MIR_overlap) %>% 
+  tally %>% 
+  pivot_wider(names_from = MIR_overlap, values_from = n) %>% 
+  bind_rows(all_chrom_regions)
+
+```
+
+now to collect dataframes and do chisquare test:
+
+```{r ,fig.height=10}
+All_extract_DAR_AR_counts <- function(tbl_name) {
+  df <- get(tbl_name)
+  
+  # Add significance labels (assuming row 1 = sig, row 2 = not sig)
+  df$type <- c("DAR", "AR")
+
+  # Reshape to long format
+  df_long <- df %>%
+    pivot_longer(cols = c("MIR_peak", "not_MIR_peak"),
+                 names_to = "MIR_status",
+                 values_to = "Count") %>%
+    mutate(Treatment_Time = tbl_name)
+
+  return(df_long)
+}
+
+All_DAR_AR_tables <- c("DOX_DAR_set_3","DOX_DAR_set_24", "EPI_DAR_set_3","EPI_DAR_set_24", "DNR_DAR_set_3","DNR_DAR_set_24","MTX_DAR_set_3", "MTX_DAR_set_24") 
+## making a dataframe of chisquare pvalues
+All_DAR_AR_pval_df <- data.frame(
+  Treatment_Time = All_DAR_AR_tables,
+  P_value = sapply(All_DAR_AR_tables, function(x) {
+    tbl <- get(x)
+    test_result <- chisq.test(tbl)
+    test_result$p.value
+  })
+)
+All_DAR_AR_pval_df <- All_DAR_AR_pval_df %>%
+  mutate(signif_label = case_when(
+    P_value < 0.001 ~ "***",
+    P_value < 0.01  ~ "**",
+    P_value < 0.05  ~ "*",
+    TRUE            ~ "ns"
+  ))
+
+All_DAR_AR_pval_df
+
+
+All_DAR_AR_prop_df <- bind_rows(lapply(All_DAR_AR_tables, All_extract_DAR_AR_counts))
+
+All_DAR_AR_prop_df %>% 
+  pivot_wider(id_cols = c(Treatment_Time,type), values_from = Count, names_from = MIR_status) %>% 
+  left_join(All_DAR_AR_pval_df, by =c("Treatment_Time"= "Treatment_Time")) %>% 
+  rowwise() %>% 
+  mutate(prop=round((MIR_peak/sum(MIR_peak,not_MIR_peak))*100, 4)) %>% 
+  DT::datatable()
+```
+
+#### Fourth time, this time only SINEs
+```{r}
+all_chrom_regions_so <- MIR_annotated_peaks %>% 
+  dplyr::filter(SINE_status=="SINE_peak") %>% 
+  group_by(MIR_overlap) %>% 
+  tally %>% 
+  pivot_wider(names_from = MIR_overlap, values_from = n)
+
+DOX_DAR_set_3_so <- MIR_annotated_peaks %>% 
+   dplyr::filter(SINE_status=="SINE_peak") %>% 
+  dplyr::filter(DOX_sig_3=="sig") %>% 
+   group_by(MIR_overlap) %>% 
+  tally %>% 
+  pivot_wider(names_from = MIR_overlap, values_from = n) %>% 
+  bind_rows(all_chrom_regions_so)
+DOX_DAR_set_24_so <- MIR_annotated_peaks %>% 
+   dplyr::filter(SINE_status=="SINE_peak") %>% 
+  dplyr::filter(DOX_sig_24=="sig") %>% 
+   group_by(MIR_overlap) %>% 
+  tally %>% 
+  pivot_wider(names_from = MIR_overlap, values_from = n) %>% 
+  bind_rows(all_chrom_regions_so)
+
+
+EPI_DAR_set_3_so <- MIR_annotated_peaks %>%
+   dplyr::filter(SINE_status=="SINE_peak") %>% 
+  dplyr::filter(EPI_sig_3=="sig") %>% 
+   group_by(MIR_overlap) %>% 
+  tally %>% 
+  pivot_wider(names_from = MIR_overlap, values_from = n) %>% 
+  bind_rows(all_chrom_regions_so)
+EPI_DAR_set_24_so <- MIR_annotated_peaks %>% 
+   dplyr::filter(SINE_status=="SINE_peak") %>% 
+  dplyr::filter(EPI_sig_24=="sig") %>% 
+   group_by(MIR_overlap) %>% 
+  tally %>% 
+  pivot_wider(names_from = MIR_overlap, values_from = n) %>% 
+  bind_rows(all_chrom_regions_so)
+
+DNR_DAR_set_3_so <- MIR_annotated_peaks %>%
+   dplyr::filter(SINE_status=="SINE_peak") %>% 
+  dplyr::filter(DNR_sig_3=="sig") %>% 
+   group_by(MIR_overlap) %>% 
+  tally %>% 
+  pivot_wider(names_from = MIR_overlap, values_from = n) %>% 
+  bind_rows(all_chrom_regions_so)
+DNR_DAR_set_24_so <- MIR_annotated_peaks %>%
+   dplyr::filter(SINE_status=="SINE_peak") %>% 
+  dplyr::filter(DNR_sig_24=="sig") %>% 
+   group_by(MIR_overlap) %>% 
+  tally %>% 
+  pivot_wider(names_from = MIR_overlap, values_from = n) %>% 
+  bind_rows(all_chrom_regions_so)
+
+MTX_DAR_set_3_so <- MIR_annotated_peaks %>% 
+   dplyr::filter(SINE_status=="SINE_peak") %>% 
+  dplyr::filter(MTX_sig_3=="sig") %>% 
+   group_by(MIR_overlap) %>% 
+  tally %>% 
+  pivot_wider(names_from = MIR_overlap, values_from = n) %>% 
+  bind_rows(all_chrom_regions_so)
+MTX_DAR_set_24_so <- MIR_annotated_peaks %>% 
+   dplyr::filter(SINE_status=="SINE_peak") %>% 
+  dplyr::filter(MTX_sig_24=="sig") %>% 
+   group_by(MIR_overlap) %>% 
+  tally %>% 
+  pivot_wider(names_from = MIR_overlap, values_from = n) %>% 
+  bind_rows(all_chrom_regions_so)
+```
+
+
+
+
+
+```{r SINE only background}
+All_extract_DAR_AR_counts_so <- function(tbl_name) {
+  df <- get(tbl_name)
+  
+  # Add significance labels (assuming row 1 = sig, row 2 = not sig)
+  df$type <- c("DAR", "AR")
+
+  # Reshape to long format
+  df_long <- df %>%
+    pivot_longer(cols = c("MIR_peak", "not_MIR_peak"),
+                 names_to = "MIR_status",
+                 values_to = "Count") %>%
+    mutate(Treatment_Time = tbl_name)
+
+  return(df_long)
+}
+
+All_DAR_AR_tables_so <- c("DOX_DAR_set_3_so","DOX_DAR_set_24_so", "EPI_DAR_set_3_so","EPI_DAR_set_24_so", "DNR_DAR_set_3_so","DNR_DAR_set_24_so","MTX_DAR_set_3_so", "MTX_DAR_set_24_so") 
+## making a dataframe of chisquare pvalues
+All_DAR_AR_pval_df_so <- data.frame(
+  Treatment_Time = All_DAR_AR_tables_so,
+  P_value = sapply(All_DAR_AR_tables_so, function(x) {
+    tbl <- get(x)
+    test_result <- chisq.test(tbl)
+    test_result$p.value
+  })
+)
+All_DAR_AR_pval_df_so <- All_DAR_AR_pval_df_so %>%
+  mutate(signif_label = case_when(
+    P_value < 0.001 ~ "***",
+    P_value < 0.01  ~ "**",
+    P_value < 0.05  ~ "*",
+    TRUE            ~ "ns"
+  ))
+
+All_DAR_AR_pval_df_so
+
+
+All_DAR_AR_prop_df_so <- bind_rows(lapply(All_DAR_AR_tables_so, All_extract_DAR_AR_counts_so))
+
+All_DAR_AR_prop_df_so %>% 
+  pivot_wider(id_cols = c(Treatment_Time,type), values_from = Count, names_from = MIR_status) %>% 
+  left_join(All_DAR_AR_pval_df_so, by =c("Treatment_Time"= "Treatment_Time")) %>% 
+  rowwise() %>% 
+  mutate(prop=round((MIR_peak/sum(MIR_peak,not_MIR_peak))*100, 4)) %>% 
+  DT::datatable()
+```
+#### sine data
+
+```{r making dataframes for filt}
+Overlapping_peaks <-
+  overlap_TE_gr %>% 
+  as.data.frame() %>%
+  dplyr::filter(repFamily=="MIR"|
+                  repFamily=="Alu"|
+                  repFamily=="L1"|
+                  repFamily=="L2"|
+                  repFamily=="ERVK"|
+                  repFamily=="ERV1"|
+                  repFamily=="ERVL-MaLR"|
+                  repFamily=="TcMar"|
+                  repFamily=="hAT")
+  
+Family_list <- c("MIR",
+                  "Alu",
+                  "L1",
+                  "L2",
+                  "ERVK",
+                  "ERV1",
+                  "ERVL-MaLR",
+                  "TcMar",
+                  "hAT")
+
+# Convert once to avoid repeating
+df <- as.data.frame(overlap_TE_gr)
+
+# Use a list to store them
+peak_lists <- lapply(Family_list, function(fam) {
+  df %>%
+    dplyr::filter(repFamily == fam | repClass == fam) %>%
+    dplyr::distinct(Peakid)
+})
+
+# Name each element
+names(peak_lists) <- paste0(Family_list, "_peaks")
+```
+
+
+```{r}
+all_filt <- all_results %>%
+  dplyr::filter(source %in% c("DOX_3", "DOX_24")) %>% 
+  dplyr::select(source, genes, logFC, adj.P.Val) %>% 
+  tidyr::pivot_wider(id_cols = genes, names_from = source, values_from = c(logFC, adj.P.Val)) %>% 
+  mutate(
+    TE_status = if_else(genes %in% TE_peaks$Peakid, "TE_peak", "not_TE_peak"),
+    MIR_status = if_else(genes %in% peak_lists$MIR_peaks$Peakid, "MIR_peak", "not_MIR_peak"),
+    Alu_status = if_else(genes %in% peak_lists$Alu_peaks$Peakid, "Alu_peak", "not_Alu_peak"),
+    L1_status = if_else(genes %in% peak_lists$L1_peaks$Peakid, "L1_peak", "not_L1_peak"),
+    L2_status = if_else(genes %in% peak_lists$L2_peaks$Peakid, "L2_peak", "not_L2_peak"),
+    ERVK_status = if_else(genes %in% peak_lists$ERVK_peaks$Peakid, "ERVK_peak", "not_ERVK_peak"),
+    ERV1_status = if_else(genes %in% peak_lists$ERV1_peaks$Peakid, "ERV1_peak", "not_ERV1_peak"),
+    `ERVL-MaLR_status` = if_else(genes %in% peak_lists$`ERVL-MaLR_peaks`$Peakid, "ERVL-MaLR_peak", "not_ERVL-MaLR_peak"),
+    TcMar_status = if_else(genes %in% peak_lists$TcMar_peaks$Peakid, "TcMar_peak", "not_TcMar_peak"),
+    hAT_status = if_else(genes %in% peak_lists$hAT_peaks_peaks$Peakid, "hAT_peak", "not_hAT_peak")) %>% 
+  mutate(DOX_sig_3=if_else(adj.P.Val_DOX_3<0.05,"sig","not_sig"),
+         DOX_sig_24=if_else(adj.P.Val_DOX_24<0.05,"sig","not_sig")) %>% 
+  mutate(DOX_sig_3=factor(DOX_sig_3,levels=c("sig","not_sig")),
+         DOX_sig_24=factor(DOX_sig_24,levels=c("sig","not_sig"))) %>% 
+  left_join(.,my_EPI_data,by=c("genes"="genes")) %>% 
+  mutate(EPI_sig_3=if_else(adj.P.Val_EPI_3<0.05,"sig","not_sig"),
+         EPI_sig_24=if_else(adj.P.Val_EPI_24<0.05,"sig","not_sig")) %>% 
+  mutate(EPI_sig_3=factor(EPI_sig_3,levels=c("sig","not_sig")),
+         EPI_sig_24=factor(EPI_sig_24,levels=c("sig","not_sig"))) %>% 
+  left_join(.,my_DNR_data,by=c("genes"="genes")) %>% 
+  mutate(DNR_sig_3=if_else(adj.P.Val_DNR_3<0.05,"sig","not_sig"),
+         DNR_sig_24=if_else(adj.P.Val_DNR_24<0.05,"sig","not_sig")) %>% 
+  mutate(DNR_sig_3=factor(DNR_sig_3,levels=c("sig","not_sig")),
+         DNR_sig_24=factor(DNR_sig_24,levels=c("sig","not_sig"))) %>% 
+  left_join(.,my_MTX_data,by=c("genes"="genes")) %>% 
+  mutate(MTX_sig_3=if_else(adj.P.Val_MTX_3<0.05,"sig","not_sig"),
+         MTX_sig_24=if_else(adj.P.Val_MTX_24<0.05,"sig","not_sig")) %>% 
+  mutate(MTX_sig_3=factor(MTX_sig_3,levels=c("sig","not_sig")),
+         MTX_sig_24=factor(MTX_sig_24,levels=c("sig","not_sig"))) 
+
+
+```
+
+### DOX all
+```{r DOXsine3 status}
+# Vector of status-type column names in your data
+status_columns <- c("MIR_status",
+                  "Alu_status",
+                  "L1_status",
+                  "L2_status",
+                  "ERVK_status",
+                  "ERV1_status",
+                  "ERVL-MaLR_status",
+                  "TcMar_status",
+                  "hAT_status")
+
+# Create a list of matrices, named by status type
+DOX_3_status_filt_matrices <- map(status_columns, function(status_col) {
+  # Extract prefix (e.g., "TE", "SINE") from column name like "TE_status"
+  prefix <- sub("_status$", "", status_col)
+  expected_rows <- c(paste0(prefix, "_peak"), paste0("not_", prefix, "_peak"))
+  expected_cols <- c("sig", "not_sig")
+  
+  # Build matrix
+  mat <- all_filt %>%
+    group_by(across(all_of(status_col)), DOX_sig_3) %>%
+    tally() %>%
+    pivot_wider(
+      names_from = DOX_sig_3,
+      values_from = n,
+      values_fill = list(n = 0)
+    ) %>%
+    column_to_rownames(var = status_col) %>%
+    as.matrix()
+   print(mat)
+  
+  # Fill missing expected rows
+  for (r in setdiff(expected_rows, rownames(mat))) {
+    mat <- rbind(mat, setNames(rep(0, length(expected_cols)), expected_cols))
+    rownames(mat)[nrow(mat)] <- r
+  }
+
+  # Fill missing expected columns
+  for (c in setdiff(expected_cols, colnames(mat))) {
+    mat <- cbind(mat, setNames(rep(0, nrow(mat)), c))
+  }
+
+  # Order
+  mat <- mat[expected_rows, expected_cols, drop = FALSE]
+})
+
+# Set names so you can easily refer to each status
+names(DOX_3_status_filt_matrices) <- status_columns
+
+
+odds_ratio_results_filt_DOX_3<- map(DOX_3_status_filt_matrices, function(mat) {
+  if (!all(dim(mat) == c(2, 2))) return(NULL)
+  
+  result <- epitools::oddsratio(mat, method = "wald")
+  
+  or <- result$measure[2, "estimate"]
+  lower <- result$measure[2, "lower"]
+  upper <- result$measure[2, "upper"]
+  
+  pval_chisq <- if("chi.square" %in% colnames(result$p.value) && nrow(result$p.value) >= 2) {
+    result$p.value[2, "chi.square"]
+  } else {
+    NA_real_
+  }
+  
+  list(
+    odds_ratio = or,
+    lower_ci = lower,
+    upper_ci = upper,
+    chi_sq_p = pval_chisq
+  )
+})
+```
+
+```{r DOXsine3}
+# Vector of status-type column names in your data
+status_columns <- c("MIR_status",
+                  "Alu_status",
+                  "L1_status",
+                  "L2_status",
+                  "ERVK_status",
+                  "ERV1_status",
+                  "ERVL-MaLR_status",
+                  "TcMar_status",
+                  "hAT_status")
+
+# Create a list of matrices, named by status type
+DOX_24_status_filt_matrices <- map(status_columns, function(status_col) {
+  # Extract prefix (e.g., "TE", "SINE") from column name like "TE_status"
+  prefix <- sub("_status$", "", status_col)
+  expected_rows <- c(paste0(prefix, "_peak"), paste0("not_", prefix, "_peak"))
+  expected_cols <- c("sig", "not_sig")
+  
+  # Build matrix
+  mat <- all_filt %>%
+    group_by(across(all_of(status_col)), DOX_sig_24) %>%
+    tally() %>%
+    pivot_wider(
+      names_from = DOX_sig_24,
+      values_from = n,
+      values_fill = list(n = 0)
+    ) %>%
+    column_to_rownames(var = status_col) %>%
+    as.matrix()
+   print(mat)
+  
+  # Fill missing expected rows
+  for (r in setdiff(expected_rows, rownames(mat))) {
+    mat <- rbind(mat, setNames(rep(0, length(expected_cols)), expected_cols))
+    rownames(mat)[nrow(mat)] <- r
+  }
+
+  # Fill missing expected columns
+  for (c in setdiff(expected_cols, colnames(mat))) {
+    mat <- cbind(mat, setNames(rep(0, nrow(mat)), c))
+  }
+
+  # Order
+  mat <- mat[expected_rows, expected_cols, drop = FALSE]
+})
+
+# Set names so you can easily refer to each status
+names(DOX_3_status_filt_matrices) <- status_columns
+
+
+odds_ratio_results_filt_DOX_24<- map(DOX_24_status_filt_matrices, function(mat) {
+  if (!all(dim(mat) == c(2, 2))) return(NULL)
+  
+  result <- epitools::oddsratio(mat, method = "wald")
+  
+  or <- result$measure[2, "estimate"]
+  lower <- result$measure[2, "lower"]
+  upper <- result$measure[2, "upper"]
+  
+  pval_chisq <- if("chi.square" %in% colnames(result$p.value) && nrow(result$p.value) >= 2) {
+    result$p.value[2, "chi.square"]
+  } else {
+    NA_real_
+  }
+  
+  list(
+    odds_ratio = or,
+    lower_ci = lower,
+    upper_ci = upper,
+    chi_sq_p = pval_chisq
+  )
+})
+```
+
+
+### EPI all
+```{r EPIsine3}
+# Vector of status-type column names in your data
+status_columns <- c("MIR_status",
+                  "Alu_status",
+                  "L1_status",
+                  "L2_status",
+                  "ERVK_status",
+                  "ERV1_status",
+                  "ERVL-MaLR_status",
+                  "TcMar_status",
+                  "hAT_status")
+
+# Create a list of matrices, named by status type
+EPI_3_status_filt_matrices <- map(status_columns, function(status_col) {
+  # Extract prefix (e.g., "TE", "SINE") from column name like "TE_status"
+  prefix <- sub("_status$", "", status_col)
+  expected_rows <- c(paste0(prefix, "_peak"), paste0("not_", prefix, "_peak"))
+  expected_cols <- c("sig", "not_sig")
+  
+  # Build matrix
+  mat <- all_filt %>%
+    group_by(across(all_of(status_col)), EPI_sig_3) %>%
+    tally() %>%
+    pivot_wider(
+      names_from = EPI_sig_3,
+      values_from = n,
+      values_fill = list(n = 0)
+    ) %>%
+    column_to_rownames(var = status_col) %>%
+    as.matrix()
+   print(mat)
+  
+  # Fill missing expected rows
+  for (r in setdiff(expected_rows, rownames(mat))) {
+    mat <- rbind(mat, setNames(rep(0, length(expected_cols)), expected_cols))
+    rownames(mat)[nrow(mat)] <- r
+  }
+
+  # Fill missing expected columns
+  for (c in setdiff(expected_cols, colnames(mat))) {
+    mat <- cbind(mat, setNames(rep(0, nrow(mat)), c))
+  }
+
+  # Order
+  mat <- mat[expected_rows, expected_cols, drop = FALSE]
+})
+
+# Set names so you can easily refer to each status
+names(EPI_3_status_filt_matrices) <- status_columns
+
+
+odds_ratio_results_filt_EPI_3<- map(EPI_3_status_filt_matrices, function(mat) {
+  if (!all(dim(mat) == c(2, 2))) return(NULL)
+  
+  result <- epitools::oddsratio(mat, method = "wald")
+  
+  or <- result$measure[2, "estimate"]
+  lower <- result$measure[2, "lower"]
+  upper <- result$measure[2, "upper"]
+  
+  pval_chisq <- if("chi.square" %in% colnames(result$p.value) && nrow(result$p.value) >= 2) {
+    result$p.value[2, "chi.square"]
+  } else {
+    NA_real_
+  }
+  
+  list(
+    odds_ratio = or,
+    lower_ci = lower,
+    upper_ci = upper,
+    chi_sq_p = pval_chisq
+  )
+})
+```
+
+```{r EPIsine3 status}
+# Vector of status-type column names in your data
+status_columns <- c("MIR_status",
+                  "Alu_status",
+                  "L1_status",
+                  "L2_status",
+                  "ERVK_status",
+                  "ERV1_status",
+                  "ERVL-MaLR_status",
+                  "TcMar_status",
+                  "hAT_status")
+
+# Create a list of matrices, named by status type
+EPI_24_status_filt_matrices <- map(status_columns, function(status_col) {
+  # Extract prefix (e.g., "TE", "SINE") from column name like "TE_status"
+  prefix <- sub("_status$", "", status_col)
+  expected_rows <- c(paste0(prefix, "_peak"), paste0("not_", prefix, "_peak"))
+  expected_cols <- c("sig", "not_sig")
+  
+  # Build matrix
+  mat <- all_filt %>%
+    group_by(across(all_of(status_col)), EPI_sig_24) %>%
+    tally() %>%
+    pivot_wider(
+      names_from = EPI_sig_24,
+      values_from = n,
+      values_fill = list(n = 0)
+    ) %>%
+    column_to_rownames(var = status_col) %>%
+    as.matrix()
+   print(mat)
+  
+  # Fill missing expected rows
+  for (r in setdiff(expected_rows, rownames(mat))) {
+    mat <- rbind(mat, setNames(rep(0, length(expected_cols)), expected_cols))
+    rownames(mat)[nrow(mat)] <- r
+  }
+
+  # Fill missing expected columns
+  for (c in setdiff(expected_cols, colnames(mat))) {
+    mat <- cbind(mat, setNames(rep(0, nrow(mat)), c))
+  }
+
+  # Order
+  mat <- mat[expected_rows, expected_cols, drop = FALSE]
+})
+
+# Set names so you can easily refer to each status
+names(EPI_3_status_filt_matrices) <- status_columns
+
+
+odds_ratio_results_filt_EPI_24<- map(EPI_24_status_filt_matrices, function(mat) {
+  if (!all(dim(mat) == c(2, 2))) return(NULL)
+  
+  result <- epitools::oddsratio(mat, method = "wald")
+  
+  or <- result$measure[2, "estimate"]
+  lower <- result$measure[2, "lower"]
+  upper <- result$measure[2, "upper"]
+  
+  pval_chisq <- if("chi.square" %in% colnames(result$p.value) && nrow(result$p.value) >= 2) {
+    result$p.value[2, "chi.square"]
+  } else {
+    NA_real_
+  }
+  
+  list(
+    odds_ratio = or,
+    lower_ci = lower,
+    upper_ci = upper,
+    chi_sq_p = pval_chisq
+  )
+})
+```
+
+
+### DNR all
+```{r DNRsine3}
+# Vector of status-type column names in your data
+status_columns <- c("MIR_status",
+                  "Alu_status",
+                  "L1_status",
+                  "L2_status",
+                  "ERVK_status",
+                  "ERV1_status",
+                  "ERVL-MaLR_status",
+                  "TcMar_status",
+                  "hAT_status")
+
+# Create a list of matrices, named by status type
+DNR_3_status_filt_matrices <- map(status_columns, function(status_col) {
+  # Extract prefix (e.g., "TE", "SINE") from column name like "TE_status"
+  prefix <- sub("_status$", "", status_col)
+  expected_rows <- c(paste0(prefix, "_peak"), paste0("not_", prefix, "_peak"))
+  expected_cols <- c("sig", "not_sig")
+  
+  # Build matrix
+  mat <- all_filt %>%
+    group_by(across(all_of(status_col)), DNR_sig_3) %>%
+    tally() %>%
+    pivot_wider(
+      names_from = DNR_sig_3,
+      values_from = n,
+      values_fill = list(n = 0)
+    ) %>%
+    column_to_rownames(var = status_col) %>%
+    as.matrix()
+   print(mat)
+  
+  # Fill missing expected rows
+  for (r in setdiff(expected_rows, rownames(mat))) {
+    mat <- rbind(mat, setNames(rep(0, length(expected_cols)), expected_cols))
+    rownames(mat)[nrow(mat)] <- r
+  }
+
+  # Fill missing expected columns
+  for (c in setdiff(expected_cols, colnames(mat))) {
+    mat <- cbind(mat, setNames(rep(0, nrow(mat)), c))
+  }
+
+  # Order
+  mat <- mat[expected_rows, expected_cols, drop = FALSE]
+})
+
+# Set names so you can easily refer to each status
+names(DNR_3_status_filt_matrices) <- status_columns
+
+
+odds_ratio_results_filt_DNR_3<- map(DNR_3_status_filt_matrices, function(mat) {
+  if (!all(dim(mat) == c(2, 2))) return(NULL)
+  
+  result <- epitools::oddsratio(mat, method = "wald")
+  
+  or <- result$measure[2, "estimate"]
+  lower <- result$measure[2, "lower"]
+  upper <- result$measure[2, "upper"]
+  
+  pval_chisq <- if("chi.square" %in% colnames(result$p.value) && nrow(result$p.value) >= 2) {
+    result$p.value[2, "chi.square"]
+  } else {
+    NA_real_
+  }
+  
+  list(
+    odds_ratio = or,
+    lower_ci = lower,
+    upper_ci = upper,
+    chi_sq_p = pval_chisq
+  )
+})
+```
+
+```{r DNRsine3 status}
+# Vector of status-type column names in your data
+status_columns <- c("MIR_status",
+                  "Alu_status",
+                  "L1_status",
+                  "L2_status",
+                  "ERVK_status",
+                  "ERV1_status",
+                  "ERVL-MaLR_status",
+                  "TcMar_status",
+                  "hAT_status")
+
+# Create a list of matrices, named by status type
+DNR_24_status_filt_matrices <- map(status_columns, function(status_col) {
+  # Extract prefix (e.g., "TE", "SINE") from column name like "TE_status"
+  prefix <- sub("_status$", "", status_col)
+  expected_rows <- c(paste0(prefix, "_peak"), paste0("not_", prefix, "_peak"))
+  expected_cols <- c("sig", "not_sig")
+  
+  # Build matrix
+  mat <- all_filt %>%
+    group_by(across(all_of(status_col)), DNR_sig_24) %>%
+    tally() %>%
+    pivot_wider(
+      names_from = DNR_sig_24,
+      values_from = n,
+      values_fill = list(n = 0)
+    ) %>%
+    column_to_rownames(var = status_col) %>%
+    as.matrix()
+   print(mat)
+  
+  # Fill missing expected rows
+  for (r in setdiff(expected_rows, rownames(mat))) {
+    mat <- rbind(mat, setNames(rep(0, length(expected_cols)), expected_cols))
+    rownames(mat)[nrow(mat)] <- r
+  }
+
+  # Fill missing expected columns
+  for (c in setdiff(expected_cols, colnames(mat))) {
+    mat <- cbind(mat, setNames(rep(0, nrow(mat)), c))
+  }
+
+  # Order
+  mat <- mat[expected_rows, expected_cols, drop = FALSE]
+})
+
+# Set names so you can easily refer to each status
+names(DNR_3_status_filt_matrices) <- status_columns
+
+
+odds_ratio_results_filt_DNR_24<- map(DNR_24_status_filt_matrices, function(mat) {
+  if (!all(dim(mat) == c(2, 2))) return(NULL)
+  
+  result <- epitools::oddsratio(mat, method = "wald")
+  
+  or <- result$measure[2, "estimate"]
+  lower <- result$measure[2, "lower"]
+  upper <- result$measure[2, "upper"]
+  
+  pval_chisq <- if("chi.square" %in% colnames(result$p.value) && nrow(result$p.value) >= 2) {
+    result$p.value[2, "chi.square"]
+  } else {
+    NA_real_
+  }
+  
+  list(
+    odds_ratio = or,
+    lower_ci = lower,
+    upper_ci = upper,
+    chi_sq_p = pval_chisq
+  )
+})
+```
+
+
+### MTX all
+```{r MTXsine3}
+# Vector of status-type column names in your data
+status_columns <- c("MIR_status",
+                  "Alu_status",
+                  "L1_status",
+                  "L2_status",
+                  "ERVK_status",
+                  "ERV1_status",
+                  "ERVL-MaLR_status",
+                  "TcMar_status",
+                  "hAT_status")
+
+# Create a list of matrices, named by status type
+MTX_3_status_filt_matrices <- map(status_columns, function(status_col) {
+  # Extract prefix (e.g., "TE", "SINE") from column name like "TE_status"
+  prefix <- sub("_status$", "", status_col)
+  expected_rows <- c(paste0(prefix, "_peak"), paste0("not_", prefix, "_peak"))
+  expected_cols <- c("sig", "not_sig")
+  
+  # Build matrix
+  mat <- all_filt %>%
+    group_by(across(all_of(status_col)), MTX_sig_3) %>%
+    tally() %>%
+    pivot_wider(
+      names_from = MTX_sig_3,
+      values_from = n,
+      values_fill = list(n = 0)
+    ) %>%
+    column_to_rownames(var = status_col) %>%
+    as.matrix()
+   print(mat)
+  
+  # Fill missing expected rows
+  for (r in setdiff(expected_rows, rownames(mat))) {
+    mat <- rbind(mat, setNames(rep(0, length(expected_cols)), expected_cols))
+    rownames(mat)[nrow(mat)] <- r
+  }
+
+  # Fill missing expected columns
+  for (c in setdiff(expected_cols, colnames(mat))) {
+    mat <- cbind(mat, setNames(rep(0, nrow(mat)), c))
+  }
+
+  # Order
+  mat <- mat[expected_rows, expected_cols, drop = FALSE]
+})
+
+# Set names so you can easily refer to each status
+names(MTX_3_status_filt_matrices) <- status_columns
+
+
+odds_ratio_results_filt_MTX_3<- map(MTX_3_status_filt_matrices, function(mat) {
+  if (!all(dim(mat) == c(2, 2))) return(NULL)
+  
+  result <- epitools::oddsratio(mat, method = "wald")
+  
+  or <- result$measure[2, "estimate"]
+  lower <- result$measure[2, "lower"]
+  upper <- result$measure[2, "upper"]
+  
+  pval_chisq <- if("chi.square" %in% colnames(result$p.value) && nrow(result$p.value) >= 2) {
+    result$p.value[2, "chi.square"]
+  } else {
+    NA_real_
+  }
+  
+  list(
+    odds_ratio = or,
+    lower_ci = lower,
+    upper_ci = upper,
+    chi_sq_p = pval_chisq
+  )
+})
+```
+
+```{r MTXsine3 status}
+# Vector of status-type column names in your data
+status_columns <- c("MIR_status",
+                  "Alu_status",
+                  "L1_status",
+                  "L2_status",
+                  "ERVK_status",
+                  "ERV1_status",
+                  "ERVL-MaLR_status",
+                  "TcMar_status",
+                  "hAT_status")
+
+# Create a list of matrices, named by status type
+MTX_24_status_filt_matrices <- map(status_columns, function(status_col) {
+  # Extract prefix (e.g., "TE", "SINE") from column name like "TE_status"
+  prefix <- sub("_status$", "", status_col)
+  expected_rows <- c(paste0(prefix, "_peak"), paste0("not_", prefix, "_peak"))
+  expected_cols <- c("sig", "not_sig")
+  
+  # Build matrix
+  mat <- all_filt %>%
+    group_by(across(all_of(status_col)), MTX_sig_24) %>%
+    tally() %>%
+    pivot_wider(
+      names_from = MTX_sig_24,
+      values_from = n,
+      values_fill = list(n = 0)
+    ) %>%
+    column_to_rownames(var = status_col) %>%
+    as.matrix()
+   print(mat)
+  
+  # Fill missing expected rows
+  for (r in setdiff(expected_rows, rownames(mat))) {
+    mat <- rbind(mat, setNames(rep(0, length(expected_cols)), expected_cols))
+    rownames(mat)[nrow(mat)] <- r
+  }
+
+  # Fill missing expected columns
+  for (c in setdiff(expected_cols, colnames(mat))) {
+    mat <- cbind(mat, setNames(rep(0, nrow(mat)), c))
+  }
+
+  # Order
+  mat <- mat[expected_rows, expected_cols, drop = FALSE]
+})
+
+# Set names so you can easily refer to each status
+names(MTX_3_status_filt_matrices) <- status_columns
+
+
+odds_ratio_results_filt_MTX_24<- map(MTX_24_status_filt_matrices, function(mat) {
+  if (!all(dim(mat) == c(2, 2))) return(NULL)
+  
+  result <- epitools::oddsratio(mat, method = "wald")
+  
+  or <- result$measure[2, "estimate"]
+  lower <- result$measure[2, "lower"]
+  upper <- result$measure[2, "upper"]
+  
+  pval_chisq <- if("chi.square" %in% colnames(result$p.value) && nrow(result$p.value) >= 2) {
+    result$p.value[2, "chi.square"]
+  } else {
+    NA_real_
+  }
+  
+  list(
+    odds_ratio = or,
+    lower_ci = lower,
+    upper_ci = upper,
+    chi_sq_p = pval_chisq
+  )
+})
+```
+
+
+#### Combining the data and applying BH pvalue adjustments
+```{r}
+names(odds_ratio_results_filt_DOX_24) <- names(odds_ratio_results_filt_DOX_3)
+names(odds_ratio_results_filt_EPI_24) <- names(odds_ratio_results_filt_EPI_3)
+names(odds_ratio_results_filt_DNR_24) <- names(odds_ratio_results_filt_DNR_3)
+names(odds_ratio_results_filt_MTX_24) <- names(odds_ratio_results_filt_MTX_3)
+
+all_statuses <- unique(unlist(lapply(
+  list(
+    odds_ratio_results_filt_DOX_3, odds_ratio_results_filt_DOX_24,
+    odds_ratio_results_filt_EPI_3, odds_ratio_results_filt_EPI_24,
+    odds_ratio_results_filt_DNR_3, odds_ratio_results_filt_DNR_24,
+    odds_ratio_results_filt_MTX_3, odds_ratio_results_filt_MTX_24
+  ), names
+)))
+
+all_sources <- c("DOX_3hr", "DOX_24hr", "EPI_3hr", "EPI_24hr", 
+                 "DNR_3hr", "DNR_24hr", "MTX_3hr", "MTX_24hr")
+
+# Now build the full long data frame
+all_results_long <- bind_rows(
+  map_dfr(odds_ratio_results_filt_DOX_3, ~as.data.frame(.x), .id = "status") %>% mutate(source = "DOX_3hr"),
+  map_dfr(odds_ratio_results_filt_DOX_24, ~as.data.frame(.x), .id = "status") %>% mutate(source = "DOX_24hr"),
+  map_dfr(odds_ratio_results_filt_EPI_3, ~as.data.frame(.x), .id = "status") %>% mutate(source = "EPI_3hr"),
+  map_dfr(odds_ratio_results_filt_EPI_24, ~as.data.frame(.x), .id = "status") %>% mutate(source = "EPI_24hr"),
+  map_dfr(odds_ratio_results_filt_DNR_3, ~as.data.frame(.x), .id = "status") %>% mutate(source = "DNR_3hr"),
+  map_dfr(odds_ratio_results_filt_DNR_24, ~as.data.frame(.x), .id = "status") %>% mutate(source = "DNR_24hr"),
+  map_dfr(odds_ratio_results_filt_MTX_3, ~as.data.frame(.x), .id = "status") %>% mutate(source = "MTX_3hr"),
+  map_dfr(odds_ratio_results_filt_MTX_24, ~as.data.frame(.x), .id = "status") %>% mutate(source = "MTX_24hr")
+)
+
+# Force inclusion of all status × source combinations
+combined_df_filt <- expand_grid(status = all_statuses, source = all_sources) %>%
+  left_join(all_results_long, by = c("status", "source"))
+# saveRDS(combined_df,"data/Final_four_data/re_analysis/OR_results_TE_df_1bp_alltrt.RDS")
+```
+
+```{r supplementary data}
+my_column_order <- c("DOX_3hr",  "EPI_3hr","DNR_3hr","MTX_3hr", "DOX_24hr", "EPI_24hr", "DNR_24hr","MTX_24hr")
+### Correct pvalues
+TE_sig_mat_filt <- combined_df_filt %>% 
+  dplyr::select( status,source,chi_sq_p) %>%
+  group_by(source) %>%
+  mutate(rank_val=rank(chi_sq_p, ties.method = "first")) %>%
+  mutate(BH_correction= p.adjust(chi_sq_p,method= "BH")) %>% 
+  pivot_wider(., id_cols = status, names_from = source, values_from = BH_correction) %>% 
+  column_to_rownames("status") %>% 
+  as.matrix()
+
+col_fun_OR = colorRamp2(c(0,1,1.5,5), c("blueviolet","white","lightgreen","green3" ))
+
+OR_mat <- combined_df_filt %>% 
+  dplyr::select(status, source, odds_ratio) %>%
+  group_by(source) %>%
+  pivot_wider(id_cols = status, names_from = source, values_from = odds_ratio) %>% 
+  column_to_rownames("status") %>% 
+  as.matrix()
+# Reorder columns
+OR_mat <- OR_mat[, my_column_order]
+
+# Match the significance matrix accordingly
+sig_mat <- TE_sig_mat_filt[, my_column_order]
+
+   ComplexHeatmap::Heatmap(
+  OR_mat,
+  col = col_fun_OR,
+  cluster_rows = FALSE,
+  cluster_columns = FALSE,
+  column_names_side = "top",
+  column_names_rot = 45,
+  cell_fun = function(j, i, x, y, width, height, fill) {
+    if (!is.na(sig_mat[i, j]) && sig_mat[i, j] < 0.05 && OR_mat[i, j] > 1) {
+      grid.text("*", x, y, gp = gpar(fontsize = 20))
+    }
+  }
+)
+
 ```
