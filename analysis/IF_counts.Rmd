@@ -123,7 +123,7 @@ Ind_D_table <- Nuclei_gamma_count_75 %>%
 
 ```
 
-```{r}
+```{r graphs}
 
 bind_rows(Ind_A_table,Ind_B_table) %>%
   bind_rows(., Ind_C_table) %>% 
@@ -142,6 +142,28 @@ bind_rows(Ind_A_table,Ind_B_table) %>%
       step_increase = 0.1,
       map_signif_level = FALSE, 
       test = "t.test")+
+      facet_wrap(~time)+
+  theme_bw()+
+  scale_fill_manual(values=drug_pal)
+
+
+bind_rows(Ind_A_table,Ind_B_table) %>%
+  bind_rows(., Ind_C_table) %>% 
+  bind_rows(., Ind_D_table) %>% 
+  mutate(time=factor(time, levels =c("3h","24h")),
+         trt=factor(trt, levels = c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
+  ggplot(.,aes(x=trt, y=total))+
+  geom_boxplot(aes(fill=trt))+
+  geom_point(aes(colour = ind))+
+  # ggsignif:: geom_signif(comparisons = list(
+  #     c("VEH", "DOX"),
+  #     c("VEH", "EPI"),
+  #     c("VEH", "DNR"),
+  #     c("VEH", "MTX"),
+  #     c("VEH", "TRZ")),
+  #     step_increase = 0.1,
+  #     map_signif_level = FALSE, 
+  #     test = "t.test")+
       facet_wrap(~time)+
   theme_bw()+
   scale_fill_manual(values=drug_pal)
