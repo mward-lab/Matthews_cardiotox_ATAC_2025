@@ -341,7 +341,7 @@ TAD_count_df %>%
 ```
 
 ### Calculating Distance to TAD-SNP from peak  
-#### DOX 24 hours
+*#### DOX 24 hours
 ```{r}
 DOX_DAR_sig <- DOX_24_DAR %>%
   dplyr::filter(mcols.adj.P.Val<0.05) %>% 
@@ -1024,9 +1024,6 @@ peak_snp_pairs_dist %>%
     .groups = "drop"
   ) %>% 
   left_join(., all_results_pivot, by=c("Peakid"="genes")) %>% 
-  # left_join(., Peak_gene_RNA_LFC, by=c("Peakid"="Peakid")) %>%
-  # left_join(.,gene_info_collapsed, by=c("geneId"="ENTREZID")) %>% 
-  # mutate(SYMBOL=if_else(is.na(SYMBOL.x),SYMBOL.y,if_else(SYMBOL.x==SYMBOL.y, SYMBOL.x,paste0(SYMBOL.x,"_",SYMBOL.y)))) %>% 
   tidyr::unite(., name,Peakid,snp_list) %>%
   mutate(snp_dist=case_when(min_distance <2000 ~"2kb",
                             min_distance > 2000 & min_distance<20000 ~ "20kb",
@@ -1050,7 +1047,15 @@ annot_map_2 <-
                                "20kb"="pink",
                                ">20kb"="tan2"),
               TAD_id=tad_colors))
-
+# all.equal(rownames(sig_mat_cardiotox), rownames(Cardotox_mat_2))
+# all.equal(colnames(sig_mat_cardiotox), colnames(Cardotox_mat_2))
+# 
+# setdiff(colnames(sig_mat_cardiotox), colnames(Cardotox_mat_2))
+# setdiff(colnames(Cardotox_mat_2), colnames(sig_mat_cardiotox))
+# 
+# intersect(colnames(sig_mat_cardiotox), colnames(Cardotox_mat_2))
+# setdiff(colnames(sig_mat_cardiotox), colnames(Cardotox_mat_2))
+# setdiff(colnames(Cardotox_mat_2), colnames(sig_mat_cardiotox))
 
 simply_map_lfc_2 <- ComplexHeatmap::Heatmap(Cardotox_mat_2,
                         left_annotation = annot_map_2,
@@ -1062,9 +1067,13 @@ simply_map_lfc_2 <- ComplexHeatmap::Heatmap(Cardotox_mat_2,
                         cluster_rows = FALSE,
                         cluster_columns = FALSE,
                         cell_fun = function(j, i, x, y, width, height, fill) {
-                          if (!is.na(sig_mat_cardiotox[i, j]) && sig_mat_cardiotox[i, j] <0.05) {
-                              grid.text("*", x, y, gp = gpar(fontsize = 20))  # Add star if significant
-                            } })
+  rowname <- rownames(Cardotox_mat_2)[i]
+  colname <- colnames(Cardotox_mat_2)[j]
+  if (!is.na(sig_mat_cardiotox[rowname, colname]) &&
+      sig_mat_cardiotox[rowname, colname] < 0.05) {
+    grid.text("*", x, y, gp = gpar(fontsize = 20))
+  }
+})
 
 
 
@@ -1078,29 +1087,7 @@ ComplexHeatmap::draw(simply_map_lfc_2,
 
 ```
 
-```{r}
-ATAC_all_adj.pvals %>%
-  dplyr::filter(genes %in% peak_snp_pairs_dist$Peakid) %>% 
-  left_join(peak_snp_pairs_dist, by=c("genes"="Peakid")) %>% 
-  group_by(TAD_id,RSID) %>% 
-  slice_min(order_by = distance, with_ties = FALSE) %>%
-  ungroup() %>% 
-  arrange(snp_chr,snp_start) %>% 
-   group_by(genes, peak_chr, peak_start, TAD_id, sig_24) %>%
-  summarise(
-    min_distance = min(distance),
-    mean_distance = mean(distance),
-    snp_list = paste(unique(RSID), collapse = ","),
-    .groups = "drop"
-  ) %>% 
-  left_join(ATAC_all_adj.pvals) %>% 
-  tidyr::unite(., name,genes,snp_list) %>% 
-  dplyr::select(name, DNR_3:TRZ_24) %>% 
-  column_to_rownames("name") %>% 
-  as.matrix()
 
-AR_Cardiotox_gwas_collaped_df
-```
 
 ### adding in Park data:
 
@@ -1356,6 +1343,41 @@ filt_raw_counts_noY %>%
   facet_wrap(~Peakid, scales="free_y")+
     ylab("log2 cpm ATAC regions") 
 ```
+```{r}
+DOX_dar_diff <- DOX_DAR_24hr_table %>% 
+  dplyr::filter(mcols.adj.P.Val<0.05)%>% 
+  dplyr::rename("Peakid"=mcols.genes)
+```
+
+
+```{r DARS loci}
+
+
+# TAD_SNP_Peak_ol %>% 
+#   dplyr::filter(TAD_id =="TAD_102") %>% 
+#   dplyr::filter( Peakid%in%DOX_DAR_sig$Peakid)
+
+filt_raw_counts_noY %>%
+  cpm(., log = TRUE) %>% 
+  as.data.frame() %>% 
+  rownames_to_column("Peakid") %>% 
+  dplyr::filter(Peakid =="chr1.173823770.173825267") %>% 
+  pivot_longer(., cols= !Peakid, names_to = "sample",values_to = "log2cpm") %>% 
+  separate_wider_delim(, cols=sample, names =c("ind","trt","time"),delim="_",cols_remove = FALSE) %>% 
+  mutate(
+      time = factor(time, levels = c("3h", "24h")),
+      trt = factor(trt, levels = c("DOX", "EPI", "DNR", "MTX", "TRZ", "VEH"))
+    ) %>%
+    ggplot(aes(x = time, y = log2cpm)) +
+    geom_boxplot(aes(fill = trt)) +
+    scale_fill_manual(values = drug_pal) +
+    theme_bw() +
+  facet_wrap(~Peakid, scales="free_y")+
+    ylab("log2 cpm ATAC regions") 
+```
+
+
+
 ### SNP DAR direct overlap heatmap
 
 
@@ -1401,9 +1423,14 @@ simply_map_lfc_3 <- ComplexHeatmap::Heatmap(Cardotox_mat_3,
                         cluster_rows = FALSE,
                         cluster_columns = FALSE,
                        cell_fun = function(j, i, x, y, width, height, fill) {
-                          if (!is.na(SNP_DAR_sig_mat[i, j]) && SNP_DAR_sig_mat[i, j] <0.05) {
-                              grid.text("*", x, y, gp = gpar(fontsize = 20))  # Add star if significant
-                            } })
+  rowname <- rownames(Cardotox_mat_3)[i]
+  colname <- colnames(Cardotox_mat_3)[j]
+
+  if (!is.na(SNP_DAR_sig_mat[rowname, colname]) &&
+      SNP_DAR_sig_mat[rowname, colname] < 0.05) {
+    grid.text("*", x, y, gp = gpar(fontsize = 20))
+  }
+})
 
 
 
