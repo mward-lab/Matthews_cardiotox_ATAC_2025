@@ -52,7 +52,213 @@ IndD_master_Summary %>%
     write_delim(., "data/Final_four_data/re_analysis/IF_data/Nuclei_gamma_count_75.txt",delim="\t")
 ```
 
+### Custom imageJ macros to identify cell nuclei and ROIs:
 
+
+```{r macros 1, eval=FALSE}
+
+// === STEP 1: Open first .tif image from the folder ===
+folder = "C:\\userfolders\\Images_EVOS\\If_cardiotox\\87-1 images\\C_DAPI\\";
+saveRoiFolder = "C:\\userfolders\\Images_EVOS\\If_cardiotox\\87-1 images\\outline\\";
+
+list = getFileList(folder);
+
+for (i = 0; i < list.length; i++) {
+    if (endsWith(list[i], ".tif")) {
+        // Open image
+        open(folder + list[i]);
+        originalTitle = getTitle();
+
+        // === STEP 2: Duplicate and close original ===
+        baseName = replace(getTitle(), ".tif", "");  // removes .tif extension
+		newTitle = baseName;  // or whatever matches your naming
+		run("Duplicate...", "title=" + newTitle);
+        dupTitle = getTitle(); // duplicated image becomes active
+        selectImage(originalTitle);
+        close();
+
+        // === STEP 3: Process duplicated image ===
+        selectImage(dupTitle);
+        run("8-bit");
+        setAutoThreshold("Otsu dark");
+        setOption("BlackBackground", true);
+        run("Convert to Mask");
+        run("Watershed");
+
+        // === STEP 4: Analyze particles ===
+        run("Analyze Particles...", "size=21-Infinity circularity=0.30-1.00 show=[Count Masks] display exclude summarize add");
+
+        // === STEP 5: Save ROIs ===
+        roiManager("Select", 0); // Avoid saving empty ROI manager
+        saveName = replace(dupTitle, ".tif", "") + ".zip";
+        roiManager("Save", saveRoiFolder + saveName);
+
+        // Cleanup (optional)
+        close();
+        maskTitle = "Count Masks of " + dupTitle;
+		if (isOpen(maskTitle)) {
+    		selectImage(maskTitle);
+   			 close();
+			}
+
+        roiManager("Deselect");
+        roiManager("Reset");
+
+       // break; // Remove this line if you want to process all images in the folder
+    }
+}
+
+   
+   
+ 
+
+```
+
+
+### Custom imageJ macros to use nuclei ROIs and detect any RED channel intesity for positive gammaH2AX staining
+```{r macros 2, eval=FALSE}
+// === USER SETTINGS ===
+roiFolder = "C:\\userfolders\\Images_EVOS\\If_cardiotox\\87-1 images\\outline\\";
+txredFolder = "C:\\userfolders\\Images_EVOS\\If_cardiotox\\87-1 images\\C_TxRed\\";
+outputFolder = "C:\\userfolders\\Images_EVOS\\If_cardiotox\\87-1 images\\DAPI_counts\\";
+signalThreshold = 5;  // define what counts as a "positive signal"
+
+// === GET ROI FILES ===
+roiFiles = getFileList(roiFolder);
+// Before the loop, open/create summary file
+masterFile = outputFolder + "Master_summary.csv";
+// Write header (run once, before loop)
+if (File.exists(masterFile)) File.delete(masterFile);
+File.append("Sample,Total_ROIs,Positive_ROIs\n", masterFile);
+
+// === LOOP OVER EACH ROI FILE ===
+for (i = 0; i < roiFiles.length; i++) {
+    roiFile = roiFiles[i];
+    
+    // Only process .zip ROI files
+    if (!endsWith(roiFile, ".zip")) continue;
+
+    // Remove suffixes more precisely
+	baseName = replace(roiFile, ".zip", "");  // e.g. "3h_87_DOX_B_DAPI_0004"
+
+    // === Build full filenames ===
+    roiPath = roiFolder + roiFile;
+    txredImage = replace(baseName, "_DAPI_", "_TxRed_") + ".tif";
+    txredPath = txredFolder + txredImage;
+    outputCSV = outputFolder + "Cell_intensity_" + baseName + ".csv";
+
+    // === Check if TxRed image exists ===
+    if (!File.exists(txredPath)) {
+        print("Skipping: TxRed image not found for", baseName);
+        continue;
+    }
+
+    // === Open image ===
+    open(txredPath);
+    imageTitle = getTitle();
+
+    // === Load ROI file ===
+    roiManager("Reset");
+    roiManager("Open", roiPath);
+    roiManager("Show None");
+    roiManager("Show All");
+
+    // === Prepare image for analysis ===
+    run("8-bit");
+    setAutoThreshold("Otsu dark");
+    getThreshold(lower, upper);
+
+// Set a minimum acceptable threshold value (e.g., 25)
+minThreshold = 10;
+if (lower < minThreshold) {
+    lower = minThreshold;
+}
+
+// Apply threshold with adjusted floor
+setThreshold(lower, 255);
+run("Convert to Mask");
+
+    // === Measure signal in ROIs ===
+    run("Set Measurements...", "area mean min redirect=None decimal=3");
+    roiCount = roiManager("Count");
+
+    if (roiCount == 0) {
+        print("No ROIs in", roiFile);
+        close(); // Close image
+        continue;
+    }
+
+    roiIndexes = newArray(roiCount);
+    for (j = 0; j < roiCount; j++) {
+        roiIndexes[j] = j;
+    }
+
+    roiManager("Select", roiIndexes);
+    roiManager("Measure");
+
+    // === Count ROIs with mean > threshold ===
+    positiveCount = 0;
+    for (j = 0; j < roiCount; j++) {
+        value = getResult("Mean", j);
+        if (value > signalThreshold) {
+            positiveCount++;
+        }
+    }
+// === Optional quality control: flag unexpectedly low or high counts
+minPos = 25;   // adjust to your expected lower limit
+maxPos = 450;  // adjust to your expected upper limit
+
+if (positiveCount < minPos || positiveCount > maxPos) {
+    print("⚠️ WARNING: Sample", baseName, "has", positiveCount, "positive ROIs (expected between", minPos, "and", maxPos, ")");
+
+    // Display the image and ROIs for inspection
+    selectImage(imageTitle);
+    roiManager("Show All");
+
+    // Pause and allow manual threshold/ROI review
+    waitForUser("Inspect and adjust this sample manually if needed.\nWhen done, click OK to re-measure and continue.");
+
+    // Re-measure based on updated ROIs
+    run("Clear Results");
+    roiCount = roiManager("Count");
+
+    roiIndexes = newArray(roiCount);
+    for (j = 0; j < roiCount; j++) {
+        roiIndexes[j] = j;
+    }
+    roiManager("Select", roiIndexes);
+    roiManager("Measure");
+
+    // Re-count positives after manual fix
+    positiveCount = 0;
+    for (j = 0; j < roiCount; j++) {
+        value = getResult("Mean", j);
+        if (value > signalThreshold) {
+            positiveCount++;
+        }
+    }
+
+    print("✅ After manual adjustment:", positiveCount, "positive ROIs");
+}
+
+    // === Save Results table ===
+    saveAs("Results", outputCSV);
+    // Inside your processing loop, after counting positives:
+line = baseName + "," + roiCount + "," + positiveCount + "\n";
+File.append(line, masterFile);
+
+    // === Optional: Print summary to log ===
+    print(baseName, ": ", positiveCount, "/", roiCount, " ROIs positive (>", signalThreshold, ")");
+
+    // === Cleanup ===
+    close(); // Close TxRed image
+    roiManager("Reset");
+    run("Clear Results");
+}
+
+
+
+```
 
 
 ```{r import data files}
