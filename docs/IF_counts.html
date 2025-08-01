@@ -390,7 +390,7 @@ class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span>
 <div class="tab-content">
 <div id="summary" class="tab-pane fade in active">
 <p>
-<strong>Last updated:</strong> 2025-07-29
+<strong>Last updated:</strong> 2025-08-01
 </p>
 <p>
 <strong>Checks:</strong> <span
@@ -521,15 +521,15 @@ project makes it easier to run your code on other machines.</p>
 <div class="panel panel-default">
 <div class="panel-heading">
 <p class="panel-title">
-<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcommwardlabMatthewscardiotoxATAC2025treecb0a9568d97228fdb4f025472a3b3153c5d2d57dtargetblankcb0a956a">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcommwardlabMatthewscardiotoxATAC2025treef8c2002b2d397e828d4c0f567243143495cf18f2targetblankf8c2002a">
 <span class="glyphicon glyphicon-ok text-success"
 aria-hidden="true"></span> <strong>Repository version:</strong>
-<a href="https://github.com/mward-lab/Matthews_cardiotox_ATAC_2025/tree/cb0a9568d97228fdb4f025472a3b3153c5d2d57d" target="_blank">cb0a956</a>
+<a href="https://github.com/mward-lab/Matthews_cardiotox_ATAC_2025/tree/f8c2002b2d397e828d4c0f567243143495cf18f2" target="_blank">f8c2002</a>
 </a>
 </p>
 </div>
 <div
-id="strongRepositoryversionstrongahrefhttpsgithubcommwardlabMatthewscardiotoxATAC2025treecb0a9568d97228fdb4f025472a3b3153c5d2d57dtargetblankcb0a956a"
+id="strongRepositoryversionstrongahrefhttpsgithubcommwardlabMatthewscardiotoxATAC2025treef8c2002b2d397e828d4c0f567243143495cf18f2targetblankf8c2002a"
 class="panel-collapse collapse">
 <div class="panel-body">
 <p>
@@ -539,7 +539,7 @@ reproducibility.
 </p>
 <p>
 The results in this page were generated with repository version
-<a href="https://github.com/mward-lab/Matthews_cardiotox_ATAC_2025/tree/cb0a9568d97228fdb4f025472a3b3153c5d2d57d" target="_blank">cb0a956</a>.
+<a href="https://github.com/mward-lab/Matthews_cardiotox_ATAC_2025/tree/f8c2002b2d397e828d4c0f567243143495cf18f2" target="_blank">f8c2002</a>.
 See the <em>Past versions</em> tab to see a history of the changes made
 to the R Markdown and HTML files.
 </p>
@@ -738,14 +738,17 @@ Untracked files:
 Unstaged changes:
     Modified:   ATAC_learning.Rproj
     Modified:   analysis/AC_shared_analysis.Rmd
+    Modified:   analysis/AF_HF_SNP_DAR_logFC.Rmd
     Modified:   analysis/AF_HF_SNPs.Rmd
     Modified:   analysis/Cardiotox_SNPs.Rmd
     Modified:   analysis/Cormotif_analysis.Rmd
     Modified:   analysis/DEG_analysis.Rmd
     Modified:   analysis/H3K27ac_initial_QC.Rmd
     Modified:   analysis/H3K27ac_integration.Rmd
+    Modified:   analysis/H3K27ac_integration_adj.Rmd
     Modified:   analysis/Jaspar_motif.Rmd
     Modified:   analysis/Jaspar_motif_ff.Rmd
+    Modified:   analysis/SNP_TAD_peaks.Rmd
     Modified:   analysis/TE_analysis_norm.Rmd
     Modified:   analysis/Top2B_analysis.Rmd
     Modified:   analysis/final_four_analysis.Rmd
@@ -793,6 +796,40 @@ Message
 </tr>
 </thead>
 <tbody>
+<tr>
+<td>
+Rmd
+</td>
+<td>
+<a href="https://github.com/mward-lab/Matthews_cardiotox_ATAC_2025/blob/f8c2002b2d397e828d4c0f567243143495cf18f2/analysis/IF_counts.Rmd" target="_blank">f8c2002</a>
+</td>
+<td>
+reneeisnowhere
+</td>
+<td>
+2025-08-01
+</td>
+<td>
+adding macros
+</td>
+</tr>
+<tr>
+<td>
+html
+</td>
+<td>
+<a href="https://rawcdn.githack.com/mward-lab/Matthews_cardiotox_ATAC_2025/c79f4be56b19d14de8b8cdc1f33d230b3eff3fe6/docs/IF_counts.html" target="_blank">c79f4be</a>
+</td>
+<td>
+reneeisnowhere
+</td>
+<td>
+2025-07-29
+</td>
+<td>
+Build site.
+</td>
+</tr>
 <tr>
 <td>
 Rmd
@@ -879,6 +916,203 @@ pre[class] {
 }
 </style>
 <pre class="r"><code>library(tidyverse)</code></pre>
+<div id="custom-imagej-macros-to-identify-cell-nuclei-and-rois"
+class="section level3">
+<h3>Custom imageJ macros to identify cell nuclei and ROIs:</h3>
+<pre class="r"><code>// === STEP 1: Open first .tif image from the folder ===
+folder = &quot;C:\\userfolders\\Images_EVOS\\If_cardiotox\\87-1 images\\C_DAPI\\&quot;;
+saveRoiFolder = &quot;C:\\userfolders\\Images_EVOS\\If_cardiotox\\87-1 images\\outline\\&quot;;
+
+list = getFileList(folder);
+
+for (i = 0; i &lt; list.length; i++) {
+    if (endsWith(list[i], &quot;.tif&quot;)) {
+        // Open image
+        open(folder + list[i]);
+        originalTitle = getTitle();
+
+        // === STEP 2: Duplicate and close original ===
+        baseName = replace(getTitle(), &quot;.tif&quot;, &quot;&quot;);  // removes .tif extension
+        newTitle = baseName;  // or whatever matches your naming
+        run(&quot;Duplicate...&quot;, &quot;title=&quot; + newTitle);
+        dupTitle = getTitle(); // duplicated image becomes active
+        selectImage(originalTitle);
+        close();
+
+        // === STEP 3: Process duplicated image ===
+        selectImage(dupTitle);
+        run(&quot;8-bit&quot;);
+        setAutoThreshold(&quot;Otsu dark&quot;);
+        setOption(&quot;BlackBackground&quot;, true);
+        run(&quot;Convert to Mask&quot;);
+        run(&quot;Watershed&quot;);
+
+        // === STEP 4: Analyze particles ===
+        run(&quot;Analyze Particles...&quot;, &quot;size=21-Infinity circularity=0.30-1.00 show=[Count Masks] display exclude summarize add&quot;);
+
+        // === STEP 5: Save ROIs ===
+        roiManager(&quot;Select&quot;, 0); // Avoid saving empty ROI manager
+        saveName = replace(dupTitle, &quot;.tif&quot;, &quot;&quot;) + &quot;.zip&quot;;
+        roiManager(&quot;Save&quot;, saveRoiFolder + saveName);
+
+        // Cleanup (optional)
+        close();
+        maskTitle = &quot;Count Masks of &quot; + dupTitle;
+        if (isOpen(maskTitle)) {
+            selectImage(maskTitle);
+             close();
+            }
+
+        roiManager(&quot;Deselect&quot;);
+        roiManager(&quot;Reset&quot;);
+
+       // break; // Remove this line if you want to process all images in the folder
+    }
+}</code></pre>
+</div>
+<div
+id="custom-imagej-macros-to-use-nuclei-rois-and-detect-any-red-channel-intesity-for-positive-gammah2ax-staining"
+class="section level3">
+<h3>Custom imageJ macros to use nuclei ROIs and detect any RED channel
+intesity for positive gammaH2AX staining</h3>
+<pre class="r"><code>// === USER SETTINGS ===
+roiFolder = &quot;C:\\userfolders\\Images_EVOS\\If_cardiotox\\87-1 images\\outline\\&quot;;
+txredFolder = &quot;C:\\userfolders\\Images_EVOS\\If_cardiotox\\87-1 images\\C_TxRed\\&quot;;
+outputFolder = &quot;C:\\userfolders\\Images_EVOS\\If_cardiotox\\87-1 images\\DAPI_counts\\&quot;;
+signalThreshold = 5;  // define what counts as a &quot;positive signal&quot;
+
+// === GET ROI FILES ===
+roiFiles = getFileList(roiFolder);
+// Before the loop, open/create summary file
+masterFile = outputFolder + &quot;Master_summary.csv&quot;;
+// Write header (run once, before loop)
+if (File.exists(masterFile)) File.delete(masterFile);
+File.append(&quot;Sample,Total_ROIs,Positive_ROIs\n&quot;, masterFile);
+
+// === LOOP OVER EACH ROI FILE ===
+for (i = 0; i &lt; roiFiles.length; i++) {
+    roiFile = roiFiles[i];
+    
+    // Only process .zip ROI files
+    if (!endsWith(roiFile, &quot;.zip&quot;)) continue;
+
+    // Remove suffixes more precisely
+    baseName = replace(roiFile, &quot;.zip&quot;, &quot;&quot;);  // e.g. &quot;3h_87_DOX_B_DAPI_0004&quot;
+
+    // === Build full filenames ===
+    roiPath = roiFolder + roiFile;
+    txredImage = replace(baseName, &quot;_DAPI_&quot;, &quot;_TxRed_&quot;) + &quot;.tif&quot;;
+    txredPath = txredFolder + txredImage;
+    outputCSV = outputFolder + &quot;Cell_intensity_&quot; + baseName + &quot;.csv&quot;;
+
+    // === Check if TxRed image exists ===
+    if (!File.exists(txredPath)) {
+        print(&quot;Skipping: TxRed image not found for&quot;, baseName);
+        continue;
+    }
+
+    // === Open image ===
+    open(txredPath);
+    imageTitle = getTitle();
+
+    // === Load ROI file ===
+    roiManager(&quot;Reset&quot;);
+    roiManager(&quot;Open&quot;, roiPath);
+    roiManager(&quot;Show None&quot;);
+    roiManager(&quot;Show All&quot;);
+
+    // === Prepare image for analysis ===
+    run(&quot;8-bit&quot;);
+    setAutoThreshold(&quot;Otsu dark&quot;);
+    getThreshold(lower, upper);
+
+// Set a minimum acceptable threshold value (e.g., 25)
+minThreshold = 10;
+if (lower &lt; minThreshold) {
+    lower = minThreshold;
+}
+
+// Apply threshold with adjusted floor
+setThreshold(lower, 255);
+run(&quot;Convert to Mask&quot;);
+
+    // === Measure signal in ROIs ===
+    run(&quot;Set Measurements...&quot;, &quot;area mean min redirect=None decimal=3&quot;);
+    roiCount = roiManager(&quot;Count&quot;);
+
+    if (roiCount == 0) {
+        print(&quot;No ROIs in&quot;, roiFile);
+        close(); // Close image
+        continue;
+    }
+
+    roiIndexes = newArray(roiCount);
+    for (j = 0; j &lt; roiCount; j++) {
+        roiIndexes[j] = j;
+    }
+
+    roiManager(&quot;Select&quot;, roiIndexes);
+    roiManager(&quot;Measure&quot;);
+
+    // === Count ROIs with mean &gt; threshold ===
+    positiveCount = 0;
+    for (j = 0; j &lt; roiCount; j++) {
+        value = getResult(&quot;Mean&quot;, j);
+        if (value &gt; signalThreshold) {
+            positiveCount++;
+        }
+    }
+// === Optional quality control: flag unexpectedly low or high counts
+minPos = 25;   // adjust to your expected lower limit
+maxPos = 450;  // adjust to your expected upper limit
+
+if (positiveCount &lt; minPos || positiveCount &gt; maxPos) {
+    print(&quot;⚠️ WARNING: Sample&quot;, baseName, &quot;has&quot;, positiveCount, &quot;positive ROIs (expected between&quot;, minPos, &quot;and&quot;, maxPos, &quot;)&quot;);
+
+    // Display the image and ROIs for inspection
+    selectImage(imageTitle);
+    roiManager(&quot;Show All&quot;);
+
+    // Pause and allow manual threshold/ROI review
+    waitForUser(&quot;Inspect and adjust this sample manually if needed.\nWhen done, click OK to re-measure and continue.&quot;);
+
+    // Re-measure based on updated ROIs
+    run(&quot;Clear Results&quot;);
+    roiCount = roiManager(&quot;Count&quot;);
+
+    roiIndexes = newArray(roiCount);
+    for (j = 0; j &lt; roiCount; j++) {
+        roiIndexes[j] = j;
+    }
+    roiManager(&quot;Select&quot;, roiIndexes);
+    roiManager(&quot;Measure&quot;);
+
+    // Re-count positives after manual fix
+    positiveCount = 0;
+    for (j = 0; j &lt; roiCount; j++) {
+        value = getResult(&quot;Mean&quot;, j);
+        if (value &gt; signalThreshold) {
+            positiveCount++;
+        }
+    }
+
+    print(&quot;✅ After manual adjustment:&quot;, positiveCount, &quot;positive ROIs&quot;);
+}
+
+    // === Save Results table ===
+    saveAs(&quot;Results&quot;, outputCSV);
+    // Inside your processing loop, after counting positives:
+line = baseName + &quot;,&quot; + roiCount + &quot;,&quot; + positiveCount + &quot;\n&quot;;
+File.append(line, masterFile);
+
+    // === Optional: Print summary to log ===
+    print(baseName, &quot;: &quot;, positiveCount, &quot;/&quot;, roiCount, &quot; ROIs positive (&gt;&quot;, signalThreshold, &quot;)&quot;);
+
+    // === Cleanup ===
+    close(); // Close TxRed image
+    roiManager(&quot;Reset&quot;);
+    run(&quot;Clear Results&quot;);
+}</code></pre>
 <pre class="r"><code>drug_pal &lt;- c(&quot;#8B006D&quot;,&quot;#DF707E&quot;,&quot;#F1B72B&quot;, &quot;#3386DD&quot;,&quot;#707031&quot;,&quot;#41B333&quot;)
 Nuclei_gamma_count_87&lt;- read_delim(&quot;data/Final_four_data/re_analysis/IF_data/Nuclei_gamma_count_87.txt&quot;,delim=&quot;\t&quot;)
 Nuclei_gamma_count_77&lt;- read_delim(&quot;data/Final_four_data/re_analysis/IF_data/Nuclei_gamma_count_77.txt&quot;,delim=&quot;\t&quot;)
@@ -959,6 +1193,43 @@ Ind_D_table &lt;- Nuclei_gamma_count_75 %&gt;%
   theme_bw()+
   scale_fill_manual(values=drug_pal)</code></pre>
 <p><img src="figure/IF_counts.Rmd/graphs-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-graphs-1">
+Past versions of graphs-1.png
+</button>
+</p>
+<div id="fig-graphs-1" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/mward-lab/Matthews_cardiotox_ATAC_2025/blob/c79f4be56b19d14de8b8cdc1f33d230b3eff3fe6/docs/figure/IF_counts.Rmd/graphs-1.png" target="_blank">c79f4be</a>
+</td>
+<td>
+reneeisnowhere
+</td>
+<td>
+2025-07-29
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 <pre class="r"><code>bind_rows(Ind_A_table,Ind_B_table) %&gt;%
   bind_rows(., Ind_C_table) %&gt;% 
   bind_rows(., Ind_D_table) %&gt;% 
@@ -980,6 +1251,43 @@ Ind_D_table &lt;- Nuclei_gamma_count_75 %&gt;%
   theme_bw()+
   scale_fill_manual(values=drug_pal)</code></pre>
 <p><img src="figure/IF_counts.Rmd/graphs-2.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-graphs-2">
+Past versions of graphs-2.png
+</button>
+</p>
+<div id="fig-graphs-2" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/mward-lab/Matthews_cardiotox_ATAC_2025/blob/c79f4be56b19d14de8b8cdc1f33d230b3eff3fe6/docs/figure/IF_counts.Rmd/graphs-2.png" target="_blank">c79f4be</a>
+</td>
+<td>
+reneeisnowhere
+</td>
+<td>
+2025-07-29
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 <br>
 <p>
 <button type="button" class="btn btn-default btn-workflowr btn-workflowr-sessioninfo" data-toggle="collapse" data-target="#workflowr-sessioninfo" style="display: block;">
@@ -1030,6 +1338,7 @@ loaded via a namespace (and not attached):
 [49] tidyselect_1.2.1   rstudioapi_0.17.1  knitr_1.50         dichromat_2.0-0.1 
 [53] farver_2.1.2       htmltools_0.5.8.1  labeling_0.4.3     rmarkdown_2.29    
 [57] compiler_4.4.2     getPass_0.2-4     </code></pre>
+</div>
 </div>
 </div>
 </div>
