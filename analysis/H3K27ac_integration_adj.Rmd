@@ -76,12 +76,6 @@ final_peaks <- Collapsed_peaks
 RNA_exp_genes <- read.csv("data/other_papers/S13Table_Matthews2024.csv") %>% 
   dplyr::select(ENTREZID,SYMBOL)
 
-# write_csv(median_3_lfc, "data/Final_four_data/re_analysis/median_3_lfc_H3K27ac_norm.csv")
-# write_csv(median_24_lfc, "data/Final_four_data/re_analysis/median_24_lfc_H3K27ac_norm.csv")
-# write_csv(median_3_lfc, "data/Final_four_data/re_analysis/median_3_lfc_norm.csv")
-# write_csv(median_24_lfc, "data/Final_four_data/re_analysis/median_24_lfc_norm.csv")
-
-
 H3K27ac_gr <- readRDS("data/Final_four_data/re_analysis/H3K27ac_granges_df.RDS")
 
 ```
@@ -202,7 +196,9 @@ ComplexHeatmap::Heatmap(spearman_cor_mat,
 
 I associated the data together like this:
 1)  Take the list of all ATAC regions that overlap H3K27ac regions
-2) Join the overlap list of regions with the assigned RNA expressed genes and their distance. 
+2) Join the overlap list of regions with the assigned RNA genes and their distance. 
+
+Integration with expressed genes from Matthews, PLOS Genet., 2024
 ```{r Adding RNA toplist information}
 toplistall_RNA <- readRDS("data/other_papers/toplistall_RNA.RDS") %>% 
   mutate(logFC = logFC*(-1))
@@ -248,14 +244,9 @@ All_data_mat <- All_data_overlaps %>%
 All_data_2kb_mat <- Only_2kb_ATAC_K27_RNA %>% 
   tidyr::unite(name, Peakid, Geneid, NCBI_gene,SYMBOL,distanceToTSS, sep="_") %>%
   column_to_rownames(., "name") %>%
-  as.matrix()
+  as.matrix() 
 
   
-# All_data_overlaps %>% distinct(Peakid)
-#   na.omit
-# Only_2kb_ATAC_K27_RNA %>% 
-#   na.omit()
-
 ```
 
 The number of overlapping H3K27ac/ATAC peaks and expressed gene pairs within 2kb of and expressed gene TSS is `r Only_2kb_ATAC_K27_RNA %>%  na.omit() %>% distinct(DNR_3_ATAC) %>% tally`
@@ -275,8 +266,8 @@ ComplexHeatmap::Heatmap(spearman_cor_mat_all,
                         column_title = "Spearman RNA/ATAC/H3K27ac LFC correlation")
 
 ```
-Looking at correlations of all overlaps, within 2kb of an expressed gene TSS
-```{r pearsonR-A-Hjust 2kb correlation}
+Looking at correlations of all overlaps, within 2kb of an expressed gene TSS. 
+```{r pearsonR-A-Hjust 2kb correlation, fig.height=8}
 
 pearson_cor_mat_2kb <- cor(All_data_2kb_mat,method = "pearson", use = "pairwise.complete.obs")
 
@@ -365,7 +356,7 @@ Median_df_2kb %>%
   xlab("ATAC peak med LFC")+
    ylab("RNA med LFC")
 ```
-
+### With and without H3K27ac overlap correlations, 2kb
 ```{r}
 
 no_H3K27ac_overlap <-final_peaks %>%
