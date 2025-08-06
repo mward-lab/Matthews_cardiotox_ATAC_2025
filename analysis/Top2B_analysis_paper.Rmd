@@ -1,0 +1,659 @@
+---
+title: "TOP2B and Snyder data"
+author: "Renee Matthews"
+date: "2025-06-09"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE,
+	warning = FALSE,
+		dev = c("png","pdf")
+)
+```
+
+```{css, echo=FALSE}
+pre {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+pre[class] {
+  max-height: 200px;
+}
+```
+
+```{r package loading, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(kableExtra)
+library(broom)
+library(RColorBrewer)
+library(ChIPseeker)
+library("TxDb.Hsapiens.UCSC.hg38.knownGene")
+library("org.Hs.eg.db")
+library(rtracklayer)
+library(edgeR)
+library(ggfortify)
+library(limma)
+library(readr)
+library(BiocGenerics)
+library(gridExtra)
+library(VennDiagram)
+library(scales)
+library(BiocParallel)
+library(ggpubr)
+library(devtools)
+library(biomaRt)
+library(eulerr)
+library(smplot2)
+library(genomation)
+library(ggsignif)
+library(plyranges)
+library(ggrepel)
+library(epitools)
+library(circlize)
+library(readxl)
+library(regioneR)
+library(GenomicRanges)
+
+```
+
+
+#### Loading in dataframes  
+
+
+```{r loading data}
+toptable_results <- readRDS("data/Final_four_data/re_analysis/Toptable_results.RDS")
+
+all_results  <- toptable_results %>%
+  imap(~ .x %>% tibble::rownames_to_column(var = "rowname") %>%
+         mutate(source = .y)) %>%
+  bind_rows()
+
+
+Top2b_peaks <- import(con="data/other_papers/ChIP3_TOP2B_CM_87-1.bed",format = "bed",genome="hg38")
+
+Motif_list_gr <- readRDS( "data/Final_four_data/re_analysis/Motif_list_granges.RDS")
+list2env(Motif_list_gr,envir = .GlobalEnv)
+df_list <- plyr::llply(Motif_list_gr[c(1:9)], as.data.frame)
+list2env(df_list,envir=.GlobalEnv)
+
+Left_ventricle <- import(con = "C://Users/renee/Downloads/hg38.TADs/hg38/VentricleLeft_STL003_Leung_2015-raw_TADs.txt", format = "bed",genome="hg38")
+
+DOX_3_sig_gr <-
+all_results %>% 
+  dplyr::select(source,genes, logFC,adj.P.Val) %>% 
+  mutate("Peakid"=genes) %>% 
+  dplyr::filter(source=="DOX_3") %>% 
+   dplyr::filter(adj.P.Val<0.05) %>% 
+  separate_wider_delim(., cols="genes",names = c("seqnames","start","end"), delim= ".") %>% 
+  GRanges()
+
+DOX_24_sig_gr <-
+all_results %>% 
+  dplyr::select(source,genes, logFC,adj.P.Val) %>%
+   mutate("Peakid"=genes) %>% 
+  dplyr::filter(source=="DOX_24") %>% 
+   dplyr::filter(adj.P.Val<0.05) %>% 
+  separate_wider_delim(., cols="genes",names = c("seqnames","start","end"), delim= ".") %>% 
+  GRanges()  
+   
+
+
+
+ 
+```
+
+
+### Overlapping Top2b and all ATAC regions
+
+```{r}
+
+Allregion_ol <- join_overlap_intersect(all_regions,Top2b_peaks)%>% 
+  as.data.frame() %>% 
+  distinct(Peakid,.keep_all = TRUE)
+
+left_ventricle_ol <- join_overlap_intersect(all_regions ,Left_ventricle) %>% 
+  as.data.frame() %>% 
+  distinct(Peakid,.keep_all = TRUE)
+
+
+TOP2b_overlap <- join_overlap_intersect(all_regions,Top2b_peaks)%>% 
+  as.data.frame() %>% 
+  distinct(name,.keep_all = TRUE)
+
+
+# join_overlap_intersect(all_regions,Top2b_peaks)%>% 
+#   as.data.frame() %>% 
+#   group_by(Peakid) %>% 
+#   tally() %>% 
+#   dplyr::filter(n>1
+#                 )
+
+```
+Proportion of Tob2b peaks found in ATAC peak by treatment:
+```{r}
+annotated_regions <- all_results %>% 
+  dplyr::filter(source=="DOX_3"|source=="DOX_24") %>% 
+  dplyr::select(source,genes,logFC,adj.P.Val) %>% 
+  pivot_wider(.,id_cols=genes,names_from = source, values_from = c(logFC, adj.P.Val)) %>% 
+  mutate(top_2b_ol=case_when(genes %in% Allregion_ol$Peakid~"TOP2b_peak",
+         TRUE ~"not_TOP2b_peak")) %>% 
+  mutate(sig_3=if_else(adj.P.Val_DOX_3<0.05,"sig","not_sig"),
+         sig_24=if_else(adj.P.Val_DOX_24<0.05,"sig","not_sig")) %>% 
+  mutate(sig_3=factor(sig_3,levels=c("sig","not_sig")),
+         sig_24=factor(sig_24,levels=c("sig","not_sig"))) %>% 
+  mutate(TAD_ol=case_when(genes%in% left_ventricle_ol$Peakid~"TAD_peak",
+                          TRUE ~"not_TAD_peak"))  
+ 
+annotated_regions %>% 
+  group_by(sig_3,top_2b_ol) %>% tally%>% 
+ pivot_wider(., id_cols = sig_3, names_from = top_2b_ol, values_from = n)
+
+
+annotated_regions %>% 
+  group_by(sig_24,top_2b_ol) %>% tally %>% 
+ pivot_wider(., id_cols = sig_24, names_from = top_2b_ol, values_from = n)
+
+
+annotated_regions %>% 
+  group_by(sig_3,top_2b_ol) %>% tally%>% 
+ pivot_wider(., id_cols = sig_3, names_from = top_2b_ol, values_from = n) %>%
+  column_to_rownames("sig_3") %>% 
+  as.matrix() %>% 
+  chisq.test(.)
+
+annotated_regions %>% 
+   group_by(sig_24,top_2b_ol) %>% tally%>% 
+ pivot_wider(., id_cols = sig_24, names_from = top_2b_ol, values_from = n) %>%
+  column_to_rownames("sig_24") %>% 
+  as.matrix() %>% 
+  chisq.test(.)
+
+
+
+```
+
+```{r}
+annotated_regions %>% 
+  group_by(sig_3,top_2b_ol) %>% 
+  ggplot(., aes(x=sig_3, fill=top_2b_ol))+
+  geom_bar(position="fill")+
+  theme_bw()+
+  ggtitle(" 3 hour DARs and TOP2b")+
+  ylab("proportion")
+  
+
+annotated_regions %>% 
+  group_by(sig_24,top_2b_ol) %>% 
+  ggplot(., aes(x=sig_24, fill=top_2b_ol))+
+  geom_bar(position="fill")+
+  theme_bw()+
+  ggtitle(" 24 hour DARs and TOP2b")+
+  ylab("proportion")
+
+
+
+top2b_3hr_or <- annotated_regions %>% 
+  group_by(sig_3,top_2b_ol) %>% 
+  tally %>% 
+  pivot_wider(., id_cols=sig_3, names_from = top_2b_ol, values_from = n) %>% 
+  column_to_rownames("sig_3") %>% 
+  as.matrix() %>% 
+  epitools::oddsratio(., method="wald")
+
+top2b_24hr_or <- annotated_regions %>% 
+  group_by(sig_24,top_2b_ol) %>% 
+  tally %>% 
+  pivot_wider(., id_cols=sig_24, names_from = top_2b_ol, values_from = n) %>% 
+  column_to_rownames("sig_24") %>% 
+  as.matrix() %>% 
+  epitools::oddsratio(., method="wald")
+
+ggplot_format_odds <- data.frame("or_value" = c(top2b_3hr_or$measure[2, "estimate"],top2b_24hr_or$measure[2, "estimate"]),
+"lower_ci" = c(top2b_3hr_or$measure[2, "lower"],top2b_24hr_or$measure[2, "lower"]),
+"upper_ci" = c(top2b_3hr_or$measure[2, "upper"],top2b_24hr_or$measure[2, "upper"]),
+"p_value" = c(top2b_3hr_or$p.value[2,"chi.square"],top2b_24hr_or$p.value[2,"chi.square"]),
+group=c("3hour","24hour"))
+ ggplot_format_odds %>% 
+   mutate(group=factor(group, levels= c("3hour","24hour"))) %>% 
+ggplot(., aes(x = group, y = or_value)) +
+  geom_point(size = 3) +
+  geom_errorbar(aes(ymin = lower_ci, ymax = upper_ci), width = 0.2) +
+  geom_hline(yintercept = 1, linetype = "dashed", color = "gray40") +
+  labs(
+    title = "Odds Ratio of TOP2b Peak Overlap",
+    y = "Odds Ratio (95% confidence interval)",
+    x = "time"
+  ) +
+  theme_bw() +
+  theme(
+    text = element_text(size = 12),
+    plot.title = element_text(hjust = 0.5)
+  )
+```
+
+```{r}
+annotated_DARs<- readRDS("data/Final_four_data/re_analysis/DOX_DAR_annotated_peaks_chipannno.RDS")
+gene_N_peak <-
+annotated_DARs$DOX_3 %>% 
+  as.data.frame() %>%
+  dplyr::select(mcols.genes,annotation, geneId:distanceToTSS)
+
+toplistall_RNA <- readRDS("data/other_papers/toplistall_RNA.RDS") %>% 
+  mutate(logFC = logFC*(-1))
+
+
+
+RNA_results <-
+toplistall_RNA %>% 
+  dplyr::select(time:logFC) %>% 
+  tidyr::unite("sample",time, id) %>% 
+  pivot_wider(., id_cols = c(ENTREZID,SYMBOL),names_from = sample, values_from = logFC) %>% 
+  rename_with(~ str_replace(., "hours", "RNA"))
+
+
+RNA_adj.pvals <-
+toplistall_RNA %>% 
+dplyr::select(time:SYMBOL,adj.P.Val) %>% 
+  tidyr::unite("sample",id, time) %>% 
+  pivot_wider(., id_cols = c(ENTREZID,SYMBOL),names_from = sample, values_from = adj.P.Val) %>% 
+  rename_with(~ str_replace(., "hours", "pval"))
+
+```
+
+```{r}
+my_DOX_data <- all_results %>% 
+  dplyr::filter(source=="DOX_3"|source=="DOX_24") %>% 
+  dplyr::select(source,genes,logFC,adj.P.Val) %>% 
+  pivot_wider(.,id_cols=genes,names_from = source, values_from = c(logFC, adj.P.Val))
+
+my_EPI_data <- all_results %>% 
+  dplyr::filter(source=="EPI_3"|source=="EPI_24") %>% 
+  dplyr::select(source,genes,logFC,adj.P.Val) %>% 
+  pivot_wider(.,id_cols=genes,names_from = source, values_from = c(logFC, adj.P.Val))
+
+my_DNR_data <- all_results %>% 
+  dplyr::filter(source=="DNR_3"|source=="DNR_24") %>% 
+  dplyr::select(source,genes,logFC,adj.P.Val) %>% 
+  pivot_wider(.,id_cols=genes,names_from = source, values_from = c(logFC, adj.P.Val))
+
+my_MTX_data <- all_results %>% 
+  dplyr::filter(source=="MTX_3"|source=="MTX_24") %>% 
+  dplyr::select(source,genes,logFC,adj.P.Val) %>% 
+  pivot_wider(.,id_cols=genes,names_from = source, values_from = c(logFC, adj.P.Val))
+```
+adding DOX_sig and other trts for enrichment with top2b
+
+```{r}
+TSS_listed_df <- annotated_regions %>% 
+  left_join(.,my_EPI_data,by=c("genes"="genes")) %>% 
+  mutate(EPI_sig_3=if_else(adj.P.Val_EPI_3<0.05,"sig","not_sig"),
+         EPI_sig_24=if_else(adj.P.Val_EPI_24<0.05,"sig","not_sig")) %>% 
+  mutate(EPI_sig_3=factor(EPI_sig_3,levels=c("sig","not_sig")),
+         EPI_sig_24=factor(EPI_sig_24,levels=c("sig","not_sig"))) %>% 
+  left_join(.,my_DNR_data,by=c("genes"="genes")) %>% 
+  mutate(DNR_sig_3=if_else(adj.P.Val_DNR_3<0.05,"sig","not_sig"),
+         DNR_sig_24=if_else(adj.P.Val_DNR_24<0.05,"sig","not_sig")) %>% 
+  mutate(DNR_sig_3=factor(DNR_sig_3,levels=c("sig","not_sig")),
+         DNR_sig_24=factor(DNR_sig_24,levels=c("sig","not_sig"))) %>% 
+  left_join(.,my_MTX_data,by=c("genes"="genes")) %>% 
+  mutate(MTX_sig_3=if_else(adj.P.Val_MTX_3<0.05,"sig","not_sig"),
+         MTX_sig_24=if_else(adj.P.Val_MTX_24<0.05,"sig","not_sig")) %>% 
+  mutate(MTX_sig_3=factor(MTX_sig_3,levels=c("sig","not_sig")),
+         MTX_sig_24=factor(MTX_sig_24,levels=c("sig","not_sig"))) %>% 
+  dplyr::rename("DOX_sig_3"=sig_3, "DOX_sig_24"= sig_24) %>% 
+  left_join(., gene_N_peak, by= c("genes"="mcols.genes"))
+```
+make the odds ratio dataframe
+```{r}
+DOX_top2b_3hr_or <-
+  TSS_listed_df %>% 
+  group_by(DOX_sig_3,top_2b_ol) %>% 
+  tally %>% 
+  pivot_wider(., id_cols=DOX_sig_3, names_from = top_2b_ol, values_from = n) %>%   column_to_rownames("DOX_sig_3") %>% 
+  as.matrix() %>% 
+  fisher.test(.)
+
+DOX_top2b_24hr_or <- TSS_listed_df %>% 
+  group_by(DOX_sig_24,top_2b_ol) %>% 
+  tally %>% 
+  pivot_wider(., id_cols=DOX_sig_24, names_from = top_2b_ol, values_from = n) %>% 
+  column_to_rownames("DOX_sig_24") %>% 
+  as.matrix() %>% 
+  fisher.test(.)
+
+EPI_top2b_3hr_or <-
+  TSS_listed_df %>% 
+  group_by(EPI_sig_3,top_2b_ol) %>% 
+  tally %>% 
+  pivot_wider(., id_cols=EPI_sig_3, names_from = top_2b_ol, values_from = n) %>%   column_to_rownames("EPI_sig_3") %>% 
+  as.matrix() %>% 
+  fisher.test(.)
+
+EPI_top2b_24hr_or <- TSS_listed_df %>% 
+  group_by(EPI_sig_24,top_2b_ol) %>% 
+  tally %>% 
+  pivot_wider(., id_cols=EPI_sig_24, names_from = top_2b_ol, values_from = n) %>% 
+  column_to_rownames("EPI_sig_24") %>% 
+  as.matrix() %>% 
+  fisher.test(.)
+
+DNR_top2b_3hr_or <-
+  TSS_listed_df %>% 
+  group_by(DNR_sig_3,top_2b_ol) %>% 
+  tally %>% 
+  pivot_wider(., id_cols=DNR_sig_3, names_from = top_2b_ol, values_from = n) %>%   column_to_rownames("DNR_sig_3") %>% 
+  as.matrix() %>% 
+  fisher.test(.)
+
+DNR_top2b_24hr_or <- TSS_listed_df %>% 
+  group_by(DNR_sig_24,top_2b_ol) %>% 
+  tally %>% 
+  pivot_wider(., id_cols=DNR_sig_24, names_from = top_2b_ol, values_from = n) %>% 
+  column_to_rownames("DNR_sig_24") %>% 
+  as.matrix() %>% 
+ fisher.test(.)
+
+MTX_top2b_3hr_or <-
+  TSS_listed_df %>% 
+  group_by(MTX_sig_3,top_2b_ol) %>% 
+  tally %>% 
+  pivot_wider(., id_cols=MTX_sig_3, names_from = top_2b_ol, values_from = n) %>%   column_to_rownames("MTX_sig_3") %>% 
+  as.matrix() %>% 
+  fisher.test(.)
+
+MTX_top2b_24hr_or <- TSS_listed_df %>% 
+  group_by(MTX_sig_24,top_2b_ol) %>% 
+  tally %>% 
+  pivot_wider(., id_cols=MTX_sig_24, names_from = top_2b_ol, values_from = n) %>% 
+  column_to_rownames("MTX_sig_24") %>% 
+  as.matrix() %>% 
+  fisher.test(.)
+
+
+```
+
+```{r thanks chatgpt}
+# Define the variable names
+var_names <- c("DOX_top2b_3hr_or", "DOX_top2b_24hr_or", 
+               "EPI_top2b_3hr_or", "EPI_top2b_24hr_or",
+               "DNR_top2b_3hr_or", "DNR_top2b_24hr_or",
+                "MTX_top2b_3hr_or", "MTX_top2b_24hr_or")
+
+# Optional: label for grouping
+group_labels <- c("DOX_3hr", "DOX_24hr", "EPI_3hr", "EPI_24hr", "DNR_3hr", "DNR_24hr", "MTX_3hr", "MTX_24hr")
+
+# Build the data frame
+OR_all_trt_result_df <- do.call(rbind, lapply(seq_along(var_names), function(i) {
+  var <- get(var_names[i])
+  
+  data.frame(
+    or_value  = unname(var$estimate),  # remove the name "odds ratio"
+    lower_ci  = var$conf.int[1],
+    upper_ci  = var$conf.int[2],
+    p_value   = var$p.value,
+    group     = group_labels[i]
+  )
+}))
+```
+
+```{r}
+OR_all_trt_result_df %>% 
+  separate_wider_delim(.,cols="group", names = c("trt","time"), delim = "_",cols_remove = FALSE) %>% 
+    mutate(time= factor(time, levels =c("3hr","24hr")),
+         trt=factor(trt, levels= c("DOX", "EPI", "DNR", "MTX"))) %>% 
+  # mutate(significant=if_else(p_value <0.05,"TRUE","FALSE")) %>% 
+  mutate(
+    significant = case_when(
+      p_value < 0.001 ~ "***",
+      p_value < 0.01 ~ "**",
+      p_value < 0.05 ~ "*",
+      TRUE ~ ""
+    )
+  ) %>% 
+ggplot(., aes(x = trt, y = or_value)) +
+   geom_point(aes(color = trt), size=4)+
+   geom_errorbar(aes(ymin = lower_ci, ymax = upper_ci), width = 0.2) +
+  geom_hline(yintercept = 1, linetype = "dashed", color = "gray40") +
+  geom_text(
+  aes(y = upper_ci + 0.1 * or_value, label = significant),
+  hjust = 0,  # aligns text to the left of the y point
+  size = 4,
+  color = "black"
+)+
+  labs(
+    title = "Odds Ratio of TOP2b Peak Overlap",
+    y = "Odds Ratio (95% confidence interval)",
+    x = "treatment"
+  ) +
+  # coord_flip()+
+  theme_classic() +
+  facet_wrap(~time)+
+  theme(
+    text = element_text(size = 12),
+    plot.title = element_text(hjust = 0.5)
+  )
+  
+```
+
+```{r}
+top2b_overlap <- join_overlap_inner(all_regions,Top2b_peaks)
+ AR_total     <- length(unique(all_regions$Peakid))
+
+ 
+ Top2B_total  <- length(unique(Top2b_peaks$name))
+overlap_n    <- length(unique(top2b_overlap$Peakid)) 
+fit_top2b <- euler(c(
+  "ARs" = AR_total-overlap_n,
+  "Top2B" = Top2B_total-length(unique(top2b_overlap$name)),
+  "ARs&Top2B" = overlap_n
+))
+
+plot(fit_top2b, fills = list(fill = c("skyblue", "lightcoral"), alpha = 0.6),
+     labels = FALSE, edges = TRUE, quantities = TRUE,
+     main = "Overlap between AR and TOP2B peaks")
+
+length(intersect(unique(top2b_overlap$Peakid), unique(all_regions$Peakid)))  # should match overlap_n
+```
+
+
+### significance of Snyder data (Heart left-ventricle)
+```{r permtest,fig.width=10}
+Snyder_41peaks <- read.delim("data/other_papers/ENCFF966JZT_bed_Snyder_41peaks.bed",header=TRUE) %>% 
+  GRanges()
+
+genome <- BSgenome.Hsapiens.UCSC.hg38
+# perm_test_hlv <- permTest(A= all_regions,
+#                           B= Snyder_41peaks,
+#                           ntimes=1000,
+#                           randomize.function=randomizeRegions,
+#                           evaluate.function = numOverlaps,
+#                           genome=genome,
+#                           count.once= TRUE,
+#                           verbose = TRUE)
+# saveRDS(perm_test_hlv,"data/Final_four_data/re_analysis/perm_test_results_HLV.RDS")
+
+perm_test_hlv <- readRDS("data/Final_four_data/re_analysis/perm_test_results_HLV.RDS")
+
+perm_test_hlv
+plot(perm_test_hlv)
+
+plot(perm_test_hlv, xlim = range(perm_test_hlv$numOverlaps$permuted))
+
+```
+
+#### TOP2B and TOP2A expression (log2cpm from RNA data)
+
+```{r expression}
+
+drug_pal <- c("#8B006D","#DF707E","#F1B72B", "#3386DD","#707031","#41B333")
+RNA_counts <- readRDS("data/other_papers/cpmcount.RDS") %>%
+  dplyr::rename_with(.,~gsub(pattern="Da",replacement="DNR",.)) %>% 
+ dplyr::rename_with(.,~gsub(pattern="Do",replacement="DOX",.)) %>% 
+  dplyr::rename_with(.,~gsub(pattern="Ep",replacement="EPI",.)) %>% 
+   dplyr::rename_with(.,~gsub(pattern="Mi",replacement="MTX",.)) %>% 
+    dplyr::rename_with(.,~gsub(pattern="Tr",replacement="TRZ",.)) %>% 
+       dplyr::rename_with(.,~gsub(pattern="Ve",replacement="VEH",.)) %>% 
+  rownames_to_column("ENTREZID")
+
+
+RNA_results %>% 
+  dplyr::filter(SYMBOL=="TOP2B")
+
+RNA_counts %>% 
+  dplyr::filter(ENTREZID =="7153") %>% 
+  pivot_longer(cols = !ENTREZID, names_to = "sample", values_to = "counts") %>% 
+  separate("sample", into = c("trt","ind","time")) %>% 
+  mutate(time=factor(time, levels = c("3h","24h"))) %>% 
+  mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
+  ggplot(., aes (x = time, y=counts))+
+  geom_boxplot(aes(fill=trt))+
+  # facet_wrap(~SYMBOL, scales="free_y")+
+    scale_fill_manual(values = drug_pal)+
+  ggtitle("RNA Log2cpm of TOP2a")+
+  theme_bw()+
+  ylab("log2 cpm RNA")
+
+
+RNA_counts %>% 
+  dplyr::filter(ENTREZID =="7155") %>% 
+  pivot_longer(cols = !ENTREZID, names_to = "sample", values_to = "counts") %>% 
+  separate("sample", into = c("trt","ind","time")) %>% 
+  mutate(time=factor(time, levels = c("3h","24h"))) %>% 
+  mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
+  ggplot(., aes (x = time, y=counts))+
+  geom_boxplot(aes(fill=trt))+
+  # facet_wrap(~SYMBOL, scales="free_y")+
+    scale_fill_manual(values = drug_pal)+
+  ggtitle("RNA Log2cpm of TOP2b")+
+  theme_bw()+
+  ylab("log2 cpm RNA")
+# RNA_counts %>% 
+#   dplyr::filter(ENTREZID =="7155")
+# 
+# RNA_results %>% 
+#   dplyr::filter(ENTREZID =="7155")
+```
+### Expression of genes in specific TAD region
+
+(related to figure 5)
+```{r Viewing  TAD102 genes}
+TAD_102_genes <- c("TNFSF18","PRDX6", "TEX50", "KLHL20", "DARS2", "TNFSF4", "SLC9C2", "ANKRD45", "CENPL", "GAS5")
+
+TAD_plot_genes <- RNA_results %>% 
+  dplyr::filter(SYMBOL%in% TAD_102_genes) %>% 
+  dplyr::select(ENTREZID,SYMBOL)
+
+ ### Filter pvalues
+ clean_RNA_adj.pvals <-  RNA_adj.pvals %>% 
+    # dplyr::filter(ENTREZID=="55157") %>% 
+    pivot_longer(cols = contains("pval"), names_to = "sample", values_to = "adj.p.val") %>% 
+    separate(sample, into = c("trt", "time","pval")) %>% 
+    mutate(
+    time = paste0(time, "h"),  # convert "3" → "3h"
+    trt = factor(trt, levels = c("DOX", "EPI", "DNR", "MTX", "TRZ", "VEH"))
+  )
+
+
+for (gene in TAD_plot_genes$ENTREZID) {
+  SYMBOL <- TAD_plot_genes$SYMBOL[TAD_plot_genes$ENTREZID == gene]
+ 
+
+  # Filter and plot
+  gene_plot <- RNA_counts %>%
+    filter(ENTREZID == gene) %>%
+    pivot_longer(cols = !ENTREZID, names_to = "sample", values_to = "counts") %>%
+    separate(sample, into = c("trt", "ind", "time")) %>%
+    mutate(
+      time = factor(time, levels = c("3h", "24h")),
+      trt = factor(trt, levels = c("DOX", "EPI", "DNR", "MTX", "TRZ", "VEH"))
+    ) %>%
+    ggplot(aes(x = time, y = counts)) +
+    geom_boxplot(aes(fill = trt)) +
+    scale_fill_manual(values = drug_pal) +
+    theme_bw() +
+    ylab("log2 cpm RNA") +
+    ggtitle(paste0("RNA Log2cpm of ", SYMBOL))
+  
+  plot(gene_plot)
+}
+```
+
+
+
+```{r}
+
+RNA_pval_clean <- RNA_adj.pvals %>%
+  pivot_longer(cols = contains("pval"), names_to = "sample", values_to = "adj.p.val") %>% 
+    separate(sample, into = c("trt", "time","pval")) %>% 
+    mutate(
+    time = paste0(time, "h"),  # convert "3" → "3h"
+    trt = factor(trt, levels = c("DOX", "EPI", "DNR", "MTX", "TRZ", "VEH")),
+    group = paste0(trt, "_", time),
+    group = factor(group, levels = c(
+        "DOX_3h", "EPI_3h", "DNR_3h", "MTX_3h", "TRZ_3h", "VEH_3h",
+        "DOX_24h", "EPI_24h", "DNR_24h", "MTX_24h", "TRZ_24h", "VEH_24h"
+      ))
+    )
+
+for (gene in TAD_plot_genes$ENTREZID) {
+  SYMBOL <- TAD_plot_genes$SYMBOL[TAD_plot_genes$ENTREZID == gene]
+
+  # Prep expression data
+  gene_expr <- RNA_counts %>%
+    filter(ENTREZID == gene) %>%
+    pivot_longer(cols = !ENTREZID, names_to = "sample", values_to = "counts") %>%
+    separate(sample, into = c("trt", "ind", "time")) %>%
+    mutate(
+      time = paste0(time),  # if already "3h"/"24h"
+      group = paste0(trt, "_", time),
+      group = factor(group, levels = c(
+        "DOX_3h", "EPI_3h", "DNR_3h", "MTX_3h", "TRZ_3h", "VEH_3h",
+        "DOX_24h", "EPI_24h", "DNR_24h", "MTX_24h", "TRZ_24h", "VEH_24h"
+      ))
+    )
+
+  # Get gene-specific p-values
+  gene_pvals <- RNA_pval_clean %>%
+    filter(ENTREZID == gene)
+
+  # Merge in p-values by group
+  gene_plot_data <- left_join(gene_expr, gene_pvals, by = c("ENTREZID", "group"))
+
+  # Create label position below box
+  label_positions <- gene_plot_data %>%
+    group_by(group) %>%
+    summarise(y = min(counts, na.rm = TRUE) - 0.5, .groups = "drop")
+
+  gene_plot_data <- left_join(gene_plot_data, label_positions, by = "group")
+  gene_plot_data <- gene_plot_data %>%
+  separate(group, into = c("trt", "time"), sep = "_", remove = FALSE)
+
+  # Plot
+  gene_plot <- ggplot(gene_plot_data, aes(x = group, y = counts)) +
+    geom_boxplot(aes(fill = trt)) +
+    geom_text(
+      aes(y = y,
+          label = ifelse(trt != "VEH" & !is.na(adj.p.val),
+                         paste0("", signif(adj.p.val, 2)),
+                         "")),
+      size = 3,
+      vjust = 1.2
+    ) +
+    scale_fill_manual(values = drug_pal) +
+    theme_bw() +
+    ggtitle(paste0("RNA Log2cpm of ", SYMBOL)) +
+    ylab("log2 cpm RNA") +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+plot(gene_plot)
+}
+
+```
+
+
+
+
