@@ -5,7 +5,7 @@ date: "`r Sys.Date()`"
 output: html_document
 ---
 
-```{r setup, include=FALSE}
+```{r setup for figure, include=FALSE}
 knitr::opts_chunk$set(
 	echo = TRUE,
 	message = FALSE,
@@ -47,12 +47,10 @@ library(Cormotif)
 library(BiocParallel)
 library(ggpubr)
 library(devtools)
-library(JASPAR2022)
-library(TFBSTools)
-library(MotifDb)
 library(BSgenome.Hsapiens.UCSC.hg38)
 library(data.table)
 library(eulerr)
+library(plyranges)
 
 ```
 
@@ -315,3 +313,44 @@ ggplot(., aes(x = trt, y = or_value)) +
   )
   
 ```
+### Figure 3.E. TOP2B RNA expression
+(Uses log2cpm values from my previous paper (Matthews, et al. PLOS genet. 2024))
+
+```{r}
+
+drug_pal <- c("#8B006D","#DF707E","#F1B72B", "#3386DD","#707031","#41B333")
+RNA_counts <- readRDS("data/other_papers/cpmcount.RDS") %>%
+  dplyr::rename_with(.,~gsub(pattern="Da",replacement="DNR",.)) %>% 
+ dplyr::rename_with(.,~gsub(pattern="Do",replacement="DOX",.)) %>% 
+  dplyr::rename_with(.,~gsub(pattern="Ep",replacement="EPI",.)) %>% 
+   dplyr::rename_with(.,~gsub(pattern="Mi",replacement="MTX",.)) %>% 
+    dplyr::rename_with(.,~gsub(pattern="Tr",replacement="TRZ",.)) %>% 
+       dplyr::rename_with(.,~gsub(pattern="Ve",replacement="VEH",.)) %>% 
+  rownames_to_column("ENTREZID")
+RNA_counts %>% 
+  dplyr::filter(ENTREZID =="7155") %>% 
+  pivot_longer(cols = !ENTREZID, names_to = "sample", values_to = "counts") %>% 
+  separate("sample", into = c("trt","ind","time")) %>% 
+  mutate(time=factor(time, levels = c("3h","24h"))) %>% 
+  mutate(trt=factor(trt, levels= c("DOX","EPI","DNR","MTX","TRZ","VEH"))) %>% 
+  ggplot(., aes (x = time, y=counts))+
+  geom_boxplot(aes(fill=trt))+
+  # facet_wrap(~SYMBOL, scales="free_y")+
+    scale_fill_manual(values = drug_pal)+
+  ggtitle("RNA Log2cpm of TOP2b")+
+  theme_bw()+
+  ylab("log2 cpm RNA")
+```
+### Figure 3.F. Enrichment of sequence features in DARs
+
+For direct links in how all numbers were derived:
+[TE enrichment in dataset](https://mward-lab.github.io/Matthews_cardiotox_ATAC_2025/TE_analysis_ALL_DAR.html)
+
+[Analysis of TSS and CpG islands enrichment](https://mward-lab.github.io/Matthews_cardiotox_ATAC_2025/TSS_and_CUG_ALL_DAR.html)
+
+[Enrichment of cis Regulatory Elements](https://mward-lab.github.io/Matthews_cardiotox_ATAC_2025/Enhancer_enrichment_ALL_DAR.html)  
+
+```{r, child="analysis/BH_correction_ALLtrt.Rmd"}
+
+```
+
