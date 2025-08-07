@@ -47,58 +47,17 @@ library(ggVennDiagram)
 library(BiocParallel)
 library(ggpubr)
 library(biomaRt)
+library(plyranges)
+library(ggsignif)
+library(plyranges)
+library(ggrepel)
+library(ComplexHeatmap)
+library(cowplot)
+library(smplot2)
 ```
 
 
-
-```{r table function}
-GO_KEGG_analysis <- function(df,type, setp_value=1){
-# Extract the name of the dataframe
-  a <- deparse(substitute(df)) %>% 
-  gsub("_NG_2kresgenes","",.)
-
- # Prepare the table output
-  df_nomtable <-  df$result %>% 
-  dplyr::select(c(source, term_id,
-                  term_name,intersection_size, 
-                   term_size, p_value))
-# Create a color palette for different dataframe names
-  # You can customize this color palette as needed  
-  
-  mrc_palette <- c(
-    "EAR_open" = "#F8766D",
-    "EAR_close" = "#f6483c",
-    "ESR_open" = "#7CAE00",
-    "ESR_close" = "#587b00",
-    "ESR_opcl" = "cornflowerblue",
-    "ESR_clop"= "grey60",
-     "LR_open" = "#00BFC4",
-     "LR_close" = "#008d91",
-     "NR" = "#C77CFF"
-  )
-   # Use the dataframe name as the fill color (fallback to black if name is not in the palette)
-   fill_color <- mrc_palette[a] %||% "darkgrey"
-   
-
-plot <- df_nomtable %>%
-  filter(source==type) %>% 
-     dplyr::filter(p_value < setp_value) %>% 
-  mutate(log10_p=(-log(p_value, base=10))) %>% 
-  ggplot(., aes(x=log10_p, y=reorder(term_name, log10_p)))+
-    geom_col(fill=fill_color)+
-  geom_vline(aes(xintercept=-log(0.05,base = 10)), col="red",linetype = 2)+
-  theme_bw()+
-  ylab("")+
-  xlab(paste0("-log10 p-value"))+
-  guides(fill="none")+
-  theme(axis.text.y = element_text(color="black"))+
-  ggtitle(paste0("(p < ",setp_value," ) ",type," terms found in\n ",a," neargenes"))
-
-
-print(plot)
-}
-```
-Figure 4: GO analysis
+Figure 4: Drug-induced chromatin accessibility changes correspond to chantes in active histone modification enrichement and gene expression.
 ```{r}
 knitr::include_graphics("assets/Figure\ 4.png", error=FALSE)
 knitr::include_graphics("docs/assets/Figure\ 4.png",error = FALSE)
@@ -106,144 +65,924 @@ knitr::include_graphics("docs/assets/Figure\ 4.png",error = FALSE)
 ```
 
 
-```{r loading data frames}
-mrc_palette <- c(
-    "EAR_open" = "#F8766D",
-    "EAR_close" = "#f6483c",
-    "ESR_open" = "#7CAE00",
-    "ESR_close" = "#587b00",
-     "ESR_OC" = "#6a9500",
-    "ESR_opcl" = "cornflowerblue",
-    "ESR_clop"= "grey60",
-     "LR_open" = "#00BFC4",
-     "LR_close" = "#008d91",
-     "NR" = "#C77CFF"
-  )
+### Figure 4.A. Overview of experimental setup to collect H3K27ac CUT&Tag data and gene expression data and integrate with ATAC-seq data
 
-TSS_NG_data <- read_delim("data/Final_four_data/TSS_assigned_NG.txt", 
-    delim = "\t", escape_double = FALSE, 
-    trim_ws = TRUE)
+** see above image.
 
-background_NGs <- TSS_NG_data %>% distinct(ENTREZID,SYMBOL)
-peak_list_all_mrc <- readRDS( "data/Final_four_data/Peak_list_all_mrc_NG.RDS")
-mrc_list <- readRDS("data/Final_four_data/Nine_group_TE_anno_with1bp.RDS")
+### Figure 4.B. Correlation between chromatin accessibility response and other molecular phenotypes.
 
-###because mrc list changed groupings to nine groups not eight
+```{r}
 
-EAR_open <- mrc_list %>% 
-  dplyr::filter(mrc=="EAR_open")%>% 
-  distinct(Peakid)
-ESR_opcl <- mrc_list %>% 
-  dplyr::filter(mrc=="ESR_opcl")%>% 
-  distinct(Peakid)
-ESR_clop <- mrc_list %>% 
-  dplyr::filter(mrc=="ESR_clop") %>% 
-  distinct(Peakid)
+annotated_DARs<- readRDS("data/Final_four_data/re_analysis/DOX_DAR_annotated_peaks_chipannno.RDS")
+
+Collapsed_peaks <- annotated_DARs$DOX_24 %>% as.data.frame()
 
 
-EAR_open_NG_2k<-  peak_list_all_mrc %>% 
-      dplyr::filter(Peakid %in%EAR_open$Peakid) %>% 
-    dplyr::filter(dist_to_NG >-2000&dist_to_NG<2000) %>% 
-    dplyr::select(Peakid, NCBI_gene:SYMBOL,dist_to_NG, mrc) %>% 
-    separate_longer_delim(., cols=NCBI_gene:SYMBOL, delim= ",") %>% 
-    distinct(NCBI_gene,SYMBOL)
+
+final_peaks_gr <- Collapsed_peaks %>% 
+  dplyr::select(seqnames:mcols.genes,annotation:distanceToTSS) %>% 
+  GRanges()
+
+final_peaks <- Collapsed_peaks 
 
 
-EAR_close_NG_2k<-  peak_list_all_mrc %>% 
-      dplyr::filter(mrc =="EAR_close") %>% 
-    dplyr::filter(dist_to_NG >-2000&dist_to_NG<2000) %>% 
-    dplyr::select(Peakid, NCBI_gene:SYMBOL,dist_to_NG, mrc) %>% 
-    separate_longer_delim(., cols=NCBI_gene:SYMBOL, delim= ",") %>% 
-    distinct(NCBI_gene,SYMBOL)
+RNA_exp_genes <- read.csv("data/other_papers/S13Table_Matthews2024.csv") %>% 
+  dplyr::select(ENTREZID,SYMBOL)
+
+H3K27ac_gr <- readRDS("data/Final_four_data/re_analysis/H3K27ac_granges_df.RDS")
+H3K27ac_toplist_results <- readRDS("data/Final_four_data/re_analysis/Toptable_results_H3K27ac_data.RDS")
+
+H3K27ac_toptable_list <- bind_rows(H3K27ac_toplist_results, .id = "group")
+
+ATAC_toptable_results <- readRDS("data/Final_four_data/re_analysis/Toptable_results.RDS")
+
+ATAC_toptable_list <- bind_rows(ATAC_toptable_results, .id = "group")
+
+
+hr3_K27 <-  H3K27ac_toptable_list %>% 
+    separate_wider_delim(., group, names=c("trt","time"), delim="_") %>% 
+  dplyr::select(trt,time:logFC) %>% 
+  dplyr::filter(time=="3") %>% 
+  pivot_wider(., id_cols=c(genes), names_from = trt, values_from = logFC) %>% 
+  dplyr::rename(DOX_3_K27=DOX, DNR_3_K27=DNR,EPI_3_K27=EPI,MTX_3_K27=MTX)
+
+
+hr24_K27 <- H3K27ac_toptable_list %>% 
+  separate_wider_delim(., group, names=c("trt","time"), delim="_") %>% 
+  dplyr::select(trt,time:logFC) %>% 
+  dplyr::filter(time=="24") %>% 
+  pivot_wider(., id_cols=c(genes), names_from = trt, values_from = logFC) %>% 
+  dplyr::rename(DOX_24_K27=DOX, DNR_24_K27=DNR,EPI_24_K27=EPI,MTX_24_K27=MTX)
+
+K27_LFC_df <- hr3_K27 %>% 
+  left_join(., hr24_K27, by=c("genes"="genes")) 
+
+
+hr3_ATAC <- ATAC_toptable_list %>% 
+  dplyr::select(group:logFC) %>% 
+    separate_wider_delim(., group, names=c("trt","time"), delim="_") %>% 
+  dplyr::filter(time=="3") %>% 
+  pivot_wider(., id_cols=c(time, genes), names_from = trt, values_from = logFC) %>% 
+  dplyr::select(!TRZ) %>% 
+  dplyr::rename(DOX_3_ATAC=DOX, DNR_3_ATAC=DNR,EPI_3_ATAC=EPI,MTX_3_ATAC=MTX) %>% 
+  dplyr::rename("peak"=genes)
+
+hr24_ATAC <- ATAC_toptable_list %>% 
+  dplyr::select(group:logFC) %>% 
+    separate_wider_delim(., group, names=c("trt","time"), delim="_") %>% 
+  dplyr::filter(time=="24") %>% 
+  pivot_wider(., id_cols=c(time, genes), names_from = trt, values_from = logFC) %>% 
+  dplyr::select(!TRZ) %>% 
+  dplyr::rename(DOX_24_ATAC=DOX, DNR_24_ATAC=DNR,EPI_24_ATAC=EPI,MTX_24_ATAC=MTX) %>%
+  dplyr::rename("peak"=genes)
+
+ATAC_LFC_df <- hr3_ATAC %>% 
+  left_join(., hr24_ATAC, by=c("peak"="peak")) %>%
+   dplyr::select(!time.x) %>% 
+  dplyr::select(!time.y)
+
+toplistall_RNA <- readRDS("data/other_papers/toplistall_RNA.RDS") %>% 
+  mutate(logFC = logFC*(-1))
+
+hr3_RNA <- toplistall_RNA %>% 
+  dplyr::select(time:logFC) %>% 
+  dplyr::filter(time=="3_hours") %>% 
+  pivot_wider(., id_cols=c(ENTREZID,SYMBOL), names_from = id, values_from = logFC) %>% 
+   dplyr::select(!TRZ) %>% 
+  dplyr::rename(DOX_3_RNA=DOX, DNR_3_RNA=DNR,EPI_3_RNA=EPI,MTX_3_RNA=MTX)
   
-ESR_open_NG_2k<-  peak_list_all_mrc %>% 
-      dplyr::filter(mrc =="ESR_open") %>% 
-    dplyr::filter(dist_to_NG >-2000&dist_to_NG<2000) %>% 
-    dplyr::select(Peakid, NCBI_gene:SYMBOL,dist_to_NG, mrc) %>% 
-    separate_longer_delim(., cols=NCBI_gene:SYMBOL, delim= ",") %>% 
-    distinct(NCBI_gene,SYMBOL)
-ESR_close_NG_2k<-  peak_list_all_mrc %>% 
-      dplyr::filter(mrc =="ESR_close") %>% 
-    dplyr::filter(dist_to_NG >-2000&dist_to_NG<2000) %>% 
-    dplyr::select(Peakid, NCBI_gene:SYMBOL,dist_to_NG, mrc) %>% 
-    separate_longer_delim(., cols=NCBI_gene:SYMBOL, delim= ",") %>% 
-    distinct(NCBI_gene,SYMBOL)
-ESR_opcl_NG_2k<-  peak_list_all_mrc %>% 
-     dplyr::filter(Peakid %in%ESR_opcl$Peakid) %>% 
-    dplyr::filter(dist_to_NG >-2000&dist_to_NG<2000) %>% 
-    dplyr::select(Peakid, NCBI_gene:SYMBOL,dist_to_NG, mrc) %>% 
-    separate_longer_delim(., cols=NCBI_gene:SYMBOL, delim= ",") %>% 
-    distinct(NCBI_gene,SYMBOL)
 
-ESR_clop_NG_2k<-  peak_list_all_mrc %>% 
-      dplyr::filter(Peakid %in%ESR_clop$Peakid) %>% 
-    dplyr::filter(dist_to_NG >-2000&dist_to_NG<2000) %>% 
-    dplyr::select(Peakid, NCBI_gene:SYMBOL,dist_to_NG, mrc) %>% 
-    separate_longer_delim(., cols=NCBI_gene:SYMBOL, delim= ",") %>% 
-    distinct(NCBI_gene,SYMBOL)
+hr24_RNA <- toplistall_RNA %>% 
+  dplyr::select(time:logFC) %>% 
+  dplyr::filter(time=="24_hours") %>% 
+  pivot_wider(., id_cols=c(ENTREZID,SYMBOL), names_from = id, values_from = logFC) %>% 
+   dplyr::select(!TRZ) %>% 
+  dplyr::rename(DOX_24_RNA=DOX, DNR_24_RNA=DNR,EPI_24_RNA=EPI,MTX_24_RNA=MTX)
 
-LR_open_NG_2k<-  peak_list_all_mrc %>% 
-      dplyr::filter(mrc =="LR_open") %>% 
-    dplyr::filter(dist_to_NG >-2000&dist_to_NG<2000) %>% 
-    dplyr::select(Peakid, NCBI_gene:SYMBOL,dist_to_NG, mrc) %>% 
-    separate_longer_delim(., cols=NCBI_gene:SYMBOL, delim= ",") %>% 
-    distinct(NCBI_gene,SYMBOL)
-LR_close_NG_2k<-  peak_list_all_mrc %>% 
-      dplyr::filter(mrc =="LR_close") %>% 
-    dplyr::filter(dist_to_NG >-2000&dist_to_NG<2000) %>% 
-    dplyr::select(Peakid, NCBI_gene:SYMBOL,dist_to_NG, mrc) %>% 
-    separate_longer_delim(., cols=NCBI_gene:SYMBOL, delim= ",") %>% 
-    distinct(NCBI_gene,SYMBOL)
+RNA_LFC_df <- hr3_RNA %>% 
+  left_join(., hr24_RNA, by=c("SYMBOL"="SYMBOL","ENTREZID"="ENTREZID")) 
 
-NR_NG_2k <-   peak_list_all_mrc %>%
-      dplyr::filter(mrc =="NR") %>% 
-    dplyr::filter(dist_to_NG >-2000&dist_to_NG<2000) %>% 
-    dplyr::select(Peakid, NCBI_gene:SYMBOL,dist_to_NG, mrc) %>% 
-    separate_longer_delim(., cols=NCBI_gene, delim= ",") %>% 
-     separate_longer_delim(., cols=,SYMBOL, delim= ",")  
+ol_peaks <- join_overlap_intersect(final_peaks_gr, H3K27ac_gr)
 
-NR_NG_2kresgenes <- readRDS("data/Final_four_data/GO_analysis/NR_NG_2kresgenes.RDS")
-EAR_close_NG_2kresgenes <- readRDS("data/Final_four_data/GO_analysis/EAR_close_NG_2kresgenes.RDS")
-ESR_close_NG_2kresgenes <- readRDS("data/Final_four_data/GO_analysis/ESR_close_NG_2kresgenes.RDS")
+Overlap_regions <- ol_peaks %>% 
+  as.data.frame() %>% 
+   dplyr::rename("Peakid"=mcols.genes) %>% 
+  distinct(Peakid,Geneid)
 
-ESR_opcl_NG_2kresgenes <- readRDS("data/Final_four_data/GO_analysis/ESR_opcl_NG_2kresgenes.RDS")
-ESR_clop_NG_2kresgenes <- readRDS("data/Final_four_data/GO_analysis/ESR_clop_NG_2kresgenes.RDS")
-LR_open_NG_2kresgenes <- readRDS("data/Final_four_data/GO_analysis/LR_open_NG_2kresgenes.RDS")
-LR_close_NG_2kresgenes <- readRDS("data/Final_four_data/GO_analysis/LR_close_NG_2kresgenes.RDS")
-ESR_open_NG_2kresgenes <-readRDS ("data/Final_four_data/GO_analysis/ESR_open_NG_2kresgenes.RDS")
-EAR_open_NG_2kresgenes<-readRDS  ("data/Final_four_data/GO_analysis/EAR_open_NG_2kresgenes.RDS")
-
-```
-Sample Query Code
-```{r, eval=FALSE,include=TRUE}
-
-##EXAMPLE OF GOST code
-ESR_clop_NG_2kresgenes <- gost(query = ESR_clop_NG_2k$NCBI_gene,
-                    organism = "hsapiens",
-                    significant = FALSE,
-                    ordered_query = FALSE,
-                    domain_scope = "custom",
-                    measure_underrepresentation = FALSE,
-                    evcodes = FALSE,
-                    user_threshold = 0.05,
-                    correction_method = c("fdr"),
-                    custom_bg = background_NGs$ENTREZID,
-                    sources=c("GO:BP","KEGG"))
-saveRDS(ESR_clop_NG_2kresgenes, "data/Final_four_data/GO_analysis/ESR_clop_NG_2kresgenes.RDS")
-
+H3K27_med_3 <- read_csv("data/Final_four_data/re_analysis/median_3_lfc_H3K27ac_norm.csv") %>% 
+  dplyr::select(H3K27ac_peak,med_Kac_3h_lfc)
+H3K27_med_24 <- read_csv("data/Final_four_data/re_analysis/median_24_lfc_H3K27ac_norm.csv")%>% 
+  dplyr::select(H3K27ac_peak,med_Kac_24h_lfc)
+ATAC_med_3 <- read_csv("data/Final_four_data/re_analysis/median_3_lfc_norm.csv")%>% 
+  dplyr::select(peak,med_3h_lfc)
+ATAC_med_24 <- read_csv("data/Final_four_data/re_analysis/median_24_lfc_norm.csv")%>% 
+  dplyr::select(peak,med_24h_lfc)
+RNA_median_3 <- readRDS("data/other_papers/RNA_median_3_lfc.RDS") %>% 
+  dplyr::select(RNA_3h_lfc,ENTREZID)
+RNA_median_24 <- readRDS("data/other_papers/RNA_median_24_lfc.RDS") %>% 
+  dplyr::select(RNA_24h_lfc,ENTREZID)
 ```
 
-```{r Go results}
 
-GO_KEGG_analysis(EAR_open_NG_2kresgenes,"GO:BP", 0.049)
-GO_KEGG_analysis(EAR_close_NG_2kresgenes,"GO:BP", 0.049)
-GO_KEGG_analysis(ESR_open_NG_2kresgenes,"GO:BP", 0.049)
-GO_KEGG_analysis(ESR_close_NG_2kresgenes,"GO:BP", 0.049)
-GO_KEGG_analysis(ESR_opcl_NG_2kresgenes,"GO:BP", 0.049)
-GO_KEGG_analysis(ESR_clop_NG_2kresgenes,"GO:BP", 0.049)
-GO_KEGG_analysis(LR_open_NG_2kresgenes,"GO:BP", 0.049)
-GO_KEGG_analysis(LR_close_NG_2kresgenes,"GO:BP", 0.049)
+association of data for regions that are within 2kb of Expressed gene
+```{r}
+All_data_overlaps <- Overlap_regions %>% 
+  left_join(., (final_peaks %>% 
+              dplyr::select(mcols.genes, geneId,distanceToTSS)), 
+            by=c("Peakid"= "mcols.genes")) %>% 
+  left_join(.,ATAC_LFC_df,by=c("Peakid"="peak")) %>% 
+  left_join(.,K27_LFC_df, by=c("Geneid"="genes")) %>%
+  left_join(., RNA_LFC_df, by = c("geneId"="ENTREZID")) %>% 
+  dplyr::rename("NCBI_gene"=geneId)
 
-                 
+Only_2kb_ATAC_K27_RNA <- All_data_overlaps %>% 
+  dplyr::filter(distanceToTSS > -2000 & distanceToTSS < 2000) 
+
+Median_df_2kb <- Only_2kb_ATAC_K27_RNA %>% 
+  dplyr::select(Peakid, Geneid,NCBI_gene) %>% 
+  mutate(NCBI_gene = gsub("[:,]", ";", NCBI_gene)) %>% 
+  separate_longer_delim(NCBI_gene, delim = ";") %>% 
+  distinct() %>% 
+  left_join(H3K27_med_3,by = c("Geneid"="H3K27ac_peak")) %>% 
+  left_join(H3K27_med_24,by = c("Geneid"="H3K27ac_peak")) %>% 
+  left_join(ATAC_med_3,by = c("Peakid"="peak")) %>% 
+  left_join(ATAC_med_24,by = c("Peakid"="peak")) %>%
+  left_join(RNA_median_3, by = c("NCBI_gene"="ENTREZID")) %>% 
+  left_join(RNA_median_24, by = c("NCBI_gene"="ENTREZID"))
 ```
 
+Active histone modification correlations with ATAC data
+```{r}
+Median_df_2kb %>% 
+  ggplot(., aes(y=med_Kac_3h_lfc, x=med_3h_lfc))+
+  ggrastr::geom_point_rast()+
+   sm_statCorr(corr_method = 'pearson')+
+   ggtitle("Correlation of 2kb ATAC regions and H3K27ac regions 3 hours")+
+  xlab("ATAC peak med LFC")+
+   ylab("H3K27ac med LFC")
+
+Median_df_2kb %>% 
+  ggplot(., aes(y=med_Kac_24h_lfc, x=med_24h_lfc))+
+   ggrastr::geom_point_rast()+
+   sm_statCorr(corr_method = 'pearson')+
+   ggtitle("Correlation of 2kb ATAC regions and H3K27ac regions 24 hours")+
+  xlab("ATAC peak med LFC")+
+   ylab("H3K27ac med LFC")
+```
+
+Gene expression correlations with ATAC data
+
+```{r}
+Median_df_2kb %>% 
+  ggplot(., aes(y=RNA_3h_lfc, x=med_3h_lfc))+
+   ggrastr::geom_point_rast()+
+   sm_statCorr(corr_method = 'pearson')+
+   ggtitle("Correlation of 2kb ATAC regions and RNA expressed genes 3 hours")+
+  xlab("ATAC peak med LFC")+
+   ylab("RNA med LFC")
+
+Median_df_2kb %>% 
+  ggplot(., aes(y=RNA_24h_lfc, x=med_24h_lfc))+
+  ggrastr::geom_point_rast()+
+   sm_statCorr(corr_method = 'pearson')+
+   ggtitle("Correlation of 2kb ATAC regions and RNA expressed genes 24 hours")+
+  xlab("ATAC peak med LFC")+
+   ylab("RNA med LFC")
+```
+
+### Figure 4.C. enrichment of DEGs near 24 hour DARs
+
+```{r making dfs}
+toptable_results <- readRDS("data/Final_four_data/re_analysis/Toptable_results.RDS")
+
+all_results  <- toptable_results %>%
+  imap(~ .x %>% tibble::rownames_to_column(var = "rowname") %>%
+         mutate(source = .y)) %>%
+  bind_rows()
+all_results_list  <- toptable_results %>%
+  imap(~ .x %>% tibble::rownames_to_column(var = "rowname") %>%
+         mutate(source = .y)) 
+three_hour_df <- all_results %>% 
+  dplyr::select(source, genes, logFC,adj.P.Val) %>% 
+  mutate(sig_val=if_else(adj.P.Val<0.05,"sig","not_sig")) %>% 
+  separate(source, into=c("trt","time"),sep="_") %>% 
+  dplyr::filter(time=="3") %>% 
+  mutate(trt=factor(trt, levels=c("DOX","EPI","DNR","MTX","TRZ")))
+
+twentyfour_hour_df <- all_results %>% 
+  dplyr::select(source, genes, logFC,adj.P.Val) %>% 
+  mutate(sig_val=if_else(adj.P.Val<0.05,"sig","not_sig")) %>% 
+  separate(source, into=c("trt","time"),sep="_") %>% 
+  dplyr::filter(time=="24") %>% 
+  mutate(trt=factor(trt, levels=c("DOX","EPI","DNR","MTX","TRZ")))
+
+toplistall_RNA <- readRDS("data/other_papers/toplistall_RNA.RDS") %>% 
+  mutate(logFC = logFC*(-1))
+peakAnnoList_DOX_DAR <- readRDS("data/Final_four_data/re_analysis/DOX_DAR_annotated_peaks_chipannno.RDS")
+Assigned_genes_toPeak <- peakAnnoList_DOX_DAR$DOX_24 %>% as.data.frame() %>% 
+  dplyr::select(mcols.genes,annotation, geneId, distanceToTSS) %>% 
+  dplyr::rename("Peakid"=mcols.genes)
+
+
+RNA_results <-
+toplistall_RNA %>% 
+  dplyr::select(time:logFC, adj.P.Val) %>% 
+  tidyr::unite("sample",time, id) %>% 
+  pivot_wider(., id_cols = c(ENTREZID,SYMBOL),names_from = sample, values_from = c(logFC)) %>% 
+  rename_with(~ str_replace(., "hours", "RNA"))
+
+
+DOX24_degs <- toplistall_RNA %>%
+  dplyr::select(time:logFC,adj.P.Val) %>% 
+  dplyr::filter(id=="DOX") %>% 
+  tidyr::unite("sample",time, id) %>% 
+  dplyr::select(sample:SYMBOL,adj.P.Val) %>% 
+  dplyr::filter(adj.P.Val<0.05) %>% 
+  dplyr::filter(sample=="24_hours_DOX")
+
+DOX3_degs <- toplistall_RNA %>%
+  dplyr::select(time:logFC,adj.P.Val) %>% 
+  dplyr::filter(id=="DOX") %>% 
+  tidyr::unite("sample",time, id) %>% 
+  dplyr::select(sample:SYMBOL,adj.P.Val) %>% 
+  dplyr::filter(adj.P.Val<0.05) %>% 
+  dplyr::filter(sample=="3_hours_DOX")
+
+RNA_all_expressed <-toplistall_RNA %>% 
+  dplyr::select(time:logFC,adj.P.Val) %>% 
+  dplyr::filter(id=="DOX") %>% 
+  dplyr::filter(time=="24_hours") %>% 
+  tidyr::unite("sample",time, id) %>% 
+  dplyr::select(ENTREZID, SYMBOL)  
+
+# Peak_gene_RNA_LFC <- Assigned_genes_toPeak %>% 
+#   left_join(., RNA_results, by =c("geneId"="ENTREZID"))
+
+
+EPI24_degs <- toplistall_RNA %>%
+  dplyr::select(time:logFC,adj.P.Val) %>% 
+  dplyr::filter(id=="EPI") %>% 
+  tidyr::unite("sample",time, id) %>% 
+  dplyr::select(sample:SYMBOL,adj.P.Val) %>% 
+  dplyr::filter(adj.P.Val<0.05) %>% 
+  dplyr::filter(sample=="24_hours_EPI")
+
+EPI3_degs <- toplistall_RNA %>%
+  dplyr::select(time:logFC,adj.P.Val) %>% 
+  dplyr::filter(id=="EPI") %>% 
+  tidyr::unite("sample",time, id) %>% 
+  dplyr::select(sample:SYMBOL,adj.P.Val) %>% 
+  dplyr::filter(adj.P.Val<0.05) %>% 
+  dplyr::filter(sample=="3_hours_EPI")
+
+DNR24_degs <- toplistall_RNA %>%
+  dplyr::select(time:logFC,adj.P.Val) %>% 
+  dplyr::filter(id=="DNR") %>% 
+  tidyr::unite("sample",time, id) %>% 
+  dplyr::select(sample:SYMBOL,adj.P.Val) %>% 
+  dplyr::filter(adj.P.Val<0.05) %>% 
+  dplyr::filter(sample=="24_hours_DNR")
+
+DNR3_degs <- toplistall_RNA %>%
+  dplyr::select(time:logFC,adj.P.Val) %>% 
+  dplyr::filter(id=="DNR") %>% 
+  tidyr::unite("sample",time, id) %>% 
+  dplyr::select(sample:SYMBOL,adj.P.Val) %>% 
+  dplyr::filter(adj.P.Val<0.05) %>% 
+  dplyr::filter(sample=="3_hours_DNR")
+
+MTX24_degs <- toplistall_RNA %>%
+  dplyr::select(time:logFC,adj.P.Val) %>% 
+  dplyr::filter(id=="MTX") %>% 
+  tidyr::unite("sample",time, id) %>% 
+  dplyr::select(sample:SYMBOL,adj.P.Val) %>% 
+  dplyr::filter(adj.P.Val<0.05) %>% 
+  dplyr::filter(sample=="24_hours_MTX")
+
+MTX3_degs <- toplistall_RNA %>%
+  dplyr::select(time:logFC,adj.P.Val) %>% 
+  dplyr::filter(id=="MTX") %>% 
+  tidyr::unite("sample",time, id) %>% 
+  dplyr::select(sample:SYMBOL,adj.P.Val) %>% 
+  dplyr::filter(adj.P.Val<0.05) %>% 
+  dplyr::filter(sample=="3_hours_MTX")
+
+```
+3 hour and 24 hour 2kb matrices
+```{r contingency for 2kb}
+filtered_df_3hr_DOX <-
+three_hour_df %>% 
+  dplyr::filter(trt == "DOX") %>% 
+  left_join(Assigned_genes_toPeak, by = c("genes" = "Peakid")) %>% 
+  mutate(DEG = if_else(geneId %in% DOX3_degs$ENTREZID, "DEG", "not_DEG")) %>% 
+  dplyr::filter(distanceToTSS> -2000 & distanceToTSS < 2000) %>% 
+   mutate(sig_val = factor(sig_val, levels = c( "sig","not_sig")))
+
+contingency_table_3hr_DOX <- table(filtered_df_3hr_DOX$DEG, filtered_df_3hr_DOX$sig_val)
+
+filtered_df_24hr_DOX <-
+twentyfour_hour_df %>% 
+  dplyr::filter(trt == "DOX") %>% 
+  left_join(Assigned_genes_toPeak, by = c("genes" = "Peakid")) %>% 
+  mutate(DEG = if_else(geneId %in% DOX24_degs$ENTREZID, "DEG", "not_DEG")) %>% 
+  dplyr::filter(distanceToTSS> -2000 & distanceToTSS < 2000) %>% 
+   mutate(sig_val = factor(sig_val, levels = c( "sig","not_sig")))
+contingency_table_24hr_DOX <- table(filtered_df_24hr_DOX$DEG, filtered_df_24hr_DOX$sig_val)
+
+filtered_df_3hr_EPI <-
+three_hour_df %>% 
+  dplyr::filter(trt == "EPI") %>% 
+  left_join(Assigned_genes_toPeak, by = c("genes" = "Peakid")) %>% 
+  mutate(DEG = if_else(geneId %in% EPI3_degs$ENTREZID, "DEG", "not_DEG")) %>% 
+  dplyr::filter(distanceToTSS> -2000 & distanceToTSS < 2000) %>% 
+   mutate(sig_val = factor(sig_val, levels = c( "sig","not_sig")))
+
+contingency_table_3hr_EPI <- table(filtered_df_3hr_EPI$DEG, filtered_df_3hr_EPI$sig_val)
+
+filtered_df_24hr_EPI <-
+twentyfour_hour_df %>% 
+  dplyr::filter(trt == "EPI") %>% 
+  left_join(Assigned_genes_toPeak, by = c("genes" = "Peakid")) %>% 
+  mutate(DEG = if_else(geneId %in% EPI24_degs$ENTREZID, "DEG", "not_DEG")) %>% 
+  dplyr::filter(distanceToTSS> -2000 & distanceToTSS < 2000) %>% 
+   mutate(sig_val = factor(sig_val, levels = c( "sig","not_sig")))
+
+
+
+contingency_table_24hr_EPI <- table(filtered_df_24hr_EPI$DEG, filtered_df_24hr_EPI$sig_val)
+
+
+filtered_df_3hr_DNR <-
+three_hour_df %>% 
+  dplyr::filter(trt == "DNR") %>% 
+  left_join(Assigned_genes_toPeak, by = c("genes" = "Peakid")) %>% 
+  mutate(DEG = if_else(geneId %in% DNR3_degs$ENTREZID, "DEG", "not_DEG")) %>% 
+  dplyr::filter(distanceToTSS> -2000 & distanceToTSS < 2000) %>% 
+   mutate(sig_val = factor(sig_val, levels = c( "sig","not_sig")))
+
+
+
+contingency_table_3hr_DNR <- table(filtered_df_3hr_DNR$DEG, filtered_df_3hr_DNR$sig_val)
+
+
+
+filtered_df_24hr_DNR <-
+twentyfour_hour_df %>% 
+  dplyr::filter(trt == "DNR") %>% 
+  left_join(Assigned_genes_toPeak, by = c("genes" = "Peakid")) %>% 
+  mutate(DEG = if_else(geneId %in% DNR24_degs$ENTREZID, "DEG", "not_DEG")) %>% 
+  dplyr::filter(distanceToTSS> -2000 & distanceToTSS < 2000) %>% 
+   mutate(sig_val = factor(sig_val, levels = c( "sig","not_sig")))
+
+
+
+contingency_table_24hr_DNR <- table(filtered_df_24hr_DNR$DEG, filtered_df_24hr_DNR$sig_val)
+
+
+filtered_df_3hr_MTX <-
+three_hour_df %>% 
+  dplyr::filter(trt == "MTX") %>% 
+  left_join(Assigned_genes_toPeak, by = c("genes" = "Peakid")) %>% 
+  mutate(DEG = if_else(geneId %in% MTX3_degs$ENTREZID, "DEG", "not_DEG")) %>% 
+  dplyr::filter(distanceToTSS> -2000 & distanceToTSS < 2000) %>% 
+   mutate(sig_val = factor(sig_val, levels = c( "sig","not_sig")))
+
+
+
+contingency_table_3hr_MTX <- table(filtered_df_3hr_MTX$DEG, filtered_df_3hr_MTX$sig_val)
+
+filtered_df_24hr_MTX <-
+twentyfour_hour_df %>% 
+  dplyr::filter(trt == "MTX") %>% 
+  left_join(Assigned_genes_toPeak, by = c("genes" = "Peakid")) %>% 
+  mutate(DEG = if_else(geneId %in% MTX24_degs$ENTREZID, "DEG", "not_DEG")) %>% 
+  dplyr::filter(distanceToTSS> -2000 & distanceToTSS < 2000) %>% 
+   mutate(sig_val = factor(sig_val, levels = c( "sig","not_sig")))
+
+
+
+contingency_table_24hr_MTX <- table(filtered_df_24hr_MTX$DEG, filtered_df_24hr_MTX$sig_val)
+
+```
+3 hour and 24 hour 20kb matrices
+```{r contingency for 20kb}
+filtered_df_3hr20k_DOX <-
+three_hour_df %>% 
+  dplyr::filter(trt == "DOX") %>% 
+  left_join(Assigned_genes_toPeak, by = c("genes" = "Peakid")) %>% 
+  mutate(DEG = if_else(geneId %in% DOX3_degs$ENTREZID, "DEG", "not_DEG")) %>% 
+  dplyr::filter(distanceToTSS> -20000 & distanceToTSS < 20000) %>% 
+   mutate(sig_val = factor(sig_val, levels = c( "sig","not_sig")))
+
+contingency_table_3hr20k_DOX <- table(filtered_df_3hr20k_DOX$DEG, filtered_df_3hr20k_DOX$sig_val)
+
+filtered_df_24hr20k_DOX <-
+twentyfour_hour_df %>% 
+  dplyr::filter(trt == "DOX") %>% 
+  left_join(Assigned_genes_toPeak, by = c("genes" = "Peakid")) %>% 
+  mutate(DEG = if_else(geneId %in% DOX24_degs$ENTREZID, "DEG", "not_DEG")) %>% 
+  dplyr::filter(distanceToTSS> -20000 & distanceToTSS < 20000) %>% 
+   mutate(sig_val = factor(sig_val, levels = c( "sig","not_sig")))
+
+contingency_table_24hr20k_DOX <- table(filtered_df_24hr20k_DOX$DEG, filtered_df_24hr20k_DOX$sig_val)
+
+filtered_df_3hr20k_EPI <-
+three_hour_df %>% 
+  dplyr::filter(trt == "EPI") %>% 
+  left_join(Assigned_genes_toPeak, by = c("genes" = "Peakid")) %>% 
+  mutate(DEG = if_else(geneId %in% EPI3_degs$ENTREZID, "DEG", "not_DEG")) %>% 
+  dplyr::filter(distanceToTSS> -20000 & distanceToTSS < 20000) %>% 
+   mutate(sig_val = factor(sig_val, levels = c( "sig","not_sig")))
+
+contingency_table_3hr20k_EPI <- table(filtered_df_3hr20k_EPI$DEG, filtered_df_3hr20k_EPI$sig_val)
+
+
+filtered_df_24hr20k_EPI <-
+twentyfour_hour_df %>% 
+  dplyr::filter(trt == "EPI") %>% 
+  left_join(Assigned_genes_toPeak, by = c("genes" = "Peakid")) %>% 
+  mutate(DEG = if_else(geneId %in% EPI24_degs$ENTREZID, "DEG", "not_DEG")) %>% 
+  dplyr::filter(distanceToTSS> -20000 & distanceToTSS < 20000) %>% 
+   mutate(sig_val = factor(sig_val, levels = c( "sig","not_sig")))
+
+
+
+contingency_table_24hr20k_EPI <- table(filtered_df_24hr20k_EPI$DEG, filtered_df_24hr20k_EPI$sig_val)
+
+
+filtered_df_3hr20k_DNR <-
+three_hour_df %>% 
+  dplyr::filter(trt == "DNR") %>% 
+  left_join(Assigned_genes_toPeak, by = c("genes" = "Peakid")) %>% 
+  mutate(DEG = if_else(geneId %in% DNR3_degs$ENTREZID, "DEG", "not_DEG")) %>% 
+  dplyr::filter(distanceToTSS> -20000 & distanceToTSS < 20000) %>% 
+   mutate(sig_val = factor(sig_val, levels = c( "sig","not_sig")))
+
+
+
+contingency_table_3hr20k_DNR <- table(filtered_df_3hr20k_DNR$DEG, filtered_df_3hr20k_DNR$sig_val)
+
+filtered_df_24hr20k_DNR <-
+twentyfour_hour_df %>% 
+  dplyr::filter(trt == "DNR") %>% 
+  left_join(Assigned_genes_toPeak, by = c("genes" = "Peakid")) %>% 
+  mutate(DEG = if_else(geneId %in% DNR24_degs$ENTREZID, "DEG", "not_DEG")) %>% 
+  dplyr::filter(distanceToTSS> -20000 & distanceToTSS < 20000) %>% 
+   mutate(sig_val = factor(sig_val, levels = c( "sig","not_sig")))
+
+
+
+contingency_table_24hr20k_DNR <- table(filtered_df_24hr20k_DNR$DEG, filtered_df_24hr20k_DNR$sig_val)
+
+filtered_df_3hr20k_MTX <-
+three_hour_df %>% 
+  dplyr::filter(trt == "MTX") %>% 
+  left_join(Assigned_genes_toPeak, by = c("genes" = "Peakid")) %>% 
+  mutate(DEG = if_else(geneId %in% MTX3_degs$ENTREZID, "DEG", "not_DEG")) %>% 
+  dplyr::filter(distanceToTSS> -20000 & distanceToTSS < 20000) %>% 
+   mutate(sig_val = factor(sig_val, levels = c( "sig","not_sig")))
+
+
+
+contingency_table_3hr20k_MTX <- table(filtered_df_3hr20k_MTX$DEG, filtered_df_3hr20k_MTX$sig_val)
+
+
+
+filtered_df_24hr20k_MTX <-
+twentyfour_hour_df %>% 
+  dplyr::filter(trt == "MTX") %>% 
+  left_join(Assigned_genes_toPeak, by = c("genes" = "Peakid")) %>% 
+  mutate(DEG = if_else(geneId %in% MTX24_degs$ENTREZID, "DEG", "not_DEG")) %>% 
+  dplyr::filter(distanceToTSS> -20000 & distanceToTSS < 20000) %>% 
+   mutate(sig_val = factor(sig_val, levels = c( "sig","not_sig")))
+
+
+
+contingency_table_24hr20k_MTX <- table(filtered_df_24hr20k_MTX$DEG, filtered_df_24hr20k_MTX$sig_val)
+
+
+```
+
+Collect all matrices for 4c
+
+```{r}
+matrix_names <- c("contingency_table_3hr_DOX",
+"contingency_table_3hr20k_DOX",
+"contingency_table_24hr_DOX",
+"contingency_table_24hr20k_DOX",
+"contingency_table_3hr_EPI",
+"contingency_table_3hr20k_EPI",
+"contingency_table_24hr_EPI",
+"contingency_table_24hr20k_EPI",
+"contingency_table_3hr_DNR",
+"contingency_table_3hr20k_DNR",
+"contingency_table_24hr_DNR",
+"contingency_table_24hr20k_DNR",
+"contingency_table_3hr_MTX",
+"contingency_table_3hr20k_MTX",
+"contingency_table_24hr_MTX",
+"contingency_table_24hr20k_MTX")
+
+results_rowDEG <- data.frame(
+  name = character(),
+  odds_ratio = numeric(),
+  lower_ci = numeric(),
+  upper_ci = numeric(),
+  p_value = numeric(),
+  stringsAsFactors = FALSE
+)
+for (name in matrix_names) {
+  mat <- get(name)  # retrieve matrix by name
+
+  test <- fisher.test(mat)
+
+  results_rowDEG <- rbind(
+    results_rowDEG,
+    data.frame(
+      name = name,
+      odds_ratio = unname(test$estimate),
+      lower_ci = test$conf.int[1],
+      upper_ci = test$conf.int[2],
+      p_value = test$p.value
+    )
+  )
+}
+```
+Plotting figure 4c
+
+```{r}
+plot_results_rowDEG <- results_rowDEG %>% 
+  mutate(name= gsub("^contingency_table_","",name)) %>% 
+  separate(., name, into=c("time_dist","trt"),sep=("_"), remove = FALSE) %>% 
+   extract(time_dist, into = c("time", "distance"), regex = "(\\d+hr)(\\d*k)?", remove = FALSE) %>% 
+  mutate(
+    distance = ifelse(is.na(distance) | distance == "", "2k", distance)
+  ) 
+
+plot_results_rowDEG %>% 
+  mutate(time= factor(time, levels =c("3hr","24hr")),
+         trt=factor(trt, levels= c("DOX", "EPI", "DNR", "MTX")),
+         distance=factor(distance, levels =c("2k","20k"))) %>% 
+  # mutate(significant=if_else(p_value <0.05,"TRUE","FALSE")) %>% 
+  mutate(
+    significant = case_when(
+      p_value < 0.001 ~ "***",
+      p_value < 0.01 ~ "**",
+      p_value < 0.05 ~ "*",
+      TRUE ~ ""
+    )
+  ) %>% 
+  ggplot(., aes(x=interaction(trt, distance), y = odds_ratio))+
+    geom_point(aes(color = trt), size=4)+
+    geom_errorbar(aes(ymin=lower_ci, ymax= upper_ci), width= 0.2)+
+   # geom_text(aes(label = significant), vjust = -1.2, color = "black", size = 4) +
+  geom_text(
+  aes(y = upper_ci + 0.1 * odds_ratio, label = significant),
+  hjust = 0,  # aligns text to the left of the y point
+  size = 4,
+  color = "black"
+)+
+    geom_hline(yintercept=1, linetype="dashed")+
+    theme_classic()+
+  facet_wrap(~time, scales = "free_x")+
+  coord_flip()+
+  ggtitle("Are significant DARs enriched in DEGs?")
+                    
+  
+```
+
+### Figure 4.D. Enriched motifs of DEG associated DARs
+
+```{r DOX_24_20kb output data loading}
+DOX_24_20kb_sea_disc <- read.delim("C:/Users/renee/ATAC_folder/ATAC_meme_data/new_analysis/DOX_24_20kb_xstreme/sea_disc_out/sea.tsv") %>% mutate(source="disc") %>% slice_head(n = length(.$ID)-3)
+DOX_24_20kb_sea_known <- read.delim("C:/Users/renee/ATAC_folder/ATAC_meme_data/new_analysis/DOX_24_20kb_xstreme/sea_out/sea.tsv") %>% mutate(source="known") %>% slice_head(n = length(.$ID)-3)
+DOX_24_20kb_xstreme <- read.delim("C:/Users/renee/ATAC_folder/ATAC_meme_data/new_analysis/DOX_24_20kb_xstreme/xstreme.tsv") %>% slice_head(n = length(.$ID)-3)
+DOX_24_20kb_sea_all <- rbind(DOX_24_20kb_sea_disc, DOX_24_20kb_sea_known) %>% 
+  arrange(ID, desc(source == "known")) %>%  
+  distinct(ID, .keep_all = TRUE)
+
+EPI_24_20kb_sea_disc <- read.delim("C:/Users/renee/ATAC_folder/ATAC_meme_data/new_analysis/EPI_24_20kb_xstreme/sea_disc_out/sea.tsv") %>% mutate(source="disc") %>% slice_head(n = length(.$ID)-3)
+EPI_24_20kb_sea_known <- read.delim("C:/Users/renee/ATAC_folder/ATAC_meme_data/new_analysis/EPI_24_20kb_xstreme/sea_out/sea.tsv") %>% mutate(source="known") %>% slice_head(n = length(.$ID)-3)
+EPI_24_20kb_xstreme <- read.delim("C:/Users/renee/ATAC_folder/ATAC_meme_data/new_analysis/EPI_24_20kb_xstreme/xstreme.tsv") %>% slice_head(n = length(.$ID)-3)
+EPI_24_20kb_sea_all <- rbind(EPI_24_20kb_sea_disc, EPI_24_20kb_sea_known) %>% 
+  arrange(ID, desc(source == "known")) %>%  
+  distinct(ID, .keep_all = TRUE)
+
+DNR_24_20kb_sea_disc <- read.delim("C:/Users/renee/ATAC_folder/ATAC_meme_data/new_analysis/DNR_24_20kb_xstreme/sea_disc_out/sea.tsv") %>% mutate(source="disc") %>% slice_head(n = length(.$ID)-3)
+DNR_24_20kb_sea_known <- read.delim("C:/Users/renee/ATAC_folder/ATAC_meme_data/new_analysis/DNR_24_20kb_xstreme/sea_out/sea.tsv") %>% mutate(source="known") %>% slice_head(n = length(.$ID)-3)
+DNR_24_20kb_xstreme <- read.delim("C:/Users/renee/ATAC_folder/ATAC_meme_data/new_analysis/DNR_24_20kb_xstreme/xstreme.tsv") %>% slice_head(n = length(.$ID)-3)
+DNR_24_20kb_sea_all <- rbind(DNR_24_20kb_sea_disc, DNR_24_20kb_sea_known) %>% 
+  arrange(ID, desc(source == "known")) %>%  
+  distinct(ID, .keep_all = TRUE)
+
+MTX_24_20kb_sea_disc <- read.delim("C:/Users/renee/ATAC_folder/ATAC_meme_data/new_analysis/MTX_24_20kb_xstreme/sea_disc_out/sea.tsv") %>% mutate(source="disc") %>% slice_head(n = length(.$ID)-3)
+MTX_24_20kb_sea_known <- read.delim("C:/Users/renee/ATAC_folder/ATAC_meme_data/new_analysis/MTX_24_20kb_xstreme/sea_out/sea.tsv") %>% mutate(source="known") %>% slice_head(n = length(.$ID)-3)
+MTX_24_20kb_xstreme <- read.delim("C:/Users/renee/ATAC_folder/ATAC_meme_data/new_analysis/MTX_24_20kb_xstreme/xstreme.tsv") %>% slice_head(n = length(.$ID)-3)
+MTX_24_20kb_sea_all <- rbind(MTX_24_20kb_sea_disc, MTX_24_20kb_sea_known) %>% 
+  arrange(ID, desc(source == "known")) %>%  
+  distinct(ID, .keep_all = TRUE)
+ER_rat <- 1.25
+```
+
+```{r looking at 24_20kb_xstreme data}
+DOX_24_20kb_combo <- DOX_24_20kb_xstreme %>% 
+  dplyr::select(SEED_MOTIF:EVALUE_ACC,SIM_MOTIF) %>% 
+  left_join(., DOX_24_20kb_sea_all, by=c("ID"="ID","ALT_ID"="ALT_ID")) %>% 
+  mutate(motif_name=case_when(
+    str_detect(SIM_MOTIF, "\\(") ~ str_extract(SIM_MOTIF, "(?<=\\().+?(?=\\))"),
+    str_detect(SIM_MOTIF, "^MA\\d+\\.\\d+") ~ ALT_ID,
+    str_detect(SIM_MOTIF, "^\\d+-") ~ str_replace(SIM_MOTIF, "^\\d+-", ""),
+  TRUE ~ SIM_MOTIF
+)) %>% 
+  dplyr::select(RANK,CLUSTER,SIM_MOTIF,ALT_ID, ID,CONSENSUS.x,motif_name,EVALUE.y,QVALUE,TP:ENR_RATIO) %>% 
+  arrange(.,EVALUE.y) 
+
+EPI_24_20kb_combo <- EPI_24_20kb_xstreme %>% 
+  dplyr::select(SEED_MOTIF:EVALUE_ACC,SIM_MOTIF) %>% 
+  left_join(., EPI_24_20kb_sea_all, by=c("ID"="ID","ALT_ID"="ALT_ID")) %>% 
+  mutate(motif_name=case_when(
+    str_detect(SIM_MOTIF, "\\(") ~ str_extract(SIM_MOTIF, "(?<=\\().+?(?=\\))"),
+    str_detect(SIM_MOTIF, "^MA\\d+\\.\\d+") ~ ALT_ID,
+    str_detect(SIM_MOTIF, "^\\d+-") ~ str_replace(SIM_MOTIF, "^\\d+-", ""),
+  TRUE ~ SIM_MOTIF
+)) %>% 
+  dplyr::select(RANK,CLUSTER,SIM_MOTIF,ALT_ID, ID,CONSENSUS.x,motif_name,EVALUE.y,QVALUE,TP:ENR_RATIO) %>% 
+  arrange(.,EVALUE.y) 
+
+DNR_24_20kb_combo <- DNR_24_20kb_xstreme %>% 
+  dplyr::select(SEED_MOTIF:EVALUE_ACC,SIM_MOTIF) %>% 
+  left_join(., DNR_24_20kb_sea_all, by=c("ID"="ID","ALT_ID"="ALT_ID")) %>% 
+  mutate(motif_name=case_when(
+    str_detect(SIM_MOTIF, "\\(") ~ str_extract(SIM_MOTIF, "(?<=\\().+?(?=\\))"),
+    str_detect(SIM_MOTIF, "^MA\\d+\\.\\d+") ~ ALT_ID,
+    str_detect(SIM_MOTIF, "^\\d+-") ~ str_replace(SIM_MOTIF, "^\\d+-", ""),
+  TRUE ~ SIM_MOTIF
+)) %>% 
+  dplyr::select(RANK,CLUSTER,SIM_MOTIF,ALT_ID, ID,CONSENSUS.x,motif_name,EVALUE.y,QVALUE,TP:ENR_RATIO) %>% 
+  arrange(.,EVALUE.y) 
+
+MTX_24_20kb_combo <- MTX_24_20kb_xstreme %>% 
+  dplyr::select(SEED_MOTIF:EVALUE_ACC,SIM_MOTIF) %>% 
+  left_join(., MTX_24_20kb_sea_all, by=c("ID"="ID","ALT_ID"="ALT_ID")) %>% 
+  mutate(motif_name=case_when(
+    str_detect(SIM_MOTIF, "\\(") ~ str_extract(SIM_MOTIF, "(?<=\\().+?(?=\\))"),
+    str_detect(SIM_MOTIF, "^MA\\d+\\.\\d+") ~ ALT_ID,
+    str_detect(SIM_MOTIF, "^\\d+-") ~ str_replace(SIM_MOTIF, "^\\d+-", ""),
+  TRUE ~ SIM_MOTIF
+)) %>% 
+  dplyr::select(RANK,CLUSTER,SIM_MOTIF,ALT_ID, ID,CONSENSUS.x,motif_name,EVALUE.y,QVALUE,TP:ENR_RATIO) %>% 
+  arrange(.,EVALUE.y) 
+
+```
+
+```{r DOX_24_20kb DEG}
+
+
+DOX_24_20kb_combo %>% 
+   dplyr::filter(ENR_RATIO>ER_rat) %>%
+  dplyr::select(RANK,CLUSTER,motif_name,SIM_MOTIF,ALT_ID, ID,EVALUE.y,TP.)%>%
+  arrange(.,EVALUE.y) %>%
+  dplyr::filter(EVALUE.y < 0.05) %>% 
+    mutate(log10Evalue = -log10(if_else(EVALUE.y == 0, 1e-300, EVALUE.y))) %>% 
+  distinct(CLUSTER,.keep_all = TRUE) %>% 
+  # slice_head(n=5) %>% 
+  mutate(motif_name=if_else(str_starts(motif_name,"^Z*"),paste(motif_name, RANK, sep="_"), if_else(motif_name=="KLF9",paste(motif_name, RANK,sep="_"),motif_name)))%>%
+  ggplot(., aes (y= reorder(motif_name,log10Evalue))) +
+  geom_col(aes(x=log10Evalue)) +
+  geom_point(aes(x=`TP.`*15.2), size =4)+
+  scale_x_continuous(expand=c (0,.125),sec.axis = sec_axis(transform= ~./15.2,name="Percent of peaks with motif"))+
+  theme_classic()+
+  ylab("Enriched TF motif")+
+  ggtitle(paste("DOX_24_20kb_DEG Enrichment ratio:",ER_rat))
+ 
+```
+
+```{r EPI_24_20kb DEG}
+
+
+EPI_24_20kb_combo %>% 
+   dplyr::filter(ENR_RATIO>ER_rat) %>%
+  dplyr::select(RANK,CLUSTER,motif_name,SIM_MOTIF,ALT_ID, ID,EVALUE.y,TP.)%>%
+  arrange(.,EVALUE.y) %>%
+  dplyr::filter(EVALUE.y < 0.05) %>% 
+    mutate(log10Evalue = -log10(if_else(EVALUE.y == 0, 1e-300, EVALUE.y))) %>% 
+  distinct(CLUSTER,.keep_all = TRUE) %>% 
+  # slice_head(n=5) %>% 
+  mutate(motif_name=if_else(str_starts(motif_name,"^Z*"),paste(motif_name, RANK, sep="_"), if_else(motif_name=="KLF9",paste(motif_name, RANK,sep="_"),motif_name)))%>%
+  ggplot(., aes (y= reorder(motif_name,log10Evalue))) +
+  geom_col(aes(x=log10Evalue)) +
+  geom_point(aes(x=`TP.`*15.2), size =4)+
+  scale_x_continuous(expand=c (0,.125),sec.axis = sec_axis(transform= ~./15.2,name="Percent of peaks with motif"))+
+  theme_classic()+
+  ylab("Enriched TF motif")+
+  ggtitle(paste("EPI_24_20kb_DEG Enrichment ratio:",ER_rat))
+ 
+```
+
+```{r DNR_24_20kb DEG}
+
+
+DNR_24_20kb_combo %>% 
+   dplyr::filter(ENR_RATIO>ER_rat) %>%
+  dplyr::select(RANK,CLUSTER,motif_name,SIM_MOTIF,ALT_ID, ID,EVALUE.y,TP.)%>%
+  arrange(.,EVALUE.y) %>%
+  dplyr::filter(EVALUE.y < 0.05) %>% 
+    mutate(log10Evalue = -log10(if_else(EVALUE.y == 0, 1e-300, EVALUE.y))) %>% 
+  distinct(CLUSTER,.keep_all = TRUE) %>% 
+  # slice_head(n=5) %>% 
+  mutate(motif_name=if_else(str_starts(motif_name,"^Z*"),paste(motif_name, RANK, sep="_"), if_else(motif_name=="KLF9",paste(motif_name, RANK,sep="_"),motif_name)))%>%
+  ggplot(., aes (y= reorder(motif_name,log10Evalue))) +
+  geom_col(aes(x=log10Evalue)) +
+  geom_point(aes(x=`TP.`*15.2), size =4)+
+  scale_x_continuous(expand=c (0,.125),sec.axis = sec_axis(transform= ~./15.2,name="Percent of peaks with motif"))+
+  theme_classic()+
+  ylab("Enriched TF motif")+
+  ggtitle(paste("DNR_24_20kb_DEG Enrichment ratio:",ER_rat))
+ 
+```
+
+```{r MTX_24_20kb DEG}
+
+
+MTX_24_20kb_combo %>% 
+   dplyr::filter(ENR_RATIO>ER_rat) %>%
+  dplyr::select(RANK,CLUSTER,motif_name,SIM_MOTIF,ALT_ID, ID,EVALUE.y,TP.)%>%
+  arrange(.,EVALUE.y) %>%
+  dplyr::filter(EVALUE.y < 0.05) %>% 
+    mutate(log10Evalue = -log10(if_else(EVALUE.y == 0, 1e-300, EVALUE.y))) %>% 
+  distinct(CLUSTER,.keep_all = TRUE) %>% 
+  # slice_head(n=5) %>% 
+  mutate(motif_name=if_else(str_starts(motif_name,"^Z*"),paste(motif_name, RANK, sep="_"), if_else(motif_name=="KLF9",paste(motif_name, RANK,sep="_"),motif_name)))%>%
+  ggplot(., aes (y= reorder(motif_name,log10Evalue))) +
+  geom_col(aes(x=log10Evalue)) +
+  geom_point(aes(x=`TP.`*15.2), size =4)+
+  scale_x_continuous(expand=c (0,.125),sec.axis = sec_axis(transform= ~./15.2,name="Percent of peaks with motif"))+
+  theme_classic()+
+  ylab("Enriched TF motif")+
+  ggtitle(paste("MTX_24_20kb_DEG Enrichment ratio:",ER_rat))
+ 
+```
+
+
+### Figure 4.E. Enriched pathways in DAR-associated 24hr DEGs
+  Code below shows how each DAR-DEG dataframe was made
+```{r full dfs, eval=FALSE}
+
+### HOW dataframes were made
+peakAnnoList_DOX_DAR <- readRDS("data/Final_four_data/re_analysis/DOX_DAR_annotated_peaks_chipannno.RDS")
+Assigned_genes_toPeak <- peakAnnoList_DOX_DAR$DOX_24 %>% as.data.frame() %>% 
+  dplyr::select(mcols.genes,annotation, geneId, distanceToTSS) %>% 
+  dplyr::rename("Peakid"=mcols.genes)
+DOX24_DAR <- peakAnnoList_DOX_DAR$DOX_24 %>% 
+  as.data.frame() %>% 
+  dplyr::filter(mcols.adj.P.Val <0.05) %>% 
+   dplyr::rename("Peakid"=mcols.genes) %>% 
+  distinct(Peakid)
+
+DOX_DAR_DEG_24hour_20kb <- Assigned_genes_toPeak %>% 
+  dplyr::filter(Peakid %in%DOX24_DAR$Peakid) %>% 
+  dplyr::filter(geneId %in% DOX24_degs$ENTREZID) %>% 
+  dplyr::filter(distanceToTSS >-20000 & distanceToTSS <20000) %>%
+  distinct(geneId)
+
+EPI24_DAR <- peakAnnoList_DOX_DAR$EPI_24 %>% 
+  as.data.frame() %>% 
+  dplyr::filter(mcols.adj.P.Val <0.05) %>% 
+   dplyr::rename("Peakid"=mcols.genes) %>% 
+  distinct(Peakid)
+
+EPI_DAR_DEG_24hour_20kb <- Assigned_genes_toPeak %>% 
+  dplyr::filter(Peakid %in%EPI24_DAR$Peakid) %>% 
+  dplyr::filter(geneId %in% EPI24_degs$ENTREZID) %>% 
+  dplyr::filter(distanceToTSS >-20000 & distanceToTSS <20000) %>%
+  distinct(geneId)
+
+DNR24_DAR <- peakAnnoList_DOX_DAR$DNR_24 %>% 
+  as.data.frame() %>% 
+  dplyr::filter(mcols.adj.P.Val <0.05) %>% 
+   dplyr::rename("Peakid"=mcols.genes) %>% 
+  distinct(Peakid)
+
+DNR_DAR_DEG_24hour_20kb <- Assigned_genes_toPeak %>% 
+  dplyr::filter(Peakid %in%DNR24_DAR$Peakid) %>% 
+  dplyr::filter(geneId %in% DNR24_degs$ENTREZID) %>% 
+  dplyr::filter(distanceToTSS >-20000 & distanceToTSS <20000) %>%
+  distinct(geneId)
+
+MTX24_DAR <- peakAnnoList_DOX_DAR$MTX_24 %>% 
+  as.data.frame() %>% 
+  dplyr::filter(mcols.adj.P.Val <0.05) %>% 
+   dplyr::rename("Peakid"=mcols.genes) %>% 
+  distinct(Peakid)
+
+MTX_DAR_DEG_24hour_20kb <- Assigned_genes_toPeak %>% 
+  dplyr::filter(Peakid %in%MTX24_DAR$Peakid) %>% 
+  dplyr::filter(geneId %in% MTX24_degs$ENTREZID) %>% 
+  dplyr::filter(distanceToTSS >-20000 & distanceToTSS <20000) %>%
+  distinct(geneId)
+```
+Code below shows the basic gost settings used for goProfiler2 gost function before saving the results to an .RDS file
+```{r, eval=FALSE}
+ MTX_DAR_DEG_24hour_20kb_res <- gost(query = MTX_DAR_DEG_24hour_20kb$geneId,
+organism = "hsapiens",
+significant = FALSE,
+ordered_query = FALSE,
+domain_scope = "custom",
+measure_underrepresentation = FALSE,
+evcodes = FALSE,
+user_threshold = 0.05,
+correction_method = c("fdr"),
+custom_bg = RNA_all_expressed$ENTREZID,
+sources=c("GO:BP","KEGG","GO:MF"))
+
+```
+
+```{r DARDEGKEGG}
+DOX_DAR_DEG_24hour_20kb_res <- readRDS("data/Final_four_data/re_analysis/DOX_DAR_DEG_24hour_20kb_res.RDS")
+
+DOX_DD_2420kb_nomtable <-  DOX_DAR_DEG_24hour_20kb_res$result %>%
+  dplyr::select(c(source, term_id,
+                  term_name,intersection_size, 
+                   term_size, p_value))
+
+
+EPI_DAR_DEG_24hour_20kb_res <- readRDS("data/Final_four_data/re_analysis/EPI_DAR_DEG_24hour_20kb_res.RDS")
+
+EPI_DD_2420kb_nomtable <-  EPI_DAR_DEG_24hour_20kb_res$result %>%
+  dplyr::select(c(source, term_id,
+                  term_name,intersection_size, 
+                   term_size, p_value))
+
+
+DNR_DAR_DEG_24hour_20kb_res <- readRDS("data/Final_four_data/re_analysis/DNR_DAR_DEG_24hour_20kb_res.RDS")
+
+DNR_DD_2420kb_nomtable <-  DNR_DAR_DEG_24hour_20kb_res$result %>%
+  dplyr::select(c(source, term_id,
+                  term_name,intersection_size, 
+                   term_size, p_value))
+
+MTX_DAR_DEG_24hour_20kb_res <- readRDS("data/Final_four_data/re_analysis/MTX_DAR_DEG_24hour_20kb_res.RDS")
+
+MTX_DD_2420kb_nomtable <-  MTX_DAR_DEG_24hour_20kb_res$result %>%
+  dplyr::select(c(source, term_id,
+                  term_name,intersection_size, 
+                   term_size, p_value))
+
+```
+
+```{r , fig.height=6}
+filt_term_id <- bind_rows(DOX_DD_2420kb_nomtable %>%
+  mutate(group="DOX_24") %>% 
+  dplyr::filter(source =="KEGG",
+                p_value < 0.05) %>% 
+  dplyr::filter(term_id !="KEGG:00000") %>% 
+  slice_head(n=5),(EPI_DD_2420kb_nomtable %>%
+  mutate(group="EPI_24") %>% 
+  dplyr::filter(source =="KEGG",
+                p_value < 0.05) %>% 
+  dplyr::filter(term_id !="KEGG:00000") %>% 
+  slice_head(n=5))) %>% 
+    bind_rows((DNR_DD_2420kb_nomtable %>%
+  mutate(group="DNR_24") %>% 
+  dplyr::filter(source =="KEGG",
+                p_value < 0.05) %>% 
+  dplyr::filter(term_id !="KEGG:00000") %>% 
+  slice_head(n=5))) %>% 
+    bind_rows((MTX_DD_2420kb_nomtable %>%
+  mutate(group="MTX_24") %>% 
+  dplyr::filter(source =="KEGG",
+                p_value < 0.05) %>% 
+  dplyr::filter(term_id !="KEGG:00000") %>% 
+  slice_head(n=5))) %>% 
+  distinct(term_id)
+
+KEGGtable <-   bind_rows((DOX_DD_2420kb_nomtable %>% mutate(group="DOX_24")),(EPI_DD_2420kb_nomtable %>% mutate(group="EPI_24"))) %>%
+  bind_rows(.,(DNR_DD_2420kb_nomtable %>% mutate(group="DNR_24"))) %>% 
+  bind_rows(.,(MTX_DD_2420kb_nomtable %>% mutate(group="MTX_24"))) %>% 
+  dplyr::filter(source =="KEGG") %>% 
+  dplyr::filter(term_id %in% filt_term_id$term_id)
+
+mat <- KEGGtable %>%
+  tidyr::unite(KEGG,term_id, term_name, sep="_") %>% 
+  dplyr::select(group,KEGG,p_value) %>% 
+  mutate(p_value=(log10(p_value)*-1)) %>% 
+  pivot_wider(., id_cols = group, names_from = KEGG, values_from = p_value) %>% 
+  column_to_rownames("group")
+  # stats::as.matrix() 
+  ComplexHeatmap::Heatmap(mat, 
+                          name = "p-value", 
+                          col = circlize::colorRamp2(c(0, 1, 4), c("blue", "white", "red")),
+                          cluster_rows = FALSE, 
+                          cluster_columns = FALSE,
+                          column_names_rot = -45,  # Rotate to 45 degrees
+                          column_names_gp = gpar(fontsize = 8),  # Smaller font size
+                          show_row_names = TRUE, 
+                          show_column_names = TRUE,
+                           cell_fun = function(j, i, x, y, width, height, fill) {
+    if (!is.na(mat[i, j]) && mat[i, j] > 1.30103) {
+      grid.text("*", x = x, y = y, gp = gpar(fontsize = 20, col = "black"))
+    }
+  }
+)
+
+```
