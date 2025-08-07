@@ -52,128 +52,11 @@ library(TFBSTools)
 library(MotifDb)
 library(BSgenome.Hsapiens.UCSC.hg38)
 library(data.table)
+library(eulerr)
 
 ```
 
-#### Data loading
-
-```{r dataframe loading}
-
-EAR_close_xstreme <-
-  readRDS("data/Final_four_data/xstreme/EAR_close_xstreme.RDS")%>%
-  slice_head(n = length(.$ID)-3)
-EAR_open_xstreme <- 
-  readRDS("data/Final_four_data/xstreme/EAR_open_xstreme.RDS")%>%
-  slice_head(n = length(.$ID)-3)
-ESR_open_xstreme <- 
-  readRDS("data/Final_four_data/xstreme/ESR_open_xstreme.RDS")%>%
-  slice_head(n = length(.$ID)-3)
-ESR_close_xstreme <- 
-  readRDS("data/Final_four_data/xstreme/ESR_close_xstreme.RDS")%>%
-  slice_head(n = length(.$ID)-3)
-ESR_OC_xstreme <- 
-  readRDS("data/Final_four_data/xstreme/ESR_OC_xstreme.RDS")%>%
-  slice_head(n = length(.$ID)-3)
-ESR_opcl_xstreme <- 
-  readRDS("data/Final_four_data/xstreme/xstreme_ESR_opcl200.RDS")%>%
-  slice_head(n = length(.$ID)-3)
-ESR_clop_xstreme <- 
-  readRDS("data/Final_four_data/xstreme/xstreme_ESR_clop200.RDS")%>%
-  slice_head(n = length(.$ID)-3)
-
-
-LR_close_xstreme <-
-  readRDS("data/Final_four_data/xstreme/LR_close_xstreme.RDS")%>%
-  slice_head(n = length(.$ID)-3)
-LR_open_xstreme <-
-  readRDS("data/Final_four_data/xstreme/LR_open_10h_xstreme.RDS")%>%
-  slice_head(n = length(.$ID)-3)
-LR_open_10h_xstreme <-
-  readRDS("data/Final_four_data/xstreme/LR_open_10h_xstreme.RDS")%>%
-  slice_head(n = length(.$ID)-3)
-
-EAR_close_200xstreme <-
-  readRDS("data/Final_four_data/xstreme/xstreme_EAR_close200.RDS")%>%
-  slice_head(n = length(.$ID)-3)
-EAR_open_200xstreme <- 
-  readRDS("data/Final_four_data/xstreme/xstreme_EAR_open200.RDS")%>%
-  slice_head(n = length(.$ID)-3)
-ESR_open_200xstreme <- 
-  readRDS("data/Final_four_data/xstreme/xstreme_ESR_open200.RDS")%>%
-  slice_head(n = length(.$ID)-3)
-
-ESR_close_200xstreme <- 
-  readRDS("data/Final_four_data/xstreme/xstreme_ESR_close200.RDS")%>%
-  slice_head(n = length(.$ID)-3)
-ESR_OC_xstreme <-
-  readRDS("data/Final_four_data/xstreme/xstreme_LR_open200.RDS")%>%
-  slice_head(n = length(.$ID)-3)
-LR_close_200xstreme <-
-  readRDS("data/Final_four_data/xstreme/xstreme_LR_close200.RDS")%>%
-  slice_head(n = length(.$ID)-3)
-LR_open_200xstreme <-
-  readRDS("data/Final_four_data/xstreme/xstreme_LR_open200.RDS")%>%
-  slice_head(n = length(.$ID)-3)
-#### full sequence sea out
-sea_EAR_open <- readRDS("data/Final_four_data/xstreme/sea_EAR_open.RDS")%>%
-  slice_head(n = length(.$ID)-3)
-sea_EAR_close <- readRDS("data/Final_four_data/xstreme/sea_EAR_close.RDS")%>%
-  slice_head(n = length(.$ID)-3)
-sea_ESR_close <- readRDS("data/Final_four_data/xstreme/sea_ESR_close.RDS")
-sea_ESR_open <- readRDS("data/Final_four_data/xstreme/sea_ESR_open.RDS")#%>%
-  # slice_head(n = length(.$ID)-3)
- 
-sea_ESR_OC <- readRDS("data/Final_four_data/xstreme/sea_ESR_OC.RDS")%>%
-  slice_head(n = length(.$ID)-3)
-sea_LR_open <- readRDS("data/Final_four_data/xstreme/sea_LR_open_10h.RDS")%>%
-  slice_head(n = length(.$ID)-3)
-sea_LR_close <- readRDS("data/Final_four_data/xstreme/sea_LR_close.RDS")%>%
-  slice_head(n = length(.$ID)-3)
-
-sea_LR_open <- readRDS("data/Final_four_data/xstreme/sea_LR_open_10h.RDS")%>%
-  slice_head(n = length(.$ID)-3)
-
-
-sea_EAR_open_200 <- readRDS("data/Final_four_data/xstreme/sea_EAR_open_200.RDS")%>%
-  slice_head(n = length(.$ID)-3)
-sea_EAR_close_200 <- readRDS("data/Final_four_data/xstreme/sea_EAR_close_200.RDS")%>%
-  slice_head(n = length(.$ID)-3)
-sea_ESR_close_200 <- readRDS("data/Final_four_data/xstreme/sea_ESR_close_200.RDS")%>%
-  slice_head(n = length(.$ID)-3)
-sea_ESR_open_200 <- readRDS("data/Final_four_data/xstreme/sea_ESR_open_200.RDS")%>%
-  slice_head(n = length(.$ID)-3)
-sea_ESR_opcl_200 <- readRDS("data/Final_four_data/xstreme/sea_ESR_opcl_200.RDS")%>%
-  slice_head(n = length(.$ID)-3)
-
-sea_ESR_clop_200 <- readRDS("data/Final_four_data/xstreme/sea_ESR_clop_200.RDS")%>%
-  slice_head(n = length(.$ID)-3)
-
-sea_LR_open_200 <- readRDS("data/Final_four_data/xstreme/sea_LR_open_200.RDS")%>%
-  slice_head(n = length(.$ID)-3)
-sea_LR_close_200 <- readRDS("data/Final_four_data/xstreme/sea_LR_close_200.RDS")%>%
-  slice_head(n = length(.$ID)-3)
-
-
-sea_EAR_open_200_p2 <- readRDS("data/Final_four_data/xstreme/sea_EAR_open_200_p2.RDS")%>%
-  slice_head(n = length(.$ID)-3)
-sea_EAR_close_200_p2 <- readRDS("data/Final_four_data/xstreme/sea_EAR_close_200_p2.RDS")%>%
-  slice_head(n = length(.$ID)-3)
-sea_ESR_close_200_p2 <- readRDS("data/Final_four_data/xstreme/sea_ESR_close_200_p2.RDS")%>%
-  slice_head(n = length(.$ID)-3)
-sea_ESR_open_200_p2 <- readRDS("data/Final_four_data/xstreme/sea_ESR_open_200_p2.RDS")%>%
-  slice_head(n = length(.$ID)-3)
-sea_ESR_opcl_200_p2 <- readRDS("data/Final_four_data/xstreme/sea_ESR_opcl_200_p2.RDS")%>%
-  slice_head(n = length(.$ID)-3)
-sea_ESR_clop_200_p2 <- readRDS("data/Final_four_data/xstreme/sea_ESR_clop_200_p2.RDS")%>%
-  slice_head(n = length(.$ID)-3)
-
-sea_LR_open_200_p2 <- readRDS("data/Final_four_data/xstreme/sea_LR_open_200_p2.RDS")%>%
-  slice_head(n = length(.$ID)-3)
-sea_LR_close_200_p2 <- readRDS("data/Final_four_data/xstreme/sea_LR_close_200_p2.RDS")%>%
-  slice_head(n = length(.$ID)-3)
-
-```
- Figure 3:
+Figure 3: Early drug-dependent responsive chromatin regions are enriched in TOP2B-bound regions near transcription start sites.
  
 ```{r}
 knitr::include_graphics("assets/Figure\ 3.png", error=FALSE)
@@ -181,456 +64,254 @@ knitr::include_graphics("docs/assets/Figure\ 3.png",error = FALSE)
 
 ```
 
-```{r specs of dataframe}
-mrc_palette <- c(
-    "EAR_open" = "#F8766D",
-    "EAR_close" = "#f6483c",
-    "ESR_open" = "#7CAE00",
-    "ESR_close" = "#587b00",
-    "ESR_C"="grey40",
-     "ESR_opcl"="grey40",
-    "ESR_D"="tan",
-     "ESR_clop"="tan",
-     "ESR_OC" = "#6a9500",
-     "LR_open" = "#00BFC4",
-     "LR_close" = "#008d91",
-     "NR" = "#C77CFF"
-  )
+### Figure 3.A. TOP2B ChIP-seq track alongside VEH treated ATAC-seq tracks at a known heart gene
 
- spd_EARo_200<-EAR_open_200xstreme%>% 
-   mutate(CONSENSUS=gsub('[[:digit:]]+-', '', CONSENSUS)) %>% 
-  dplyr::filter(EVALUE<0.05) %>% 
-  left_join(., (sea_EAR_open_200_p2 %>%
-                  anti_join(.,sea_EAR_open_200, by = c("ID"="ID","ALT_ID"="ALT_ID")) %>%
-  rbind(sea_EAR_open_200) %>% 
-  dplyr::select(DB:LOG_QVALUE)), by= c( "ALT_ID"="ALT_ID", "CONSENSUS"="CONSENSUS","ID"="ID"))%>% 
-  separate(SIM_MOTIF, into= c("SIM_MOTIF", "NAME"), sep= " ") %>% 
-  mutate(motif_name= gsub("[()]","",NAME), mrc="EAR_open") %>%
-  mutate(motif_name=
-           if_else(is.na(motif_name)&str_detect(SIM_MOTIF,"^M"),ALT_ID,
-           if_else(is.na(motif_name),ID,motif_name))) 
- #### breaks 
+**see image above.
 
-spd_EARc_200 <- EAR_close_200xstreme%>% 
-   mutate(CONSENSUS=gsub('[[:digit:]]+-', '', CONSENSUS)) %>% 
-  dplyr::filter(EVALUE<0.05) %>% 
-  left_join(., (sea_EAR_close_200_p2 %>%
-                  anti_join(.,sea_EAR_close_200, by = c("ID"="ID","ALT_ID"="ALT_ID")) %>%
-  rbind(sea_EAR_close_200) %>% 
-  dplyr::select(DB:LOG_QVALUE)), by= c( "ALT_ID"="ALT_ID", "CONSENSUS"="CONSENSUS","ID"="ID"))%>% 
-  separate(SIM_MOTIF, into= c("SIM_MOTIF", "NAME"), sep= " ") %>% 
-  mutate(motif_name= gsub("[()]","",NAME), mrc="EAR_close") %>%
-  mutate(motif_name=
-           if_else(is.na(motif_name)&str_detect(SIM_MOTIF,"^M"),ALT_ID,
-           if_else(is.na(motif_name),ID,motif_name)))
+### Figure 3.B. Gene feature distribution across DARs
+
+[link to how ChipSeeker was used to create this plot](https://mward-lab.github.io/Matthews_cardiotox_ATAC_2025/DEG_analysis.html#Extracting_top_DARs)  
+
+(may need to scroll down further on link above to see the code and notes)
+
+```{r}
+# Top2b_peaks <- import(con="data/other_papers/ChIP3_TOP2B_CM_87-1.bed",format = "bed",genome="hg38")
+
+filt_peakAnnoList_Top2b_DAR <- readRDS("data/Final_four_data/re_analysis/filt_Top2B_DAR_annotated_peaks_chipannno.RDS")
 
 
-
-spd_ESRo_200 <-ESR_open_200xstreme%>%
-   mutate(CONSENSUS=gsub('[[:digit:]]+-', '', CONSENSUS)) %>%
-  dplyr::filter(EVALUE<0.05) %>%
-  left_join(., (sea_ESR_open_200_p2 %>%
-                  anti_join(.,sea_ESR_open_200, by = c("ID"="ID","ALT_ID"="ALT_ID")) %>%
-  rbind(sea_ESR_open_200) %>% 
-  dplyr::select(DB:LOG_QVALUE)), by= c( "ALT_ID"="ALT_ID", "CONSENSUS"="CONSENSUS","ID"="ID"))%>% 
-  separate(SIM_MOTIF, into= c("SIM_MOTIF", "NAME"), sep= " ") %>% 
-  mutate(motif_name= gsub("[()]","",NAME), mrc="ESR_open") %>%
-  mutate(motif_name=
-           if_else(is.na(motif_name)&str_detect(SIM_MOTIF,"^M"),ALT_ID,
-           if_else(is.na(motif_name),ID,motif_name)))
-
+ChIPseeker::plotAnnoBar(filt_peakAnnoList_Top2b_DAR[c(10,4,6,2,8,3,5,1,7)])+
+  ggtitle ("Genomic Feature Distribution, Significant regions with Top2B \n using adj.P.Val <0.05")
 
 
 ```
+### Figure 3.C. Overlap of Accessible regions and TOP2B regions
+```{r fig3c}
 
-```{r making long spec dataframe}
+Top2b_peaks <- import(con="data/other_papers/ChIP3_TOP2B_CM_87-1.bed",format = "bed",genome="hg38")
 
-spd_ESRc_200 <- ESR_close_200xstreme%>% 
-   mutate(CONSENSUS=gsub('[[:digit:]]+-', '', CONSENSUS)) %>% 
-  dplyr::filter(EVALUE<0.05) %>% 
-  left_join(., (sea_ESR_close_200_p2 %>%
-                  anti_join(.,sea_ESR_close_200, by = c("ID"="ID","ALT_ID"="ALT_ID")) %>%
-  rbind(sea_ESR_close_200) %>% 
-  dplyr::select(DB:LOG_QVALUE)), by= c( "ALT_ID"="ALT_ID", "CONSENSUS"="CONSENSUS","ID"="ID"))%>% 
-  separate(SIM_MOTIF, into= c("SIM_MOTIF", "NAME"), sep= " ") %>% 
-  mutate(motif_name= gsub("[()]","",NAME), mrc="ESR_close") %>%
-  mutate(motif_name=
-           if_else(is.na(motif_name)&str_detect(SIM_MOTIF,"^M"),ALT_ID,
-           if_else(is.na(motif_name),ID,motif_name)))
+Motif_list_gr <- readRDS( "data/Final_four_data/re_analysis/Motif_list_granges.RDS")
+list2env(Motif_list_gr[10],envir = .GlobalEnv)
 
+top2b_overlap <- join_overlap_inner(all_regions,Top2b_peaks)
+ AR_total     <- length(unique(all_regions$Peakid))
 
-
-spd_ESRopcl_200<-ESR_opcl_xstreme%>% 
-   mutate(CONSENSUS=gsub('[[:digit:]]+-', '', CONSENSUS)) %>% 
-  dplyr::filter(EVALUE<0.05) %>% 
-  left_join(., (sea_ESR_opcl_200_p2 %>%
-                  anti_join(.,sea_ESR_opcl_200, by = c("ID"="ID","ALT_ID"="ALT_ID")) %>%
-  rbind(sea_ESR_opcl_200) %>% 
-  dplyr::select(DB:LOG_QVALUE)), by= c( "ALT_ID"="ALT_ID", "CONSENSUS"="CONSENSUS","ID"="ID"))%>% 
-  separate(SIM_MOTIF, into= c("SIM_MOTIF", "NAME"), sep= " ") %>% 
-  mutate(motif_name= gsub("[()]","",NAME), mrc="ESR_opcl") %>%
-  mutate(motif_name=
-           if_else(is.na(motif_name)&str_detect(SIM_MOTIF,"^M"),ALT_ID,
-           if_else(is.na(motif_name),ID,motif_name)))
-
-#### break for clop!
-
-spd_ESRclop_200<-ESR_clop_xstreme%>% 
-   mutate(CONSENSUS=gsub('[[:digit:]]+-', '', CONSENSUS)) %>% 
-  dplyr::filter(EVALUE<0.05) %>% 
-  left_join(., (sea_ESR_clop_200_p2 %>%
-                  anti_join(.,sea_ESR_clop_200, by = c("ID"="ID","ALT_ID"="ALT_ID")) %>%
-  rbind(sea_ESR_clop_200) %>% 
-  dplyr::select(DB:LOG_QVALUE)), by= c( "ALT_ID"="ALT_ID", "CONSENSUS"="CONSENSUS","ID"="ID"))%>% 
-  separate(SIM_MOTIF, into= c("SIM_MOTIF", "NAME"), sep= " ") %>% 
-  mutate(motif_name= gsub("[()]","",NAME), mrc="ESR_clop") %>%
-  mutate(motif_name=
-           if_else(is.na(motif_name)&str_detect(SIM_MOTIF,"^M"),ALT_ID,
-           if_else(is.na(motif_name),ID,motif_name))) 
-
-
-spd_LRo_200 <-LR_open_200xstreme%>%
-           mutate(CONSENSUS=gsub('[[:digit:]]+-', '', CONSENSUS)) %>% 
-  dplyr::filter(EVALUE<0.05) %>% 
-  left_join(., (sea_LR_open_200_p2 %>%
-                  anti_join(.,sea_LR_open_200, by = c("ID"="ID","ALT_ID"="ALT_ID")) %>%
-  rbind(sea_LR_open_200) %>% 
-  dplyr::select(DB:LOG_QVALUE)), by= c( "ALT_ID"="ALT_ID", "CONSENSUS"="CONSENSUS","ID"="ID"))%>% 
-  separate(SIM_MOTIF, into= c("SIM_MOTIF", "NAME"), sep= " ") %>% 
-  mutate(motif_name= gsub("[()]","",NAME), mrc="LR_open") %>%
-  mutate(motif_name=
-           if_else(is.na(motif_name)&str_detect(SIM_MOTIF,"^M"),ALT_ID,  if_else(is.na(motif_name),ID,motif_name)))
  
+ Top2B_total  <- length(unique(Top2b_peaks$name))
+overlap_n    <- length(unique(top2b_overlap$Peakid)) 
+fit_top2b <- euler(c(
+  "ARs" = AR_total-overlap_n,
+  "Top2B" = Top2B_total-length(unique(top2b_overlap$name)),
+  "ARs&Top2B" = overlap_n
+))
 
-spd_LRc_200 <- LR_close_200xstreme%>% 
-   mutate(CONSENSUS=gsub('[[:digit:]]+-', '', CONSENSUS)) %>% 
-  dplyr::filter(EVALUE<0.05) %>% 
-  left_join(., (sea_LR_close_200_p2 %>%
-                  anti_join(.,sea_LR_close_200, by = c("ID"="ID","ALT_ID"="ALT_ID")) %>%
-  rbind(sea_LR_close_200) %>% 
-  dplyr::select(DB:LOG_QVALUE)), by= c( "ALT_ID"="ALT_ID", "CONSENSUS"="CONSENSUS","ID"="ID"))%>% 
-  separate(SIM_MOTIF, into= c("SIM_MOTIF", "NAME"), sep= " ") %>% 
-  mutate(motif_name= gsub("[()]","",NAME), mrc="LR_close") %>%
-  mutate(motif_name=
-           if_else(is.na(motif_name)&str_detect(SIM_MOTIF,"^M"),ALT_ID,
-           if_else(is.na(motif_name),ID,motif_name)))
-
-
-spec_dataframe_200 <- spd_EARo_200 %>% 
-  rbind(spd_EARc_200) %>% 
-  rbind(spd_ESRo_200) %>%
-   rbind(spd_ESRc_200) %>%
-  rbind(spd_ESRopcl_200) %>% 
-  rbind(spd_ESRclop_200) %>% 
-   rbind(spd_LRo_200) %>% 
-   rbind(spd_LRc_200)
-
-# spec_dataframe_200 <- readRDS("data/Final_four_data/spec_dataframe_200.RDS")
-```
-
-#### EAR open 
-```{r enriched motifs EARopen200, fig.height=5}
-ER_rat <- 1.25
-mrc_type <- "EAR_open"
-
-spec_dataframe_200%>% 
-  dplyr::filter(mrc==mrc_type) %>% 
-  dplyr::filter(ENR_RATIO>ER_rat) %>%
-  dplyr::select(RANK,CLUSTER, SITES,SIM_MOTIF,ALT_ID, ID,EVALUE.x, TP:'FP%', motif_name)%>%
-  arrange(.,EVALUE.x) %>%
-  mutate(log10Evalue= log(EVALUE.x, base = 10)*(-1)) %>% 
-  mutate(motif_name=if_else(motif_name=="ELK3",paste(motif_name, RANK, sep="_"),             if_else(str_starts(motif_name,"^Z*"),paste(motif_name, RANK, sep="_"), if_else(motif_name=="Nrf1",paste(motif_name, RANK,sep="_"),motif_name))))%>%
-  distinct(CLUSTER,.keep_all = TRUE) %>% 
-  slice_head(n=5) %>% 
-  ggplot(., aes (y= reorder(motif_name,log10Evalue))) +
-  geom_col(aes(x=log10Evalue),fill=mrc_palette[mrc_type]) +
-   geom_point(aes(x=`TP%`/1.5), size =4)+
-   # geom_line(aes(x=`TP%`,y= motif_name, group=log10Evalue))+
-  scale_x_continuous(expand=c (0,.25),sec.axis = sec_axis(transform= ~.*1.5,name="Percent of peaks with motif"))+
-  # geom_text(aes())
-  theme_classic()+
-  ylab("Enriched TF motif")+
-  ggtitle(paste( mrc_type,"response peaks(200bp)Enrichment ratio:",ER_rat," merged clusters"))
+plot(fit_top2b, fills = list(fill = c("skyblue", "lightcoral"), alpha = 0.6),
+     labels = FALSE, edges = TRUE, quantities = TRUE,
+     main = "Overlap between AR and TOP2B peaks")
 
 
 ```
+### Figure 3.D. Enrichment of TOP2B regions in DARs
 
 
-##### EAR_close 
-```{r enriched motifs EAR_close200, fig.height=5}
-ER_rat <- 1.25
-mrc_type <- "EAR_close"
+```{r}
 
+Allregion_ol <- join_overlap_intersect(all_regions,Top2b_peaks)%>% 
+  as.data.frame() %>% 
+  distinct(Peakid,.keep_all = TRUE)
 
-spec_dataframe_200 %>% 
-  dplyr::filter(mrc==mrc_type) %>% 
-  # dplyr::filter(ENR_RATIO>ER_rat) %>% 
-  dplyr::select(RANK,CLUSTER, SITES,SIM_MOTIF,ALT_ID, ID,EVALUE.x, TP:'FP%', motif_name)%>%
-  # arrange(.,EVALUE.x) %>%
-  mutate(log10Evalue= log(EVALUE.x, base = 10)*(-1)) %>% 
-  distinct(CLUSTER,.keep_all = TRUE) %>% 
-  arrange(.,EVALUE.x) %>%
-   slice_head(n=5) %>% 
-  ggplot(., aes (y= reorder(motif_name,log10Evalue))) +
-  geom_col(aes(x=log10Evalue),fill=mrc_palette[mrc_type]) +
-   geom_point(aes(x=`TP%`/1.25), size =4)+
-   # geom_line(aes(x=`TP%`,y= motif_name, group=log10Evalue))+
-  scale_x_continuous(expand=c (0,.25),sec.axis = sec_axis(transform= ~.*1.25,name="Percent of peaks with motif"))+
-  # geom_text(aes())
-  theme_classic()+
-  ylab("Enriched TF motif")+
-   ggtitle(paste( mrc_type,"response peaks (200bp) Enrichment ratio: not applied  modified merged clusters"))
+toptable_results <- readRDS("data/Final_four_data/re_analysis/Toptable_results.RDS")
 
+all_results  <- toptable_results %>%
+  imap(~ .x %>% tibble::rownames_to_column(var = "rowname") %>%
+         mutate(source = .y)) %>%
+  bind_rows()
+annotated_DARs<- readRDS("data/Final_four_data/re_analysis/DOX_DAR_annotated_peaks_chipannno.RDS")
+gene_N_peak <-
+annotated_DARs$DOX_3 %>% 
+  as.data.frame() %>%
+  dplyr::select(mcols.genes,annotation, geneId:distanceToTSS)
 
 ```
 
-##### ESR_open
+```{r}
+my_DOX_data <- all_results %>% 
+  dplyr::filter(source=="DOX_3"|source=="DOX_24") %>% 
+  dplyr::select(source,genes,logFC,adj.P.Val) %>% 
+  pivot_wider(.,id_cols=genes,names_from = source, values_from = c(logFC, adj.P.Val))
 
-```{r enriched motifs ESR_open_200, fig.height=5}
-ER_rat <- 1.25
-mrc_type <- "ESR_open"
+my_EPI_data <- all_results %>% 
+  dplyr::filter(source=="EPI_3"|source=="EPI_24") %>% 
+  dplyr::select(source,genes,logFC,adj.P.Val) %>% 
+  pivot_wider(.,id_cols=genes,names_from = source, values_from = c(logFC, adj.P.Val))
 
-spec_dataframe_200 %>% 
-  dplyr::filter(mrc=="ESR_open") %>% 
-  dplyr::filter(ENR_RATIO>ER_rat) %>% 
-  dplyr::select(RANK,CLUSTER, SITES,SIM_MOTIF,ALT_ID, ID,EVALUE.x, TP:'FP%', motif_name)%>%
-  arrange(.,EVALUE.x) %>%
-  mutate(log10Evalue= log(EVALUE.x, base = 10)*(-1)) %>% 
-   mutate(motif_name=
-           if_else(str_starts(motif_name,"JUND"),paste(motif_name, RANK, sep="_"),             if_else(str_starts(motif_name,"^ZN*"),paste(motif_name, RANK, sep="_"),    if_else(motif_name=="ZSCAN4", paste(motif_name, RANK,sep="_"),if_else(motif_name=="KLF9",paste(motif_name,RANK,sep="_"), motif_name)))))%>%
-  distinct(CLUSTER,.keep_all = TRUE) %>% 
-   slice_head(n=5) %>% 
-  ggplot(., aes (y= reorder(motif_name,log10Evalue))) +
-  geom_col(aes(x=log10Evalue),fill=mrc_palette["ESR_open"]) +
-   geom_point(aes(x=`TP%`*4.7), size =4)+
-   # geom_line(aes(x=`TP%`,y= motif_name, group=log10Evalue))+
-  scale_x_continuous(expand=c (0,.25),sec.axis = sec_axis(transform= ~./4.7,name="Percent of peaks with motif"))+
-  # geom_text(aes())
-  theme_classic()+
-  ylab("Enriched TF motif")+
-  ggtitle(paste(mrc_type,"response peaks 200bp Enrichment ratio:",ER_rat," merged motif clusters"))
+my_DNR_data <- all_results %>% 
+  dplyr::filter(source=="DNR_3"|source=="DNR_24") %>% 
+  dplyr::select(source,genes,logFC,adj.P.Val) %>% 
+  pivot_wider(.,id_cols=genes,names_from = source, values_from = c(logFC, adj.P.Val))
 
+my_MTX_data <- all_results %>% 
+  dplyr::filter(source=="MTX_3"|source=="MTX_24") %>% 
+  dplyr::select(source,genes,logFC,adj.P.Val) %>% 
+  pivot_wider(.,id_cols=genes,names_from = source, values_from = c(logFC, adj.P.Val))
 ```
+Making the annotation dataframe to create 2x2 matrices
 
-##### ESR_close
-
-```{r enriched motifs ESR_close_200, fig.height=5}
-ER_rat <- 1.25
-mrc_type <- "ESR_close"
-spec_dataframe_200 %>% 
-  dplyr::filter(mrc==mrc_type) %>% 
-  dplyr::filter(ENR_RATIO>(ER_rat+.1)) %>% 
-  dplyr::select(RANK,CLUSTER, SITES,SIM_MOTIF,ALT_ID, ID,EVALUE.x, TP:'FP%', motif_name)%>%
-  arrange(.,EVALUE.x) %>%
-  mutate(log10Evalue= log(EVALUE.x, base = 10)*(-1)) %>% 
-  mutate(motif_name=if_else(motif_name=="KLF9",paste(motif_name, RANK, sep="_"),             if_else(motif_name=="^ZN*",paste(motif_name, RANK, sep="_"), if_else(motif_name=="ZSCAN4",paste(motif_name, RANK,sep="_"),motif_name))))%>%
-  distinct(CLUSTER,.keep_all = TRUE) %>% 
-  slice_head(n=5) %>% 
-  ggplot(., aes (y= reorder(motif_name,log10Evalue))) +
-  geom_col(aes(x=log10Evalue),fill=mrc_palette[mrc_type]) +
-   geom_point(aes(x=`TP%`/0.5), size =4)+
-   # geom_line(aes(x=`TP%`,y= motif_name, group=log10Evalue))+
-  scale_x_continuous(expand=c (0,.25),sec.axis = sec_axis(transform= ~.*0.5,name="Percent of peaks with motif"))+
-  # geom_text(aes())
-  theme_classic()+
-  ylab("Enriched TF motif")+
-  ggtitle(paste( mrc_type,"response peaks 200bp Enrichment ratio:",ER_rat+.1," merged motif clusters"))
-
-```
-
-
-##### ESR_opcl {C}
-
-```{r enriched motifs ESR_opcl_200, fig.height=5}
-ER_rat <- 1.25
-mrc_type <- "ESR_opcl"
-
-spec_dataframe_200 %>% 
-  dplyr::filter(mrc==mrc_type) %>% 
-  dplyr::filter(ENR_RATIO>(ER_rat)) %>% 
-  dplyr::select(RANK,CLUSTER, SITES,SIM_MOTIF,ALT_ID, ID,EVALUE.x, TP:'FP%', motif_name)%>%
-  arrange(.,EVALUE.x) %>%
-  mutate(log10Evalue= log(EVALUE.x, base = 10)*(-1)) %>% 
-  mutate(motif_name=if_else(motif_name=="KLF9",paste(motif_name, RANK, sep="_"),             if_else(motif_name=="^ZN*",paste(motif_name, RANK, sep="_"), if_else(motif_name=="ZSCAN4",paste(motif_name, RANK,sep="_"),motif_name))))%>%
-  distinct(CLUSTER,.keep_all = TRUE) %>% 
-  slice_head(n=5) %>% 
-  ggplot(., aes (y= reorder(motif_name,log10Evalue))) +
-  geom_col(aes(x=log10Evalue),fill=mrc_palette[mrc_type]) +
-   geom_point(aes(x=`TP%`/3), size =4)+
-   # geom_line(aes(x=`TP%`,y= motif_name, group=log10Evalue))+
-  scale_x_continuous(expand=c (0,.25),sec.axis = sec_axis(transform= ~.*3,name="Percent of peaks with motif"))+
-  # geom_text(aes())
-  theme_classic()+
-  ylab("Enriched TF motif")+
-  ggtitle(paste( mrc_type,"response peaks 200bp Enrichment ratio:",ER_rat," merged motif clusters"))
-
-
-
-
-```
-
-
-##### ESR_clop {D}
-
-```{r enriched motifs ESR_clop_200, fig.height=5}
-ER_rat <- 1.25
-mrc_type <- "ESR_clop"
-
-spec_dataframe_200 %>% 
-  dplyr::filter(mrc==mrc_type) %>% 
-  dplyr::filter(ENR_RATIO>(ER_rat)) %>% 
-  dplyr::select(RANK,CLUSTER, SITES,SIM_MOTIF,ALT_ID, ID,EVALUE.x, TP:'FP%', motif_name)%>%
-  arrange(.,EVALUE.x) %>%
-  mutate(log10Evalue= log(EVALUE.x, base = 10)*(-1)) %>% 
-  mutate(motif_name=if_else(motif_name=="KLF9",paste(motif_name, RANK, sep="_"),             if_else(motif_name=="^ZN*",paste(motif_name, RANK, sep="_"), if_else(motif_name=="ZSCAN4",paste(motif_name, RANK,sep="_"),motif_name))))%>%
-  distinct(CLUSTER,.keep_all = TRUE) %>% 
-  slice_head(n=5) %>% 
-  ggplot(., aes (y= reorder(motif_name,log10Evalue))) +
-  geom_col(aes(x=log10Evalue),fill=mrc_palette[mrc_type]) +
-   geom_point(aes(x=`TP%`*2.3), size =4)+
-   # geom_line(aes(x=`TP%`,y= motif_name, group=log10Evalue))+
-  scale_x_continuous(expand=c (0,.25),sec.axis = sec_axis(transform= ~./2.3,name="Percent of peaks with motif"))+
-  # geom_text(aes())
-  theme_classic()+
-  ylab("Enriched TF motif")+
-  ggtitle(paste( mrc_type,"response peaks 200bp Enrichment ratio:",ER_rat," merged motif clusters"))
-
-```
-
-
-##### LR_open
-
-```{r enriched motifs LR_open_200, fig.height=5}
-ER_rat <- 1.25
-mrc_type <- "LR_open"
-
-spec_dataframe_200 %>% 
-  dplyr::filter(mrc==mrc_type) %>% 
-  dplyr::filter(ENR_RATIO>ER_rat) %>% 
-  dplyr::select(RANK,CLUSTER, SITES,SIM_MOTIF,ALT_ID, ID,EVALUE.x, TP:'FP%', motif_name)%>%
-  arrange(.,EVALUE.x) %>%
-  mutate(log10Evalue= log(EVALUE.x, base = 10)*(-1)) %>% 
-  mutate(motif_name=
-           if_else(str_starts(motif_name,"BATF"),paste(motif_name, RANK, sep="_"),             if_else(str_starts(motif_name,"^FO*"),paste(motif_name, RANK, sep="_"),    if_else(motif_name=="ZSCAN4", paste(motif_name, RANK,sep="_"),if_else(motif_name=="KLF9",paste(motif_name,RANK,sep="_"), motif_name)))))%>%
-  distinct(CLUSTER,.keep_all = TRUE) %>% 
-   slice_head(n=5) %>% 
-  ggplot(., aes (y= reorder(motif_name,log10Evalue))) +
-  geom_col(aes(x=log10Evalue),fill=mrc_palette[mrc_type]) +
-   geom_point(aes(x=`TP%`*5), size =4)+
-   # geom_line(aes(x=`TP%`,y= motif_name, group=log10Evalue))+
-  scale_x_continuous(expand=c (0,.25),sec.axis = sec_axis(transform= ~./5,name="Percent of peaks with motif"))+
-  # geom_text(aes())
-  theme_classic()+
-  ylab("Enriched TF motif")+
-  ggtitle(paste( mrc_type,"response peaks 200 bp Enrichment ratio:",ER_rat," merged motif clusters"))
-
-
-```
-
-##### LR_close
-
-```{r enriched motifs LR_close_200, fig.height=5}
-ER_rat <- 1.25
-mrc_type <- "LR_close"
-
-spec_dataframe_200 %>% 
-  dplyr::filter(mrc==mrc_type) %>% 
-  dplyr::filter(ENR_RATIO>ER_rat) %>% 
-  dplyr::select(RANK,CLUSTER, SITES,SIM_MOTIF,ALT_ID, ID,EVALUE.x, TP:'FP%', motif_name)%>%
-  arrange(.,EVALUE.x) %>%
-  mutate(log10Evalue= log(EVALUE.x, base = 10)*(-1)) %>% 
-  mutate(motif_name=if_else(motif_name=="KLF9",paste(motif_name, RANK, sep="_"),             if_else(str_starts(motif_name,"^R*"),paste(motif_name, RANK, sep="_"), if_else(motif_name=="PKNOX2",paste(motif_name, RANK,sep="_"),motif_name))))%>%
-  distinct(CLUSTER,.keep_all = TRUE) %>% 
-  slice_head(n=5) %>% 
-  ggplot(., aes (y= reorder(motif_name,log10Evalue))) +
-  geom_col(aes(x=log10Evalue),fill=mrc_palette[mrc_type]) +
-   geom_point(aes(x=`TP%`/.4), size =4)+
-   # geom_line(aes(x=`TP%`,y= motif_name, group=log10Evalue))+
-  scale_x_continuous(expand=c (0,.25),sec.axis = sec_axis(transform= ~.*.4,name="Percent of peaks with motif"))+
-  # geom_text(aes())
-  theme_classic()+
-  ylab("Enriched TF motif")+
-  ggtitle(paste( mrc_type,"response peaks 200bp Enrichment ratio:",ER_rat," merged motif clusters"))
-
-# spec_dataframe %>% 
-#   dplyr::filter(mrc==mrc_type) %>% 
-#   dplyr::filter(ENR_RATIO>ER_rat) #%>% 
-#   dplyr::select(RANK,CLUSTER, SITES,SIM_MOTIF,ALT_ID, ID,EVALUE, TP:'FP%', motif_name)
-```
-
-
-### How I printed out the consensus motifs for graphing
-```{r printing out consensus motifs,eval=FALSE, include=TRUE}
-library(universalmotif)
-library(ggseqlogo)
-library(motifmatchr)
-library(gridExtra)
-meme_motifs_EAR_open <- read_meme("C:/Users/renee/ATAC_folder/ATAC_meme_data/200bp/EAR_open_200xstreme/xstreme.txt")
-meme_motifs_ESR_open <- read_meme("C:/Users/renee/ATAC_folder/ATAC_meme_data/200bp/ESR_open_200xstreme/xstreme.txt")
-meme_motifs_LR_open <- read_meme("C:/Users/renee/ATAC_folder/ATAC_meme_data/200bp/LR_open_200xstreme/xstreme.txt")
-meme_motifs_EAR_close <- read_meme("C:/Users/renee/ATAC_folder/ATAC_meme_data/200bp/EAR_close_200xstreme/xstreme.txt")
-meme_motifs_ESR_close <- read_meme("C:/Users/renee/ATAC_folder/ATAC_meme_data/200bp/ESR_close_200xstreme/xstreme.txt")
-meme_motifs_LR_close <- read_meme("C:/Users/renee/ATAC_folder/ATAC_meme_data/200bp/LR_close_200xstreme/xstreme.txt")
-meme_motifs_ESR_opcl <- read_meme("C:/Users/renee/ATAC_folder/ATAC_meme_data/200bp/ESR_C_200xstreme/xstreme.txt")
-meme_motifs_ESR_clop <- read_meme("C:/Users/renee/ATAC_folder/ATAC_meme_data/200bp/ESR_D_200xstreme/xstreme.txt")
-
-```
-
-```{r eval=FALSE, fig.height=10, include=TRUE}
-group_of_memes <- list(EAR_open=meme_motifs_EAR_open,
-                    ESR_open=meme_motifs_ESR_open,
-                    LR_open=meme_motifs_LR_open,
-                    EAR_close=meme_motifs_EAR_close,
-                    ESR_close=meme_motifs_ESR_close,
-                    LR_close=meme_motifs_LR_close,
-                    ESR_opcl=meme_motifs_ESR_opcl,
-                    ESR_clop=meme_motifs_ESR_clop)
-name_plot <- c("meme_motifs_EAR_open",
-                  "meme_motifs_ESR_open",
-                    "meme_motifs_LR_open",
-                "meme_motifs_EAR_close",
-                    "meme_motifs_ESR_close",
-                    "meme_motifs_LR_close",
-                    "meme_motifs_ESR_opcl",
-                    "meme_motifs_ESR_clop")
-counter <- 0
-for (meme_frame in group_of_memes ){
-   counter <- counter +1 
-motif_info <- lapply(meme_frame, function(motif) {
-  data.frame(
-    motif_name = ifelse(is.null(motif@name), NA, motif@name),
-    alt_name = ifelse(is.null(motif@altname), NA, motif@altname)  # Handle missing altname
-    # Store the position weight matrix (PWM) in a list
-    
-  )
-})
-# Combine the individual motif data frames into one long data frame
-motif_df <- bind_rows(motif_info)
-
-plots <- lapply(1:nrow(motif_df), function(i) {
-  pwm <-meme_frame[[i]]@motif # Extract PWM for each motif
-  name <- motif_df$motif_name[i]
-  alt_name <- motif_df$alt_name[i]
+```{r}
+TSS_listed_df <- all_results %>%
+  mutate(top_2b_ol=case_when(genes %in% Allregion_ol$Peakid~"TOP2b_peak",
+         TRUE ~"not_TOP2b_peak")) %>% 
+  left_join(.,my_DOX_data,by=c("genes"="genes")) %>% 
+  mutate(DOX_sig_3=if_else(adj.P.Val_DOX_3<0.05,"sig","not_sig"),
+         DOX_sig_24=if_else(adj.P.Val_DOX_24<0.05,"sig","not_sig")) %>% 
+  mutate(DOX_sig_3=factor(DOX_sig_3,levels=c("sig","not_sig")),
+         DOX_sig_24=factor(DOX_sig_24,levels=c("sig","not_sig"))) %>%
   
-  # Check if the PWM is valid and can be plotted
-  if (!is.null(pwm) && is.matrix(pwm)) {
-    ggseqlogo::ggseqlogo(pwm,  method="bits") +
-      ggtitle(paste("Motif:", name, "\n| Altname:", alt_name)) +
-      theme_minimal()
-  } else {
-    message("Invalid PWM for motif:", name)
-    NULL
-  }
-})
-savefile <- paste0("data/Final_four_data/",name_plot[counter],".pdf")
-plots_per_page <- 16 
-multi_page_grobs <- marrangeGrob(plots, nrow = 4, ncol = 4) 
-ggsave(savefile, multi_page_grobs)
-grid.draw(multi_page_grobs)
-}
+  left_join(.,my_EPI_data,by=c("genes"="genes")) %>% 
+  mutate(EPI_sig_3=if_else(adj.P.Val_EPI_3<0.05,"sig","not_sig"),
+         EPI_sig_24=if_else(adj.P.Val_EPI_24<0.05,"sig","not_sig")) %>% 
+  mutate(EPI_sig_3=factor(EPI_sig_3,levels=c("sig","not_sig")),
+         EPI_sig_24=factor(EPI_sig_24,levels=c("sig","not_sig"))) %>% 
+  left_join(.,my_DNR_data,by=c("genes"="genes")) %>% 
+  mutate(DNR_sig_3=if_else(adj.P.Val_DNR_3<0.05,"sig","not_sig"),
+         DNR_sig_24=if_else(adj.P.Val_DNR_24<0.05,"sig","not_sig")) %>% 
+  mutate(DNR_sig_3=factor(DNR_sig_3,levels=c("sig","not_sig")),
+         DNR_sig_24=factor(DNR_sig_24,levels=c("sig","not_sig"))) %>% 
+  left_join(.,my_MTX_data,by=c("genes"="genes")) %>% 
+  mutate(MTX_sig_3=if_else(adj.P.Val_MTX_3<0.05,"sig","not_sig"),
+         MTX_sig_24=if_else(adj.P.Val_MTX_24<0.05,"sig","not_sig")) %>% 
+  mutate(MTX_sig_3=factor(MTX_sig_3,levels=c("sig","not_sig")),
+         MTX_sig_24=factor(MTX_sig_24,levels=c("sig","not_sig"))) %>% 
+   left_join(., gene_N_peak, by= c("genes"="mcols.genes"))
+```
+make the odds ratio dataframe
+```{r}
+DOX_top2b_3hr_or <-
+  TSS_listed_df %>% 
+  group_by(DOX_sig_3,top_2b_ol) %>% 
+  tally %>% 
+  pivot_wider(., id_cols=DOX_sig_3, names_from = top_2b_ol, values_from = n) %>%   column_to_rownames("DOX_sig_3") %>% 
+  as.matrix() %>% 
+  fisher.test(.)
+
+DOX_top2b_24hr_or <- TSS_listed_df %>% 
+  group_by(DOX_sig_24,top_2b_ol) %>% 
+  tally %>% 
+  pivot_wider(., id_cols=DOX_sig_24, names_from = top_2b_ol, values_from = n) %>% 
+  column_to_rownames("DOX_sig_24") %>% 
+  as.matrix() %>% 
+  fisher.test(.)
+
+EPI_top2b_3hr_or <-
+  TSS_listed_df %>% 
+  group_by(EPI_sig_3,top_2b_ol) %>% 
+  tally %>% 
+  pivot_wider(., id_cols=EPI_sig_3, names_from = top_2b_ol, values_from = n) %>%   column_to_rownames("EPI_sig_3") %>% 
+  as.matrix() %>% 
+  fisher.test(.)
+
+EPI_top2b_24hr_or <- TSS_listed_df %>% 
+  group_by(EPI_sig_24,top_2b_ol) %>% 
+  tally %>% 
+  pivot_wider(., id_cols=EPI_sig_24, names_from = top_2b_ol, values_from = n) %>% 
+  column_to_rownames("EPI_sig_24") %>% 
+  as.matrix() %>% 
+  fisher.test(.)
+
+DNR_top2b_3hr_or <-
+  TSS_listed_df %>% 
+  group_by(DNR_sig_3,top_2b_ol) %>% 
+  tally %>% 
+  pivot_wider(., id_cols=DNR_sig_3, names_from = top_2b_ol, values_from = n) %>%   column_to_rownames("DNR_sig_3") %>% 
+  as.matrix() %>% 
+  fisher.test(.)
+
+DNR_top2b_24hr_or <- TSS_listed_df %>% 
+  group_by(DNR_sig_24,top_2b_ol) %>% 
+  tally %>% 
+  pivot_wider(., id_cols=DNR_sig_24, names_from = top_2b_ol, values_from = n) %>% 
+  column_to_rownames("DNR_sig_24") %>% 
+  as.matrix() %>% 
+ fisher.test(.)
+
+MTX_top2b_3hr_or <-
+  TSS_listed_df %>% 
+  group_by(MTX_sig_3,top_2b_ol) %>% 
+  tally %>% 
+  pivot_wider(., id_cols=MTX_sig_3, names_from = top_2b_ol, values_from = n) %>%   column_to_rownames("MTX_sig_3") %>% 
+  as.matrix() %>% 
+  fisher.test(.)
+
+MTX_top2b_24hr_or <- TSS_listed_df %>% 
+  group_by(MTX_sig_24,top_2b_ol) %>% 
+  tally %>% 
+  pivot_wider(., id_cols=MTX_sig_24, names_from = top_2b_ol, values_from = n) %>% 
+  column_to_rownames("MTX_sig_24") %>% 
+  as.matrix() %>% 
+  fisher.test(.)
 
 
 ```
 
+```{r thanks chatgpt}
+# Define the variable names
+var_names <- c("DOX_top2b_3hr_or", "DOX_top2b_24hr_or", 
+               "EPI_top2b_3hr_or", "EPI_top2b_24hr_or",
+               "DNR_top2b_3hr_or", "DNR_top2b_24hr_or",
+                "MTX_top2b_3hr_or", "MTX_top2b_24hr_or")
 
+# Optional: label for grouping
+group_labels <- c("DOX_3hr", "DOX_24hr", "EPI_3hr", "EPI_24hr", "DNR_3hr", "DNR_24hr", "MTX_3hr", "MTX_24hr")
 
+# Build the data frame
+OR_all_trt_result_df <- do.call(rbind, lapply(seq_along(var_names), function(i) {
+  var <- get(var_names[i])
+  
+  data.frame(
+    or_value  = unname(var$estimate),  # remove the name "odds ratio"
+    lower_ci  = var$conf.int[1],
+    upper_ci  = var$conf.int[2],
+    p_value   = var$p.value,
+    group     = group_labels[i]
+  )
+}))
+```
+
+```{r}
+OR_all_trt_result_df %>% 
+  separate_wider_delim(.,cols="group", names = c("trt","time"), delim = "_",cols_remove = FALSE) %>% 
+    mutate(time= factor(time, levels =c("3hr","24hr")),
+         trt=factor(trt, levels= c("DOX", "EPI", "DNR", "MTX"))) %>% 
+  # mutate(significant=if_else(p_value <0.05,"TRUE","FALSE")) %>% 
+  mutate(
+    significant = case_when(
+      p_value < 0.001 ~ "***",
+      p_value < 0.01 ~ "**",
+      p_value < 0.05 ~ "*",
+      TRUE ~ ""
+    )
+  ) %>% 
+ggplot(., aes(x = trt, y = or_value)) +
+   geom_point(aes(color = trt), size=4)+
+   geom_errorbar(aes(ymin = lower_ci, ymax = upper_ci), width = 0.2) +
+  geom_hline(yintercept = 1, linetype = "dashed", color = "gray40") +
+  geom_text(
+  aes(y = upper_ci + 0.1 * or_value, label = significant),
+  hjust = 0,  # aligns text to the left of the y point
+  size = 4,
+  color = "black"
+)+
+  labs(
+    title = "Odds Ratio of TOP2b Peak Overlap",
+    y = "Odds Ratio (95% confidence interval)",
+    x = "treatment"
+  ) +
+  # coord_flip()+
+  theme_classic() +
+  facet_wrap(~time)+
+  theme(
+    text = element_text(size = 12),
+    plot.title = element_text(hjust = 0.5)
+  )
+  
+```
