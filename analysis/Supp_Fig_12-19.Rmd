@@ -1023,10 +1023,16 @@ column_title = "AF_SNPS",
                         show_column_names = TRUE,
                         cluster_rows = FALSE,
                         cluster_columns = FALSE,
-                        cell_fun = function(j, i, x, y, width, height, fill) {
-                          if (!is.na(AF_sig_mat[i, j]) && AF_sig_mat[i, j] <0.05) {
-                              grid.text("*", x, y, gp = gpar(fontsize = 20))  # Add star if significant
-                            } })
+ cell_fun = function(j, i, x, y, width, height, fill) {
+  rowname <- rownames(AF_mat)[i]
+  colname <- colnames(AF_mat)[j]
+  if (!is.na(AF_sig_mat[rowname, colname]) &&
+      AF_sig_mat[rowname, colname] < 0.05) {
+    grid.text("*", x, y, gp = gpar(fontsize = 20))
+  }
+})
+
+
 
 ComplexHeatmap::draw(simply_AF_lfc, 
      merge_legend = TRUE, 
@@ -1072,9 +1078,14 @@ column_title = "HF_SNPS",
                         cluster_rows = FALSE,
                         cluster_columns = FALSE,
                         cell_fun = function(j, i, x, y, width, height, fill) {
-                          if (!is.na(HF_sig_mat[i, j]) && HF_sig_mat[i, j] <0.05) {
-                              grid.text("*", x, y, gp = gpar(fontsize = 20))  # Add star if significant
-                            } })
+  rowname <- rownames(HF_mat)[i]
+  colname <- colnames(HF_mat)[j]
+  if (!is.na(HF_sig_mat[rowname, colname]) &&
+      HF_sig_mat[rowname, colname] < 0.05) {
+    grid.text("*", x, y, gp = gpar(fontsize = 20))
+  }
+})
+
 
 ComplexHeatmap::draw(simply_HF_lfc, 
      merge_legend = TRUE, 
