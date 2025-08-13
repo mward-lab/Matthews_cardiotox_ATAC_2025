@@ -1,0 +1,1268 @@
+---
+title: "Jaspar_motif_DAR"
+author: "Renee Matthews"
+date: "2025-06-16"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE,
+	warning = FALSE,
+	dev = c("png","pdf")
+)
+```
+
+```{css, echo=FALSE}
+pre {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+pre[class] {
+  max-height: 200px;
+}
+```
+
+
+```{r package loading}
+library(tidyverse)
+library(cowplot)
+library(kableExtra)
+library(broom)
+library(RColorBrewer)
+library(ChIPseeker)
+library("TxDb.Hsapiens.UCSC.hg38.knownGene")
+library("org.Hs.eg.db")
+library(rtracklayer)
+library(edgeR)
+library(ggfortify)
+library(limma)
+library(readr)
+library(BiocGenerics)
+library(gridExtra)
+library(VennDiagram)
+library(scales)
+library(Cormotif)
+library(BiocParallel)
+library(ggpubr)
+library(devtools)
+library(JASPAR2022)
+# library(TFBSTools)
+library(MotifDb)
+library(BSgenome.Hsapiens.UCSC.hg38)
+library(data.table)
+library(universalmotif)
+library(ggseqlogo)
+# library(motifmatchr)
+library(gridExtra)
+
+```
+
+#### Loading in dataframes  
+```{r}
+
+ER_rat=1.25
+toptable_results <- readRDS("data/Final_four_data/re_analysis/Toptable_results.RDS")
+
+all_results  <- toptable_results %>%
+  imap(~ .x %>% tibble::rownames_to_column(var = "rowname") %>%
+         mutate(source = .y)) %>%
+  bind_rows()
+
+toplistall_RNA <- readRDS("data/other_papers/toplistall_RNA.RDS") %>% 
+  mutate(logFC = logFC*(-1))
+
+peakAnnoList_DOX_DAR <- readRDS("data/Final_four_data/re_analysis/DOX_DAR_annotated_peaks_chipannno.RDS")
+
+Assigned_genes_toPeak <- peakAnnoList_DOX_DAR$DOX_24 %>% as.data.frame() %>% 
+  dplyr::select(mcols.genes,annotation, geneId, distanceToTSS) %>% 
+  dplyr::rename("Peakid"=mcols.genes)
+
+RNA_results <-
+toplistall_RNA %>% 
+  dplyr::select(time:logFC) %>% 
+  tidyr::unite("sample",time, id) %>% 
+  pivot_wider(., id_cols = c(ENTREZID,SYMBOL),names_from = sample, values_from = logFC) %>% 
+  rename_with(~ str_replace(., "hours", "RNA"))
+```
+
+
+```{r RNA DEG 3hr 24 hr, eval=FALSE}
+RNA_all_expressed <-toplistall_RNA %>% 
+  dplyr::select(time:logFC,adj.P.Val) %>% 
+  dplyr::filter(id=="DOX") %>% 
+  dplyr::filter(time=="24_hours") %>% 
+  tidyr::unite("sample",time, id) %>% 
+  dplyr::select(ENTREZID, SYMBOL)  
+
+
+RNA_24_DOX_DEG <-toplistall_RNA %>% 
+  dplyr::select(time:logFC,adj.P.Val) %>% 
+  dplyr::filter(id=="DOX") %>% 
+  dplyr::filter(time=="24_hours"& adj.P.Val<0.05) %>% 
+  tidyr::unite("sample",time, id) %>% 
+  dplyr::select(ENTREZID, SYMBOL)
+
+RNA_3_DOX_DEG <-toplistall_RNA %>% 
+  dplyr::select(time:logFC,adj.P.Val) %>% 
+  dplyr::filter(id=="DOX") %>% 
+  dplyr::filter(time=="3_hours"& adj.P.Val<0.05) %>% 
+  tidyr::unite("sample",time, id) %>% 
+  dplyr::select(ENTREZID, SYMBOL)
+
+RNA_24_EPI_DEG <-toplistall_RNA %>% 
+  dplyr::select(time:logFC,adj.P.Val) %>% 
+  dplyr::filter(id=="EPI") %>% 
+  dplyr::filter(time=="24_hours"& adj.P.Val<0.05) %>% 
+  tidyr::unite("sample",time, id) %>% 
+  dplyr::select(ENTREZID, SYMBOL)
+
+RNA_3_EPI_DEG <-toplistall_RNA %>% 
+  dplyr::select(time:logFC,adj.P.Val) %>% 
+  dplyr::filter(id=="EPI") %>% 
+  dplyr::filter(time=="3_hours"& adj.P.Val<0.05) %>% 
+  tidyr::unite("sample",time, id) %>% 
+  dplyr::select(ENTREZID, SYMBOL)
+
+RNA_24_DNR_DEG <-toplistall_RNA %>% 
+  dplyr::select(time:logFC,adj.P.Val) %>% 
+  dplyr::filter(id=="DNR") %>% 
+  dplyr::filter(time=="24_hours"& adj.P.Val<0.05) %>% 
+  tidyr::unite("sample",time, id) %>% 
+  dplyr::select(ENTREZID, SYMBOL)
+
+RNA_3_DNR_DEG <-toplistall_RNA %>% 
+  dplyr::select(time:logFC,adj.P.Val) %>% 
+  dplyr::filter(id=="DNR") %>% 
+  dplyr::filter(time=="3_hours"& adj.P.Val<0.05) %>% 
+  tidyr::unite("sample",time, id) %>% 
+  dplyr::select(ENTREZID, SYMBOL)
+
+RNA_24_MTX_DEG <-toplistall_RNA %>% 
+  dplyr::select(time:logFC,adj.P.Val) %>% 
+  dplyr::filter(id=="MTX") %>% 
+  dplyr::filter(time=="24_hours"& adj.P.Val<0.05) %>% 
+  tidyr::unite("sample",time, id) %>% 
+  dplyr::select(ENTREZID, SYMBOL)
+
+RNA_3_MTX_DEG <-toplistall_RNA %>% 
+  dplyr::select(time:logFC,adj.P.Val) %>% 
+  dplyr::filter(id=="MTX") %>% 
+  dplyr::filter(time=="3_hours"& adj.P.Val<0.05) %>% 
+  tidyr::unite("sample",time, id) %>% 
+  dplyr::select(ENTREZID, SYMBOL)
+
+Peak_gene_RNA_LFC <- Assigned_genes_toPeak %>% 
+  left_join(., RNA_results, by =c("geneId"="ENTREZID"))
+
+
+entrez_ids <- Assigned_genes_toPeak$geneId  
+
+
+gene_info <- AnnotationDbi::select(
+  org.Hs.eg.db,
+  keys = entrez_ids,
+  columns = c("SYMBOL"),
+  keytype = "ENTREZID"
+)
+gene_info_collapsed <- gene_info %>%
+  group_by(ENTREZID) %>%
+  summarise(SYMBOL = paste(unique(SYMBOL), collapse = ","), .groups = "drop")
+
+DOX_24_DAR <- all_results %>% 
+  dplyr::filter(source =="DOX_24") %>% 
+  dplyr::filter(adj.P.Val<0.05) %>% 
+  distinct(genes) %>% 
+  dplyr::rename("Peakid"=genes)
+
+DOX_3_DAR <- all_results %>% 
+  dplyr::filter(source =="DOX_3") %>% 
+  dplyr::filter(adj.P.Val<0.05) %>% 
+  distinct(genes) %>% 
+  dplyr::rename("Peakid"=genes)
+
+
+DOX_24_DAR_up <-   all_results %>%
+  dplyr::filter(source =="DOX_24") %>% 
+  dplyr::filter(adj.P.Val<0.05) %>% 
+     dplyr::filter(logFC>0) %>% 
+  distinct(genes) %>% 
+  dplyr::rename("Peakid"=genes)
+
+DOX_3_DAR_up <- all_results %>% 
+  dplyr::filter(source =="DOX_3") %>% 
+  dplyr::filter(adj.P.Val<0.05) %>%
+   dplyr::filter(logFC>0) %>% 
+  distinct(genes) %>% 
+  dplyr::rename("Peakid"=genes)
+
+DOX_24_DAR_down <- all_results %>% 
+  dplyr::filter(source =="DOX_24") %>% 
+  dplyr::filter(adj.P.Val<0.05) %>%
+   dplyr::filter(logFC<0) %>% 
+  distinct(genes) %>% 
+  dplyr::rename("Peakid"=genes)
+
+DOX_3_DAR_down <- all_results %>% 
+  dplyr::filter(source =="DOX_3") %>% 
+  dplyr::filter(adj.P.Val<0.05) %>% 
+   dplyr::filter(logFC<0) %>% 
+  distinct(genes) %>% 
+  dplyr::rename("Peakid"=genes)
+### enrichment ratio default number
+ER_rat <- 1.25
+
+```
+
+sample code for how data sets were produced for 20kb DAR-DEGs and DAR-nonDEGs:
+
+```{r DEG_24, eval=FALSE}
+DOX_24_DAR_DEG_20kb <-
+  annotated_regions %>% 
+  dplyr::filter(Peakid %in%DOX_24_DAR$Peakid ) %>% 
+  dplyr::filter(distanceToTSS >-20000 & distanceToTSS<20000) %>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE) %>% 
+  dplyr::filter(RNA_expressed=="exp_RNA")
+
+DOX_24_DAR_nonDEG_20kb <-
+  annotated_regions %>% 
+  dplyr::filter(Peakid %in%DOX_24_DAR$Peakid ) %>% 
+  dplyr::filter(distanceToTSS >-20000 & distanceToTSS<20000) %>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE) %>% 
+  dplyr::filter(RNA_expressed=="not_exp_RNA")
+
+EPI_24_DAR_DEG_20kb <-
+  annotated_regions %>% 
+  dplyr::filter(Peakid %in%EPI_24_DAR$Peakid ) %>% 
+  dplyr::filter(distanceToTSS >-20000 & distanceToTSS<20000) %>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE) %>% 
+  dplyr::filter(RNA_expressed=="exp_RNA")
+
+EPI_24_DAR_nonDEG_20kb <-
+  annotated_regions %>% 
+  dplyr::filter(Peakid %in%EPI_24_DAR$Peakid ) %>% 
+  dplyr::filter(distanceToTSS >-20000 & distanceToTSS<20000) %>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE) %>% 
+  dplyr::filter(RNA_expressed=="not_exp_RNA")
+
+DNR_24_DAR_DEG_20kb <-
+  annotated_regions %>% 
+  dplyr::filter(Peakid %in%DNR_24_DAR$Peakid ) %>% 
+  dplyr::filter(distanceToTSS >-20000 & distanceToTSS<20000) %>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE) %>% 
+  dplyr::filter(RNA_expressed=="exp_RNA")
+
+DNR_24_DAR_nonDEG_20kb <-
+  annotated_regions %>% 
+  dplyr::filter(Peakid %in%DNR_24_DAR$Peakid ) %>% 
+  dplyr::filter(distanceToTSS >-20000 & distanceToTSS<20000) %>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE) %>% 
+  dplyr::filter(RNA_expressed=="not_exp_RNA")
+
+MTX_24_DAR_DEG_20kb <-
+  annotated_regions %>% 
+  dplyr::filter(Peakid %in%MTX_24_DAR$Peakid ) %>% 
+  dplyr::filter(distanceToTSS >-20000 & distanceToTSS<20000) %>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE) %>% 
+  dplyr::filter(RNA_expressed=="exp_RNA")
+
+MTX_24_DAR_nonDEG_20kb <-
+  annotated_regions %>% 
+  dplyr::filter(Peakid %in%MTX_24_DAR$Peakid ) %>% 
+  dplyr::filter(distanceToTSS >-20000 & distanceToTSS<20000) %>% 
+  separate(Peakid, into = c("seqnames", "start", "end"), sep = "\\.", convert = TRUE, remove=FALSE) %>% 
+  dplyr::filter(RNA_expressed=="not_exp_RNA")
+```
+
+```{r collect DAR-DEG data frames, eval=FALSE}
+df_names_DAR_DEGS <- ls(pattern = ".*_DAR_DEG_.*kb$")
+
+df_names_DAR_nonDEGS <- ls(pattern = ".*_DAR_nonDEG_.*kb$")
+
+
+df_list_DAR_DEGS <- mget(df_names_DAR_DEGS)
+
+df_list_DAR_nonDEGS <- mget(df_names_DAR_nonDEGS)
+
+
+# Step 3: Convert each dataframe to GRanges
+
+gr_list_DAR_DEGS <- lapply(df_list_DAR_DEGS, function(df) {
+  GRanges(
+    seqnames = df$seqnames,
+    ranges = IRanges(start = df$start, end = df$end),
+    mcols = df %>% select(-seqnames, -start, -end)
+  )
+})
+
+gr_list_DAR_nonDEGS <- lapply(df_list_DAR_nonDEGS, function(df) {
+  GRanges(
+    seqnames = df$seqnames,
+    ranges = IRanges(start = df$start, end = df$end),
+    mcols = df %>% select(-seqnames, -start, -end)
+  )
+})
+
+# Optional: Name the GRanges list same as original data frames
+
+names(gr_list_DAR_DEGS) <- df_names_DAR_DEGS
+names(gr_list_DAR_nonDEGS) <- df_names_DAR_nonDEGS
+```
+
+
+```{r exporting bed files, eval=FALSE}
+# Folder with input BED files
+
+output_dir <- "data/Final_four_data/re_analysis/motif_beds_centered"
+
+# Create output folder if needed
+dir.create(output_dir, showWarnings = FALSE)
+
+# Loop through each BED file
+for (name in names(gr_list_DAR_DEGS)) {
+  gr <- gr_list_DAR_DEGS[[name]]
+  
+  # Recenter each region to 200 bp around its midpoint
+  gr_centered <- resize(gr, width = 200, fix = "center")
+  
+  # Export to BED (auto converts to 0-based)
+  export(gr_centered, con = file.path(output_dir, paste0(name, "DAR_DEG_centered.bed")), format = "BED")
+}
+
+
+### not significant DAR regions for xstreme
+
+for (name in names(gr_list_DAR_nonDEGS)) {
+  gr <- gr_list_DAR_nonDEGS[[name]]
+  
+  # Recenter each region to 200 bp around its midpoint
+  gr_centered <- resize(gr, width = 200, fix = "center")
+  
+  # Export to BED (auto converts to 0-based)
+  export(gr_centered, con = file.path(output_dir, paste0(name, "DAR_nonDEG_centered.bed")), format = "BED")
+}
+
+```
+
+
+sample code for producing data from TACC
+```{r, eval=FALSE}
+
+### replace MTX with whichever treatments you are running.
+echo $(date) "Starting process"
+
+ml tacc-apptainer
+
+
+apptainer exec --bind `pwd`:/home/meme memesuite_latest.sif xstreme --oc MTX_24_20kb_xstreme/ --time 480 --streme-totallength 8000000 --meme-searchsize 100000 --desc description --dna --evt 0.05 --minw 6 --maxw 15 --align center --meme-mod zoops --m motif_databases/JASPAR/JASPAR2022_CORE_vertebrates_non-redundant_v2.meme  --p fa_files/MTX_24_DEG_20kbDAR_DEG_centered.fa -n fa_files/MTX_24_nonDEG_20kbDAR_nonDEG_centered.fa
+
+
+echo $(date) "MTX 24 20kb done"
+
+```
+
+
+
+### DOX
+
+#### DOX_DAR 24 20kb DAR DEG data
+
+
+```{r DOX_24_20kb output data loading}
+
+
+DOX_24_20kb_sea_disc <- read.delim("C:/Users/renee/ATAC_folder/ATAC_meme_data/new_analysis/DOX_24_20kb_xstreme/sea_disc_out/sea.tsv") %>% mutate(source="disc") %>% slice_head(n = length(.$ID)-3)
+DOX_24_20kb_sea_known <- read.delim("C:/Users/renee/ATAC_folder/ATAC_meme_data/new_analysis/DOX_24_20kb_xstreme/sea_out/sea.tsv") %>% mutate(source="known") %>% slice_head(n = length(.$ID)-3)
+DOX_24_20kb_xstreme <- read.delim("C:/Users/renee/ATAC_folder/ATAC_meme_data/new_analysis/DOX_24_20kb_xstreme/xstreme.tsv") %>% slice_head(n = length(.$ID)-3)
+DOX_24_20kb_sea_all <- rbind(DOX_24_20kb_sea_disc, DOX_24_20kb_sea_known) %>% 
+  arrange(ID, desc(source == "known")) %>%  
+  distinct(ID, .keep_all = TRUE)
+
+```
+
+```{r looking at DOX_24_20kb_xstreme data}
+DOX_24_20kb_combo <- DOX_24_20kb_xstreme %>% 
+  dplyr::select(SEED_MOTIF:EVALUE_ACC,SIM_MOTIF) %>% 
+  left_join(., DOX_24_20kb_sea_all, by=c("ID"="ID","ALT_ID"="ALT_ID")) %>% 
+  mutate(motif_name=case_when(
+    str_detect(SIM_MOTIF, "\\(") ~ str_extract(SIM_MOTIF, "(?<=\\().+?(?=\\))"),
+    str_detect(SIM_MOTIF, "^MA\\d+\\.\\d+") ~ ALT_ID,
+    str_detect(SIM_MOTIF, "^\\d+-") ~ str_replace(SIM_MOTIF, "^\\d+-", ""),
+  TRUE ~ SIM_MOTIF
+)) %>% 
+  dplyr::select(RANK,CLUSTER,SIM_MOTIF,ALT_ID, ID,CONSENSUS.x,motif_name,EVALUE.y,QVALUE,TP:ENR_RATIO) %>% 
+  arrange(.,EVALUE.y) 
+
+DOX_24_20kb_combo %>% 
+  dplyr::mutate_if(is.numeric, funs(as.character(signif(., 3)))) %>%
+  kable(., caption = "Enriched motifs 200 bp in DOX24 20kb ") %>%
+  kable_paper("striped", full_width = TRUE) %>%
+  kable_styling(full_width = FALSE, font_size = 16) %>%
+  scroll_box(height = "500px")
+
+```
+
+```{r DOX_24_20kb_combo}
+
+
+DOX_24_20kb_combo %>% 
+   dplyr::filter(ENR_RATIO>ER_rat) %>%
+  dplyr::select(RANK,CLUSTER,motif_name,SIM_MOTIF,ALT_ID, ID,EVALUE.y,TP.)%>%
+  arrange(.,EVALUE.y) %>%
+  slice_head(n=80)%>% 
+  mutate(log10Evalue= log(EVALUE.y, base = 10)*(-1)) %>% 
+  mutate(motif_name=if_else(str_starts(motif_name,"^Z*"),paste(motif_name, RANK, sep="_"), if_else(motif_name=="KLF9",paste(motif_name, RANK,sep="_"),motif_name)))%>%
+  ggplot(., aes (y= reorder(motif_name,log10Evalue))) +
+  geom_col(aes(x=log10Evalue)) +
+  geom_point(aes(x=`TP.`*1.25), size =4)+
+  scale_x_continuous(expand=c (0,.125),sec.axis = sec_axis(transform= ~./1.25,name="Percent of peaks with motif"))+
+  theme_classic()+
+  ylab("Enriched TF motif")+
+  ggtitle(paste("DOX_24_20kb_combo response peaks(200bp)Enrichment ratio:",ER_rat))
+
+
+
+
+DOX_24_20kb_combo %>% 
+   dplyr::filter(ENR_RATIO>ER_rat) %>%
+  dplyr::select(RANK,CLUSTER,motif_name,SIM_MOTIF,ALT_ID, ID,EVALUE.y,TP.)%>%
+  arrange(.,EVALUE.y) %>%
+  dplyr::filter(EVALUE.y < 0.05) %>% 
+    mutate(log10Evalue = -log10(if_else(EVALUE.y == 0, 1e-300, EVALUE.y))) %>% 
+  distinct(CLUSTER,.keep_all = TRUE) %>% 
+  # slice_head(n=5) %>% 
+  mutate(motif_name=if_else(str_starts(motif_name,"^Z*"),paste(motif_name, RANK, sep="_"), if_else(motif_name=="KLF9",paste(motif_name, RANK,sep="_"),motif_name)))%>%
+  ggplot(., aes (y= reorder(motif_name,log10Evalue))) +
+  geom_col(aes(x=log10Evalue)) +
+  geom_point(aes(x=`TP.`*15.2), size =4)+
+  scale_x_continuous(expand=c (0,.125),sec.axis = sec_axis(transform= ~./15.2,name="Percent of peaks with motif"))+
+  theme_classic()+
+  ylab("Enriched TF motif")+
+  ggtitle(paste("DOX_24_20kb_combo response peaks(200bp)Enrichment ratio:",ER_rat))
+ 
+```
+```{r, eval=FALSE}
+DOX_24_20kb_combo %>% 
+  # dplyr::filter(ALT_ID=="MEME-5")
+  # dplyr::filter(CLUSTER=="64")
+  dplyr::filter(CONSENSUS.x=="CTGGGATTACAGGCR")
+
+```
+
+
+## Other treaments
+### EPI
+#### EPI_DAR 24 20kb DAR DEG data
+```{r EPI_24_20kb output data loading}
+
+
+EPI_24_20kb_sea_disc <- read.delim("C:/Users/renee/ATAC_folder/ATAC_meme_data/new_analysis/EPI_24_20kb_xstreme/sea_disc_out/sea.tsv") %>% mutate(source="disc") %>% slice_head(n = length(.$ID)-3)
+EPI_24_20kb_sea_known <- read.delim("C:/Users/renee/ATAC_folder/ATAC_meme_data/new_analysis/EPI_24_20kb_xstreme/sea_out/sea.tsv") %>% mutate(source="known") %>% slice_head(n = length(.$ID)-3)
+EPI_24_20kb_xstreme <- read.delim("C:/Users/renee/ATAC_folder/ATAC_meme_data/new_analysis/EPI_24_20kb_xstreme/xstreme.tsv") %>% slice_head(n = length(.$ID)-3)
+EPI_24_20kb_sea_all <- rbind(EPI_24_20kb_sea_disc, EPI_24_20kb_sea_known) %>% 
+  arrange(ID, desc(source == "known")) %>%  
+  distinct(ID, .keep_all = TRUE)
+
+```
+
+```{r looking at EPI_24_20kb_xstreme data}
+EPI_24_20kb_combo <- EPI_24_20kb_xstreme %>% 
+  dplyr::select(SEED_MOTIF:EVALUE_ACC,SIM_MOTIF) %>% 
+  left_join(., EPI_24_20kb_sea_all, by=c("ID"="ID","ALT_ID"="ALT_ID")) %>% 
+  mutate(motif_name=case_when(
+    str_detect(SIM_MOTIF, "\\(") ~ str_extract(SIM_MOTIF, "(?<=\\().+?(?=\\))"),
+    str_detect(SIM_MOTIF, "^MA\\d+\\.\\d+") ~ ALT_ID,
+    str_detect(SIM_MOTIF, "^\\d+-") ~ str_replace(SIM_MOTIF, "^\\d+-", ""),
+  TRUE ~ SIM_MOTIF
+)) %>% 
+  dplyr::select(RANK,CLUSTER,SIM_MOTIF,ALT_ID, ID,CONSENSUS.x,motif_name,EVALUE.y,QVALUE,TP:ENR_RATIO) %>% 
+  arrange(.,EVALUE.y) 
+
+EPI_24_20kb_combo %>% 
+  dplyr::mutate_if(is.numeric, funs(as.character(signif(., 3)))) %>%
+  kable(., caption = "Enriched motifs 200 bp in EPI_24h 20kb") %>%
+  kable_paper("striped", full_width = TRUE) %>%
+  kable_styling(full_width = FALSE, font_size = 16) %>%
+  scroll_box(height = "500px")
+
+```
+```{r EPI_24_20kb_combo}
+
+
+EPI_24_20kb_combo %>% 
+   dplyr::filter(ENR_RATIO>ER_rat) %>%
+  dplyr::select(RANK,CLUSTER,motif_name,SIM_MOTIF,ALT_ID, ID,EVALUE.y,TP.)%>%
+  arrange(.,EVALUE.y) %>%
+  slice_head(n=80)%>% 
+  mutate(log10Evalue= log(EVALUE.y, base = 10)*(-1)) %>% 
+  mutate(motif_name=if_else(str_starts(motif_name,"^Z*"),paste(motif_name, RANK, sep="_"), if_else(motif_name=="KLF9",paste(motif_name, RANK,sep="_"),motif_name)))%>%
+  ggplot(., aes (y= reorder(motif_name,log10Evalue))) +
+  geom_col(aes(x=log10Evalue)) +
+  geom_point(aes(x=`TP.`*1.25), size =4)+
+  scale_x_continuous(expand=c (0,.125),sec.axis = sec_axis(transform= ~./1.25,name="Percent of peaks with motif"))+
+  theme_classic()+
+  ylab("Enriched TF motif")+
+  ggtitle(paste("EPI_24_20kb_combo response peaks(200bp)Enrichment ratio:",ER_rat))
+
+
+
+
+EPI_24_20kb_combo %>% 
+   dplyr::filter(ENR_RATIO>ER_rat) %>%
+  dplyr::select(RANK,CLUSTER,motif_name,SIM_MOTIF,ALT_ID, ID,EVALUE.y,TP.)%>%
+  arrange(.,EVALUE.y) %>%
+  dplyr::filter(EVALUE.y<0.05) %>% 
+    mutate(log10Evalue = -log10(if_else(EVALUE.y == 0, 1e-300, EVALUE.y))) %>% 
+  distinct(CLUSTER,.keep_all = TRUE) %>% 
+  # slice_head(n=5) %>% 
+  mutate(motif_name=if_else(str_starts(motif_name,"^Z*"),paste(motif_name, RANK, sep="_"), if_else(motif_name=="KLF9",paste(motif_name, RANK,sep="_"),motif_name)))%>%
+  ggplot(., aes (y= reorder(motif_name,log10Evalue))) +
+  geom_col(aes(x=log10Evalue)) +
+  geom_point(aes(x=`TP.`*15), size =4)+
+  scale_x_continuous(expand=c (0,.125),sec.axis = sec_axis(transform= ~./15,name="Percent of peaks with motif"))+
+  theme_classic()+
+  ylab("Enriched TF motif")+
+  ggtitle(paste("EPI_24_20kb_combo response peaks(200bp)Enrichment ratio:",ER_rat))
+ 
+```
+
+
+### DNR  
+
+#### DNR_DAR 24 20kb DAR DEG data
+```{r DNR_24_20kb output data loading}
+
+
+DNR_24_20kb_sea_disc <- read.delim("C:/Users/renee/ATAC_folder/ATAC_meme_data/new_analysis/DNR_24_20kb_xstreme/sea_disc_out/sea.tsv") %>% mutate(source="disc") %>% slice_head(n = length(.$ID)-3)
+DNR_24_20kb_sea_known <- read.delim("C:/Users/renee/ATAC_folder/ATAC_meme_data/new_analysis/DNR_24_20kb_xstreme/sea_out/sea.tsv") %>% mutate(source="known") %>% slice_head(n = length(.$ID)-3)
+DNR_24_20kb_xstreme <- read.delim("C:/Users/renee/ATAC_folder/ATAC_meme_data/new_analysis/DNR_24_20kb_xstreme/xstreme.tsv") %>% slice_head(n = length(.$ID)-3)
+DNR_24_20kb_sea_all <- rbind(DNR_24_20kb_sea_disc, DNR_24_20kb_sea_known) %>% 
+  arrange(ID, desc(source == "known")) %>%  
+  distinct(ID, .keep_all = TRUE)
+
+```
+
+```{r looking at DNR_24_20kb_xstreme data}
+DNR_24_20kb_combo <- DNR_24_20kb_xstreme %>% 
+  dplyr::select(SEED_MOTIF:EVALUE_ACC,SIM_MOTIF) %>% 
+  left_join(., DNR_24_20kb_sea_all, by=c("ID"="ID","ALT_ID"="ALT_ID")) %>% 
+  mutate(motif_name=case_when(
+    str_detect(SIM_MOTIF, "\\(") ~ str_extract(SIM_MOTIF, "(?<=\\().+?(?=\\))"),
+    str_detect(SIM_MOTIF, "^MA\\d+\\.\\d+") ~ ALT_ID,
+    str_detect(SIM_MOTIF, "^\\d+-") ~ str_replace(SIM_MOTIF, "^\\d+-", ""),
+  TRUE ~ SIM_MOTIF
+)) %>% 
+  dplyr::select(RANK,CLUSTER,SIM_MOTIF,ALT_ID, ID,CONSENSUS.x,motif_name,EVALUE.y,QVALUE,TP:ENR_RATIO) %>% 
+  arrange(.,EVALUE.y) 
+
+DNR_24_20kb_combo %>% 
+  dplyr::mutate_if(is.numeric, funs(as.character(signif(., 3)))) %>%
+  kable(., caption = "Enriched motifs 200 bp in DNR 24h 20kb") %>%
+  kable_paper("striped", full_width = TRUE) %>%
+  kable_styling(full_width = FALSE, font_size = 16) %>%
+  scroll_box(height = "500px")
+
+```
+```{r DNR_24_20kb_combo}
+
+
+DNR_24_20kb_combo %>% 
+   dplyr::filter(ENR_RATIO>ER_rat) %>%
+  dplyr::select(RANK,CLUSTER,motif_name,SIM_MOTIF,ALT_ID, ID,EVALUE.y,TP.)%>%
+  arrange(.,EVALUE.y) %>%
+  slice_head(n=80)%>% 
+  mutate(log10Evalue= log(EVALUE.y, base = 10)*(-1)) %>% 
+  mutate(motif_name=if_else(str_starts(motif_name,"^Z*"),paste(motif_name, RANK, sep="_"), if_else(motif_name=="KLF9",paste(motif_name, RANK,sep="_"),motif_name)))%>%
+  ggplot(., aes (y= reorder(motif_name,log10Evalue))) +
+  geom_col(aes(x=log10Evalue)) +
+  geom_point(aes(x=`TP.`*1.25), size =4)+
+  scale_x_continuous(expand=c (0,.125),sec.axis = sec_axis(transform= ~./1.25,name="Percent of peaks with motif"))+
+  theme_classic()+
+  ylab("Enriched TF motif")+
+  ggtitle(paste("DNR_24_20kb_combo response peaks(200bp)Enrichment ratio:",ER_rat))
+
+
+
+
+DNR_24_20kb_combo %>% 
+   dplyr::filter(ENR_RATIO>ER_rat) %>%
+  dplyr::select(RANK,CLUSTER,motif_name,SIM_MOTIF,ALT_ID, ID,EVALUE.y,TP.)%>%
+  arrange(.,EVALUE.y) %>%
+  dplyr::filter(EVALUE.y < 0.05) %>% 
+    mutate(log10Evalue = -log10(if_else(EVALUE.y == 0, 1e-300, EVALUE.y))) %>% 
+  distinct(CLUSTER,.keep_all = TRUE) %>% 
+  # slice_head(n=7) %>% 
+  mutate(motif_name=if_else(str_starts(motif_name,"^Z*"),paste(motif_name, RANK, sep="_"), if_else(motif_name=="KLF9",paste(motif_name, RANK,sep="_"),motif_name)))%>%
+  ggplot(., aes (y= reorder(motif_name,log10Evalue))) +
+  geom_col(aes(x=log10Evalue)) +
+  geom_point(aes(x=`TP.`*25), size =4)+
+  scale_x_continuous(expand=c (0,.125),sec.axis = sec_axis(transform= ~./25,name="Percent of peaks with motif"))+
+  theme_classic()+
+  ylab("Enriched TF motif")+
+  ggtitle(paste("DNR_24_20kb_combo response peaks(200bp)Enrichment ratio:",ER_rat))
+ 
+```
+
+### MTX  
+
+#### MTX_DAR 24 20kb DAR DEG data
+```{r MTX_24_20kb output data loading}
+
+
+MTX_24_20kb_sea_disc <- read.delim("C:/Users/renee/ATAC_folder/ATAC_meme_data/new_analysis/MTX_24_20kb_xstreme/sea_disc_out/sea.tsv") %>% mutate(source="disc") %>% slice_head(n = length(.$ID)-3)
+MTX_24_20kb_sea_known <- read.delim("C:/Users/renee/ATAC_folder/ATAC_meme_data/new_analysis/MTX_24_20kb_xstreme/sea_out/sea.tsv") %>% mutate(source="known") %>% slice_head(n = length(.$ID)-3)
+MTX_24_20kb_xstreme <- read.delim("C:/Users/renee/ATAC_folder/ATAC_meme_data/new_analysis/MTX_24_20kb_xstreme/xstreme.tsv") %>% slice_head(n = length(.$ID)-3)
+MTX_24_20kb_sea_all <- rbind(MTX_24_20kb_sea_disc, MTX_24_20kb_sea_known) %>% 
+  arrange(ID, desc(source == "known")) %>%  
+  distinct(ID, .keep_all = TRUE)
+
+```
+
+```{r looking at MTX_24_20kb_xstreme data}
+MTX_24_20kb_combo <- MTX_24_20kb_xstreme %>% 
+  dplyr::select(SEED_MOTIF:EVALUE_ACC,SIM_MOTIF) %>% 
+  left_join(., MTX_24_20kb_sea_all, by=c("ID"="ID","ALT_ID"="ALT_ID")) %>% 
+  mutate(motif_name=case_when(
+    str_detect(SIM_MOTIF, "\\(") ~ str_extract(SIM_MOTIF, "(?<=\\().+?(?=\\))"),
+    str_detect(SIM_MOTIF, "^MA\\d+\\.\\d+") ~ ALT_ID,
+    str_detect(SIM_MOTIF, "^\\d+-") ~ str_replace(SIM_MOTIF, "^\\d+-", ""),
+  TRUE ~ SIM_MOTIF
+)) %>% 
+  dplyr::select(RANK,CLUSTER,SIM_MOTIF,ALT_ID, ID,CONSENSUS.x,motif_name,EVALUE.y,QVALUE,TP:ENR_RATIO) %>% 
+  arrange(.,EVALUE.y) 
+
+MTX_24_20kb_combo %>% 
+  dplyr::mutate_if(is.numeric, funs(as.character(signif(., 3)))) %>%
+  kable(., caption = "Enriched motifs 200 bp in MTX  v VEH") %>%
+  kable_paper("striped", full_width = TRUE) %>%
+  kable_styling(full_width = FALSE, font_size = 16) %>%
+  scroll_box(height = "500px")
+
+```
+```{r MTX_24_20kb_combo}
+
+
+MTX_24_20kb_combo %>% 
+   dplyr::filter(ENR_RATIO>ER_rat) %>%
+  dplyr::select(RANK,CLUSTER,motif_name,SIM_MOTIF,ALT_ID, ID,EVALUE.y,TP.)%>%
+  arrange(.,EVALUE.y) %>%
+  slice_head(n=80)%>% 
+  mutate(log10Evalue= log(EVALUE.y, base = 10)*(-1)) %>% 
+  mutate(motif_name=if_else(str_starts(motif_name,"^Z*"),paste(motif_name, RANK, sep="_"), if_else(motif_name=="KLF9",paste(motif_name, RANK,sep="_"),motif_name)))%>%
+  ggplot(., aes (y= reorder(motif_name,log10Evalue))) +
+  geom_col(aes(x=log10Evalue)) +
+  geom_point(aes(x=`TP.`*1.25), size =4)+
+  scale_x_continuous(expand=c (0,.125),sec.axis = sec_axis(transform= ~./1.25,name="Percent of peaks with motif"))+
+  theme_classic()+
+  ylab("Enriched TF motif")+
+  ggtitle(paste("MTX_24_20kb_combo response peaks(200bp)Enrichment ratio:",ER_rat))
+
+
+
+
+MTX_24_20kb_combo %>% 
+   dplyr::filter(ENR_RATIO>ER_rat) %>%
+  dplyr::select(RANK,CLUSTER,motif_name,SIM_MOTIF,ALT_ID, ID,EVALUE.y,TP.)%>%
+  arrange(.,EVALUE.y) %>%
+    mutate(log10Evalue = -log10(if_else(EVALUE.y == 0, 1e-300, EVALUE.y))) %>% 
+  distinct(CLUSTER,.keep_all = TRUE) %>% 
+  # slice_head(n=5) %>% 
+  mutate(motif_name=if_else(str_starts(motif_name,"^Z*"),paste(motif_name, RANK, sep="_"), if_else(motif_name=="KLF9",paste(motif_name, RANK,sep="_"),motif_name)))%>%
+  ggplot(., aes (y= reorder(motif_name,log10Evalue))) +
+  geom_col(aes(x=log10Evalue)) +
+  geom_point(aes(x=`TP.`*3), size =4)+
+  scale_x_continuous(expand=c (0,.125),sec.axis = sec_axis(transform= ~./3,name="Percent of peaks with motif"))+
+  theme_classic()+
+  ylab("Enriched TF motif")+
+  ggtitle(paste("MTX_24_20kb_combo response peaks(200bp)Enrichment ratio:",ER_rat))
+ 
+```
+
+### DAR_DEG data ALL distances
+#### DOX 3 hour
+```{r}
+DOX_3_DAR_DEG_sea_disc <- read.delim("C:/Users/renee/ATAC_folder/ATAC_meme_data/new_analysis/DOX_3_DEG_xstreme/sea_disc_out/sea.tsv") %>% mutate(source="disc") %>% slice_head(n = length(.$ID)-3)
+DOX_3_DAR_DEG_sea_known <- read.delim("C:/Users/renee/ATAC_folder/ATAC_meme_data/new_analysis/DOX_3_DEG_xstreme/sea_out/sea.tsv") %>% mutate(source="known") %>% slice_head(n = length(.$ID)-3)
+DOX_3_DAR_DEG_xstreme <- read.delim("C:/Users/renee/ATAC_folder/ATAC_meme_data/new_analysis/DOX_3_DEG_xstreme/xstreme.tsv") %>% slice_head(n = length(.$ID)-3)
+DOX_3_DAR_DEG_sea_all <- rbind(DOX_3_DAR_DEG_sea_disc, DOX_3_DAR_DEG_sea_known) %>% 
+  arrange(ID, desc(source == "known")) %>%  
+  distinct(ID, .keep_all = TRUE)
+
+```
+
+```{r looking at DOX_3_DAR_DEG_xstreme data}
+DOX_3_DAR_DEG_combo <- DOX_3_DAR_DEG_xstreme %>% 
+  dplyr::select(SEED_MOTIF:EVALUE_ACC,SIM_MOTIF) %>% 
+  left_join(., DOX_3_DAR_DEG_sea_all, by=c("ID"="ID","ALT_ID"="ALT_ID")) %>% 
+  mutate(motif_name=case_when(
+    str_detect(SIM_MOTIF, "\\(") ~ str_extract(SIM_MOTIF, "(?<=\\().+?(?=\\))"),
+    str_detect(SIM_MOTIF, "^MA\\d+\\.\\d+") ~ ALT_ID,
+    str_detect(SIM_MOTIF, "^\\d+-") ~ str_replace(SIM_MOTIF, "^\\d+-", ""),
+  TRUE ~ SIM_MOTIF
+)) %>% 
+  dplyr::select(RANK,CLUSTER,SIM_MOTIF,ALT_ID, ID,CONSENSUS.x,motif_name,EVALUE.y,QVALUE,TP:ENR_RATIO) %>% 
+  arrange(.,EVALUE.y) 
+
+DOX_3_DAR_DEG_combo %>% 
+  dplyr::mutate_if(is.numeric, funs(as.character(signif(., 3)))) %>%
+  kable(., caption = "Enriched motifs 200 bp in MTX  v VEH") %>%
+  kable_paper("striped", full_width = TRUE) %>%
+  kable_styling(full_width = FALSE, font_size = 16) %>%
+  scroll_box(height = "500px")
+
+```
+
+```{r DOX_3_DAR_DEG_combo}
+
+
+DOX_3_DAR_DEG_combo %>% 
+   dplyr::filter(ENR_RATIO>ER_rat) %>%
+  dplyr::select(RANK,CLUSTER,motif_name,SIM_MOTIF,ALT_ID, ID,EVALUE.y,TP.)%>%
+  arrange(.,EVALUE.y) %>%
+  slice_head(n=80)%>% 
+  mutate(log10Evalue= log(EVALUE.y, base = 10)*(-1)) %>% 
+  mutate(motif_name=if_else(str_starts(motif_name,"^Z*"),paste(motif_name, RANK, sep="_"), if_else(motif_name=="KLF9",paste(motif_name, RANK,sep="_"),motif_name)))%>%
+  ggplot(., aes (y= reorder(motif_name,log10Evalue))) +
+  geom_col(aes(x=log10Evalue)) +
+  geom_point(aes(x=`TP.`*1.25), size =4)+
+  scale_x_continuous(expand=c (0,.125),sec.axis = sec_axis(transform= ~./1.25,name="Percent of peaks with motif"))+
+  theme_classic()+
+  ylab("Enriched TF motif")+
+  ggtitle(paste("DOX_3_DAR_DEG_combo response peaks(200bp)Enrichment ratio:",ER_rat))
+
+
+
+
+DOX_3_DAR_DEG_combo %>% 
+   dplyr::filter(ENR_RATIO>ER_rat) %>%
+  dplyr::select(RANK,CLUSTER,motif_name,SIM_MOTIF,ALT_ID, ID,EVALUE.y,TP.)%>%
+  arrange(.,EVALUE.y) %>%
+    mutate(log10Evalue = -log10(if_else(EVALUE.y == 0, 1e-300, EVALUE.y))) %>% 
+  distinct(CLUSTER,.keep_all = TRUE) %>% 
+  slice_head(n=5) %>% 
+  mutate(motif_name=if_else(str_starts(motif_name,"^Z*"),paste(motif_name, RANK, sep="_"), if_else(motif_name=="KLF9",paste(motif_name, RANK,sep="_"),motif_name)))%>%
+  ggplot(., aes (y= reorder(motif_name,log10Evalue))) +
+  geom_col(aes(x=log10Evalue)) +
+  geom_point(aes(x=`TP.`*.05), size =4)+
+  scale_x_continuous(expand=c (0,.125),sec.axis = sec_axis(transform= ~./.05,name="Percent of peaks with motif"))+
+  theme_classic()+
+  ylab("Enriched TF motif")+
+  ggtitle(paste("DOX_3_DAR_DEG_combo response peaks(200bp)Enrichment ratio:",ER_rat))
+ 
+```
+
+#### DOX 24 hour
+```{r}
+DOX_24_DAR_DEG_sea_disc <- read.delim("C:/Users/renee/ATAC_folder/ATAC_meme_data/new_analysis/DOX_24_DEG_xstreme/sea_disc_out/sea.tsv") %>% mutate(source="disc") %>% slice_head(n = length(.$ID)-3)
+DOX_24_DAR_DEG_sea_known <- read.delim("C:/Users/renee/ATAC_folder/ATAC_meme_data/new_analysis/DOX_24_DEG_xstreme/sea_out/sea.tsv") %>% mutate(source="known") %>% slice_head(n = length(.$ID)-3)
+DOX_24_DAR_DEG_xstreme <- read.delim("C:/Users/renee/ATAC_folder/ATAC_meme_data/new_analysis/DOX_24_DEG_xstreme/xstreme.tsv") %>% slice_head(n = length(.$ID)-3)
+DOX_24_DAR_DEG_sea_all <- rbind(DOX_24_DAR_DEG_sea_disc, DOX_24_DAR_DEG_sea_known) %>% 
+  arrange(ID, desc(source == "known")) %>%  
+  distinct(ID, .keep_all = TRUE)
+
+```
+
+```{r looking at DOX_24_DAR_DEG_xstreme data}
+DOX_24_DAR_DEG_combo <- DOX_24_DAR_DEG_xstreme %>% 
+  dplyr::select(SEED_MOTIF:EVALUE_ACC,SIM_MOTIF) %>% 
+  left_join(., DOX_24_DAR_DEG_sea_all, by=c("ID"="ID","ALT_ID"="ALT_ID")) %>% 
+  mutate(motif_name=case_when(
+    str_detect(SIM_MOTIF, "\\(") ~ str_extract(SIM_MOTIF, "(?<=\\().+?(?=\\))"),
+    str_detect(SIM_MOTIF, "^MA\\d+\\.\\d+") ~ ALT_ID,
+    str_detect(SIM_MOTIF, "^\\d+-") ~ str_replace(SIM_MOTIF, "^\\d+-", ""),
+  TRUE ~ SIM_MOTIF
+)) %>% 
+  dplyr::select(RANK,CLUSTER,SIM_MOTIF,ALT_ID, ID,CONSENSUS.x,motif_name,EVALUE.y,QVALUE,TP:ENR_RATIO) %>% 
+  arrange(.,EVALUE.y) 
+
+DOX_24_DAR_DEG_combo %>% 
+  dplyr::mutate_if(is.numeric, funs(as.character(signif(., 3)))) %>%
+  kable(., caption = "Enriched motifs 200 bp in MTX  v VEH") %>%
+  kable_paper("striped", full_width = TRUE) %>%
+  kable_styling(full_width = FALSE, font_size = 16) %>%
+  scroll_box(height = "500px")
+
+```
+
+```{r DOX_24_DAR_DEG_combo}
+
+
+DOX_24_DAR_DEG_combo %>% 
+   dplyr::filter(ENR_RATIO>ER_rat) %>%
+  dplyr::select(RANK,CLUSTER,motif_name,SIM_MOTIF,ALT_ID, ID,EVALUE.y,TP.)%>%
+  arrange(.,EVALUE.y) %>%
+  slice_head(n=80)%>% 
+  mutate(log10Evalue= log(EVALUE.y, base = 10)*(-1)) %>% 
+  mutate(motif_name=if_else(str_starts(motif_name,"^Z*"),paste(motif_name, RANK, sep="_"), if_else(motif_name=="KLF9",paste(motif_name, RANK,sep="_"),motif_name)))%>%
+  ggplot(., aes (y= reorder(motif_name,log10Evalue))) +
+  geom_col(aes(x=log10Evalue)) +
+  geom_point(aes(x=`TP.`*1.25), size =4)+
+  scale_x_continuous(expand=c (0,.125),sec.axis = sec_axis(transform= ~./1.25,name="Percent of peaks with motif"))+
+  theme_classic()+
+  ylab("Enriched TF motif")+
+  ggtitle(paste("DOX_24_DAR_DEG_combo response peaks(200bp)Enrichment ratio:",ER_rat))
+
+
+
+
+DOX_24_DAR_DEG_combo %>% 
+   dplyr::filter(ENR_RATIO>ER_rat) %>%
+  dplyr::select(RANK,CLUSTER,motif_name,SIM_MOTIF,ALT_ID, ID,EVALUE.y,TP.)%>%
+  arrange(.,EVALUE.y) %>%
+    mutate(log10Evalue = -log10(if_else(EVALUE.y == 0, 1e-300, EVALUE.y))) %>% 
+  distinct(CLUSTER,.keep_all = TRUE) %>% 
+  slice_head(n=5) %>% 
+  mutate(motif_name=if_else(str_starts(motif_name,"^Z*"),paste(motif_name, RANK, sep="_"), if_else(motif_name=="KLF9",paste(motif_name, RANK,sep="_"),motif_name)))%>%
+  ggplot(., aes (y= reorder(motif_name,log10Evalue))) +
+  geom_col(aes(x=log10Evalue)) +
+  geom_point(aes(x=`TP.`*2), size =4)+
+  scale_x_continuous(expand=c (0,.125),sec.axis = sec_axis(transform= ~./2,name="Percent of peaks with motif"))+
+  theme_classic()+
+  ylab("Enriched TF motif")+
+  ggtitle(paste("DOX_24_DAR_DEG_combo response peaks(200bp)Enrichment ratio:",ER_rat))
+ 
+```
+
+
+
+
+
+
+
+#### EPI 3 hour
+```{r}
+EPI_3_DAR_DEG_sea_disc <- read.delim("C:/Users/renee/ATAC_folder/ATAC_meme_data/new_analysis/EPI_3_DEG_xstreme/sea_disc_out/sea.tsv") %>% mutate(source="disc") %>% slice_head(n = length(.$ID)-3)
+EPI_3_DAR_DEG_sea_known <- read.delim("C:/Users/renee/ATAC_folder/ATAC_meme_data/new_analysis/EPI_3_DEG_xstreme/sea_out/sea.tsv") %>% mutate(source="known") %>% slice_head(n = length(.$ID)-3)
+EPI_3_DAR_DEG_xstreme <- read.delim("C:/Users/renee/ATAC_folder/ATAC_meme_data/new_analysis/EPI_3_DEG_xstreme/xstreme.tsv") %>% slice_head(n = length(.$ID)-3)
+EPI_3_DAR_DEG_sea_all <- rbind(EPI_3_DAR_DEG_sea_disc, EPI_3_DAR_DEG_sea_known) %>% 
+  arrange(ID, desc(source == "known")) %>%  
+  distinct(ID, .keep_all = TRUE)
+
+```
+
+```{r looking at EPI_3_DAR_DEG_xstreme data}
+EPI_3_DAR_DEG_combo <- EPI_3_DAR_DEG_xstreme %>% 
+  dplyr::select(SEED_MOTIF:EVALUE_ACC,SIM_MOTIF) %>% 
+  left_join(., EPI_3_DAR_DEG_sea_all, by=c("ID"="ID","ALT_ID"="ALT_ID")) %>% 
+  mutate(motif_name=case_when(
+    str_detect(SIM_MOTIF, "\\(") ~ str_extract(SIM_MOTIF, "(?<=\\().+?(?=\\))"),
+    str_detect(SIM_MOTIF, "^MA\\d+\\.\\d+") ~ ALT_ID,
+    str_detect(SIM_MOTIF, "^\\d+-") ~ str_replace(SIM_MOTIF, "^\\d+-", ""),
+  TRUE ~ SIM_MOTIF
+)) %>% 
+  dplyr::select(RANK,CLUSTER,SIM_MOTIF,ALT_ID, ID,CONSENSUS.x,motif_name,EVALUE.y,QVALUE,TP:ENR_RATIO) %>% 
+  arrange(.,EVALUE.y) 
+
+EPI_3_DAR_DEG_combo %>% 
+  dplyr::mutate_if(is.numeric, funs(as.character(signif(., 3)))) %>%
+  kable(., caption = "Enriched motifs 200 bp in MTX  v VEH") %>%
+  kable_paper("striped", full_width = TRUE) %>%
+  kable_styling(full_width = FALSE, font_size = 16) %>%
+  scroll_box(height = "500px")
+
+```
+
+```{r EPI_3_DAR_DEG_combo}
+
+
+EPI_3_DAR_DEG_combo %>% 
+   dplyr::filter(ENR_RATIO>ER_rat) %>%
+  dplyr::select(RANK,CLUSTER,motif_name,SIM_MOTIF,ALT_ID, ID,EVALUE.y,TP.)%>%
+  arrange(.,EVALUE.y) %>%
+  slice_head(n=80)%>% 
+  mutate(log10Evalue= log(EVALUE.y, base = 10)*(-1)) %>% 
+  mutate(motif_name=if_else(str_starts(motif_name,"^Z*"),paste(motif_name, RANK, sep="_"), if_else(motif_name=="KLF9",paste(motif_name, RANK,sep="_"),motif_name)))%>%
+  ggplot(., aes (y= reorder(motif_name,log10Evalue))) +
+  geom_col(aes(x=log10Evalue)) +
+  geom_point(aes(x=`TP.`*1.25), size =4)+
+  scale_x_continuous(expand=c (0,.125),sec.axis = sec_axis(transform= ~./1.25,name="Percent of peaks with motif"))+
+  theme_classic()+
+  ylab("Enriched TF motif")+
+  ggtitle(paste("EPI_3_DAR_DEG_combo response peaks(200bp)Enrichment ratio:",ER_rat))
+
+
+
+
+EPI_3_DAR_DEG_combo %>% 
+   dplyr::filter(ENR_RATIO>ER_rat) %>%
+  dplyr::select(RANK,CLUSTER,motif_name,SIM_MOTIF,ALT_ID, ID,EVALUE.y,TP.)%>%
+  arrange(.,EVALUE.y) %>%
+    mutate(log10Evalue = -log10(if_else(EVALUE.y == 0, 1e-300, EVALUE.y))) %>% 
+  distinct(CLUSTER,.keep_all = TRUE) %>% 
+  slice_head(n=5) %>% 
+  mutate(motif_name=if_else(str_starts(motif_name,"^Z*"),paste(motif_name, RANK, sep="_"), if_else(motif_name=="KLF9",paste(motif_name, RANK,sep="_"),motif_name)))%>%
+  ggplot(., aes (y= reorder(motif_name,log10Evalue))) +
+  geom_col(aes(x=log10Evalue)) +
+  geom_point(aes(x=`TP.`*.5), size =4)+
+  scale_x_continuous(expand=c (0,.125),sec.axis = sec_axis(transform= ~./.5,name="Percent of peaks with motif"))+
+  theme_classic()+
+  ylab("Enriched TF motif")+
+  ggtitle(paste("EPI_3_DAR_DEG_combo response peaks(200bp)Enrichment ratio:",ER_rat))
+ 
+```
+
+#### EPI 24 hour
+```{r}
+EPI_24_DAR_DEG_sea_disc <- read.delim("C:/Users/renee/ATAC_folder/ATAC_meme_data/new_analysis/EPI_24_DEG_xstreme/sea_disc_out/sea.tsv") %>% mutate(source="disc") %>% slice_head(n = length(.$ID)-3)
+EPI_24_DAR_DEG_sea_known <- read.delim("C:/Users/renee/ATAC_folder/ATAC_meme_data/new_analysis/EPI_24_DEG_xstreme/sea_out/sea.tsv") %>% mutate(source="known") %>% slice_head(n = length(.$ID)-3)
+EPI_24_DAR_DEG_xstreme <- read.delim("C:/Users/renee/ATAC_folder/ATAC_meme_data/new_analysis/EPI_24_DEG_xstreme/xstreme.tsv") %>% slice_head(n = length(.$ID)-3)
+EPI_24_DAR_DEG_sea_all <- rbind(EPI_24_DAR_DEG_sea_disc, EPI_24_DAR_DEG_sea_known) %>% 
+  arrange(ID, desc(source == "known")) %>%  
+  distinct(ID, .keep_all = TRUE)
+
+```
+
+```{r looking at EPI_24_DAR_DEG_xstreme data}
+EPI_24_DAR_DEG_combo <- EPI_24_DAR_DEG_xstreme %>% 
+  dplyr::select(SEED_MOTIF:EVALUE_ACC,SIM_MOTIF) %>% 
+  left_join(., EPI_24_DAR_DEG_sea_all, by=c("ID"="ID","ALT_ID"="ALT_ID")) %>% 
+  mutate(motif_name=case_when(
+    str_detect(SIM_MOTIF, "\\(") ~ str_extract(SIM_MOTIF, "(?<=\\().+?(?=\\))"),
+    str_detect(SIM_MOTIF, "^MA\\d+\\.\\d+") ~ ALT_ID,
+    str_detect(SIM_MOTIF, "^\\d+-") ~ str_replace(SIM_MOTIF, "^\\d+-", ""),
+  TRUE ~ SIM_MOTIF
+)) %>% 
+  dplyr::select(RANK,CLUSTER,SIM_MOTIF,ALT_ID, ID,CONSENSUS.x,motif_name,EVALUE.y,QVALUE,TP:ENR_RATIO) %>% 
+  arrange(.,EVALUE.y) 
+
+EPI_24_DAR_DEG_combo %>% 
+  dplyr::mutate_if(is.numeric, funs(as.character(signif(., 3)))) %>%
+  kable(., caption = "Enriched motifs 200 bp in MTX  v VEH") %>%
+  kable_paper("striped", full_width = TRUE) %>%
+  kable_styling(full_width = FALSE, font_size = 16) %>%
+  scroll_box(height = "500px")
+
+```
+
+```{r EPI_24_DAR_DEG_combo}
+
+
+EPI_24_DAR_DEG_combo %>% 
+   dplyr::filter(ENR_RATIO>ER_rat) %>%
+  dplyr::select(RANK,CLUSTER,motif_name,SIM_MOTIF,ALT_ID, ID,EVALUE.y,TP.)%>%
+  arrange(.,EVALUE.y) %>%
+  slice_head(n=80)%>% 
+  mutate(log10Evalue= log(EVALUE.y, base = 10)*(-1)) %>% 
+  mutate(motif_name=if_else(str_starts(motif_name,"^Z*"),paste(motif_name, RANK, sep="_"), if_else(motif_name=="KLF9",paste(motif_name, RANK,sep="_"),motif_name)))%>%
+  ggplot(., aes (y= reorder(motif_name,log10Evalue))) +
+  geom_col(aes(x=log10Evalue)) +
+  geom_point(aes(x=`TP.`*1.25), size =4)+
+  scale_x_continuous(expand=c (0,.125),sec.axis = sec_axis(transform= ~./1.25,name="Percent of peaks with motif"))+
+  theme_classic()+
+  ylab("Enriched TF motif")+
+  ggtitle(paste("EPI_24_DAR_DEG_combo response peaks(200bp)Enrichment ratio:",ER_rat))
+
+
+
+
+EPI_24_DAR_DEG_combo %>% 
+   dplyr::filter(ENR_RATIO>ER_rat) %>%
+  dplyr::select(RANK,CLUSTER,motif_name,SIM_MOTIF,ALT_ID, ID,EVALUE.y,TP.)%>%
+  arrange(.,EVALUE.y) %>%
+    mutate(log10Evalue = -log10(if_else(EVALUE.y == 0, 1e-300, EVALUE.y))) %>% 
+  distinct(CLUSTER,.keep_all = TRUE) %>% 
+  slice_head(n=5) %>% 
+  mutate(motif_name=if_else(str_starts(motif_name,"^Z*"),paste(motif_name, RANK, sep="_"), if_else(motif_name=="KLF9",paste(motif_name, RANK,sep="_"),motif_name)))%>%
+  ggplot(., aes (y= reorder(motif_name,log10Evalue))) +
+  geom_col(aes(x=log10Evalue)) +
+  geom_point(aes(x=`TP.`*1), size =4)+
+  scale_x_continuous(expand=c (0,.125),sec.axis = sec_axis(transform= ~./1,name="Percent of peaks with motif"))+
+  theme_classic()+
+  ylab("Enriched TF motif")+
+  ggtitle(paste("EPI_24_DAR_DEG_combo response peaks(200bp)Enrichment ratio:",ER_rat))
+ 
+```
+
+#### DNR 3 hour
+```{r}
+DNR_3_DAR_DEG_sea_disc <- read.delim("C:/Users/renee/ATAC_folder/ATAC_meme_data/new_analysis/DNR_3_DEG_xstreme/sea_disc_out/sea.tsv") %>% mutate(source="disc") %>% slice_head(n = length(.$ID)-3)
+DNR_3_DAR_DEG_sea_known <- read.delim("C:/Users/renee/ATAC_folder/ATAC_meme_data/new_analysis/DNR_3_DEG_xstreme/sea_out/sea.tsv") %>% mutate(source="known") %>% slice_head(n = length(.$ID)-3)
+DNR_3_DAR_DEG_xstreme <- read.delim("C:/Users/renee/ATAC_folder/ATAC_meme_data/new_analysis/DNR_3_DEG_xstreme/xstreme.tsv") %>% slice_head(n = length(.$ID)-3)
+DNR_3_DAR_DEG_sea_all <- rbind(DNR_3_DAR_DEG_sea_disc, DNR_3_DAR_DEG_sea_known) %>% 
+  arrange(ID, desc(source == "known")) %>%  
+  distinct(ID, .keep_all = TRUE)
+
+```
+
+```{r looking at DNR_3_DAR_DEG_xstreme data}
+DNR_3_DAR_DEG_combo <- DNR_3_DAR_DEG_xstreme %>% 
+  dplyr::select(SEED_MOTIF:EVALUE_ACC,SIM_MOTIF) %>% 
+  left_join(., DNR_3_DAR_DEG_sea_all, by=c("ID"="ID","ALT_ID"="ALT_ID")) %>% 
+  mutate(motif_name=case_when(
+    str_detect(SIM_MOTIF, "\\(") ~ str_extract(SIM_MOTIF, "(?<=\\().+?(?=\\))"),
+    str_detect(SIM_MOTIF, "^MA\\d+\\.\\d+") ~ ALT_ID,
+    str_detect(SIM_MOTIF, "^\\d+-") ~ str_replace(SIM_MOTIF, "^\\d+-", ""),
+  TRUE ~ SIM_MOTIF
+)) %>% 
+  dplyr::select(RANK,CLUSTER,SIM_MOTIF,ALT_ID, ID,CONSENSUS.x,motif_name,EVALUE.y,QVALUE,TP:ENR_RATIO) %>% 
+  arrange(.,EVALUE.y) 
+
+DNR_3_DAR_DEG_combo %>% 
+  dplyr::mutate_if(is.numeric, funs(as.character(signif(., 3)))) %>%
+  kable(., caption = "Enriched motifs 200 bp in MTX  v VEH") %>%
+  kable_paper("striped", full_width = TRUE) %>%
+  kable_styling(full_width = FALSE, font_size = 16) %>%
+  scroll_box(height = "500px")
+
+```
+
+```{r DNR_3_DAR_DEG_combo}
+
+
+DNR_3_DAR_DEG_combo %>% 
+   dplyr::filter(ENR_RATIO>ER_rat) %>%
+  dplyr::select(RANK,CLUSTER,motif_name,SIM_MOTIF,ALT_ID, ID,EVALUE.y,TP.)%>%
+  arrange(.,EVALUE.y) %>%
+  slice_head(n=80)%>% 
+  mutate(log10Evalue= log(EVALUE.y, base = 10)*(-1)) %>% 
+  mutate(motif_name=if_else(str_starts(motif_name,"^Z*"),paste(motif_name, RANK, sep="_"), if_else(motif_name=="KLF9",paste(motif_name, RANK,sep="_"),motif_name)))%>%
+  ggplot(., aes (y= reorder(motif_name,log10Evalue))) +
+  geom_col(aes(x=log10Evalue)) +
+  geom_point(aes(x=`TP.`*1.25), size =4)+
+  scale_x_continuous(expand=c (0,.125),sec.axis = sec_axis(transform= ~./1.25,name="Percent of peaks with motif"))+
+  theme_classic()+
+  ylab("Enriched TF motif")+
+  ggtitle(paste("DNR_3_DAR_DEG_combo response peaks(200bp)Enrichment ratio:",ER_rat))
+
+
+
+
+DNR_3_DAR_DEG_combo %>% 
+   dplyr::filter(ENR_RATIO>ER_rat) %>%
+  dplyr::select(RANK,CLUSTER,motif_name,SIM_MOTIF,ALT_ID, ID,EVALUE.y,TP.)%>%
+  arrange(.,EVALUE.y) %>%
+    mutate(log10Evalue = -log10(if_else(EVALUE.y == 0, 1e-300, EVALUE.y))) %>% 
+  distinct(CLUSTER,.keep_all = TRUE) %>% 
+  slice_head(n=5) %>% 
+  mutate(motif_name=if_else(str_starts(motif_name,"^Z*"),paste(motif_name, RANK, sep="_"), if_else(motif_name=="KLF9",paste(motif_name, RANK,sep="_"),motif_name)))%>%
+  ggplot(., aes (y= reorder(motif_name,log10Evalue))) +
+  geom_col(aes(x=log10Evalue)) +
+  geom_point(aes(x=`TP.`*.25), size =4)+
+  scale_x_continuous(expand=c (0,.125),sec.axis = sec_axis(transform= ~./.25,name="Percent of peaks with motif"))+
+  theme_classic()+
+  ylab("Enriched TF motif")+
+  ggtitle(paste("DNR_3_DAR_DEG_combo response peaks(200bp)Enrichment ratio:",ER_rat))
+ 
+```
+
+#### DNR 24 hour
+```{r}
+DNR_24_DAR_DEG_sea_disc <- read.delim("C:/Users/renee/ATAC_folder/ATAC_meme_data/new_analysis/DNR_24_DEG_xstreme/sea_disc_out/sea.tsv") %>% mutate(source="disc") %>% slice_head(n = length(.$ID)-3)
+DNR_24_DAR_DEG_sea_known <- read.delim("C:/Users/renee/ATAC_folder/ATAC_meme_data/new_analysis/DNR_24_DEG_xstreme/sea_out/sea.tsv") %>% mutate(source="known") %>% slice_head(n = length(.$ID)-3)
+DNR_24_DAR_DEG_xstreme <- read.delim("C:/Users/renee/ATAC_folder/ATAC_meme_data/new_analysis/DNR_24_DEG_xstreme/xstreme.tsv") %>% slice_head(n = length(.$ID)-3)
+DNR_24_DAR_DEG_sea_all <- rbind(DNR_24_DAR_DEG_sea_disc, DNR_24_DAR_DEG_sea_known) %>% 
+  arrange(ID, desc(source == "known")) %>%  
+  distinct(ID, .keep_all = TRUE)
+
+```
+
+```{r looking at DNR_24_DAR_DEG_xstreme data}
+DNR_24_DAR_DEG_combo <- DNR_24_DAR_DEG_xstreme %>% 
+  dplyr::select(SEED_MOTIF:EVALUE_ACC,SIM_MOTIF) %>% 
+  left_join(., DNR_24_DAR_DEG_sea_all, by=c("ID"="ID","ALT_ID"="ALT_ID")) %>% 
+  mutate(motif_name=case_when(
+    str_detect(SIM_MOTIF, "\\(") ~ str_extract(SIM_MOTIF, "(?<=\\().+?(?=\\))"),
+    str_detect(SIM_MOTIF, "^MA\\d+\\.\\d+") ~ ALT_ID,
+    str_detect(SIM_MOTIF, "^\\d+-") ~ str_replace(SIM_MOTIF, "^\\d+-", ""),
+  TRUE ~ SIM_MOTIF
+)) %>% 
+  dplyr::select(RANK,CLUSTER,SIM_MOTIF,ALT_ID, ID,CONSENSUS.x,motif_name,EVALUE.y,QVALUE,TP:ENR_RATIO) %>% 
+  arrange(.,EVALUE.y) 
+
+DNR_24_DAR_DEG_combo %>% 
+  dplyr::mutate_if(is.numeric, funs(as.character(signif(., 3)))) %>%
+  kable(., caption = "Enriched motifs 200 bp in MTX  v VEH") %>%
+  kable_paper("striped", full_width = TRUE) %>%
+  kable_styling(full_width = FALSE, font_size = 16) %>%
+  scroll_box(height = "500px")
+
+```
+
+```{r DNR_24_DAR_DEG_combo}
+
+
+DNR_24_DAR_DEG_combo %>% 
+   dplyr::filter(ENR_RATIO>ER_rat) %>%
+  dplyr::select(RANK,CLUSTER,motif_name,SIM_MOTIF,ALT_ID, ID,EVALUE.y,TP.)%>%
+  arrange(.,EVALUE.y) %>%
+  slice_head(n=80)%>% 
+  mutate(log10Evalue= log(EVALUE.y, base = 10)*(-1)) %>% 
+  mutate(motif_name=if_else(str_starts(motif_name,"^Z*"),paste(motif_name, RANK, sep="_"), if_else(motif_name=="KLF9",paste(motif_name, RANK,sep="_"),motif_name)))%>%
+  ggplot(., aes (y= reorder(motif_name,log10Evalue))) +
+  geom_col(aes(x=log10Evalue)) +
+  geom_point(aes(x=`TP.`*1.25), size =4)+
+  scale_x_continuous(expand=c (0,.125),sec.axis = sec_axis(transform= ~./1.25,name="Percent of peaks with motif"))+
+  theme_classic()+
+  ylab("Enriched TF motif")+
+  ggtitle(paste("DNR_24_DAR_DEG_combo response peaks(200bp)Enrichment ratio:",ER_rat))
+
+
+
+
+DNR_24_DAR_DEG_combo %>% 
+   dplyr::filter(ENR_RATIO>ER_rat) %>%
+  dplyr::select(RANK,CLUSTER,motif_name,SIM_MOTIF,ALT_ID, ID,EVALUE.y,TP.)%>%
+  arrange(.,EVALUE.y) %>%
+    mutate(log10Evalue = -log10(if_else(EVALUE.y == 0, 1e-300, EVALUE.y))) %>% 
+  distinct(CLUSTER,.keep_all = TRUE) %>% 
+  slice_head(n=5) %>% 
+  mutate(motif_name=if_else(str_starts(motif_name,"^Z*"),paste(motif_name, RANK, sep="_"), if_else(motif_name=="KLF9",paste(motif_name, RANK,sep="_"),motif_name)))%>%
+  ggplot(., aes (y= reorder(motif_name,log10Evalue))) +
+  geom_col(aes(x=log10Evalue)) +
+  geom_point(aes(x=`TP.`*2), size =4)+
+  scale_x_continuous(expand=c (0,.125),sec.axis = sec_axis(transform= ~./2,name="Percent of peaks with motif"))+
+  theme_classic()+
+  ylab("Enriched TF motif")+
+  ggtitle(paste("DNR_24_DAR_DEG_combo response peaks(200bp)Enrichment ratio:",ER_rat))
+ 
+```
+
+#### MTX 3 hour
+```{r}
+MTX_3_DAR_DEG_sea_disc <- read.delim("C:/Users/renee/ATAC_folder/ATAC_meme_data/new_analysis/MTX_3_DEG_xstreme/sea_disc_out/sea.tsv") %>% mutate(source="disc") %>% slice_head(n = length(.$ID)-3)
+MTX_3_DAR_DEG_sea_known <- read.delim("C:/Users/renee/ATAC_folder/ATAC_meme_data/new_analysis/MTX_3_DEG_xstreme/sea_out/sea.tsv") %>% mutate(source="known") %>% slice_head(n = length(.$ID)-3)
+MTX_3_DAR_DEG_xstreme <- read.delim("C:/Users/renee/ATAC_folder/ATAC_meme_data/new_analysis/MTX_3_DEG_xstreme/xstreme.tsv") %>% slice_head(n = length(.$ID)-3)
+MTX_3_DAR_DEG_sea_all <- rbind(MTX_3_DAR_DEG_sea_disc, MTX_3_DAR_DEG_sea_known) %>% 
+  arrange(ID, desc(source == "known")) %>%  
+  distinct(ID, .keep_all = TRUE)
+
+```
+
+```{r looking at MTX_3_DAR_DEG_xstreme data}
+MTX_3_DAR_DEG_combo <- MTX_3_DAR_DEG_xstreme %>% 
+  dplyr::select(SEED_MOTIF:EVALUE_ACC,SIM_MOTIF) %>% 
+  left_join(., MTX_3_DAR_DEG_sea_all, by=c("ID"="ID","ALT_ID"="ALT_ID")) %>% 
+  mutate(motif_name=case_when(
+    str_detect(SIM_MOTIF, "\\(") ~ str_extract(SIM_MOTIF, "(?<=\\().+?(?=\\))"),
+    str_detect(SIM_MOTIF, "^MA\\d+\\.\\d+") ~ ALT_ID,
+    str_detect(SIM_MOTIF, "^\\d+-") ~ str_replace(SIM_MOTIF, "^\\d+-", ""),
+  TRUE ~ SIM_MOTIF
+)) %>% 
+  dplyr::select(RANK,CLUSTER,SIM_MOTIF,ALT_ID, ID,CONSENSUS.x,motif_name,EVALUE.y,QVALUE,TP:ENR_RATIO) %>% 
+  arrange(.,EVALUE.y) 
+
+MTX_3_DAR_DEG_combo %>% 
+  dplyr::mutate_if(is.numeric, funs(as.character(signif(., 3)))) %>%
+  kable(., caption = "Enriched motifs 200 bp in MTX  v VEH") %>%
+  kable_paper("striped", full_width = TRUE) %>%
+  kable_styling(full_width = FALSE, font_size = 16) %>%
+  scroll_box(height = "500px")
+
+```
+
+```{r MTX_3_DAR_DEG_combo}
+
+
+MTX_3_DAR_DEG_combo %>% 
+   dplyr::filter(ENR_RATIO>ER_rat) %>%
+  dplyr::select(RANK,CLUSTER,motif_name,SIM_MOTIF,ALT_ID, ID,EVALUE.y,TP.)%>%
+  arrange(.,EVALUE.y) %>%
+  slice_head(n=80)%>% 
+  mutate(log10Evalue= log(EVALUE.y, base = 10)*(-1)) %>% 
+  mutate(motif_name=if_else(str_starts(motif_name,"^Z*"),paste(motif_name, RANK, sep="_"), if_else(motif_name=="KLF9",paste(motif_name, RANK,sep="_"),motif_name)))%>%
+  ggplot(., aes (y= reorder(motif_name,log10Evalue))) +
+  geom_col(aes(x=log10Evalue)) +
+  geom_point(aes(x=`TP.`*1.25), size =4)+
+  scale_x_continuous(expand=c (0,.125),sec.axis = sec_axis(transform= ~./1.25,name="Percent of peaks with motif"))+
+  theme_classic()+
+  ylab("Enriched TF motif")+
+  ggtitle(paste("MTX_3_DAR_DEG_combo response peaks(200bp)Enrichment ratio:",ER_rat))
+
+
+
+
+MTX_3_DAR_DEG_combo %>% 
+   dplyr::filter(ENR_RATIO>ER_rat) %>%
+  dplyr::select(RANK,CLUSTER,motif_name,SIM_MOTIF,ALT_ID, ID,EVALUE.y,TP.)%>%
+  arrange(.,EVALUE.y) %>%
+    mutate(log10Evalue = -log10(if_else(EVALUE.y == 0, 1e-300, EVALUE.y))) %>% 
+  distinct(CLUSTER,.keep_all = TRUE) %>% 
+  slice_head(n=5) %>% 
+  mutate(motif_name=if_else(str_starts(motif_name,"^Z*"),paste(motif_name, RANK, sep="_"), if_else(motif_name=="KLF9",paste(motif_name, RANK,sep="_"),motif_name)))%>%
+  ggplot(., aes (y= reorder(motif_name,log10Evalue))) +
+  geom_col(aes(x=log10Evalue)) +
+  geom_point(aes(x=`TP.`*.05), size =4)+
+  scale_x_continuous(expand=c (0,.125),sec.axis = sec_axis(transform= ~./.05,name="Percent of peaks with motif"))+
+  theme_classic()+
+  ylab("Enriched TF motif")+
+  ggtitle(paste("MTX_3_DAR_DEG_combo response peaks(200bp)Enrichment ratio:",ER_rat))
+ 
+```
+
+#### MTX 24 hour
+```{r}
+MTX_24_DAR_DEG_sea_disc <- read.delim("C:/Users/renee/ATAC_folder/ATAC_meme_data/new_analysis/MTX_24_DEG_xstreme/sea_disc_out/sea.tsv") %>% mutate(source="disc") %>% slice_head(n = length(.$ID)-3)
+MTX_24_DAR_DEG_sea_known <- read.delim("C:/Users/renee/ATAC_folder/ATAC_meme_data/new_analysis/MTX_24_DEG_xstreme/sea_out/sea.tsv") %>% mutate(source="known") %>% slice_head(n = length(.$ID)-3)
+MTX_24_DAR_DEG_xstreme <- read.delim("C:/Users/renee/ATAC_folder/ATAC_meme_data/new_analysis/MTX_24_DEG_xstreme/xstreme.tsv") %>% slice_head(n = length(.$ID)-3)
+MTX_24_DAR_DEG_sea_all <- rbind(MTX_24_DAR_DEG_sea_disc, MTX_24_DAR_DEG_sea_known) %>% 
+  arrange(ID, desc(source == "known")) %>%  
+  distinct(ID, .keep_all = TRUE)
+
+```
+
+```{r looking at MTX_24_DAR_DEG_xstreme data}
+MTX_24_DAR_DEG_combo <- MTX_24_DAR_DEG_xstreme %>% 
+  dplyr::select(SEED_MOTIF:EVALUE_ACC,SIM_MOTIF) %>% 
+  left_join(., MTX_24_DAR_DEG_sea_all, by=c("ID"="ID","ALT_ID"="ALT_ID")) %>% 
+  mutate(motif_name=case_when(
+    str_detect(SIM_MOTIF, "\\(") ~ str_extract(SIM_MOTIF, "(?<=\\().+?(?=\\))"),
+    str_detect(SIM_MOTIF, "^MA\\d+\\.\\d+") ~ ALT_ID,
+    str_detect(SIM_MOTIF, "^\\d+-") ~ str_replace(SIM_MOTIF, "^\\d+-", ""),
+  TRUE ~ SIM_MOTIF
+)) %>% 
+  dplyr::select(RANK,CLUSTER,SIM_MOTIF,ALT_ID, ID,CONSENSUS.x,motif_name,EVALUE.y,QVALUE,TP:ENR_RATIO) %>% 
+  arrange(.,EVALUE.y) 
+
+MTX_24_DAR_DEG_combo %>% 
+  dplyr::mutate_if(is.numeric, funs(as.character(signif(., 3)))) %>%
+  kable(., caption = "Enriched motifs 200 bp in MTX  v VEH") %>%
+  kable_paper("striped", full_width = TRUE) %>%
+  kable_styling(full_width = FALSE, font_size = 16) %>%
+  scroll_box(height = "500px")
+
+```
+
+```{r MTX_24_DAR_DEG_combo}
+
+
+MTX_24_DAR_DEG_combo %>% 
+   dplyr::filter(ENR_RATIO>ER_rat) %>%
+  dplyr::select(RANK,CLUSTER,motif_name,SIM_MOTIF,ALT_ID, ID,EVALUE.y,TP.)%>%
+  arrange(.,EVALUE.y) %>%
+  slice_head(n=80)%>% 
+  mutate(log10Evalue= log(EVALUE.y, base = 10)*(-1)) %>% 
+  mutate(motif_name=if_else(str_starts(motif_name,"^Z*"),paste(motif_name, RANK, sep="_"), if_else(motif_name=="KLF9",paste(motif_name, RANK,sep="_"),motif_name)))%>%
+  ggplot(., aes (y= reorder(motif_name,log10Evalue))) +
+  geom_col(aes(x=log10Evalue)) +
+  geom_point(aes(x=`TP.`*1.25), size =4)+
+  scale_x_continuous(expand=c (0,.125),sec.axis = sec_axis(transform= ~./1.25,name="Percent of peaks with motif"))+
+  theme_classic()+
+  ylab("Enriched TF motif")+
+  ggtitle(paste("MTX_24_DAR_DEG_combo response peaks(200bp)Enrichment ratio:",ER_rat))
+
+
+
+
+MTX_24_DAR_DEG_combo %>% 
+   dplyr::filter(ENR_RATIO>ER_rat) %>%
+  dplyr::select(RANK,CLUSTER,motif_name,SIM_MOTIF,ALT_ID, ID,EVALUE.y,TP.)%>%
+  arrange(.,EVALUE.y) %>%
+    mutate(log10Evalue = -log10(if_else(EVALUE.y == 0, 1e-300, EVALUE.y))) %>% 
+  distinct(CLUSTER,.keep_all = TRUE) %>% 
+  slice_head(n=5) %>% 
+  mutate(motif_name=if_else(str_starts(motif_name,"^Z*"),paste(motif_name, RANK, sep="_"), if_else(motif_name=="KLF9",paste(motif_name, RANK,sep="_"),motif_name)))%>%
+  ggplot(., aes (y= reorder(motif_name,log10Evalue))) +
+  geom_col(aes(x=log10Evalue)) +
+  geom_point(aes(x=`TP.`*.1), size =4)+
+  scale_x_continuous(expand=c (0,.125),sec.axis = sec_axis(transform= ~./.1,name="Percent of peaks with motif"))+
+  theme_classic()+
+  ylab("Enriched TF motif")+
+  ggtitle(paste("MTX_24_DAR_DEG_combo response peaks(200bp)Enrichment ratio:",ER_rat))
+ 
+```
+
+
+
+
