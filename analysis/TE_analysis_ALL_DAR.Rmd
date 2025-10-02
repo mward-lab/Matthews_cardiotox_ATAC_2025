@@ -211,6 +211,28 @@ annotated_peaks <-   all_results %>%
 ```
 
 
+```{r, eval=FALSE}
+### making supplementary table 13  annotated peaks
+
+all_TEs_for_anno <- overlap_TE_gr %>% 
+  as.data.frame() %>% 
+  group_by(Peakid) %>% 
+  reframe(repName=paste0(repName,collapse = ";"),
+          repClass=paste0(repClass, collapse = ";"),
+          repFamily=paste0(repFamily, collapse = ";"))
+
+
+annotated_DARs<- readRDS("data/Final_four_data/re_analysis/DOX_DAR_annotated_peaks_chipannno.RDS")
+
+Base_frame <- annotated_DARs$DOX_3 %>%  as.data.frame()
+
+Base_frame %>% 
+  dplyr::select(mcols.genes,annotation,geneId,transcriptId,distanceToTSS) %>% 
+  dplyr::rename("Peakid"=mcols.genes,
+                "ENTREZID"=geneId) %>% 
+  left_join(.,all_TEs_for_anno, by = c("Peakid"="Peakid")) %>% 
+  write.csv(.,"data/Final_four_data/re_analysis/ATAC_excel_outputs/S13_Table.csv")
+```
 
 
 
@@ -1795,6 +1817,7 @@ All_DAR_AR_prop_df_so %>%
 #### sine data
 
 ```{r making dataframes for filt}
+saveRDS(overlap_TE_gr,"data/Final_four_data/re_analysis/TE_overlapping_granges_output.RDS")
 Overlapping_peaks <-
   overlap_TE_gr %>% 
   as.data.frame() %>%
